@@ -1,11 +1,12 @@
 [project]
 name = "logistics-optimizer"
 version = "0.1.0"
-description = "TUI foundation for vehicle routing and package loading optimization"
+description = "Transport planning experimentation with OpenTTD and OpenTTDLab"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     "alembic>=1.13",
+    "openttdlab==0.0.75",
     "ortools>=9.10",
     "psycopg[binary]>=3.1",
     "pydantic>=2.7",
@@ -17,6 +18,7 @@ dependencies = [
 [project.scripts]
 logistics-tui = "app.tui.app:main"
 logistics-seed = "app.database.seed:main"
+transport-experiment = "app.experiments.cli:main"
 
 [dependency-groups]
 dev = [
@@ -34,6 +36,7 @@ packages = ["app"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+markers = ["openttd: runs a real headless OpenTTD simulation through OpenTTDLab"]
 
 [tool.ruff]
 target-version = "py314"

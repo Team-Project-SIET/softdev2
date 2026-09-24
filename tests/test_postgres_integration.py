@@ -74,7 +74,7 @@ def test_postgresql_migrations_and_concurrent_saves(
     with engine.begin() as connection:
         context = MigrationContext.configure(connection)
         with Operations.context(context):
-            for revision in ("0001", "0002", "0003", "0004", "0005"):
+            for revision in ("0001", "0002", "0003", "0004", "0005", "0006"):
                 scripts.get_revision(revision).module.upgrade()
         columns = {column["name"]: column for column in inspect(connection).get_columns("drivers")}
         assert columns["line_user_id"]["nullable"]
@@ -182,7 +182,7 @@ def _migrate_for_concurrency(postgres_factory: sessionmaker[Session]) -> None:
     with postgres_factory.kw["bind"].begin() as connection:
         context = MigrationContext.configure(connection)
         with Operations.context(context):
-            for revision in ("0001", "0002", "0003", "0004", "0005"):
+            for revision in ("0001", "0002", "0003", "0004", "0005", "0006"):
                 scripts.get_revision(revision).module.upgrade()
 
 
@@ -460,11 +460,17 @@ def test_existing_0002_and_fresh_postgresql_upgrades_match(
     _upgrade_isolated(config, legacy_engine, "head")
 
     with legacy_engine.connect() as connection:
-        assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "0005"
+        assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "0006"
         legacy_signature = _schema_signature(connection)
-        assert _without_column_comments(legacy_signature) == _without_column_comments(
-            before_comments
-        )
+        legacy_tables = {table: legacy_signature[table] for table in before_comments}
+        assert _without_column_comments(legacy_tables) == _without_column_comments(before_comments)
+        assert set(legacy_signature) - set(before_comments) == {
+            "experiment_scenarios",
+            "planning_strategies",
+            "experiment_runs",
+            "simulation_runs",
+            "experiment_metrics",
+        }
         assert _column_comments(legacy_signature, "routes")["total_distance"] == "Kilometers"
         assert _column_comments(legacy_signature, "routes")["total_weight"] == "Kilograms"
         assert (
@@ -500,7 +506,7 @@ def test_existing_0002_and_fresh_postgresql_upgrades_match(
             text=True,
         )
         with fresh_engine.connect() as connection:
-            assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "0005"
+            assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "0006"
             assert _schema_signature(connection) == legacy_signature
             assert compare_metadata(MigrationContext.configure(connection), Base.metadata) == []
     finally:

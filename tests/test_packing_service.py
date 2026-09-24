@@ -12,7 +12,7 @@ from app.routing.model import Route
 from app.routing.optimizer import CVRPOptimizer
 from app.routing.schemas import Coordinates
 from app.routing.service import RoutingService
-from app.shipment.model import Package
+from app.shipment.model import Package, Shipment
 from app.vehicle.model import Vehicle
 
 
@@ -33,9 +33,17 @@ def saved_route_id(session_factory: sessionmaker[Session], monkeypatch: pytest.M
         depot=Coordinates(latitude=0, longitude=0),
     )
     candidates = service.list_candidates()
-    routing_plan = service.optimize(
-        [s.id for s in candidates.shipments], [candidates.vehicles[0].id]
-    )
+    with session_factory() as session:
+        shipment_ids = list(
+            session.scalars(
+                select(Shipment.id).where(
+                    Shipment.notes.in_(
+                        ["Deliver before noon if possible.", "Receiving desk on level 1."]
+                    )
+                )
+            )
+        )
+    routing_plan = service.optimize(shipment_ids, [candidates.vehicles[0].id])
     return service.save_plan(routing_plan).route_ids[0]
 
 

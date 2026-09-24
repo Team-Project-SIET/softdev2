@@ -2,6 +2,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 
 from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 from app.customer.model import Customer
 from app.database.session import create_session
@@ -11,14 +12,14 @@ from app.vehicle.model import Vehicle, VehicleStatus
 
 
 def seed_database() -> bool:
-    """Insert a small idempotent demo dataset.
+    """Insert the demo dataset and any missing sample shipments.
 
     Returns ``True`` when rows were inserted and ``False`` when seed data already exists.
     """
 
     with create_session() as session, session.begin():
         if session.scalar(select(Customer.id).limit(1)) is not None:
-            return False
+            return _seed_pending_shipments(session)
 
         van = Vehicle(
             name="Van 01",
@@ -134,7 +135,105 @@ def seed_database() -> bool:
             ]
         )
 
+        _seed_pending_shipments(session)
+
     return True
+
+
+def _seed_pending_shipments(session: Session) -> bool:
+    """Extend existing demo customers without resetting previously seeded shipments."""
+
+    customers = list(
+        session.scalars(
+            select(Customer)
+            .where(Customer.name.in_(["Central Corner Shop", "Riverside Cafe"]))
+            .order_by(Customer.id)
+            .with_for_update()
+        )
+    )
+    by_name = {customer.name: customer for customer in customers}
+    if len(customers) != 2 or len(by_name) != 2:
+        return False
+
+    today = date.today()
+    shipments = [
+        Shipment(
+            customer_id=by_name["Central Corner Shop"].id,
+            delivery_date=today + timedelta(days=1),
+            priority=ShipmentPriority.NORMAL,
+            status=ShipmentStatus.PENDING,
+            notes="Demo pantry restock: dry goods and cleaning supplies.",
+            packages=[
+                Package(width=40, length=60, height=35, weight=Decimal("18.50"), stackable=True),
+                Package(width=40, length=60, height=35, weight=Decimal("17.75"), stackable=True),
+                Package(width=30, length=45, height=25, weight=Decimal("9.25"), stackable=True),
+                Package(width=50, length=60, height=45, weight=Decimal("22.00"), stackable=True),
+            ],
+        ),
+        Shipment(
+            customer_id=by_name["Riverside Cafe"].id,
+            delivery_date=today + timedelta(days=1),
+            priority=ShipmentPriority.HIGH,
+            status=ShipmentStatus.PENDING,
+            notes="Demo cafe restock: bottled drinks and coffee beans.",
+            packages=[
+                Package(width=35, length=50, height=30, weight=Decimal("14.40"), stackable=True),
+                Package(width=35, length=50, height=30, weight=Decimal("14.40"), stackable=True),
+                Package(width=45, length=60, height=40, weight=Decimal("21.60"), stackable=True),
+            ],
+        ),
+        Shipment(
+            customer_id=by_name["Central Corner Shop"].id,
+            delivery_date=today + timedelta(days=1),
+            priority=ShipmentPriority.HIGH,
+            status=ShipmentStatus.PENDING,
+            notes="Demo appliance delivery: keep the large carton upright.",
+            packages=[
+                Package(width=55, length=70, height=50, weight=Decimal("28.00"), stackable=False),
+                Package(width=40, length=55, height=35, weight=Decimal("12.50"), stackable=True),
+                Package(width=35, length=45, height=30, weight=Decimal("8.75"), stackable=True),
+            ],
+        ),
+        Shipment(
+            customer_id=by_name["Riverside Cafe"].id,
+            delivery_date=today + timedelta(days=2),
+            priority=ShipmentPriority.NORMAL,
+            status=ShipmentStatus.PENDING,
+            notes="Demo cafe equipment: handle the grinder carton with care.",
+            packages=[
+                Package(width=40, length=60, height=40, weight=Decimal("24.00"), stackable=True),
+                Package(width=45, length=65, height=45, weight=Decimal("19.50"), stackable=False),
+                Package(width=30, length=40, height=25, weight=Decimal("6.80"), stackable=True),
+            ],
+        ),
+        Shipment(
+            customer_id=by_name["Central Corner Shop"].id,
+            delivery_date=today + timedelta(days=2),
+            priority=ShipmentPriority.LOW,
+            status=ShipmentStatus.PENDING,
+            notes="Demo promotion stock: bulky display cartons.",
+            packages=[
+                Package(width=50, length=75, height=40, weight=Decimal("16.25"), stackable=True),
+                Package(width=45, length=70, height=35, weight=Decimal("14.50"), stackable=True),
+                Package(width=60, length=80, height=55, weight=Decimal("32.00"), stackable=False),
+            ],
+        ),
+    ]
+    # Stable customer/notes pairs identify the sample batch even after dates or
+    # statuses change in normal use. Locked customers serialize repeat seed runs.
+    existing = set(
+        session.execute(
+            select(Shipment.customer_id, Shipment.notes).where(
+                Shipment.customer_id.in_([customer.id for customer in customers]),
+                Shipment.notes.in_([shipment.notes for shipment in shipments]),
+            )
+        ).all()
+    )
+    missing = [
+        shipment for shipment in shipments if (shipment.customer_id, shipment.notes) not in existing
+    ]
+    session.add_all(missing)
+    return bool(missing)
 
 
 def main() -> None:

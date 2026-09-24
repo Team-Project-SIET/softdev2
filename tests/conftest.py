@@ -30,3 +30,4 @@ def pytest_addoption(parser: pytest.Parser) -> None:
     parser.addoption(
         "--run-postgres", action="store_true", help="run isolated PostgreSQL integration tests"
     )
+    parser.addoption("--run-openttd", action="store_true", help="run a real OpenTTDLab simulation")
