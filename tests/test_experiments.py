@@ -90,6 +90,7 @@ def test_fixed_seed_and_pinned_ai_are_sent_to_openttdlab(tmp_path: Path) -> None
     assert captured["openttd_version"] == "13.4"
     assert captured["opengfx_version"] == "7.1"
     assert captured["max_workers"] == 1
+    assert captured["experiments"][0]["ais"][0][1] == config.ai.parameters
     assert {(metric.name, metric.value) for metric in result.metrics} >= {
         ("company_money", 7858),
         ("current_period_cargo_delivered", 7),
