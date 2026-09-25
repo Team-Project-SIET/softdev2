@@ -8,6 +8,7 @@ from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.experiments import domain
 from app.experiments.domain import (
     ExperimentConfig,
     Metric,
@@ -95,6 +96,7 @@ def test_fixed_seed_and_pinned_ai_are_sent_to_openttdlab(tmp_path: Path) -> None
         ("company_money", 7858),
         ("current_period_cargo_delivered", 7),
     }
+    assert result.raw_artifact_reference is not None
     with gzip.open(result.raw_artifact_reference, "rt", encoding="utf-8") as artifact:
         assert json.load(artifact)["chunks"]["PLYR"]["0"]["money"] == 7858
 
@@ -132,9 +134,28 @@ def test_metadata_and_metrics_are_persisted(
     config = baseline_config()
     result = ExperimentService(session_factory, FakeRunner()).run(config, artifact_dir=tmp_path)
     assert result.status is RunStatus.SUCCEEDED
+    assert result.execution_mode is domain.ExecutionMode.BATCH
+    assert set(result.model_dump()) == {
+        "run_id",
+        "config",
+        "status",
+        "started_at",
+        "completed_at",
+        "simulation",
+        "error",
+    }
+    assert set(json.loads(result.model_dump_json())["simulation"]) == {
+        "simulation_date",
+        "savegame_version",
+        "metrics",
+        "raw_artifact_reference",
+    }
+    assert "execution_mode" not in result.config.model_dump()
 
     with session_factory() as session:
         run = session.get(ExperimentRunRecord, result.run_id)
+        assert run is not None and run.simulation is not None
+        assert result.simulation is not None
         assert run.scenario.identifier == "test-map"
         assert run.strategy.identifier == "trains-baseline"
         assert run.ai_configuration["md5"] == config.ai.md5
@@ -144,6 +165,7 @@ def test_metadata_and_metrics_are_persisted(
         assert run.raw_artifact_reference == result.simulation.raw_artifact_reference
         assert run.simulation.savegame_version == 213
         metric = session.scalar(select(ExperimentMetricRecord))
+        assert metric is not None
         assert metric.name == "company_money"
         assert metric.value == 7858
 
@@ -158,7 +180,86 @@ def test_failed_simulation_is_persisted_without_success_metrics(
     assert result.error == "simulator exited"
     with session_factory() as session:
         run = session.get(ExperimentRunRecord, result.run_id)
+        assert run is not None
         assert run.status == RunStatus.FAILED
         assert run.completed_at is not None
         assert run.simulation is None
         assert session.scalar(select(ExperimentMetricRecord)) is None
+
+
+def test_default_service_keeps_batch_lab_metrics_and_artifact(
+    session_factory: sessionmaker[Session], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import socket
+    import subprocess
+    import time
+
+    import openttdlab
+
+    config = baseline_config(seed=314, days=90)
+    captured = {}
+
+    def lab_boundary(**kwargs):
+        captured.update(kwargs)
+        return [parsed_row(config)]
+
+    def forbidden(*args, **kwargs):
+        pytest.fail("Batch adapter acquired unexpected live network/process/sleep work")
+
+    monkeypatch.setattr(openttdlab, "run_experiments", lab_boundary)
+    monkeypatch.setattr(socket, "socket", forbidden)
+    monkeypatch.setattr(subprocess, "Popen", forbidden)
+    monkeypatch.setattr(time, "sleep", forbidden)
+    service = ExperimentService(session_factory)
+    assert isinstance(service.runner, OpenTTDLabRunner)
+    result = service.run(config, artifact_dir=tmp_path)
+    assert result.status is RunStatus.SUCCEEDED
+    assert result.execution_mode is domain.ExecutionMode.BATCH
+    simulation = result.simulation
+    assert simulation is not None and simulation.raw_artifact_reference is not None
+    assert [(m.name, m.value, m.unit) for m in simulation.metrics] == [
+        ("company_money", 7858, "GBP"),
+        ("company_loan", 290000, "GBP"),
+        ("current_period_income", 12, "GBP"),
+        ("current_period_expenses", -1026, "GBP"),
+        ("current_period_cargo_delivered", 7, "cargo_units"),
+    ]
+    (experiment,) = captured["experiments"]
+    assert set(experiment) == {"seed", "ais", "days", "openttd_config"}
+    assert experiment["seed"] == 314 and experiment["days"] == 90
+    artifact_path = Path(simulation.raw_artifact_reference)
+    assert artifact_path == tmp_path / f"experiment-{result.run_id}.json.gz"
+    with gzip.open(artifact_path, "rt", encoding="utf-8") as stream:
+        artifact = json.load(stream)
+    assert set(artifact) == {
+        "configuration",
+        "date",
+        "savegame_version",
+        "chunks",
+        "output",
+        "error",
+    }
+    assert artifact["configuration"] == config.model_dump(mode="json")
+    assert set(artifact["configuration"]) == {
+        "scenario",
+        "planning",
+        "ai",
+        "openttd_version",
+        "opengfx_version",
+        "seed",
+        "duration_days",
+    }
+    assert artifact["date"] == "1950-12-01"
+    assert artifact["chunks"] == parsed_row(config)["chunks"]
+    assert set(result.model_dump()["simulation"]) == {
+        "simulation_date",
+        "savegame_version",
+        "metrics",
+        "raw_artifact_reference",
+    }
+    with session_factory() as session:
+        run = session.get(ExperimentRunRecord, result.run_id)
+        assert run is not None and run.simulation is not None
+        assert {(m.name, float(m.value), m.unit) for m in run.simulation.metrics} == {
+            (m.name, m.value, m.unit) for m in simulation.metrics
+        }
