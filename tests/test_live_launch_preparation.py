@@ -5,6 +5,7 @@ import multiprocessing
 import shutil
 import socket
 import stat
+import time
 import traceback
 from dataclasses import replace
 from pathlib import Path
@@ -52,6 +53,23 @@ def runtime(tmp_path: Path) -> PreparedRuntime:
         ai_configuration=_config().ai,
         provenance={"cache_identity": "openttd-13.4-pinned-v1", "assets": ()},
     )
+
+
+def test_expired_startup_deadline_creates_no_launch_resources(
+    tmp_path: Path, runtime: PreparedRuntime
+) -> None:
+    from app.simulation.openttd.live_launch import (
+        LiveLaunchCode,
+        LiveLaunchError,
+        LiveLaunchPreparation,
+    )
+
+    preparer = LiveLaunchPreparation(tmp_path / "runs", lock_root=tmp_path / "locks")
+    with pytest.raises(LiveLaunchError) as error:
+        preparer.prepare(_config(), runtime, deadline=time.monotonic() - 1)
+    assert error.value.code is LiveLaunchCode.DEADLINE_EXCEEDED
+    assert not (tmp_path / "runs").exists()
+    assert not (tmp_path / "locks").exists()
 
 
 def test_prepares_private_versioned_workspace_and_fresh_secret(

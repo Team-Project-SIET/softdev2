@@ -1,11 +1,16 @@
 """Pinned runtime preparation through controlled local archive/source fixtures."""
 
+import fcntl
 import hashlib
 import io
 import json
 import multiprocessing
+import os
+import shutil
+import socket
 import tarfile
 import threading
+import time
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
@@ -21,6 +26,7 @@ from app.experiments.strategies import (
     SimpleRoadOnlyStrategy,
 )
 from app.simulation.openttd.runtime_assets import (
+    AcquisitionPolicy,
     AssetPin,
     OfficialRuntimeSource,
     PinnedRuntimePreparer,
@@ -167,6 +173,136 @@ def test_prepares_verified_pinned_runtime_and_reuses_cache(tmp_path: Path) -> No
     assert first.provenance["ai_content_id"] == "534d504c"
     assert first == second
     assert source.calls == ["openttd", "opengfx", "simpleai"]
+
+
+def test_bounded_cache_lock_wait_fails_without_partial_publication(tmp_path: Path) -> None:
+    pins, blobs = _fixture_assets()
+    source = _LocalSource(blobs)
+    preparer = PinnedRuntimePreparer(tmp_path, source=source, pins=pins)
+    root = tmp_path / "openttd-13.4-pinned-v1"
+    root.mkdir()
+    children = Path(f"/proc/{os.getpid()}/task/{threading.get_native_id()}/children")
+    before_children = children.read_text()
+    before_threads = set(threading.enumerate())
+    with (root / ".prepare.lock").open("a+b") as holder:
+        fcntl.flock(holder, fcntl.LOCK_EX)
+        try:
+            started = time.monotonic()
+            with pytest.raises(RuntimePreparationError) as error:
+                preparer.prepare(_config(), deadline=started + 0.15)
+            assert time.monotonic() - started < 1
+        finally:
+            fcntl.flock(holder, fcntl.LOCK_UN)
+    assert error.value.code is RuntimePreparationCode.CACHE_FAILURE
+    assert source.calls == []
+    assert children.read_text() == before_children
+    assert set(threading.enumerate()) == before_threads
+    assert sorted(path.name for path in root.iterdir()) == [".prepare.lock"]
+    assert preparer.prepare(_config()).executable_path.exists()
+
+
+def test_bounded_uncontended_cache_lock_remains_owned_during_publication(
+    tmp_path: Path,
+) -> None:
+    pins, blobs = _fixture_assets()
+    root = tmp_path / "openttd-13.4-pinned-v1"
+
+    class CheckingSource(_LocalSource):
+        def fetch(
+            self, pin: AssetPin, destination: Path, *, root_ai: AssetPin | None = None
+        ) -> None:
+            with (root / ".prepare.lock").open("a+b") as contender:
+                with pytest.raises(BlockingIOError):
+                    fcntl.flock(contender, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            super().fetch(pin, destination, root_ai=root_ai)
+
+    source = CheckingSource(blobs)
+    preparer = PinnedRuntimePreparer(tmp_path, source=source, pins=pins)
+    bounded = preparer.prepare(_config(), deadline=time.monotonic() + 3)
+    assert bounded == preparer.prepare(_config())
+    assert source.calls == ["openttd", "opengfx", "simpleai"]
+
+
+def test_cache_only_reuses_verified_assets_without_network(tmp_path: Path, monkeypatch) -> None:
+    pins, blobs = _fixture_assets(dependencies=True)
+    source = _LocalSource(blobs)
+    preparer = PinnedRuntimePreparer(tmp_path, source=source, pins=pins)
+    provisioned = preparer.prepare(_config())
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("cache-only preparation reached the network")
+
+    monkeypatch.setattr(source, "fetch", forbidden)
+    monkeypatch.setattr(socket, "getaddrinfo", forbidden)
+    cached = preparer.prepare(
+        _config(),
+        acquisition_policy=AcquisitionPolicy.CACHE_ONLY,
+        deadline=time.monotonic() + 3,
+    )
+    assert cached == provisioned
+
+
+def test_cache_only_missing_root_does_not_create_cache_or_fetch(tmp_path: Path) -> None:
+    pins, blobs = _fixture_assets()
+    source = _LocalSource(blobs)
+    preparer = PinnedRuntimePreparer(tmp_path / "unprepared", source=source, pins=pins)
+    with pytest.raises(RuntimePreparationError) as error:
+        preparer.prepare(
+            _config(),
+            acquisition_policy=AcquisitionPolicy.CACHE_ONLY,
+            deadline=time.monotonic() + 3,
+        )
+    assert error.value.code is RuntimePreparationCode.MISSING_ASSET
+    assert source.calls == []
+    assert not (tmp_path / "unprepared").exists()
+
+
+@pytest.mark.parametrize("missing", ["openttd", "opengfx", "simpleai", "pathfinder_road"])
+def test_cache_only_missing_asset_fails_without_fetch_or_partial_publication(
+    tmp_path: Path, monkeypatch, missing: str
+) -> None:
+    pins, blobs = _fixture_assets(dependencies=True)
+    source = _LocalSource(blobs)
+    preparer = PinnedRuntimePreparer(tmp_path, source=source, pins=pins)
+    preparer.prepare(_config())
+    root = tmp_path / "openttd-13.4-pinned-v1"
+    shutil.rmtree(root / missing)
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("cache-only preparation attempted provisioning")
+
+    monkeypatch.setattr(source, "fetch", forbidden)
+    with pytest.raises(RuntimePreparationError) as error:
+        preparer.prepare(
+            _config(),
+            acquisition_policy=AcquisitionPolicy.CACHE_ONLY,
+            deadline=time.monotonic() + 3,
+        )
+    assert error.value.code is RuntimePreparationCode.MISSING_ASSET
+    assert not (root / missing).exists()
+    assert not list(root.glob(".staging-*"))
+
+
+def test_cache_only_invalid_asset_fails_without_network(tmp_path: Path, monkeypatch) -> None:
+    pins, blobs = _fixture_assets()
+    source = _LocalSource(blobs)
+    preparer = PinnedRuntimePreparer(tmp_path, source=source, pins=pins)
+    preparer.prepare(_config())
+    root = tmp_path / "openttd-13.4-pinned-v1"
+    (root / "openttd" / "archive").write_bytes(b"changed")
+
+    def forbidden(*args, **kwargs):
+        raise AssertionError("cache-only preparation attempted provisioning")
+
+    monkeypatch.setattr(source, "fetch", forbidden)
+    with pytest.raises(RuntimePreparationError) as error:
+        preparer.prepare(
+            _config(),
+            acquisition_policy=AcquisitionPolicy.CACHE_ONLY,
+            deadline=time.monotonic() + 3,
+        )
+    assert error.value.code is RuntimePreparationCode.CHECKSUM_MISMATCH
+    assert not list(root.glob(".staging-*"))
 
 
 def test_existing_road_multimodal_and_baseline_ai_settings_survive(tmp_path: Path) -> None:

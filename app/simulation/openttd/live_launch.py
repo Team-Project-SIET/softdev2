@@ -9,6 +9,7 @@ import shutil
 import socket
 import stat
 import tempfile
+import time
 from dataclasses import dataclass, field
 from enum import StrEnum
 from pathlib import Path
@@ -34,6 +35,7 @@ class LiveLaunchCode(StrEnum):
     SECRET_FAILURE = "secret_or_config_failure"
     UNSAFE_PATH = "unsafe_path"
     CLEANUP_FAILURE = "incomplete_cleanup"
+    DEADLINE_EXCEEDED = "startup_deadline_exceeded"
 
 
 class LiveLaunchError(RuntimeError):
@@ -49,6 +51,19 @@ _AI_NAME = re.compile(r"[A-Za-z0-9_.-]+\Z")
 _AI_PARAMETER = re.compile(r"[A-Za-z_][A-Za-z0-9_]*\Z")
 _INTEGER = re.compile(r"-?[0-9]+\Z")
 _SCENARIO_SETTINGS = {"game_creation": {"map_x", "map_y", "starting_year"}}
+
+
+def _check_deadline(deadline: float | None) -> None:
+    if deadline is not None and time.monotonic() >= deadline:
+        raise LiveLaunchError(LiveLaunchCode.DEADLINE_EXCEEDED)
+
+
+def _copy_runtime_file(source: Path, target: Path, deadline: float | None) -> None:
+    with source.open("rb") as input_file, target.open("xb") as output_file:
+        while chunk := input_file.read(1024 * 1024):
+            _check_deadline(deadline)
+            output_file.write(chunk)
+    _check_deadline(deadline)
 
 
 def _safe_save_name(name: str) -> str:
@@ -224,7 +239,9 @@ class LiveLaunchPreparation:
         game_port: int | None = None,
         admin_port: int | None = None,
         save_name: str = "final.sav",
+        deadline: float | None = None,
     ) -> PreparedLiveRuntime:
+        _check_deadline(deadline)
         scenario = _scenario_settings(config)
         ai_line = _ai_line(config)
         save_name = _safe_save_name(save_name)
@@ -238,7 +255,8 @@ class LiveLaunchPreparation:
             raise LiveLaunchError(LiveLaunchCode.INVALID_CONFIGURATION)
         if runtime.ai_configuration != config.ai:
             raise LiveLaunchError(LiveLaunchCode.INVALID_CONFIGURATION)
-        lease = self._lease(game_port, admin_port)
+        _check_deadline(deadline)
+        lease = self._lease(game_port, admin_port, deadline)
         workspace: Path | None = None
         try:
             self.workspace_root.mkdir(parents=True, exist_ok=True)
@@ -257,7 +275,8 @@ class LiveLaunchPreparation:
                 (runtime.ai_archive_path, ai_archive),
                 *zip(runtime.dependency_archive_paths, dependencies, strict=True),
             ):
-                shutil.copyfile(source, target)
+                _copy_runtime_file(source, target, deadline)
+            _check_deadline(deadline)
             password = secrets.token_hex(15)  # 120 random bits, 30 UTF-8 bytes (< 32).
             main = workspace / "openttd.cfg"
             private = workspace / "private.cfg"
@@ -278,6 +297,7 @@ class LiveLaunchPreparation:
             )
             _write_owned(private, "[server_bind_addresses]\n127.0.0.1\n")
             _write_owned(secret, f"[network]\nadmin_password = {password}\n")
+            _check_deadline(deadline)
             argv = (
                 str(runtime.executable_path),
                 f"-D127.0.0.1:{lease.game_port}",
@@ -345,7 +365,9 @@ class LiveLaunchPreparation:
                 raise LiveLaunchError(LiveLaunchCode.WORKSPACE_FAILURE) from None
             raise LiveLaunchError(LiveLaunchCode.SECRET_FAILURE) from None
 
-    def _lease(self, game_port: int | None, admin_port: int | None) -> PortLease:
+    def _lease(
+        self, game_port: int | None, admin_port: int | None, deadline: float | None = None
+    ) -> PortLease:
         low, high = self.port_range
         if (
             type(low) is not int
@@ -374,6 +396,7 @@ class LiveLaunchPreparation:
         saw_lease_conflict = False
         for game in games:
             for admin in admins:
+                _check_deadline(deadline)
                 if game == admin:
                     continue
                 locks: list[IO[bytes]] = []

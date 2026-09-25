@@ -8,8 +8,10 @@ import os
 import platform
 import shutil
 import stat
+import subprocess
 import tarfile
 import tempfile
+import time
 import zipfile
 from dataclasses import dataclass
 from enum import StrEnum
@@ -38,6 +40,11 @@ class RuntimePreparationCode(StrEnum):
     CACHE_FAILURE = "cache_lock_or_publication_failure"
 
 
+class AcquisitionPolicy(StrEnum):
+    ALLOW_PROVISIONING = "allow_provisioning"
+    CACHE_ONLY = "cache_only"
+
+
 class RuntimePreparationError(RuntimeError):
     """Only a finite, path-free code/message crosses the preparation boundary."""
 
@@ -47,6 +54,11 @@ class RuntimePreparationError(RuntimeError):
 
 
 MAX_ARCHIVE_BYTES = 64 * 1024 * 1024
+
+
+def _check_deadline(deadline: float | None) -> None:
+    if deadline is not None and time.monotonic() >= deadline:
+        raise RuntimePreparationError(RuntimePreparationCode.CACHE_FAILURE)
 
 
 @dataclass(frozen=True)
@@ -264,11 +276,13 @@ class OfficialRuntimeSource:
         destination.write_bytes(selected_data)
 
 
-def _sha256(path: Path) -> str:
+def _sha256(path: Path, deadline: float | None = None) -> str:
     digest = hashlib.sha256()
     with path.open("rb") as stream:
         for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            _check_deadline(deadline)
             digest.update(chunk)
+    _check_deadline(deadline)
     return digest.hexdigest()
 
 
@@ -287,13 +301,17 @@ def _safe_member(name: str) -> PurePosixPath:
     return path
 
 
-def _validated_tar(path: Path) -> list[tarfile.TarInfo]:
+def _validated_tar(path: Path, deadline: float | None = None) -> list[tarfile.TarInfo]:
     try:
         with tarfile.open(path, "r:*") as archive:
-            members = archive.getmembers()
+            members = []
+            for member in archive:
+                _check_deadline(deadline)
+                members.append(member)
             by_name = {member.name: member for member in members}
             total_size = 0
             for member in members:
+                _check_deadline(deadline)
                 _safe_member(member.name)
                 if member.issym():
                     target = _safe_member(member.linkname)
@@ -337,20 +355,24 @@ def _source_member(archive: tarfile.TarFile, member: tarfile.TarInfo) -> tarfile
     return member
 
 
-def _archive_file_hashes(pin: AssetPin, archive_path: Path) -> dict[str, str]:
+def _archive_file_hashes(
+    pin: AssetPin, archive_path: Path, deadline: float | None = None
+) -> dict[str, str]:
     """Derive the cache's expected output from pinned bytes, never from its receipt."""
     if pin.key == "openttd":
-        files = _release_files(_validated_tar(archive_path))
+        files = _release_files(_validated_tar(archive_path, deadline))
         try:
             with tarfile.open(archive_path, "r:xz") as archive:
                 hashes = {}
                 for name, member in files:
+                    _check_deadline(deadline)
                     stream = archive.extractfile(_source_member(archive, member))
                     if stream is None:
                         raise RuntimePreparationError(RuntimePreparationCode.CORRUPT_ARCHIVE)
                     digest = hashlib.sha256()
                     with stream as source:
                         for chunk in iter(lambda: source.read(1024 * 1024), b""):
+                            _check_deadline(deadline)
                             digest.update(chunk)
                     hashes[name] = digest.hexdigest()
                 return hashes
@@ -365,6 +387,7 @@ def _archive_file_hashes(pin: AssetPin, archive_path: Path) -> dict[str, str]:
                 with archive.open(info) as stream:
                     digest = hashlib.sha256()
                     for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+                        _check_deadline(deadline)
                         digest.update(chunk)
                 return {"opengfx-7.1.tar": digest.hexdigest()}
         except (zipfile.BadZipFile, KeyError, OSError) as exc:
@@ -446,7 +469,16 @@ class PinnedRuntimePreparer:
         self.seed_cache = seed_cache
         self.pins = pins or PINNED_ASSETS
 
-    def prepare(self, config: ExperimentConfig) -> PreparedRuntime:
+    def prepare(
+        self,
+        config: ExperimentConfig,
+        *,
+        deadline: float | None = None,
+        acquisition_policy: AcquisitionPolicy = AcquisitionPolicy.ALLOW_PROVISIONING,
+    ) -> PreparedRuntime:
+        _check_deadline(deadline)
+        if not isinstance(acquisition_policy, AcquisitionPolicy):
+            raise RuntimePreparationError(RuntimePreparationCode.CACHE_FAILURE)
         if (platform.system(), platform.machine()) != ("Linux", "x86_64"):
             raise RuntimePreparationError(RuntimePreparationCode.UNSUPPORTED_PIN)
         if config.openttd_version != "13.4" or config.opengfx_version != "7.1":
@@ -470,12 +502,47 @@ class PinnedRuntimePreparer:
             raise RuntimePreparationError(RuntimePreparationCode.UNSUPPORTED_PIN)
         root = self.cache_root / "openttd-13.4-pinned-v1"
         try:
-            root.mkdir(parents=True, exist_ok=True)
+            if acquisition_policy is AcquisitionPolicy.CACHE_ONLY:
+                if not root.is_dir() or root.is_symlink():
+                    raise RuntimePreparationError(RuntimePreparationCode.MISSING_ASSET)
+            else:
+                root.mkdir(parents=True, exist_ok=True)
             with (root / ".prepare.lock").open("a+b") as lock:
-                fcntl.flock(lock, fcntl.LOCK_EX)
+                if deadline is None:
+                    fcntl.flock(lock, fcntl.LOCK_EX)
+                else:
+                    remaining = deadline - time.monotonic()
+                    if remaining <= 0:
+                        raise RuntimePreparationError(RuntimePreparationCode.CACHE_FAILURE)
+                    # flock(1) times out in the kernel and exits. The inherited open
+                    # file description keeps its acquired lock owned by this process;
+                    # subprocess.run also reaps the helper on success or timeout.
+                    locker = shutil.which("flock")
+                    if locker is None:
+                        raise RuntimePreparationError(RuntimePreparationCode.CACHE_FAILURE)
+                    try:
+                        outcome = subprocess.run(
+                            (locker, "-x", "-w", str(remaining), str(lock.fileno())),
+                            pass_fds=(lock.fileno(),),
+                            stdin=subprocess.DEVNULL,
+                            stdout=subprocess.DEVNULL,
+                            stderr=subprocess.DEVNULL,
+                            timeout=remaining,
+                            check=False,
+                        )
+                    except OSError, subprocess.TimeoutExpired:
+                        raise RuntimePreparationError(
+                            RuntimePreparationCode.CACHE_FAILURE
+                        ) from None
+                    if outcome.returncode != 0:
+                        raise RuntimePreparationError(RuntimePreparationCode.CACHE_FAILURE)
+                    if time.monotonic() >= deadline:
+                        fcntl.flock(lock, fcntl.LOCK_UN)
+                        raise RuntimePreparationError(RuntimePreparationCode.CACHE_FAILURE)
                 try:
                     for pin in pins:
-                        self._ensure(root, pin, ai_pin)
+                        _check_deadline(deadline)
+                        self._ensure(root, pin, ai_pin, acquisition_policy, deadline)
                 finally:
                     fcntl.flock(lock, fcntl.LOCK_UN)
         except RuntimePreparationError:
@@ -509,13 +576,23 @@ class PinnedRuntimePreparer:
             },
         )
 
-    def _ensure(self, root: Path, pin: AssetPin, ai_pin: AssetPin) -> None:
+    def _ensure(
+        self,
+        root: Path,
+        pin: AssetPin,
+        ai_pin: AssetPin,
+        acquisition_policy: AcquisitionPolicy,
+        deadline: float | None,
+    ) -> None:
+        _check_deadline(deadline)
         entry = root / pin.key
         if entry.exists():
             if entry.is_symlink():
                 raise RuntimePreparationError(RuntimePreparationCode.CHECKSUM_MISMATCH)
-            self._verify_entry(entry, pin)
+            self._verify_entry(entry, pin, deadline)
             return
+        if acquisition_policy is AcquisitionPolicy.CACHE_ONLY:
+            raise RuntimePreparationError(RuntimePreparationCode.MISSING_ASSET)
         with tempfile.TemporaryDirectory(prefix=".staging-", dir=root) as temporary:
             stage = Path(temporary)
             archive = stage / "archive"
@@ -554,29 +631,45 @@ class PinnedRuntimePreparer:
                 raise RuntimePreparationError(RuntimePreparationCode.CACHE_FAILURE) from exc
 
     @staticmethod
-    def _verify_entry(entry: Path, pin: AssetPin) -> None:
+    def _verify_entry(entry: Path, pin: AssetPin, deadline: float | None = None) -> None:
         try:
-            if any(path.is_symlink() for path in entry.rglob("*")):
+            _check_deadline(deadline)
+            for path in entry.rglob("*"):
+                _check_deadline(deadline)
+                if path.is_symlink():
+                    raise RuntimePreparationError(RuntimePreparationCode.CHECKSUM_MISMATCH)
+            receipt_path = entry / "receipt.json"
+            archive_path = entry / "archive"
+            if (
+                not receipt_path.is_file()
+                or receipt_path.stat().st_size > 1024 * 1024
+                or not archive_path.is_file()
+                or archive_path.stat().st_size > MAX_ARCHIVE_BYTES
+            ):
                 raise RuntimePreparationError(RuntimePreparationCode.CHECKSUM_MISMATCH)
-            receipt = json.loads((entry / "receipt.json").read_text())
+            receipt = json.loads(receipt_path.read_text())
+            _check_deadline(deadline)
             if receipt["key"] != pin.key or receipt["sha256"] != pin.sha256:
                 raise RuntimePreparationError(RuntimePreparationCode.CHECKSUM_MISMATCH)
-            if _sha256(entry / "archive") != pin.sha256:
+            if _sha256(archive_path, deadline) != pin.sha256:
                 raise RuntimePreparationError(RuntimePreparationCode.CHECKSUM_MISMATCH)
-            expected_files = _archive_file_hashes(pin, entry / "archive")
+            expected_files = _archive_file_hashes(pin, archive_path, deadline)
             if receipt["files"] != expected_files:
                 raise RuntimePreparationError(RuntimePreparationCode.CHECKSUM_MISMATCH)
-            actual_files = {
-                str(path.relative_to(entry / "files"))
-                for path in (entry / "files").rglob("*")
-                if path.is_file()
-            }
+            actual_files = set()
+            for path in (entry / "files").rglob("*"):
+                _check_deadline(deadline)
+                if path.is_file():
+                    actual_files.add(str(path.relative_to(entry / "files")))
             if actual_files != expected_files.keys():
                 raise RuntimePreparationError(RuntimePreparationCode.CHECKSUM_MISMATCH)
-            for path, expected in expected_files.items():
-                _safe_member(path)
-                if _sha256(entry / "files" / path) != expected:
+            for relative, expected in expected_files.items():
+                _check_deadline(deadline)
+                _safe_member(relative)
+                output_path = entry / "files" / relative
+                if not output_path.is_file() or _sha256(output_path, deadline) != expected:
                     raise RuntimePreparationError(RuntimePreparationCode.CHECKSUM_MISMATCH)
+            _check_deadline(deadline)
         except RuntimePreparationError:
             raise
         except (OSError, KeyError, TypeError, ValueError) as exc:
