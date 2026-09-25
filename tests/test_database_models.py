@@ -34,7 +34,8 @@ def test_session_boundary_registers_models_before_mapper_configuration() -> None
             "{'Customer', 'Shipment', 'Package', 'Vehicle', 'Driver', 'Route', 'RouteStop', "
             "'LoadingPlan', 'PackagePlacement', 'ExperimentScenario', "
             "'PlanningStrategyRecord', 'ExperimentRunRecord', 'SimulationRunRecord', "
-            "'ExperimentMetricRecord'}",
+            "'ExperimentMetricRecord', 'LiveTelemetrySessionRecord', "
+            "'TelemetryObservationRecord'}",
         ],
         capture_output=True,
         text=True,
@@ -59,6 +60,8 @@ def test_all_models_share_registry_and_mappers_configure() -> None:
         models.ExperimentRunRecord,
         models.SimulationRunRecord,
         models.ExperimentMetricRecord,
+        models.LiveTelemetrySessionRecord,
+        models.TelemetryObservationRecord,
     }
 
     configure_mappers()

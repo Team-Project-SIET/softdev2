@@ -11,8 +11,10 @@ from app.experiments.model import (
     ExperimentMetricRecord,
     ExperimentRunRecord,
     ExperimentScenario,
+    LiveTelemetrySessionRecord,
     PlanningStrategyRecord,
     SimulationRunRecord,
+    TelemetryObservationRecord,
 )
 from app.packing.model import LoadingPlan, PackagePlacement
 from app.routing.model import Route, RouteStop
@@ -25,6 +27,7 @@ __all__ = [
     "ExperimentMetricRecord",
     "ExperimentRunRecord",
     "ExperimentScenario",
+    "LiveTelemetrySessionRecord",
     "LoadingPlan",
     "Package",
     "PackagePlacement",
@@ -33,5 +36,6 @@ __all__ = [
     "RouteStop",
     "Shipment",
     "SimulationRunRecord",
+    "TelemetryObservationRecord",
     "Vehicle",
 ]

@@ -1,6 +1,6 @@
 import gzip
 import json
-from datetime import date
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 import pytest
@@ -17,6 +17,7 @@ from app.experiments.domain import (
     SimulationResult,
 )
 from app.experiments.model import ExperimentMetricRecord, ExperimentRunRecord
+from app.experiments.repository import ExperimentRepository
 from app.experiments.service import ExperimentService
 from app.experiments.strategies import BaselineStrategy
 from app.simulation.openttd.runner import OpenTTDLabRunner, parse_result_row
@@ -160,6 +161,9 @@ def test_metadata_and_metrics_are_persisted(
         assert run.strategy.identifier == "trains-baseline"
         assert run.ai_configuration["md5"] == config.ai.md5
         assert run.seed == 17
+        assert run.execution_mode == "batch"
+        assert run.execution_metadata is None
+        assert run.failure_code is None
         assert run.duration_days == 365
         assert run.started_at is not None and run.completed_at is not None
         assert run.raw_artifact_reference == result.simulation.raw_artifact_reference
@@ -168,6 +172,69 @@ def test_metadata_and_metrics_are_persisted(
         assert metric is not None
         assert metric.name == "company_money"
         assert metric.value == 7858
+
+
+def test_repository_round_trips_optional_execution_metadata(
+    session_factory: sessionmaker[Session],
+) -> None:
+    repository = ExperimentRepository()
+    with session_factory.begin() as session:
+        run_id = repository.create_run(
+            session,
+            baseline_config(),
+            datetime(2026, 1, 1, tzinfo=UTC),
+            execution_mode=domain.ExecutionMode.LIVE,
+            execution_metadata={
+                "target_day": 360,
+                "artifact_reference": "run-1.save",
+                "resolved_options": domain.LiveExecutionOptions().model_dump(),
+            },
+        )
+        repository.fail_run(
+            session,
+            run_id,
+            "startup failed",
+            datetime(2026, 1, 1, tzinfo=UTC),
+            failure_code=domain.ExecutionFailureCode.STARTUP_FAILURE,
+        )
+    with session_factory() as session:
+        run = session.get(ExperimentRunRecord, run_id)
+        assert run is not None
+        assert run.execution_mode == "live"
+        assert run.failure_code == "startup_failure"
+        assert run.execution_metadata == {
+            "target_day": 360,
+            "artifact_reference": "run-1.save",
+            "resolved_options": domain.LiveExecutionOptions().model_dump(),
+        }
+        assert run.simulation is None
+
+
+@pytest.mark.parametrize(
+    "unsafe_metadata",
+    [
+        {"admin_password": "secret"},
+        {"resolved_options": {"secret_key": "secret"}},
+        {"environment_dump": {"PATH": "value"}},
+        {"env_vars": {"PATH": "value"}},
+        {"config_text": "[network]"},
+        {"raw_command": "openttd -D"},
+        {"note": "password=abc"},
+        {"details": {"command": "openttd -D"}},
+        {"artifact_reference": "run.save?password=abc"},
+    ],
+)
+def test_repository_rejects_secret_bearing_execution_metadata(
+    session_factory: sessionmaker[Session], unsafe_metadata: dict
+) -> None:
+    with session_factory.begin() as session:
+        with pytest.raises(ValueError, match="sensitive execution metadata"):
+            ExperimentRepository().create_run(
+                session,
+                baseline_config(),
+                datetime(2026, 1, 1, tzinfo=UTC),
+                execution_metadata=unsafe_metadata,
+            )
 
 
 def test_failed_simulation_is_persisted_without_success_metrics(

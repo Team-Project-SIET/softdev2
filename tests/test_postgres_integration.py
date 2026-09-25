@@ -2,7 +2,7 @@ import os
 import subprocess
 import sys
 from concurrent.futures import ThreadPoolExecutor
-from datetime import date
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from pathlib import Path
 from threading import Barrier, Event
@@ -14,7 +14,8 @@ from alembic.config import Config
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
 from alembic.script import ScriptDirectory
-from sqlalchemy import create_engine, func, inspect, select, text, update
+from sqlalchemy import create_engine, func, insert, inspect, select, text, update
+from sqlalchemy.exc import DataError, IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
 
 from alembic import command
@@ -23,6 +24,19 @@ from app.customer.model import Customer
 from app.database import models as _models  # noqa: F401
 from app.database.base import Base
 from app.driver.model import Driver
+from app.experiments.domain import (
+    ExecutionFailureCode,
+    ExecutionMode,
+    ExperimentConfig,
+    ScenarioConfig,
+)
+from app.experiments.model import (
+    ExperimentRunRecord,
+    LiveTelemetrySessionRecord,
+    TelemetryObservationRecord,
+)
+from app.experiments.repository import ExperimentRepository
+from app.experiments.strategies import BaselineStrategy
 from app.packing.model import LoadingPlan
 from app.packing.repository import PackingRepository
 from app.packing.service import PackingService
@@ -74,7 +88,7 @@ def test_postgresql_migrations_and_concurrent_saves(
     with engine.begin() as connection:
         context = MigrationContext.configure(connection)
         with Operations.context(context):
-            for revision in ("0001", "0002", "0003", "0004", "0005", "0006"):
+            for revision in ("0001", "0002", "0003", "0004", "0005", "0006", "0007"):
                 scripts.get_revision(revision).module.upgrade()
         columns = {column["name"]: column for column in inspect(connection).get_columns("drivers")}
         assert columns["line_user_id"]["nullable"]
@@ -177,12 +191,365 @@ def test_postgresql_migrations_and_concurrent_saves(
         assert session.get(Package, package_id).weight == 11
 
 
+def test_telemetry_migration_preserves_history_and_downgrades(
+    postgres_factory: sessionmaker[Session],
+) -> None:
+    engine = postgres_factory.kw["bind"]
+    scripts = ScriptDirectory("alembic")
+    migration = scripts.get_revision("0007").module
+    with engine.begin() as connection:
+        context = MigrationContext.configure(connection)
+        with Operations.context(context):
+            for revision in ("0001", "0002", "0003", "0004", "0005", "0006"):
+                scripts.get_revision(revision).module.upgrade()
+            connection.execute(
+                text(
+                    "INSERT INTO experiment_scenarios "
+                    "(id, identifier, version, openttd_config) VALUES (1, 'old', '1', '')"
+                )
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO planning_strategies (id, identifier, version) "
+                    "VALUES (1, 'old', '1')"
+                )
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO experiment_runs "
+                    "(id, scenario_id, strategy_id, strategy_configuration, ai_configuration, "
+                    "openttd_version, opengfx_version, seed, duration_days, started_at, status) "
+                    "VALUES (1, 1, 1, '{}', '{}', '13.4', '7.1', 7, 30, now(), 'succeeded')"
+                )
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO simulation_runs "
+                    "(id, experiment_run_id, simulation_date, savegame_version) "
+                    "VALUES (1, 1, '1950-01-31', 1)"
+                )
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO experiment_metrics "
+                    "(id, simulation_run_id, name, value, unit) "
+                    "VALUES (1, 1, 'company_money', 123.0000, 'GBP')"
+                )
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO customers (id, name, phone, address, latitude, longitude) "
+                    "VALUES (1, 'legacy', '123', 'address', 1, 1)"
+                )
+            )
+            before_tables = set(inspect(connection).get_table_names())
+            migration.upgrade()
+            assert (
+                connection.scalar(text("SELECT execution_mode FROM experiment_runs WHERE id=1"))
+                == "batch"
+            )
+            assert connection.scalar(
+                text("SELECT value FROM experiment_metrics WHERE id=1")
+            ) == Decimal("123.0000")
+            assert connection.scalar(text("SELECT name FROM customers WHERE id=1")) == "legacy"
+            assert connection.scalar(
+                text("SELECT simulation_date FROM simulation_runs WHERE id=1")
+            ) == date(1950, 1, 31)
+            assert compare_metadata(context, Base.metadata) == []
+            connection.execute(
+                text(
+                    "INSERT INTO live_telemetry_sessions "
+                    "(experiment_run_id, telemetry_status) VALUES (1, 'pending')"
+                )
+            )
+            connection.execute(
+                text(
+                    "INSERT INTO telemetry_observations "
+                    "(experiment_run_id, sequence, connection_epoch, received_at, source, "
+                    "schema_version, kind, date_quality, payload) "
+                    "VALUES (1, 1, 0, now(), 'live_runtime', 1, 'diagnostic', 'unknown', '{}')"
+                )
+            )
+            migration.downgrade()
+            assert set(inspect(connection).get_table_names()) == before_tables
+            assert "live_telemetry_sessions" not in inspect(connection).get_table_names()
+            assert "telemetry_observations" not in inspect(connection).get_table_names()
+            assert "execution_mode" not in {
+                column["name"] for column in inspect(connection).get_columns("experiment_runs")
+            }
+            assert connection.scalar(
+                text("SELECT value FROM experiment_metrics WHERE id=1")
+            ) == Decimal("123.0000")
+            assert connection.scalar(
+                text("SELECT simulation_date FROM simulation_runs WHERE id=1")
+            ) == date(1950, 1, 31)
+            assert connection.scalar(text("SELECT name FROM customers WHERE id=1")) == "legacy"
+
+
+def test_postgresql_telemetry_storage_constraints_and_cascade(
+    postgres_factory: sessionmaker[Session],
+) -> None:
+    engine = postgres_factory.kw["bind"]
+    scripts = ScriptDirectory("alembic")
+    with engine.begin() as connection:
+        context = MigrationContext.configure(connection)
+        with Operations.context(context):
+            for revision in ("0001", "0002", "0003", "0004", "0005", "0006", "0007"):
+                scripts.get_revision(revision).module.upgrade()
+        indexes = {
+            index["name"]: index
+            for index in inspect(connection).get_indexes("telemetry_observations")
+        }
+        assert indexes["ix_telemetry_observations_run_received_sequence"]["column_names"] == [
+            "experiment_run_id",
+            "received_at",
+            "sequence",
+        ]
+        assert indexes["ix_telemetry_observations_run_company_day_sequence"]["column_names"] == [
+            "experiment_run_id",
+            "company_id",
+            "game_day",
+            "sequence",
+        ]
+        columns = {
+            column["name"]: column
+            for column in inspect(connection).get_columns("telemetry_observations")
+        }
+        assert columns["payload"]["type"].__class__.__name__ == "JSONB"
+        assert inspect(connection).get_pk_constraint("telemetry_observations")[
+            "constrained_columns"
+        ] == ["experiment_run_id", "sequence"]
+
+    scenario = ScenarioConfig(identifier="schema-test", version="1")
+    planning, ai = BaselineStrategy().configure(scenario)
+    config = ExperimentConfig(
+        scenario=scenario,
+        planning=planning,
+        ai=ai,
+        openttd_version="13.4",
+        opengfx_version="7.1",
+        seed=5,
+        duration_days=30,
+    )
+    with postgres_factory.begin() as session:
+        run_id = ExperimentRepository().create_run(
+            session,
+            config,
+            datetime(2026, 1, 1, tzinfo=UTC),
+            execution_mode=ExecutionMode.LIVE,
+            execution_metadata={"target_day": 250},
+        )
+        session.add(
+            LiveTelemetrySessionRecord(experiment_run_id=run_id, telemetry_status="pending")
+        )
+    received_at = datetime(2026, 1, 1, tzinfo=UTC)
+    valid = dict(
+        experiment_run_id=run_id,
+        connection_epoch=1,
+        received_at=received_at,
+        source="openttd_admin",
+        schema_version=1,
+        protocol_version=1,
+        kind="company_economy",
+        company_id=0,
+        game_day=250,
+        date_context_sequence=1,
+        date_quality="preceding_date",
+        payload={"money": -1234567890123},
+    )
+    with postgres_factory.begin() as session:
+        session.execute(
+            insert(TelemetryObservationRecord), [dict(valid, sequence=1), dict(valid, sequence=2)]
+        )
+        session.execute(
+            insert(TelemetryObservationRecord).values(
+                {
+                    **valid,
+                    "sequence": 4,
+                    "kind": "date",
+                    "company_id": None,
+                    "date_context_sequence": None,
+                    "date_quality": "packet_date",
+                    "payload": {"game_day": 250},
+                }
+            )
+        )
+        session.execute(
+            insert(TelemetryObservationRecord).values(
+                {
+                    **valid,
+                    "sequence": 5,
+                    "connection_epoch": 0,
+                    "source": "live_runtime",
+                    "kind": "diagnostic",
+                    "company_id": None,
+                    "game_day": None,
+                    "date_context_sequence": None,
+                    "date_quality": "unknown",
+                    "payload": {"code": "startup"},
+                }
+            )
+        )
+        session.execute(
+            insert(TelemetryObservationRecord).values(
+                {
+                    **valid,
+                    "sequence": 6,
+                    "kind": "diagnostic",
+                    "company_id": None,
+                    "game_day": None,
+                    "date_context_sequence": None,
+                    "date_quality": "unknown",
+                    "payload": {"code": "unsupported_admin_packet"},
+                }
+            )
+        )
+    with postgres_factory() as session:
+        observations = session.scalars(
+            select(TelemetryObservationRecord).order_by(TelemetryObservationRecord.sequence)
+        ).all()
+        assert [observation.sequence for observation in observations] == [1, 2, 4, 5, 6]
+        assert observations[0].payload == {"money": -1234567890123}
+        telemetry_session = session.get(LiveTelemetrySessionRecord, run_id)
+        assert telemetry_session is not None
+        assert telemetry_session.observations[0].experiment_run_id == run_id
+        run = session.get(ExperimentRunRecord, run_id)
+        assert run is not None
+        assert run.execution_mode == "live"
+        assert run.execution_metadata == {"target_day": 250}
+        assert run.simulation is None
+        assert (
+            session.scalar(
+                text(
+                    "SELECT pg_typeof(execution_metadata)::text FROM experiment_runs WHERE id=:id"
+                ),
+                {"id": run_id},
+            )
+            == "jsonb"
+        )
+
+    bad_cases = (
+        (dict(sequence=1), "pk_telemetry_observations"),
+        (dict(sequence=0), "sequence_positive"),
+        (dict(schema_version=0), "schema_version_positive"),
+        (dict(connection_epoch=-1), "epoch_nonnegative"),
+        (dict(connection_epoch=0), "measurement_epoch_positive"),
+        (dict(source="other"), "source_"),
+        (dict(source="live_runtime"), "source_kind_valid"),
+        (dict(kind="other"), "kind_valid"),
+        (dict(date_quality="packet_date"), "packet_date_kind_valid"),
+        (dict(date_quality="other"), "date_quality_valid"),
+        (dict(company_id=15), "company_id_valid"),
+        (dict(kind="date", company_id=0), "date_shape_valid"),
+        (dict(kind="date", company_id=None), "date_shape_valid"),
+        (dict(kind="company_info", company_id=None), "company_shape_valid"),
+        (dict(date_quality="unknown", game_day=250), "unknown_date_context_empty"),
+        (dict(payload=[1, 2]), "payload_object"),
+        (dict(payload="text"), "payload_object"),
+    )
+    for overrides, constraint in bad_cases:
+        with postgres_factory() as session:
+            with pytest.raises(IntegrityError, match=constraint):
+                with session.begin():
+                    session.execute(
+                        insert(TelemetryObservationRecord).values(
+                            {**valid, "sequence": 3, **overrides}
+                        )
+                    )
+
+    rejected_updates = (
+        ("UPDATE experiment_runs SET execution_mode='other' WHERE id=:id", "execution_mode_valid"),
+        ("UPDATE experiment_runs SET failure_code='other' WHERE id=:id", "failure_code_valid"),
+        (
+            "UPDATE experiment_runs SET execution_metadata='[]'::jsonb WHERE id=:id",
+            "execution_metadata_object",
+        ),
+        (
+            "UPDATE live_telemetry_sessions SET telemetry_status='other' "
+            "WHERE experiment_run_id=:id",
+            "telemetry_status_valid",
+        ),
+        (
+            "UPDATE live_telemetry_sessions SET received_count=-1 WHERE experiment_run_id=:id",
+            "counts_nonnegative",
+        ),
+    )
+    for statement, constraint in rejected_updates:
+        with postgres_factory() as session:
+            with pytest.raises(IntegrityError, match=constraint):
+                with session.begin():
+                    session.execute(text(statement), {"id": run_id})
+
+    with postgres_factory() as session:
+        with pytest.raises(IntegrityError, match="payload_object"):
+            with session.begin():
+                session.execute(
+                    text(
+                        "UPDATE telemetry_observations SET payload='null'::jsonb "
+                        "WHERE experiment_run_id=:id AND sequence=1"
+                    ),
+                    {"id": run_id},
+                )
+
+    with postgres_factory() as session:
+        with pytest.raises(DataError, match="value too long"):
+            with session.begin():
+                session.execute(
+                    text(
+                        "UPDATE live_telemetry_sessions SET error_summary=repeat('x', 1025) "
+                        "WHERE experiment_run_id=:id"
+                    ),
+                    {"id": run_id},
+                )
+
+    with postgres_factory() as session:
+        with pytest.raises(IntegrityError, match="fk_telemetry_observations"):
+            with session.begin():
+                session.execute(
+                    insert(TelemetryObservationRecord).values(
+                        {**valid, "experiment_run_id": run_id + 1000, "sequence": 1}
+                    )
+                )
+
+    with postgres_factory() as session:
+        with pytest.raises(IntegrityError, match="pk_live_telemetry_sessions"):
+            with session.begin():
+                session.add(
+                    LiveTelemetrySessionRecord(experiment_run_id=run_id, telemetry_status="pending")
+                )
+    with postgres_factory() as session:
+        with pytest.raises(IntegrityError, match="fk_live_telemetry_sessions"):
+            with session.begin():
+                session.add(
+                    LiveTelemetrySessionRecord(
+                        experiment_run_id=run_id + 1000, telemetry_status="pending"
+                    )
+                )
+    with postgres_factory.begin() as session:
+        ExperimentRepository().fail_run(
+            session,
+            run_id,
+            "failure",
+            datetime(2026, 1, 2, tzinfo=UTC),
+            failure_code=ExecutionFailureCode.STARTUP_FAILURE,
+        )
+    with postgres_factory() as session:
+        run = session.get(ExperimentRunRecord, run_id)
+        assert run is not None
+        assert run.failure_code == "startup_failure"
+    with postgres_factory.begin() as session:
+        session.execute(text("DELETE FROM experiment_runs WHERE id=:id"), {"id": run_id})
+    with postgres_factory() as session:
+        assert session.get(LiveTelemetrySessionRecord, run_id) is None
+        assert session.scalar(select(func.count()).select_from(TelemetryObservationRecord)) == 0
+
+
 def _migrate_for_concurrency(postgres_factory: sessionmaker[Session]) -> None:
     scripts = ScriptDirectory("alembic")
     with postgres_factory.kw["bind"].begin() as connection:
         context = MigrationContext.configure(connection)
         with Operations.context(context):
-            for revision in ("0001", "0002", "0003", "0004", "0005", "0006"):
+            for revision in ("0001", "0002", "0003", "0004", "0005", "0006", "0007"):
                 scripts.get_revision(revision).module.upgrade()
 
 
@@ -457,10 +824,11 @@ def test_existing_0002_and_fresh_postgresql_upgrades_match(
     _upgrade_isolated(config, legacy_engine, "0004")
     with legacy_engine.connect() as connection:
         before_comments = _schema_signature(connection)
+    _upgrade_isolated(config, legacy_engine, "0006")
     _upgrade_isolated(config, legacy_engine, "head")
 
     with legacy_engine.connect() as connection:
-        assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "0006"
+        assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "0007"
         legacy_signature = _schema_signature(connection)
         legacy_tables = {table: legacy_signature[table] for table in before_comments}
         assert _without_column_comments(legacy_tables) == _without_column_comments(before_comments)
@@ -470,6 +838,8 @@ def test_existing_0002_and_fresh_postgresql_upgrades_match(
             "experiment_runs",
             "simulation_runs",
             "experiment_metrics",
+            "live_telemetry_sessions",
+            "telemetry_observations",
         }
         assert _column_comments(legacy_signature, "routes")["total_distance"] == "Kilometers"
         assert _column_comments(legacy_signature, "routes")["total_weight"] == "Kilograms"
@@ -478,6 +848,21 @@ def test_existing_0002_and_fresh_postgresql_upgrades_match(
             == "Kilometers"
         )
         assert compare_metadata(MigrationContext.configure(connection), Base.metadata) == []
+
+    with legacy_engine.begin() as connection:
+        config.attributes["connection"] = connection
+        try:
+            command.downgrade(config, "0006")
+        finally:
+            del config.attributes["connection"]
+        assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "0006"
+        assert "execution_mode" not in {
+            column["name"] for column in inspect(connection).get_columns("experiment_runs")
+        }
+        assert "live_telemetry_sessions" not in inspect(connection).get_table_names()
+    _upgrade_isolated(config, legacy_engine, "head")
+    with legacy_engine.connect() as connection:
+        assert _schema_signature(connection) == legacy_signature
 
     fresh_schema = "logistics_test_" + uuid4().hex
     admin_engine = create_engine(str(get_settings().database_url))
@@ -506,7 +891,7 @@ def test_existing_0002_and_fresh_postgresql_upgrades_match(
             text=True,
         )
         with fresh_engine.connect() as connection:
-            assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "0006"
+            assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "0007"
             assert _schema_signature(connection) == legacy_signature
             assert compare_metadata(MigrationContext.configure(connection), Base.metadata) == []
     finally:
