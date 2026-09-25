@@ -25,6 +25,11 @@ from app.simulation.openttd.admin_protocol import (
     ServerWelcome,
     UnknownPacket,
     decode_server_packet,
+    encode_admin_join,
+    encode_admin_ping,
+    encode_admin_poll,
+    encode_admin_quit,
+    encode_admin_update_frequency,
 )
 from app.simulation.openttd.telemetry import (
     CompanyEconomyObservation,
@@ -251,3 +256,20 @@ def test_production_protocol_and_types_do_not_import_prototype_runtime() -> None
             for alias in (node.names if isinstance(node, ast.Import) else [None])
         )
         assert all(not (name or "").startswith("prototype") for name in imports)
+
+
+def test_read_only_admin_client_packets_follow_13_4_wire_layouts() -> None:
+    # Synthesized from tcp_admin.h and packet.cpp at tag 13.4.
+    assert encode_admin_join("password", "observer", "1") == _frame(
+        0, b"password\0observer\0" + b"1\0"
+    )
+    assert encode_admin_quit() == _frame(1)
+    assert encode_admin_update_frequency(AdminUpdateType.DATE, AdminFrequency.DAILY) == _frame(
+        2, struct.pack("<HH", 0, 2)
+    )
+    assert encode_admin_poll(AdminUpdateType.COMPANY_INFO, 2) == _frame(3, struct.pack("<BI", 2, 2))
+    assert encode_admin_ping(42) == _frame(7, struct.pack("<I", 42))
+    with pytest.raises(AdminProtocolError):
+        encode_admin_join("bad\0password", "observer", "1")
+    with pytest.raises(AdminProtocolError):
+        encode_admin_poll(AdminUpdateType.DATE, -1)

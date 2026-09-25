@@ -41,6 +41,23 @@ class AdminFrequency(IntFlag):
     AUTOMATIC = 0x40
 
 
+class AdminClientPacketType(IntEnum):
+    """The observer's complete outbound allowlist in OpenTTD 13.4."""
+
+    JOIN = 0
+    QUIT = 1
+    UPDATE_FREQUENCY = 2
+    POLL = 3
+    PING = 7
+
+
+class AdminServerErrorCode(IntEnum):
+    """13.4 network_type.h values needed to classify AdminJoin failures."""
+
+    ILLEGAL_PACKET = 4
+    WRONG_PASSWORD = 10
+
+
 @dataclass(frozen=True)
 class ServerProtocol:
     version: int
@@ -348,3 +365,47 @@ class AdminFrameDecoder:
         self._closed = True
         if self._buffer:
             raise AdminProtocolError("incomplete Admin frame at EOF")
+
+
+def _admin_frame(packet_id: int, payload: bytes = b"") -> bytes:
+    length = len(payload) + 3
+    if length > AdminFrameDecoder.MAX_FRAME_LENGTH:
+        raise AdminProtocolError("outbound Admin frame exceeds maximum length")
+    return struct.pack("<HB", length, packet_id) + payload
+
+
+def _admin_string(value: str) -> bytes:
+    raw = value.encode("utf-8")
+    if b"\0" in raw or len(raw) > 1024:
+        raise AdminProtocolError("invalid outbound Admin string")
+    return raw + b"\0"
+
+
+def encode_admin_join(password: str, name: str, version: str) -> bytes:
+    """Encode the 13.4 plaintext AdminJoin; never include these values in logs."""
+    return _admin_frame(
+        AdminClientPacketType.JOIN,
+        _admin_string(password) + _admin_string(name) + _admin_string(version),
+    )
+
+
+def encode_admin_quit() -> bytes:
+    return _admin_frame(AdminClientPacketType.QUIT)
+
+
+def encode_admin_update_frequency(update_type: AdminUpdateType, frequency: AdminFrequency) -> bytes:
+    return _admin_frame(
+        AdminClientPacketType.UPDATE_FREQUENCY, struct.pack("<HH", update_type, frequency)
+    )
+
+
+def encode_admin_poll(update_type: AdminUpdateType, identifier: int = 0xFFFFFFFF) -> bytes:
+    if not 0 <= identifier <= 0xFFFFFFFF:
+        raise AdminProtocolError("poll identifier outside uint32 range")
+    return _admin_frame(AdminClientPacketType.POLL, struct.pack("<BI", update_type, identifier))
+
+
+def encode_admin_ping(token: int) -> bytes:
+    if not 0 <= token <= 0xFFFFFFFF:
+        raise AdminProtocolError("ping token outside uint32 range")
+    return _admin_frame(AdminClientPacketType.PING, struct.pack("<I", token))
