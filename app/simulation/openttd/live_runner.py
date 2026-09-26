@@ -1,7 +1,6 @@
 """One owned OpenTTD live process behind the synchronous SimulationRunner contract.
 
-The final-result operation is mandatory until T09 supplies an explicit save/parser.
-No production success path is available without it.
+The default final-result operation parses this process's explicit save.
 """
 
 import asyncio
@@ -9,9 +8,9 @@ import configparser
 import os
 import re
 import signal
+import stat
 import threading
 import time
-from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import date
 from enum import StrEnum
@@ -37,6 +36,10 @@ from app.simulation.openttd.admin_observer import (
     ObserverState,
 )
 from app.simulation.openttd.live_launch import (
+    PAUSE_BARRIER_MARKER,
+    PAUSE_BARRIER_SCRIPT,
+    UNPAUSE_BARRIER_MARKER,
+    UNPAUSE_BARRIER_SCRIPT,
     LiveLaunchCode,
     LiveLaunchError,
     LiveLaunchPreparation,
@@ -66,7 +69,7 @@ class FinalResultOperation(Protocol):
         self,
         prepared: PreparedLiveRuntime,
         progress: LiveRunProgress,
-        request_save: Callable[[], Awaitable[None]],
+        config: ExperimentConfig,
     ) -> SimulationResult: ...
 
 
@@ -138,16 +141,105 @@ def _configured_start_day(path: Path) -> tuple[int, int, int]:
     return date(year, 1, 1).toordinal() + 365, width, height
 
 
-async def _drain(stream: asyncio.StreamReader) -> int:
-    """Discard raw bytes after counting; no unbounded or credential-bearing logs."""
+class _ConsoleProbe:
+    """Bounded, connection-local console markers fed by the sole stdout reader."""
+
+    def __init__(self) -> None:
+        self._tail = bytearray()
+        self._pending: dict[str, asyncio.Future[None]] = {}
+        self._save: _SaveWaiter | None = None
+
+    def register_save(self, basename: str) -> _SaveWaiter:
+        if self._save is not None:
+            raise ValueError("save waiter already registered")
+        if (
+            not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", basename)
+            or ".." in basename
+            or basename.endswith(".sav")
+        ):
+            raise ValueError("invalid save basename")
+        self._save = _SaveWaiter(basename)
+        return self._save
+
+    def clear_save(self, waiter: _SaveWaiter) -> None:
+        if self._save is waiter:
+            self._save = None
+
+    def expect(self, marker: str) -> asyncio.Future[None]:
+        if len(self._pending) >= 4 or marker in self._pending:
+            raise ValueError("console probe capacity exceeded")
+        future: asyncio.Future[None] = asyncio.get_running_loop().create_future()
+        self._pending[marker] = future
+        return future
+
+    def clear(self, marker: str, future: asyncio.Future[None]) -> None:
+        if self._pending.get(marker) is future:
+            del self._pending[marker]
+        if not future.done():
+            future.cancel()
+
+    def feed(self, chunk: bytes) -> None:
+        for part in chunk.split(b"\n")[:-1]:
+            self._tail.extend(part)
+            if len(self._tail) > 4096:
+                del self._tail[:-4096]
+            line = bytes(self._tail).decode("utf-8", errors="replace")
+            self._tail.clear()
+            if self._save is not None:
+                self._save.feed_line(line)
+            for marker, future in tuple(self._pending.items()):
+                if marker == _console_text(line):
+                    if not future.done():
+                        future.set_result(None)
+                    del self._pending[marker]
+        self._tail.extend(chunk.rsplit(b"\n", 1)[-1])
+        if len(self._tail) > 4096:
+            del self._tail[:-4096]
+
+
+class _SaveWaiter:
+    """One request's console transition; never replays earlier stdout."""
+
+    def __init__(self, basename: str) -> None:
+        self.basename = basename
+        loop = asyncio.get_running_loop()
+        self.started: asyncio.Future[None] = loop.create_future()
+        self.terminal: asyncio.Future[bool] = loop.create_future()
+
+    def feed_line(self, line: str) -> None:
+        line = _console_text(line)
+        if not self.started.done():
+            if line == "Saving map...":
+                self.started.set_result(None)
+            return
+        if self.terminal.done():
+            return
+        if line == "Saving map failed.":
+            self.terminal.set_result(False)
+        elif line == f"Map successfully saved to '{self.basename}.sav'.":
+            self.terminal.set_result(True)
+
+
+_LOG_PREFIX = re.compile(r"^\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\] ")
+
+
+def _console_text(line: str) -> str:
+    """Remove only OpenTTD 13.4's optional date prefix and line ending."""
+    return _LOG_PREFIX.sub("", line.rstrip("\r"), count=1)
+
+
+async def _drain(stream: asyncio.StreamReader, probe: _ConsoleProbe | None = None) -> int:
+    """One reader drains raw bytes; an optional bounded probe observes markers."""
     count = 0
     while chunk := await stream.read(65536):
         count += len(chunk)
+        if probe is not None:
+            probe.feed(chunk)
     return count
 
 
 class LiveSimulationRunner:
-    """Synchronous one-process runner; final parsing remains explicitly injected."""
+    """Synchronous one-process runner with an owned console save barrier."""
 
     def __init__(
         self,
@@ -155,7 +247,7 @@ class LiveSimulationRunner:
         launch: LiveLaunchPreparation,
         *,
         expected_identity: ExpectedServerIdentity,
-        final_result: FinalResultOperation,
+        final_result: FinalResultOperation | None = None,
         options: LiveExecutionOptions | None = None,
         observer_factory: type[AdminObserver] = AdminObserver,
         cancellation: threading.Event | None = None,
@@ -163,6 +255,10 @@ class LiveSimulationRunner:
         self.assets = assets
         self.launch = launch
         self.expected_identity = expected_identity
+        if final_result is None:
+            from app.simulation.openttd.final_result import FinalResultProcessor
+
+            final_result = FinalResultProcessor()
         self.final_result = final_result
         self.options = options or LiveExecutionOptions()
         self.observer_factory = observer_factory
@@ -216,7 +312,7 @@ class LiveSimulationRunner:
             self._check_cancellation()
             start_day, width, height = _configured_start_day(prepared.main_config_path)
             if (
-                self.expected_identity.revision != "OpenTTD 13.4"
+                self.expected_identity.revision != "13.4"
                 or self.expected_identity.seed != config.seed
                 or self.expected_identity.width != width
                 or self.expected_identity.height != height
@@ -281,7 +377,9 @@ class LiveSimulationRunner:
         observer_failure: ExecutionFailureCode | None = None
         ready = False
         quit_requested = False
+        shutdown_deadline: float | None = None
         changed = asyncio.Event()
+        console = _ConsoleProbe()
 
         def emit(event: ObserverEvent) -> None:
             nonlocal ready, first_day, last_day, observer_failure
@@ -304,7 +402,11 @@ class LiveSimulationRunner:
                         ObserverState.CONNECTION_REJECTED: ExecutionFailureCode.STARTUP_FAILURE,
                         ObserverState.SERVER_SHUTDOWN: ExecutionFailureCode.UNEXPECTED_SHUTDOWN,
                         ObserverState.WORLD_RESET: ExecutionFailureCode.UNEXPECTED_SHUTDOWN,
-                        ObserverState.EOF: ExecutionFailureCode.UNEXPECTED_SHUTDOWN,
+                        ObserverState.EOF: (
+                            ExecutionFailureCode.FINALIZATION_FAILURE
+                            if phase is _Phase.STOPPING
+                            else ExecutionFailureCode.UNEXPECTED_SHUTDOWN
+                        ),
                         ObserverState.CONNECTION_LOST: ExecutionFailureCode.OBSERVER_LOST,
                         ObserverState.HEARTBEAT_FAILURE: ExecutionFailureCode.OBSERVER_LOST,
                     }.get(event.state, observer_failure)
@@ -336,7 +438,7 @@ class LiveSimulationRunner:
             assert process.stdin is not None and process.stdout is not None
             assert process.stderr is not None
             drains = (
-                asyncio.create_task(_drain(process.stdout)),
+                asyncio.create_task(_drain(process.stdout, console)),
                 asyncio.create_task(_drain(process.stderr)),
             )
             process_wait = asyncio.create_task(process.wait())
@@ -379,7 +481,45 @@ class LiveSimulationRunner:
             if observer_failure is not None or first_day is None or process.returncode is not None:
                 raise _RunFailure(observer_failure or ExecutionFailureCode.UNEXPECTED_SHUTDOWN)
             self._check_cancellation()
-            await self._command(process, "unpause")
+            assert last_day is not None
+            pre_unpause_day = last_day
+            # OpenTTD 13.4 executes each exec script line synchronously, then
+            # drains the posted unpause command after the console invocation.
+            # The marker proves command consumption; a newer Admin Date proves
+            # the world subsequently resumed. Neither changes target_day.
+            unpause_seen = console.expect(UNPAUSE_BARRIER_MARKER)
+            try:
+                await self._command(process, "unpause_barrier")
+                while not unpause_seen.done():
+                    self._check_cancellation()
+                    if observer_failure is not None:
+                        raise _RunFailure(observer_failure)
+                    if process.returncode is not None or observer_task.done() or drains[0].done():
+                        raise _RunFailure(ExecutionFailureCode.STARTUP_FAILURE)
+                    remaining = endpoint_deadline - loop.time()
+                    if remaining <= 0:
+                        raise _RunFailure(ExecutionFailureCode.TIMEOUT)
+                    await asyncio.wait({unpause_seen}, timeout=min(0.05, remaining))
+                self._check_cancellation()
+                if observer_failure is not None:
+                    raise _RunFailure(observer_failure)
+                if process.returncode is not None or observer_task.done() or drains[0].done():
+                    raise _RunFailure(ExecutionFailureCode.STARTUP_FAILURE)
+            finally:
+                console.clear(UNPAUSE_BARRIER_MARKER, unpause_seen)
+            while last_day <= pre_unpause_day:
+                if observer_failure is not None:
+                    raise _RunFailure(observer_failure)
+                if process.returncode is not None or observer_task.done() or drains[0].done():
+                    raise _RunFailure(ExecutionFailureCode.STARTUP_FAILURE)
+                await wait_change(endpoint_deadline)
+            self._check_cancellation()
+            if observer_failure is not None:
+                raise _RunFailure(observer_failure)
+            if process.returncode is not None or observer_task.done() or drains[0].done():
+                raise _RunFailure(ExecutionFailureCode.STARTUP_FAILURE)
+            if loop.time() >= endpoint_deadline:
+                raise _RunFailure(ExecutionFailureCode.TIMEOUT)
             phase = _Phase.RUNNING
             running_seconds = self.options.running_timeout_seconds or max(
                 300, 5 * config.duration_days
@@ -395,7 +535,32 @@ class LiveSimulationRunner:
                 raise _RunFailure(observer_failure)
             self._check_cancellation()
             phase = _Phase.STOPPING
-            await self._command(process, "pause")
+            shutdown_deadline = loop.time() + self.options.shutdown_timeout_seconds
+            # In OpenTTD 13.4, exec runs each script line via IConsoleCmdExec.
+            # Echo is flushed to stdout after pause is posted. The marker proves
+            # script acceptance, not that pause is already applied: the dedicated
+            # loop drains posted commands after the script returns and before its
+            # next stdin read. Waiting avoids buffered fgets read-ahead of save.
+            pause_seen = console.expect(PAUSE_BARRIER_MARKER)
+            try:
+                await self._command(process, "pause_barrier", deadline=shutdown_deadline)
+                while not pause_seen.done():
+                    self._check_cancellation()
+                    if observer_failure is not None:
+                        raise _RunFailure(observer_failure)
+                    if process.returncode is not None or drains[0].done():
+                        raise _RunFailure(ExecutionFailureCode.FINALIZATION_FAILURE)
+                    remaining = shutdown_deadline - loop.time()
+                    if remaining <= 0:
+                        raise _RunFailure(ExecutionFailureCode.FINALIZATION_FAILURE)
+                    await asyncio.wait({pause_seen}, timeout=min(0.05, remaining))
+                self._check_cancellation()
+                if observer_failure is not None:
+                    raise _RunFailure(observer_failure)
+                if process.returncode is not None or drains[0].done():
+                    raise _RunFailure(ExecutionFailureCode.FINALIZATION_FAILURE)
+            finally:
+                console.clear(PAUSE_BARRIER_MARKER, pause_seen)
             assert first_day is not None and last_day is not None
             progress = LiveRunProgress(
                 run_id,
@@ -407,25 +572,65 @@ class LiveSimulationRunner:
                 last_day,
             )
 
-            async def request_save() -> None:
-                await self._command(process, "save", prepared.final_save_path.name)
-
-            phase = _Phase.FINALIZING
-            final_task = asyncio.create_task(self.final_result(prepared, progress, request_save))
+            save_path = prepared.final_save_path
+            if save_path.parent != prepared.workspace / "save" or save_path.suffix != ".sav":
+                raise _RunFailure(ExecutionFailureCode.FINALIZATION_FAILURE)
+            basename = save_path.stem
             try:
-                final_deadline = loop.time() + self.options.final_parse_timeout_seconds
+                waiter = console.register_save(basename)
+            except ValueError:
+                raise _RunFailure(ExecutionFailureCode.FINALIZATION_FAILURE) from None
+            try:
+                await self._command(process, "save", basename, deadline=shutdown_deadline)
+                for marker in (waiter.started, waiter.terminal):
+                    while not marker.done():
+                        self._check_cancellation()
+                        if observer_failure is not None:
+                            raise _RunFailure(observer_failure)
+                        if process.returncode is not None or drains[0].done():
+                            raise _RunFailure(ExecutionFailureCode.FINALIZATION_FAILURE)
+                        if loop.time() >= shutdown_deadline:
+                            raise _RunFailure(ExecutionFailureCode.FINALIZATION_FAILURE)
+                        await asyncio.wait(
+                            {marker}, timeout=min(0.05, shutdown_deadline - loop.time())
+                        )
+                if not waiter.terminal.result():
+                    raise _RunFailure(ExecutionFailureCode.FINALIZATION_FAILURE)
+            finally:
+                console.clear_save(waiter)
+            try:
+                saved = save_path.lstat()
+            except OSError:
+                raise _RunFailure(ExecutionFailureCode.FINALIZATION_FAILURE) from None
+            if not stat.S_ISREG(saved.st_mode) or save_path.is_symlink():
+                raise _RunFailure(ExecutionFailureCode.FINALIZATION_FAILURE)
+            if observer_failure is not None or process.returncode is not None:
+                raise _RunFailure(observer_failure or ExecutionFailureCode.UNEXPECTED_SHUTDOWN)
+            quit_requested = True
+            await self._command(process, "quit", deadline=shutdown_deadline)
+            while process.returncode is None:
+                self._check_cancellation()
+                await wait_change(shutdown_deadline)
+            if process.returncode != 0:
+                raise _RunFailure(ExecutionFailureCode.UNEXPECTED_SHUTDOWN)
+            if observer_task is not None:
+                if not observer_task.done():
+                    observer_task.cancel()
+                await asyncio.wait_for(asyncio.gather(observer_task, return_exceptions=True), 2)
+            if drains:
+                await asyncio.wait_for(asyncio.gather(*drains, return_exceptions=True), 2)
+            phase = _Phase.FINALIZING
+            final_deadline = loop.time() + self.options.final_parse_timeout_seconds
+            final_task = asyncio.create_task(self.final_result(prepared, progress, config))
+            try:
                 while not final_task.done():
                     self._check_cancellation()
-                    if observer_failure is not None or process.returncode is not None:
-                        raise _RunFailure(
-                            observer_failure or ExecutionFailureCode.UNEXPECTED_SHUTDOWN
-                        )
                     remaining = final_deadline - loop.time()
                     if remaining <= 0:
                         raise _RunFailure(ExecutionFailureCode.FINALIZATION_FAILURE)
                     await asyncio.wait({final_task}, timeout=min(remaining, 0.05))
-                self._check_cancellation()
                 result = final_task.result()
+                self._check_cancellation()
                 if not isinstance(result, SimulationResult):
                     raise TypeError("final result provider returned an invalid result")
             except _RunFailure:
@@ -436,16 +641,6 @@ class LiveSimulationRunner:
                 if not final_task.done():
                     final_task.cancel()
                     await asyncio.wait_for(asyncio.gather(final_task, return_exceptions=True), 2)
-            if observer_failure is not None or process.returncode is not None:
-                raise _RunFailure(observer_failure or ExecutionFailureCode.UNEXPECTED_SHUTDOWN)
-            quit_requested = True
-            await self._command(process, "quit")
-            quit_deadline = loop.time() + self.options.shutdown_timeout_seconds
-            while process.returncode is None:
-                self._check_cancellation()
-                await wait_change(quit_deadline)
-            if process.returncode != 0:
-                raise _RunFailure(ExecutionFailureCode.UNEXPECTED_SHUTDOWN)
             phase = _Phase.FINISHED
         except _RunFailure as exc:
             failure = exc.code
@@ -461,12 +656,17 @@ class LiveSimulationRunner:
             if process is not None:
                 if process.returncode is None:
                     try:
-                        if not quit_requested:
-                            await self._command(process, "quit")
-                        assert process_wait is not None
-                        await asyncio.wait_for(
-                            asyncio.shield(process_wait), self.options.shutdown_timeout_seconds
+                        loop = asyncio.get_running_loop()
+                        grace_deadline = shutdown_deadline or (
+                            loop.time() + self.options.shutdown_timeout_seconds
                         )
+                        if grace_deadline > loop.time():
+                            if not quit_requested:
+                                await self._command(process, "quit", deadline=grace_deadline)
+                            assert process_wait is not None
+                            await asyncio.wait_for(
+                                asyncio.shield(process_wait), grace_deadline - loop.time()
+                            )
                     except Exception:
                         pass
                 if process.returncode is None:
@@ -521,36 +721,69 @@ class LiveSimulationRunner:
                 cleanup=tuple(diagnostics),
             )
         assert process is not None and result is not None and last_day is not None
+        live_summary = result.live_summary or LiveExecutionSummary(
+            telemetry_status=TelemetryStatus.INCOMPLETE
+        )
         return result.model_copy(
             update={
-                "live_summary": LiveExecutionSummary(
-                    telemetry_status=TelemetryStatus.INCOMPLETE,
-                    last_observed_day=last_day,
-                    requested_target_day=target_day,
-                    process_exit_code=process.returncode,
-                    cleanup_succeeded=True,
+                "live_summary": live_summary.model_copy(
+                    update={
+                        "last_observed_day": last_day,
+                        "requested_target_day": target_day,
+                        "process_exit_code": process.returncode,
+                        "cleanup_succeeded": True,
+                    }
                 )
             }
         )
 
     async def _command(
-        self, process: asyncio.subprocess.Process, action: str, save_name: str | None = None
+        self,
+        process: asyncio.subprocess.Process,
+        action: str,
+        save_name: str | None = None,
+        *,
+        deadline: float | None = None,
     ) -> None:
-        if action not in {"pause", "unpause", "save", "quit"}:
+        if action not in {"pause", "pause_barrier", "unpause", "unpause_barrier", "save", "quit"}:
             raise _RunFailure(ExecutionFailureCode.PROTOCOL_FAILURE)
         if action == "save":
-            if save_name is None or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*\.sav", save_name):
+            if (
+                save_name is None
+                or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*", save_name)
+                or ".." in save_name
+                or save_name.endswith(".sav")
+            ):
                 raise _RunFailure(ExecutionFailureCode.FINALIZATION_FAILURE)
             command = f"save {save_name}\n"
+        elif action == "pause_barrier":
+            command = f"exec {PAUSE_BARRIER_SCRIPT}\n"
+        elif action == "unpause_barrier":
+            command = f"exec {UNPAUSE_BARRIER_SCRIPT}\n"
         else:
             command = action + "\n"
         if process.stdin is None or process.stdin.is_closing():
             raise _RunFailure(ExecutionFailureCode.UNEXPECTED_SHUTDOWN)
         try:
             process.stdin.write(command.encode("ascii"))
-            await asyncio.wait_for(process.stdin.drain(), self.options.shutdown_timeout_seconds)
+            remaining = (
+                min(
+                    self.options.shutdown_timeout_seconds,
+                    deadline - asyncio.get_running_loop().time(),
+                )
+                if deadline is not None
+                else self.options.shutdown_timeout_seconds
+            )
+            if remaining <= 0:
+                raise _RunFailure(ExecutionFailureCode.FINALIZATION_FAILURE)
+            await asyncio.wait_for(process.stdin.drain(), remaining)
         except TimeoutError:
-            raise _RunFailure(ExecutionFailureCode.TIMEOUT) from None
+            code = (
+                ExecutionFailureCode.FINALIZATION_FAILURE
+                if deadline is not None
+                else ExecutionFailureCode.TIMEOUT
+            )
+            raise _RunFailure(code) from None
         except OSError:
             raise _RunFailure(ExecutionFailureCode.UNEXPECTED_SHUTDOWN) from None
 

@@ -111,7 +111,9 @@ class LiveExecutionSummary(BaseModel):
     requested_target_day: NonNegativeCount | None = None
     actual_final_day: NonNegativeCount | None = None
     raw_save_reference: str | None = None
+    raw_save_sha256: str | None = None
     parsed_artifact_reference: str | None = None
+    parsed_artifact_sha256: str | None = None
     outcome_manifest_reference: str | None = None
     cleanup_succeeded: StrictBool | None = None
     cleanup_diagnostics: tuple[str, ...] = ()

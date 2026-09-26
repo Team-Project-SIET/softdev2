@@ -52,6 +52,43 @@ def parse_result_row(row: dict[str, Any], config: ExperimentConfig) -> Simulatio
     )
 
 
+def write_parsed_artifact(
+    row: dict[str, Any],
+    config: ExperimentConfig,
+    result: SimulationResult,
+    *,
+    run_id: int,
+    artifact_dir: Path,
+    replace_existing: bool = True,
+) -> Path:
+    """Write the existing batch gzip/JSON shape for either final-save path."""
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+    artifact_path = artifact_dir / f"experiment-{run_id}.json.gz"
+    with tempfile.NamedTemporaryFile(dir=artifact_dir, delete=False) as temporary:
+        temporary_path = Path(temporary.name)
+    try:
+        with gzip.open(temporary_path, "wt", encoding="utf-8") as artifact:
+            json.dump(
+                {
+                    "configuration": config.model_dump(mode="json"),
+                    "date": result.simulation_date.isoformat(),
+                    "savegame_version": row["savegame_version"],
+                    "chunks": row["chunks"],
+                    "output": row.get("output"),
+                    "error": row["error"],
+                },
+                artifact,
+                default=str,
+            )
+        if replace_existing:
+            os.replace(temporary_path, artifact_path)
+        else:
+            os.link(temporary_path, artifact_path)
+    finally:
+        temporary_path.unlink(missing_ok=True)
+    return artifact_path
+
+
 class OpenTTDLabRunner:
     def __init__(self, run_experiments: Callable[..., list[dict[str, Any]]] | None = None) -> None:
         if run_experiments is None:
@@ -92,24 +129,7 @@ class OpenTTDLabRunner:
             raise RuntimeError("OpenTTD reported an AI script failure")
         final_row = max(rows, key=lambda row: row["date"])
         result = parse_result_row(final_row, config)
-        artifact_path = artifact_dir / f"experiment-{run_id}.json.gz"
-        with tempfile.NamedTemporaryFile(dir=artifact_dir, delete=False) as temporary:
-            temporary_path = Path(temporary.name)
-        try:
-            with gzip.open(temporary_path, "wt", encoding="utf-8") as artifact:
-                json.dump(
-                    {
-                        "configuration": config.model_dump(mode="json"),
-                        "date": result.simulation_date.isoformat(),
-                        "savegame_version": final_row["savegame_version"],
-                        "chunks": final_row["chunks"],
-                        "output": final_row.get("output"),
-                        "error": final_row["error"],
-                    },
-                    artifact,
-                    default=str,
-                )
-            os.replace(temporary_path, artifact_path)
-        finally:
-            temporary_path.unlink(missing_ok=True)
+        artifact_path = write_parsed_artifact(
+            final_row, config, result, run_id=run_id, artifact_dir=artifact_dir
+        )
         return result.model_copy(update={"raw_artifact_reference": str(artifact_path.resolve())})

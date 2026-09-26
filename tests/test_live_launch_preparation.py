@@ -107,6 +107,7 @@ def test_prepares_private_versioned_workspace_and_fresh_secret(
         assert 39770 <= first.game_port <= 39999
         assert 39770 <= first.admin_port <= 39999
         assert first.argv[0] == str(runtime.executable_path)
+        assert first.argv[first.argv.index("-d") + 1] == "console=4"
         assert first.cwd == first.workspace
         assert first.runtime is runtime
         assert first.provenance["runtime"] == runtime.provenance
@@ -130,6 +131,12 @@ def test_prepares_private_versioned_workspace_and_fresh_secret(
         assert main["ai_players"]["SimpleAI"] == "use_aircraft=0,use_roadvehs=1,use_trains=0"
         assert not (runtime.executable_path.parent / "save").exists()
         assert first.final_save_path.parent == first.workspace / "save"
+        barrier = first.workspace / "scripts" / "live_pause_barrier.scr"
+        assert barrier.read_text() == "pause\necho __LIVE_PAUSE_BARRIER_DONE__\n"
+        assert stat.S_IMODE(barrier.stat().st_mode) == 0o600
+        unpause = first.workspace / "scripts" / "live_unpause_barrier.scr"
+        assert unpause.read_text() == "unpause\necho __LIVE_UNPAUSE_BARRIER_DONE__\n"
+        assert stat.S_IMODE(unpause.stat().st_mode) == 0o600
         assert first.graphics_archive_path.parent == first.workspace / "baseset"
         assert all(path.is_relative_to(first.workspace) for path in first.dependency_archive_paths)
     finally:
@@ -181,6 +188,46 @@ def test_existing_ai_startup_parameters_are_preserved(
         assert prepared.provenance["ai_parameters"] == dict(config.ai.parameters)
         assert prepared.ai_archive_path.read_bytes() == b"pinned"
         assert len(prepared.dependency_archive_paths) == 5
+        assert (prepared.workspace / "scripts" / "game_start.scr").read_text() == (
+            "start_ai "
+            + config.ai.name
+            + " "
+            + ",".join(f"{key}={value}" for key, value in config.ai.parameters)
+            + "\n"
+        ).replace(" \n", "\n")
+    finally:
+        prepared.close()
+
+
+def test_pinned_cache_archive_names_remain_distinct_and_discoverable(tmp_path: Path) -> None:
+    from app.simulation.openttd.live_launch import LiveLaunchPreparation
+
+    cache = tmp_path / "cache"
+    executable = cache / "openttd" / "files" / "openttd"
+    graphics = cache / "opengfx" / "files" / "opengfx-7.1.tar"
+    ai = cache / "simpleai" / "archive"
+    dependencies = tuple(cache / name / "archive" for name in ("road", "rail"))
+    for path in (executable, graphics, ai, *dependencies):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(path.parent.name.encode())
+    runtime = PreparedRuntime(
+        executable_path=executable,
+        opengfx_archive_path=graphics,
+        ai_archive_path=ai,
+        dependency_archive_paths=dependencies,
+        ai_configuration=_config().ai,
+        provenance={"cache_identity": "openttd-13.4-pinned-v1"},
+    )
+    prepared = LiveLaunchPreparation(tmp_path / "runs", lock_root=tmp_path / "locks").prepare(
+        _config(), runtime
+    )
+    try:
+        assert prepared.ai_archive_path.name.endswith(".tar")
+        assert [path.name for path in prepared.dependency_archive_paths] == ["road.tar", "rail.tar"]
+        assert [path.read_bytes() for path in prepared.dependency_archive_paths] == [
+            b"road",
+            b"rail",
+        ]
     finally:
         prepared.close()
 

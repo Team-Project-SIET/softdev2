@@ -51,6 +51,10 @@ _AI_NAME = re.compile(r"[A-Za-z0-9_.-]+\Z")
 _AI_PARAMETER = re.compile(r"[A-Za-z_][A-Za-z0-9_]*\Z")
 _INTEGER = re.compile(r"-?[0-9]+\Z")
 _SCENARIO_SETTINGS = {"game_creation": {"map_x", "map_y", "starting_year"}}
+PAUSE_BARRIER_SCRIPT = "scripts/live_pause_barrier.scr"
+PAUSE_BARRIER_MARKER = "__LIVE_PAUSE_BARRIER_DONE__"
+UNPAUSE_BARRIER_SCRIPT = "scripts/live_unpause_barrier.scr"
+UNPAUSE_BARRIER_MARKER = "__LIVE_UNPAUSE_BARRIER_DONE__"
 
 
 def _check_deadline(deadline: float | None) -> None:
@@ -64,6 +68,12 @@ def _copy_runtime_file(source: Path, target: Path, deadline: float | None) -> No
             _check_deadline(deadline)
             output_file.write(chunk)
     _check_deadline(deadline)
+
+
+def _archive_name(source: Path) -> str:
+    # T05 stores BaNaNaS archives as <asset-key>/archive. OpenTTD discovers
+    # archives by .tar suffix, and dependencies need distinct filenames.
+    return source.name if source.suffix == ".tar" else f"{source.parent.name}.tar"
 
 
 def _safe_save_name(name: str) -> str:
@@ -262,13 +272,14 @@ class LiveLaunchPreparation:
             self.workspace_root.mkdir(parents=True, exist_ok=True)
             workspace = Path(tempfile.mkdtemp(prefix="live-", dir=self.workspace_root))
             workspace.chmod(0o700)
-            for directory in ("save", "baseset", "ai", "ai/library"):
+            for directory in ("save", "baseset", "ai", "ai/library", "scripts"):
                 (workspace / directory).mkdir(parents=True, exist_ok=True)
             final_save = workspace / "save" / save_name
             graphics = workspace / "baseset" / runtime.opengfx_archive_path.name
-            ai_archive = workspace / "ai" / runtime.ai_archive_path.name
+            ai_archive = workspace / "ai" / _archive_name(runtime.ai_archive_path)
             dependencies = tuple(
-                workspace / "ai/library" / path.name for path in runtime.dependency_archive_paths
+                workspace / "ai/library" / _archive_name(path)
+                for path in runtime.dependency_archive_paths
             )
             for source, target in (
                 (runtime.opengfx_archive_path, graphics),
@@ -297,6 +308,21 @@ class LiveLaunchPreparation:
             )
             _write_owned(private, "[server_bind_addresses]\n127.0.0.1\n")
             _write_owned(secret, f"[network]\nadmin_password = {password}\n")
+            ai_parameters = ",".join(f"{key}={value}" for key, value in config.ai.parameters)
+            _write_owned(
+                workspace / "scripts" / "game_start.scr",
+                f"start_ai {config.ai.name}"
+                + (f" {ai_parameters}" if ai_parameters else "")
+                + "\n",
+            )
+            _write_owned(
+                workspace / PAUSE_BARRIER_SCRIPT,
+                f"pause\necho {PAUSE_BARRIER_MARKER}\n",
+            )
+            _write_owned(
+                workspace / UNPAUSE_BARRIER_SCRIPT,
+                f"unpause\necho {UNPAUSE_BARRIER_MARKER}\n",
+            )
             _check_deadline(deadline)
             argv = (
                 str(runtime.executable_path),
@@ -306,6 +332,8 @@ class LiveLaunchPreparation:
                 str(config.seed),
                 "-I",
                 "OpenGFX",
+                "-d",
+                "console=4",
                 "-c",
                 str(main),
                 "-x",
