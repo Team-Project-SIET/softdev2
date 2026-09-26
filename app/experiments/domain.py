@@ -68,6 +68,12 @@ class LiveExecutionOptions(BaseModel):
             raise ValueError("heartbeat timeout must exceed the heartbeat interval")
         return self
 
+    def resolved_for_duration(self, duration_days: int) -> LiveExecutionOptions:
+        """Use the runner's one established default for the running wall deadline."""
+        if self.running_timeout_seconds is not None:
+            return self
+        return self.model_copy(update={"running_timeout_seconds": max(300, 5 * duration_days)})
+
 
 class TelemetryStatus(StrEnum):
     PENDING = "pending"

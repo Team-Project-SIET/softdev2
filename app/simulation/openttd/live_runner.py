@@ -11,6 +11,7 @@ import signal
 import stat
 import threading
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import date
 from enum import StrEnum
@@ -51,6 +52,7 @@ from app.simulation.openttd.runtime_assets import (
     RuntimePreparationError,
 )
 from app.simulation.openttd.telemetry import GameDateObservation
+from app.simulation.openttd.telemetry_processor import TelemetryPipelineFailed, TelemetryProcessor
 
 
 @dataclass(frozen=True)
@@ -251,6 +253,7 @@ class LiveSimulationRunner:
         options: LiveExecutionOptions | None = None,
         observer_factory: type[AdminObserver] = AdminObserver,
         cancellation: threading.Event | None = None,
+        telemetry_factory: Callable[[int], TelemetryProcessor] | None = None,
     ) -> None:
         self.assets = assets
         self.launch = launch
@@ -263,6 +266,7 @@ class LiveSimulationRunner:
         self.options = options or LiveExecutionOptions()
         self.observer_factory = observer_factory
         self.cancellation = cancellation
+        self.telemetry_factory = telemetry_factory
 
     def _check_cancellation(self) -> None:
         if self.cancellation is not None and self.cancellation.is_set():
@@ -378,6 +382,8 @@ class LiveSimulationRunner:
         ready = False
         quit_requested = False
         shutdown_deadline: float | None = None
+        processor: TelemetryProcessor | None = None
+        storage_health_task: asyncio.Task[object] | None = None
         changed = asyncio.Event()
         console = _ConsoleProbe()
 
@@ -411,6 +417,22 @@ class LiveSimulationRunner:
                         ObserverState.HEARTBEAT_FAILURE: ExecutionFailureCode.OBSERVER_LOST,
                     }.get(event.state, observer_failure)
             changed.set()
+            if processor is not None and not (
+                quit_requested
+                and isinstance(event, ObserverHealth)
+                and event.state in {ObserverState.EOF, ObserverState.SERVER_SHUTDOWN}
+            ):
+                try:
+                    processor.emit(event)
+                except Exception:
+                    observer_failure = ExecutionFailureCode.PERSISTENCE_FAILURE
+                    changed.set()
+
+        def storage_failed(task: asyncio.Task[object]) -> None:
+            nonlocal observer_failure
+            if not task.cancelled():
+                observer_failure = ExecutionFailureCode.PERSISTENCE_FAILURE
+                changed.set()
 
         async def wait_change(deadline: float) -> None:
             while True:
@@ -427,6 +449,11 @@ class LiveSimulationRunner:
 
         try:
             self._check_cancellation()
+            if self.telemetry_factory is not None:
+                processor = self.telemetry_factory(run_id)
+                processor.start()
+                storage_health_task = asyncio.create_task(processor.wait_fatal())
+                storage_health_task.add_done_callback(storage_failed)
             process = await asyncio.create_subprocess_exec(
                 *prepared.argv,
                 cwd=prepared.cwd,
@@ -521,9 +548,10 @@ class LiveSimulationRunner:
             if loop.time() >= endpoint_deadline:
                 raise _RunFailure(ExecutionFailureCode.TIMEOUT)
             phase = _Phase.RUNNING
-            running_seconds = self.options.running_timeout_seconds or max(
-                300, 5 * config.duration_days
-            )
+            running_seconds = self.options.resolved_for_duration(
+                config.duration_days
+            ).running_timeout_seconds
+            assert running_seconds is not None
             running_deadline = loop.time() + running_seconds
             while last_day is None or last_day < target_day:
                 if observer_failure is not None:
@@ -706,6 +734,21 @@ class LiveSimulationRunner:
                     await asyncio.wait_for(asyncio.gather(process_wait, return_exceptions=True), 2)
                 except Exception:
                     diagnostics.append("process_wait_cleanup_timeout")
+            if processor is not None:
+                try:
+                    await processor.close()
+                except TelemetryPipelineFailed:
+                    if failure is None:
+                        failure = ExecutionFailureCode.PERSISTENCE_FAILURE
+                except asyncio.CancelledError:
+                    if failure is None:
+                        failure = ExecutionFailureCode.CANCELLED
+                except Exception:
+                    if failure is None:
+                        failure = ExecutionFailureCode.PERSISTENCE_FAILURE
+            if storage_health_task is not None:
+                storage_health_task.cancel()
+                await asyncio.gather(storage_health_task, return_exceptions=True)
             if process is None or process.returncode is not None:
                 try:
                     prepared.close()

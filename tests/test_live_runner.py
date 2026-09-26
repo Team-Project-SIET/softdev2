@@ -234,6 +234,72 @@ def test_one_owned_child_reaches_date_target_and_returns_injected_final_result(
     assert final_calls[0][0].lease.closed
 
 
+def test_observer_events_reach_one_scoped_telemetry_processor(tmp_path: Path) -> None:
+    from app.simulation.openttd.live_runner import LiveSimulationRunner
+    from app.simulation.openttd.telemetry import ObservationKind
+    from app.simulation.openttd.telemetry_processor import TelemetryProcessor
+
+    class RecordingStore:
+        def __init__(self):
+            self.batches = []
+            self.closed = False
+
+        async def write_batch(self, batch, *, deadline):
+            self.batches.append(batch)
+
+        async def close(self):
+            self.closed = True
+
+    store = RecordingStore()
+    runtime = _runtime(tmp_path, "normal")
+    runner = LiveSimulationRunner(
+        _Assets(runtime),
+        LiveLaunchPreparation(tmp_path / "runs", lock_root=tmp_path / "locks"),
+        expected_identity=_identity(),
+        final_result=_fixture_result,
+        options=_options(),
+        telemetry_factory=lambda run_id: TelemetryProcessor(run_id, store),
+    )
+    result = runner.run(_config(), run_id=7, artifact_dir=tmp_path / "artifacts")
+    assert result.live_summary is not None
+    assert store.closed
+    rows = [row for batch in store.batches for row in batch.observations]
+    assert [row.sequence for row in rows] == list(range(1, len(rows) + 1))
+    assert all(row.experiment_run_id == 7 for row in rows)
+    assert sum(row.kind is ObservationKind.DATE for row in rows) >= 2
+
+
+def test_fatal_telemetry_write_cannot_return_live_success(tmp_path: Path) -> None:
+    from app.experiments.telemetry_repository import PermanentStorageError
+    from app.simulation.openttd.live_runner import LiveSimulationRunner
+    from app.simulation.openttd.telemetry_processor import TelemetryProcessor
+
+    class FailingStore:
+        def __init__(self):
+            self.closed = False
+
+        async def write_batch(self, batch, *, deadline):
+            raise PermanentStorageError()
+
+        async def close(self):
+            self.closed = True
+
+    store = FailingStore()
+    runtime = _runtime(tmp_path, "normal")
+    runner = LiveSimulationRunner(
+        _Assets(runtime),
+        LiveLaunchPreparation(tmp_path / "runs", lock_root=tmp_path / "locks"),
+        expected_identity=_identity(),
+        final_result=_fixture_result,
+        options=_options(),
+        telemetry_factory=lambda run_id: TelemetryProcessor(run_id, store),
+    )
+    with pytest.raises(SimulationExecutionError) as error:
+        runner.run(_config(), run_id=7, artifact_dir=tmp_path / "artifacts")
+    assert error.value.failure.code is ExecutionFailureCode.PERSISTENCE_FAILURE
+    assert store.closed
+
+
 @pytest.mark.parametrize(
     "mode",
     ["unpause_no_marker", "unpause_no_new_date", "unpause_same_date", "unpause_older_date"],
