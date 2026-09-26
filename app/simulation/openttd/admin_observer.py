@@ -67,6 +67,7 @@ class ExpectedServerIdentity:
 
 class ObserverState(StrEnum):
     CONNECTING = "connecting"
+    CONNECTED = "connected"
     AUTHENTICATED = "authenticated"
     READY = "ready"
     AUTHENTICATION_REJECTED = "authentication_rejected"
@@ -229,6 +230,7 @@ class AdminObserver:
                 await publish(ObserverHealth(ObserverState.CONNECTION_REJECTED))
                 return
             connected_writer = writer
+            await publish(ObserverHealth(ObserverState.CONNECTED))
             handshake_deadline = self._timing.now() + self.handshake_timeout
             connected_writer.write(
                 encode_admin_join(self._password, self._client_name, self._client_version)

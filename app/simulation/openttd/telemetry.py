@@ -1,5 +1,6 @@
 """Validated, immutable OpenTTD 13.4 telemetry values."""
 
+from dataclasses import dataclass
 from datetime import date, timedelta
 from enum import StrEnum
 from typing import Annotated
@@ -143,6 +144,9 @@ class DateQuality(StrEnum):
 
 
 class DiagnosticCode(StrEnum):
+    CONNECTION_OPENED = "connection_opened"
+    MISSING_DATE = "missing_date_context"
+    PERSISTENCE_RETRY = "persistence_retry"
     UNKNOWN_PACKET = "unknown_packet"
     UNSUPPORTED_DATA = "unsupported_data"
     COMPANY_NEW = "company_new"
@@ -164,6 +168,9 @@ class DiagnosticSeverity(StrEnum):
 class DiagnosticSummary(StrEnum):
     """Allowlisted context only; runtime exception text must never enter telemetry."""
 
+    CONNECTION_OPENED = "observer transport established"
+    MISSING_DATE = "no preceding Date on this connection"
+    PERSISTENCE_RETRY = "retrying identical telemetry batch"
     UNKNOWN_PACKET_IGNORED = "unknown packet ignored"
     UNSUPPORTED_DATA = "unsupported protocol data"
     COMPANY_CREATED = "company created"
@@ -208,6 +215,16 @@ ObservationPayload = (
 )
 
 
+@dataclass(frozen=True)
+class InferredEconomyPeriods:
+    """Calendar labels from preceding Date only, not proof of history-slot validity."""
+
+    admin_year_to_date: str
+    current_quarter: str
+    completed_quarters: tuple[str | None, str | None]
+    inferred: bool = True
+
+
 class TelemetryObservation(BaseModel):
     """A validated envelope; sequence and date context are supplied by T08."""
 
@@ -226,6 +243,25 @@ class TelemetryObservation(BaseModel):
     date_context_sequence: Annotated[int, Field(strict=True, gt=0)] | None
     date_quality: DateQuality
     payload: ObservationPayload
+
+    @property
+    def inferred_economy_periods(self) -> InferredEconomyPeriods | None:
+        if self.kind is not ObservationKind.COMPANY_ECONOMY or self.game_day is None:
+            return None
+        calendar = supported_game_day_to_date(self.game_day)
+        index = (calendar.year - 1) * 4 + (calendar.month - 1) // 3
+
+        def label(offset: int) -> str | None:
+            previous = index - offset
+            if previous < 0:
+                return None  # Outside supported years; this is not an invalid-history flag.
+            return f"{previous // 4 + 1:04d}-Q{previous % 4 + 1}"
+
+        return InferredEconomyPeriods(
+            admin_year_to_date=f"{calendar.year:04d}",
+            current_quarter=f"{calendar.year:04d}-Q{(calendar.month - 1) // 3 + 1}",
+            completed_quarters=(label(1), label(2)),
+        )
 
     @model_validator(mode="after")
     def validate_semantics(self) -> TelemetryObservation:

@@ -202,3 +202,41 @@ def test_diagnostic_context_rejects_unbounded_secret_bearing_text() -> None:
             occurred_at=datetime(2026, 1, 1, tzinfo=UTC),
             summary="admin password: top-secret",
         )
+
+
+def test_inferred_calendar_periods_are_explicit_and_require_date_context():
+    from datetime import date
+
+    from app.simulation.openttd.telemetry import DateQuality
+
+    day = date(1950, 1, 2).toordinal() + 365
+    observation = TelemetryObservation(
+        experiment_run_id=7,
+        sequence=2,
+        connection_epoch=1,
+        received_at=datetime(2026, 1, 1, tzinfo=UTC),
+        schema_version=1,
+        source="openttd_admin",
+        protocol_version=2,
+        kind="company_economy",
+        company_id=2,
+        game_day=day,
+        date_context_sequence=1,
+        date_quality=DateQuality.PRECEDING_DATE,
+        payload=_economy(),
+    )
+    periods = observation.inferred_economy_periods
+    assert periods is not None and periods.inferred
+    assert periods.admin_year_to_date == "1950"
+    assert periods.current_quarter == "1950-Q1"
+    assert periods.completed_quarters == ("1949-Q4", "1949-Q3")
+    unknown = TelemetryObservation.model_validate(
+        {
+            **observation.model_dump(),
+            "game_day": None,
+            "date_context_sequence": None,
+            "date_quality": "unknown",
+        }
+    )
+    assert unknown.inferred_economy_periods is None
+    assert observation.payload == unknown.payload  # No inferred economic values/history validity.
