@@ -1,6 +1,7 @@
-"""One-command fixed-seed experiment spike."""
+"""Argparse presentation for batch experiments and one explicit live run."""
 
 import argparse
+import sys
 from pathlib import Path
 
 from app.experiments.comparison import (
@@ -8,7 +9,7 @@ from app.experiments.comparison import (
     parse_seed_range,
     run_comparison,
 )
-from app.experiments.domain import ExperimentConfig, ScenarioConfig
+from app.experiments.domain import ExecutionMode, ExperimentConfig, ScenarioConfig
 from app.experiments.service import ExperimentService
 from app.experiments.strategies import COMPARISON_STRATEGIES, BaselineStrategy
 
@@ -23,20 +24,26 @@ def generated_scenario(identifier: str = "generated-256-square") -> ScenarioConf
     )
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="transport-experiment")
     commands = parser.add_subparsers(dest="command", required=True)
     run_parser = commands.add_parser("run", help="run the pinned trAIns baseline")
     run_parser.add_argument("--seed", type=int, default=17)
     run_parser.add_argument("--days", type=int, default=730)
     run_parser.add_argument("--artifact-dir", type=Path, default=Path("artifacts/experiments"))
+    run_parser.add_argument(
+        "--mode",
+        choices=("batch", "live"),
+        default="batch",
+        help="live runs at normal speed; incomplete telemetry returns exit code 3",
+    )
     compare_parser = commands.add_parser("compare", help="compare pinned SimpleAI mode policies")
     compare_parser.add_argument("--scenario", default="generated-256-square")
     compare_parser.add_argument("--strategies", required=True)
     compare_parser.add_argument("--seeds", required=True)
     compare_parser.add_argument("--days", type=int, default=730)
     compare_parser.add_argument("--artifact-dir", type=Path, default=Path("artifacts/experiments"))
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
 
     try:
         scenario = generated_scenario(getattr(args, "scenario", "generated-256-square"))
@@ -85,8 +92,9 @@ def main() -> None:
         report_path.write_text(report.model_dump_json(indent=2), encoding="utf-8")
         print(f"report={report_path.resolve()}")
         if any(run.status == "failed" for run in report.runs):
-            raise SystemExit("comparison completed with failed runs")
-        return
+            print("comparison completed with failed runs", file=sys.stderr)
+            return 1
+        return 0
 
     planning, ai = BaselineStrategy().configure(scenario)
     config = ExperimentConfig(
@@ -98,12 +106,52 @@ def main() -> None:
         seed=args.seed,
         duration_days=args.days,
     )
-    result = ExperimentService().run(config, artifact_dir=args.artifact_dir)
-    print(f"run={result.run_id} status={result.status}")
+    mode = ExecutionMode(args.mode)
+    result = ExperimentService().run(config, artifact_dir=args.artifact_dir, execution_mode=mode)
+    if mode is ExecutionMode.LIVE:
+        telemetry = result.live_summary.telemetry_status if result.live_summary else None
+        suffix = f" telemetry={telemetry}" if telemetry is not None else ""
+        print(f"run={result.run_id} mode=live status={result.status}{suffix}")
+    else:
+        print(f"run={result.run_id} status={result.status}")
     if result.simulation is not None:
         print(f"simulation_date={result.simulation.simulation_date}")
+        if mode is ExecutionMode.LIVE and result.live_summary is not None:
+            summary = result.live_summary
+            for key, value in (
+                ("requested_target_day", summary.requested_target_day),
+                ("last_observed_day", summary.last_observed_day),
+                ("actual_final_day", summary.actual_final_day),
+            ):
+                if value is not None:
+                    print(f"{key}={value}")
         for metric in result.simulation.metrics:
             print(f"{metric.name}={metric.value} {metric.unit}")
-        print(f"raw_artifact={result.simulation.raw_artifact_reference}")
+        if mode is ExecutionMode.BATCH:
+            print(f"raw_artifact={result.simulation.raw_artifact_reference}")
+        elif result.live_summary is not None:
+            if result.live_summary.raw_save_reference is not None:
+                print(f"raw_save={result.live_summary.raw_save_reference}")
+            if result.live_summary.parsed_artifact_reference is not None:
+                print(f"parsed_artifact={result.live_summary.parsed_artifact_reference}")
+    if mode is ExecutionMode.LIVE and result.status == "failed" and result.failure_code is not None:
+        print(f"failure_code={result.failure_code}")
     if result.error:
-        raise SystemExit(result.error)
+        if mode is ExecutionMode.LIVE:
+            print(f"error={result.error}")
+        else:
+            print(result.error, file=sys.stderr)
+    if result.status == "failed":
+        if result.failure_code == "timeout":
+            return 124
+        if result.failure_code == "cancelled":
+            return 130
+        return 1
+    if mode is ExecutionMode.LIVE and result.live_summary is not None:
+        if result.live_summary.telemetry_status == "incomplete":
+            return 3
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

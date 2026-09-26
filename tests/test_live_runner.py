@@ -624,7 +624,11 @@ def test_one_owned_controlled_process_finishes_through_public_save_parser(
     config = _config().model_copy(update={"duration_days": 1})
     launch = LiveLaunchPreparation(tmp_path / "runs", lock_root=tmp_path / "locks")
     runner = LiveSimulationRunner(
-        _Assets(runtime, config), launch, expected_identity=_identity(), options=_options()
+        _Assets(runtime, config),
+        launch,
+        expected_identity=_identity(),
+        # The public parser runs in a child Python process; allow cold import time.
+        options=_options(final_parse_timeout_seconds=5),
     )
     result = runner.run(config, run_id=1, artifact_dir=tmp_path / "artifacts")
     assert result.simulation_date == date(1950, 1, 2)
