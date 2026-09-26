@@ -50,6 +50,7 @@ start_day = date(1950, 1, 1).toordinal() + 365
 password = secrets["network"]["admin_password"]
 lock = threading.Lock()
 connection: socket.socket | None = None
+unpause_seen = False
 commands = workspace / "commands.log"
 
 if mode == "exit_early":
@@ -81,40 +82,121 @@ def send(data: bytes) -> None:
 
 def peer() -> None:
     global connection
-    try:
-        conn, _ = admin.accept()
-        connection = conn
-        packet_id, payload = read_frame(conn)
-        if packet_id != 0:
-            return
-        if mode == "bad_auth" or not payload.startswith(password.encode() + b"\0"):
-            send(frame(102, b"\x0a"))
-            return
-        if mode == "bad_protocol":
-            send(frame(103, b"\x03\x00"))
-            return
-        protocol = (
-            b"\x02"
-            + b"".join(
-                struct.pack("<BHH", 1, kind, mask)
-                for kind, mask in ((0, 63), (2, 65), (3, 61), (4, 61))
+    connection_number = 0
+    while True:
+        try:
+            conn, _ = admin.accept()
+            connection_number += 1
+            connection = conn
+            packet_id, payload = read_frame(conn)
+            if packet_id != 0:
+                return
+            if (
+                mode == "bad_auth"
+                or (mode == "reconnect_bad_auth" and connection_number == 2)
+                or not payload.startswith(password.encode() + b"\0")
+            ):
+                send(frame(102, b"\x0a"))
+                return
+            if mode == "bad_protocol" or (
+                mode == "reconnect_bad_protocol" and connection_number == 2
+            ):
+                send(frame(103, b"\x03\x00"))
+                return
+            if connection_number == 2 and mode == "reconnect_rejected":
+                send(frame(100))
+                return
+            if connection_number == 2 and mode == "reconnect_slow_handshake":
+                threading.Event().wait(0.6)  # Controlled peer holds the protocol response.
+            protocol = (
+                b"\x02"
+                + b"".join(
+                    struct.pack("<BHH", 1, kind, mask)
+                    for kind, mask in ((0, 63), (2, 65), (3, 61), (4, 61))
+                )
+                + b"\x00"
             )
-            + b"\x00"
-        )
-        welcome = b"Server\x0013.4\x00\x01\x00" + struct.pack("<IBIHH", 17, 0, start_day, 256, 256)
-        if mode == "wrong_identity":
-            welcome = b"Server\0wrong-revision\0\x01\0" + struct.pack(
+            welcome = b"Server\x0013.4\x00\x01\x00" + struct.pack(
                 "<IBIHH", 17, 0, start_day, 256, 256
             )
-        send(frame(103, protocol) + frame(104, welcome))
-        if mode != "no_date":
-            send(frame(107, struct.pack("<I", start_day)))
-        while True:
-            packet_id, payload = read_frame(conn)
-            if packet_id == 7:
-                send(frame(126, payload))
-    except EOFError, BrokenPipeError, ConnectionResetError, OSError:
-        return
+            if mode == "wrong_identity" or (
+                mode == "reconnect_wrong_identity" and connection_number == 2
+            ):
+                welcome = b"Server\0wrong-revision\0\x01\0" + struct.pack(
+                    "<IBIHH", 17, 0, start_day, 256, 256
+                )
+            send(frame(103, protocol) + frame(104, welcome))
+            if connection_number == 2 and mode in {
+                "reconnect_world_reset",
+                "reconnect_shutdown",
+                "reconnect_malformed",
+            }:
+                packet = {
+                    "reconnect_world_reset": frame(105),
+                    "reconnect_shutdown": frame(106),
+                    "reconnect_malformed": frame(117, b"\x02\x01"),
+                }[mode]
+                send(packet)
+                return
+            if mode in {
+                "reconnect_success",
+                "reconnect_twice",
+                "reconnect_exhausted",
+                "reconnect_heartbeat",
+            }:
+                setup_packets = [read_frame(conn)[0] for _ in range(8)]
+                if setup_packets != [2, 2, 2, 2, 3, 3, 3, 3]:
+                    return
+            if mode != "no_date":
+                initial = (
+                    start_day + 30
+                    if (
+                        mode in {"reconnect_success", "reconnect_heartbeat"}
+                        and connection_number == 2
+                    )
+                    or (mode == "reconnect_twice" and connection_number == 3)
+                    else start_day + 2
+                    if mode == "reconnect_twice" and connection_number == 2
+                    else start_day
+                )
+                if mode == "reconnect_success" and connection_number == 2:
+                    economy = struct.pack(
+                        "<BqqqHqHHqHH", 2, -50, 100, -2500, 65535, 800, 3, 2, 0, 0, 0
+                    )
+                    send(frame(117, economy))
+                send(frame(107, struct.pack("<I", initial)))
+                if mode == "reconnect_success" and connection_number == 2:
+                    send(frame(117, economy))
+            while True:
+                packet_id, payload = read_frame(conn)
+                if packet_id == 7:
+                    should_drop = (
+                        mode in {"reconnect_success", "reconnect_exhausted"}
+                        and connection_number == 1
+                        or mode == "reconnect_twice"
+                        and connection_number <= 2
+                        or mode.startswith("reconnect_")
+                        and mode != "reconnect_heartbeat"
+                        and connection_number == 1
+                    )
+                    if mode == "reconnect_heartbeat" and connection_number == 1:
+                        continue
+                    if should_drop and unpause_seen:
+                        conn.shutdown(socket.SHUT_RDWR)
+                        conn.close()
+                        connection = None
+                        if mode == "reconnect_exhausted":
+                            admin.close()
+                            return
+                        break
+                    send(frame(126, payload))
+            if not mode.startswith("reconnect_"):
+                return
+        except EOFError, BrokenPipeError, ConnectionResetError, OSError:
+            if mode == "reconnect_heartbeat" and connection_number == 1:
+                connection = None
+                continue
+            return
 
 
 thread = threading.Thread(target=peer, daemon=True)
@@ -189,6 +271,7 @@ for line in input_lines():
     if mode == "noisy_stdio_select" and command == "save final":
         os.write(1, b"ordinary AI log line\n" * 30_000)
     if command in {"unpause", "exec scripts/live_unpause_barrier.scr"}:
+        unpause_seen = True
         if mode == "eof_after_ready":
             with lock:
                 if connection is not None:
@@ -207,9 +290,18 @@ for line in input_lines():
                 if mode == "unpause_older_date"
                 else start_day + 1
                 if mode == "save_valid_fixture"
-                else start_day + (32 if mode == "overshoot" else 30)
+                else start_day
+                + (32 if mode == "overshoot" else 1 if mode.startswith("reconnect_") else 30)
             )
+            if mode == "stall_after_unpause":
+                day = start_day + 1
             send(frame(107, struct.pack("<I", day)))
+            if mode == "loss_after_target":
+                with lock:
+                    if connection is not None:
+                        connection.shutdown(socket.SHUT_RDWR)
+                        connection.close()
+                        connection = None
     if command == "pause" and mode == "shutdown_on_pause":
         send(frame(105))
     if command.startswith("save "):

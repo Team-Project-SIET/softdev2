@@ -123,6 +123,20 @@ def _identity() -> ExpectedServerIdentity:
     return ExpectedServerIdentity("13.4", 17, "", 256, 256, 0)
 
 
+def test_reconnect_backoff_uses_capped_source_schedule() -> None:
+    from app.simulation.openttd.live_runner import _reconnect_delay
+
+    assert [_reconnect_delay(attempt) for attempt in range(7)] == [
+        0.25,
+        0.5,
+        1.0,
+        2.0,
+        2.0,
+        2.0,
+        2.0,
+    ]
+
+
 def _options(**changes) -> LiveExecutionOptions:
     values = dict(
         startup_timeout_seconds=3,
@@ -155,11 +169,17 @@ async def _fixture_result(prepared, progress, config) -> SimulationResult:
     )
 
 
-def _make_runner(tmp_path: Path, mode: str, *, final_result=_fixture_result, options=None):
+def _make_runner(
+    tmp_path: Path, mode: str, *, final_result=_fixture_result, options=None, port_range=None
+):
     from app.simulation.openttd.live_runner import LiveSimulationRunner
 
     runtime = _runtime(tmp_path, mode)
-    launch = _Launch(LiveLaunchPreparation(tmp_path / "runs", lock_root=tmp_path / "locks"))
+    launch = _Launch(
+        LiveLaunchPreparation(
+            tmp_path / "runs", lock_root=tmp_path / "locks", port_range=port_range or (39770, 39999)
+        )
+    )
     runner = LiveSimulationRunner(
         _Assets(runtime),
         launch,
@@ -267,6 +287,289 @@ def test_observer_events_reach_one_scoped_telemetry_processor(tmp_path: Path) ->
     assert [row.sequence for row in rows] == list(range(1, len(rows) + 1))
     assert all(row.experiment_run_id == 7 for row in rows)
     assert sum(row.kind is ObservationKind.DATE for row in rows) >= 2
+
+
+@pytest.mark.parametrize(
+    "mode,expected_epochs",
+    [("reconnect_success", 2), ("reconnect_heartbeat", 2), ("reconnect_twice", 3)],
+)
+def test_recovered_admin_socket_keeps_one_world_and_one_telemetry_sequence(
+    tmp_path: Path, monkeypatch, mode: str, expected_epochs: int
+) -> None:
+    from app.simulation.openttd.live_runner import LiveSimulationRunner
+    from app.simulation.openttd.telemetry import DiagnosticCode, ObservationKind
+    from app.simulation.openttd.telemetry_processor import TelemetryProcessor
+
+    class RecordingStore:
+        def __init__(self):
+            self.batches = []
+
+        async def write_batch(self, batch, *, deadline):
+            self.batches.append(batch)
+
+        async def close(self):
+            pass
+
+    store = RecordingStore()
+    launches = []
+    original = asyncio.create_subprocess_exec
+
+    async def count_launch(*args, **kwargs):
+        launches.append(args)
+        return await original(*args, **kwargs)
+
+    monkeypatch.setattr(asyncio, "create_subprocess_exec", count_launch)
+    runner = LiveSimulationRunner(
+        _Assets(_runtime(tmp_path, mode)),
+        LiveLaunchPreparation(
+            tmp_path / "runs", lock_root=tmp_path / "locks", port_range=(41000, 41200)
+        ),
+        expected_identity=_identity(),
+        final_result=_fixture_result,
+        options=_options(
+            running_timeout_seconds=4,
+            reconnect_budget_seconds=0.45 if mode == "reconnect_twice" else 15,
+            heartbeat_interval_seconds=0.1,
+            heartbeat_timeout_seconds=0.3,
+        ),
+        telemetry_factory=lambda run_id: TelemetryProcessor(run_id, store),
+    )
+    result = runner.run(_config(), run_id=7, artifact_dir=tmp_path / "artifacts")
+    rows = [row for batch in store.batches for row in batch.observations]
+    assert len(launches) == 1
+    assert result.live_summary is not None
+    assert result.live_summary.requested_target_day == date(1950, 1, 1).toordinal() + 395
+    assert [row.sequence for row in rows] == list(range(1, len(rows) + 1))
+    assert [row.connection_epoch for row in rows if row.kind is ObservationKind.DATE] == [
+        1,
+        1,
+        *range(2, expected_epochs + 1),
+    ]
+    gaps = [
+        row
+        for row in rows
+        if row.kind is ObservationKind.DIAGNOSTIC
+        and row.payload.code is DiagnosticCode.CONNECTION_GAP
+    ]
+    assert len(gaps) == expected_epochs - 1
+    assert gaps[0].sequence < next(
+        row.sequence
+        for row in rows
+        if row.kind is ObservationKind.DATE and row.connection_epoch == 2
+    )
+    if mode == "reconnect_success":
+        epoch_two_economy = [
+            row
+            for row in rows
+            if row.kind is ObservationKind.COMPANY_ECONOMY and row.connection_epoch == 2
+        ]
+        assert len(epoch_two_economy) == 2
+        assert epoch_two_economy[0].game_day is None
+        assert epoch_two_economy[0].date_context_sequence is None
+        new_date = next(
+            row for row in rows if row.kind is ObservationKind.DATE and row.connection_epoch == 2
+        )
+        assert epoch_two_economy[1].game_day == new_date.game_day
+        assert epoch_two_economy[1].date_context_sequence == new_date.sequence
+
+
+def test_reconnect_exhaustion_is_observer_lost_without_second_world(tmp_path: Path) -> None:
+    from app.simulation.openttd.live_runner import LiveSimulationRunner
+    from app.simulation.openttd.telemetry import DiagnosticCode, ObservationKind
+    from app.simulation.openttd.telemetry_processor import TelemetryProcessor
+
+    class RecordingStore:
+        def __init__(self):
+            self.batches = []
+
+        async def write_batch(self, batch, *, deadline):
+            self.batches.append(batch)
+
+        async def close(self):
+            pass
+
+    store = RecordingStore()
+    launch = _Launch(
+        LiveLaunchPreparation(
+            tmp_path / "runs", lock_root=tmp_path / "locks", port_range=(41000, 41200)
+        )
+    )
+    runner = LiveSimulationRunner(
+        _Assets(_runtime(tmp_path, "reconnect_exhausted")),
+        launch,
+        expected_identity=_identity(),
+        final_result=_fixture_result,
+        options=_options(
+            running_timeout_seconds=4,
+            reconnect_budget_seconds=0.4,
+            heartbeat_interval_seconds=0.1,
+            heartbeat_timeout_seconds=0.3,
+        ),
+        telemetry_factory=lambda run_id: TelemetryProcessor(run_id, store),
+    )
+    started = time.monotonic()
+    with pytest.raises(SimulationExecutionError) as captured:
+        runner.run(_config(), run_id=8, artifact_dir=tmp_path / "artifacts")
+    assert time.monotonic() - started < 3
+    assert captured.value.failure.code is ExecutionFailureCode.OBSERVER_LOST
+    assert launch.prepared is not None and launch.prepared.lease.closed
+    assert not launch.prepared.workspace.exists()
+    rows = [row for batch in store.batches for row in batch.observations]
+    assert (
+        sum(
+            row.kind is ObservationKind.DIAGNOSTIC
+            and row.payload.code is DiagnosticCode.CONNECTION_GAP
+            for row in rows
+        )
+        == 1
+    )
+    assert {row.connection_epoch for row in rows} == {1}
+    assert (
+        sum(
+            row.kind is ObservationKind.DIAGNOSTIC
+            and row.payload.code is DiagnosticCode.CONNECTION_OPENED
+            for row in rows
+        )
+        == 1
+    )
+
+
+def test_reconnect_never_extends_running_deadline(tmp_path: Path) -> None:
+    runner, _ = _make_runner(
+        tmp_path,
+        "reconnect_exhausted",
+        port_range=(41000, 41200),
+        options=_options(
+            running_timeout_seconds=0.2,
+            reconnect_budget_seconds=2,
+            heartbeat_interval_seconds=0.05,
+            heartbeat_timeout_seconds=0.15,
+        ),
+    )
+    with pytest.raises(SimulationExecutionError) as captured:
+        runner.run(_config(), run_id=8, artifact_dir=tmp_path / "artifacts")
+    assert captured.value.failure.code is ExecutionFailureCode.TIMEOUT
+
+
+def test_healthy_heartbeat_does_not_replace_stalled_world_timeout(tmp_path: Path) -> None:
+    runner, _ = _make_runner(
+        tmp_path,
+        "stall_after_unpause",
+        port_range=(41000, 41200),
+        options=_options(
+            running_timeout_seconds=0.35,
+            heartbeat_interval_seconds=0.05,
+            heartbeat_timeout_seconds=0.15,
+        ),
+    )
+    with pytest.raises(SimulationExecutionError) as captured:
+        runner.run(_config(), run_id=8, artifact_dir=tmp_path / "artifacts")
+    assert captured.value.failure.code is ExecutionFailureCode.TIMEOUT
+
+
+def test_reconnect_handshake_consumes_same_absolute_outage_budget(tmp_path: Path) -> None:
+    runner, launch = _make_runner(
+        tmp_path,
+        "reconnect_slow_handshake",
+        port_range=(41000, 41200),
+        options=_options(
+            running_timeout_seconds=4,
+            reconnect_budget_seconds=0.4,
+            handshake_timeout_seconds=1,
+            heartbeat_interval_seconds=0.1,
+            heartbeat_timeout_seconds=0.3,
+        ),
+    )
+    with pytest.raises(SimulationExecutionError) as captured:
+        runner.run(_config(), run_id=8, artifact_dir=tmp_path / "artifacts")
+    assert captured.value.failure.code is ExecutionFailureCode.OBSERVER_LOST
+    assert launch.prepared is not None and launch.prepared.lease.closed
+
+
+def test_cancellation_during_reconnect_backoff_joins_observer(tmp_path: Path, monkeypatch) -> None:
+    from app.simulation.openttd.live_runner import LiveSimulationRunner
+
+    cancellation = threading.Event()
+    backoff_started = threading.Event()
+    original_sleep = asyncio.sleep
+
+    async def capture_backoff(seconds):
+        if seconds >= 0.25:
+            backoff_started.set()
+            cancellation.set()
+        await original_sleep(seconds)
+
+    monkeypatch.setattr(asyncio, "sleep", capture_backoff)
+    launch = _Launch(
+        LiveLaunchPreparation(
+            tmp_path / "runs", lock_root=tmp_path / "locks", port_range=(41000, 41200)
+        )
+    )
+    runner = LiveSimulationRunner(
+        _Assets(_runtime(tmp_path, "reconnect_success")),
+        launch,
+        expected_identity=_identity(),
+        final_result=_fixture_result,
+        options=_options(
+            running_timeout_seconds=4,
+            heartbeat_interval_seconds=0.1,
+            heartbeat_timeout_seconds=0.3,
+        ),
+        cancellation=cancellation,
+    )
+    with pytest.raises(SimulationExecutionError) as captured:
+        runner.run(_config(), run_id=8, artifact_dir=tmp_path / "artifacts")
+    assert backoff_started.is_set()
+    assert captured.value.failure.code is ExecutionFailureCode.CANCELLED
+    assert launch.prepared is not None and launch.prepared.lease.closed
+
+
+@pytest.mark.parametrize(
+    "mode,code",
+    [
+        ("reconnect_bad_auth", ExecutionFailureCode.AUTHENTICATION_FAILURE),
+        ("reconnect_bad_protocol", ExecutionFailureCode.PROTOCOL_FAILURE),
+        ("reconnect_wrong_identity", ExecutionFailureCode.PROTOCOL_FAILURE),
+        ("reconnect_rejected", ExecutionFailureCode.STARTUP_FAILURE),
+        ("reconnect_world_reset", ExecutionFailureCode.UNEXPECTED_SHUTDOWN),
+        ("reconnect_shutdown", ExecutionFailureCode.UNEXPECTED_SHUTDOWN),
+        ("reconnect_malformed", ExecutionFailureCode.PROTOCOL_FAILURE),
+    ],
+)
+def test_reconnect_does_not_retry_semantic_failure(
+    tmp_path: Path, mode: str, code: ExecutionFailureCode
+) -> None:
+    from app.simulation.openttd.live_runner import LiveSimulationRunner
+
+    launch = _Launch(
+        LiveLaunchPreparation(
+            tmp_path / "runs", lock_root=tmp_path / "locks", port_range=(41000, 41200)
+        )
+    )
+    runner = LiveSimulationRunner(
+        _Assets(_runtime(tmp_path, mode)),
+        launch,
+        expected_identity=_identity(),
+        final_result=_fixture_result,
+        options=_options(
+            running_timeout_seconds=4,
+            heartbeat_interval_seconds=0.1,
+            heartbeat_timeout_seconds=0.3,
+        ),
+    )
+    with pytest.raises(SimulationExecutionError) as captured:
+        runner.run(_config(), run_id=8, artifact_dir=tmp_path / "artifacts")
+    assert captured.value.failure.code is code
+    assert launch.prepared is not None and launch.prepared.lease.closed
+    assert not launch.prepared.workspace.exists()
+
+
+def test_post_target_observer_eof_does_not_discard_explicit_final_save(tmp_path: Path) -> None:
+    runner, launch = _make_runner(tmp_path, "loss_after_target", port_range=(41000, 41200))
+    result = runner.run(_config(), run_id=9, artifact_dir=tmp_path / "artifacts")
+    assert result.live_summary is not None
+    assert result.live_summary.last_observed_day == result.live_summary.requested_target_day
+    assert launch.prepared is not None and launch.prepared.lease.closed
 
 
 def test_fatal_telemetry_write_cannot_return_live_success(tmp_path: Path) -> None:

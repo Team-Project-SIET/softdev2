@@ -8,6 +8,7 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
 from test_experiments import FakeRunner, baseline_config
+from test_live_runner import _Assets, _config, _fixture_result, _identity, _options, _runtime
 from test_postgres_integration import postgres_factory as postgres_factory
 from test_telemetry_domain import _economy
 
@@ -478,6 +479,135 @@ def test_postgres_live_processor_writes_before_final_simulation_row(
         assert live is not None and live.telemetry_status == status
         assert live.final_persisted_sequence == (5 if complete else 2)
         assert session.scalar(select(ExperimentMetricRecord.value)) == 42
+
+
+def test_postgres_recovered_gap_stays_ordered_and_marks_success_incomplete(
+    postgres_factory: sessionmaker[Session], tmp_path: Path
+) -> None:
+    from sqlalchemy import text
+
+    from app.simulation.openttd.live_launch import LiveLaunchPreparation
+    from app.simulation.openttd.live_runner import LiveSimulationRunner
+    from app.simulation.openttd.telemetry import DiagnosticCode, ObservationKind
+
+    engine = postgres_factory.kw["bind"]
+    Base.metadata.create_all(engine)
+    with postgres_factory() as session:
+        schema = session.scalar(text("SELECT current_schema()"))
+    url = engine.url.update_query_dict({"options": f"-c search_path={schema}"})
+    runtime = _runtime(tmp_path, "reconnect_success")
+
+    def live_factory(config, options, root, processor_factory):
+        return LiveSimulationRunner(
+            _Assets(runtime, config),
+            LiveLaunchPreparation(
+                tmp_path / "runs", lock_root=tmp_path / "locks", port_range=(41000, 41200)
+            ),
+            expected_identity=_identity(),
+            final_result=_fixture_result,
+            options=options,
+            telemetry_factory=processor_factory,
+        )
+
+    result = ExperimentService(
+        postgres_factory,
+        FakeRunner(),
+        live_runner_factory=live_factory,
+        telemetry_store_factory=lambda: TelemetryRepository(url),
+    ).run(
+        _config(),
+        artifact_dir=tmp_path,
+        execution_mode=ExecutionMode.LIVE,
+        live_options=_options(
+            running_timeout_seconds=4,
+            heartbeat_interval_seconds=0.1,
+            heartbeat_timeout_seconds=0.3,
+        ),
+    )
+    assert result.status is RunStatus.SUCCEEDED
+    assert result.live_summary is not None
+    assert result.live_summary.telemetry_status is TelemetryStatus.INCOMPLETE
+    with postgres_factory() as session:
+        live = session.get(LiveTelemetrySessionRecord, result.run_id)
+        assert live is not None
+        assert live.connection_count == 2
+        assert live.gap_count == 1
+        assert live.telemetry_status == "incomplete"
+        rows = session.scalars(
+            select(TelemetryObservationRecord)
+            .where(TelemetryObservationRecord.experiment_run_id == result.run_id)
+            .order_by(TelemetryObservationRecord.sequence)
+        ).all()
+        assert [row.sequence for row in rows] == list(range(1, len(rows) + 1))
+        assert {row.connection_epoch for row in rows if row.kind == ObservationKind.DATE} == {
+            1,
+            2,
+        }
+        assert (
+            sum(
+                row.kind == ObservationKind.DIAGNOSTIC
+                and row.payload["code"] == DiagnosticCode.CONNECTION_GAP
+                for row in rows
+            )
+            == 1
+        )
+
+
+def test_postgres_reconnect_exhaustion_keeps_gap_and_typed_failure(
+    postgres_factory: sessionmaker[Session], tmp_path: Path
+) -> None:
+    from sqlalchemy import text
+
+    from app.simulation.openttd.live_launch import LiveLaunchPreparation
+    from app.simulation.openttd.live_runner import LiveSimulationRunner
+
+    engine = postgres_factory.kw["bind"]
+    Base.metadata.create_all(engine)
+    with postgres_factory() as session:
+        schema = session.scalar(text("SELECT current_schema()"))
+    url = engine.url.update_query_dict({"options": f"-c search_path={schema}"})
+    runtime = _runtime(tmp_path, "reconnect_exhausted")
+
+    def live_factory(config, options, root, processor_factory):
+        return LiveSimulationRunner(
+            _Assets(runtime, config),
+            LiveLaunchPreparation(
+                tmp_path / "runs", lock_root=tmp_path / "locks", port_range=(41000, 41200)
+            ),
+            expected_identity=_identity(),
+            final_result=_fixture_result,
+            options=options,
+            telemetry_factory=processor_factory,
+        )
+
+    result = ExperimentService(
+        postgres_factory,
+        FakeRunner(),
+        live_runner_factory=live_factory,
+        telemetry_store_factory=lambda: TelemetryRepository(url),
+    ).run(
+        _config(),
+        artifact_dir=tmp_path,
+        execution_mode=ExecutionMode.LIVE,
+        live_options=_options(
+            running_timeout_seconds=4,
+            reconnect_budget_seconds=0.4,
+            heartbeat_interval_seconds=0.1,
+            heartbeat_timeout_seconds=0.3,
+        ),
+    )
+    assert result.status is RunStatus.FAILED
+    assert result.failure_code is ExecutionFailureCode.OBSERVER_LOST
+    with postgres_factory() as session:
+        run = session.get(ExperimentRunRecord, result.run_id)
+        live = session.get(LiveTelemetrySessionRecord, result.run_id)
+        assert run is not None and run.failure_code == ExecutionFailureCode.OBSERVER_LOST
+        assert run.simulation is None
+        assert live is not None
+        assert live.connection_count == 1
+        assert live.gap_count == 1
+        assert live.telemetry_status == "failed"
+        assert session.scalar(select(ExperimentMetricRecord.id)) is None
 
 
 def test_postgres_failed_live_run_retains_observations_without_final_metrics(

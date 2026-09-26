@@ -90,6 +90,16 @@ class _RunFailure(Exception):
         self.code = code
 
 
+_RECOVERABLE_OBSERVER_STATES = frozenset(
+    {ObserverState.CONNECTION_LOST, ObserverState.EOF, ObserverState.HEARTBEAT_FAILURE}
+)
+
+
+def _reconnect_delay(attempt: int) -> float:
+    """Source-defined local Admin retry schedule, capped at two seconds."""
+    return min(0.25 * 2 ** min(attempt, 3), 2.0)
+
+
 _SOCKET_INODE = re.compile(r"socket:\[(\d+)\]\Z")
 
 
@@ -381,6 +391,7 @@ class LiveSimulationRunner:
         observer_failure: ExecutionFailureCode | None = None
         ready = False
         quit_requested = False
+        running_deadline: float | None = None
         shutdown_deadline: float | None = None
         processor: TelemetryProcessor | None = None
         storage_health_task: asyncio.Task[object] | None = None
@@ -398,7 +409,19 @@ class LiveSimulationRunner:
             elif isinstance(event, ObserverHealth):
                 if event.state is ObserverState.READY:
                     ready = True
-                elif not quit_requested:
+                elif (
+                    not quit_requested
+                    and not (
+                        phase in {_Phase.RUNNING, _Phase.STOPPING}
+                        and event.state in _RECOVERABLE_OBSERVER_STATES
+                    )
+                    and not (
+                        ready
+                        and last_day is not None
+                        and last_day >= target_day
+                        and event.state in _RECOVERABLE_OBSERVER_STATES
+                    )
+                ):
                     observer_failure = {
                         ObserverState.AUTHENTICATION_REJECTED: (
                             ExecutionFailureCode.AUTHENTICATION_FAILURE
@@ -447,6 +470,131 @@ class LiveSimulationRunner:
                 except TimeoutError:
                     continue
 
+        async def observe_with_recovery() -> None:
+            """Own successive one-socket observers under one logical runner task."""
+            nonlocal observer_failure
+            outage_deadline: float | None = None
+            retry = 0
+            while True:
+                if observer_failure is not None or quit_requested:
+                    return
+                terminal: ObserverState | None = None
+                connected = False
+                attempt_timeout: asyncio.Timeout | None = None
+
+                def forward(event: ObserverEvent) -> None:
+                    nonlocal terminal, connected, outage_deadline, retry, observer_failure
+                    if isinstance(event, ObserverHealth):
+                        if event.state is ObserverState.CONNECTED:
+                            connected = True
+                        elif event.state is ObserverState.READY:
+                            if (
+                                outage_deadline is not None
+                                and running_deadline is not None
+                                and asyncio.get_running_loop().time()
+                                >= min(outage_deadline, running_deadline)
+                            ):
+                                observer_failure = (
+                                    ExecutionFailureCode.TIMEOUT
+                                    if running_deadline <= outage_deadline
+                                    else ExecutionFailureCode.OBSERVER_LOST
+                                )
+                                changed.set()
+                            else:
+                                if attempt_timeout is not None:
+                                    attempt_timeout.reschedule(None)
+                                outage_deadline = None
+                                retry = 0
+                        elif event.state in _RECOVERABLE_OBSERVER_STATES:
+                            connected = False
+                            terminal = event.state
+                            if (
+                                phase is _Phase.RUNNING
+                                and last_day is not None
+                                and last_day < target_day
+                                and outage_deadline is None
+                            ):
+                                outage_deadline = (
+                                    asyncio.get_running_loop().time()
+                                    + self.options.reconnect_budget_seconds
+                                )
+                        elif event.state in {
+                            ObserverState.AUTHENTICATION_REJECTED,
+                            ObserverState.CONNECTION_REJECTED,
+                            ObserverState.PROTOCOL_REJECTED,
+                            ObserverState.MALFORMED_PACKET,
+                            ObserverState.SERVER_SHUTDOWN,
+                            ObserverState.WORLD_RESET,
+                        }:
+                            terminal = event.state
+                    emit(event)
+
+                observer = self.observer_factory(
+                    "127.0.0.1",
+                    prepared.admin_port,
+                    prepared.admin_password,
+                    "softdev2-live",
+                    "1",
+                    self.expected_identity,
+                    connect_timeout=min(10.0, self.options.handshake_timeout_seconds),
+                    handshake_timeout=self.options.handshake_timeout_seconds,
+                    heartbeat_interval=self.options.heartbeat_interval_seconds,
+                    heartbeat_timeout=self.options.heartbeat_timeout_seconds,
+                )
+                try:
+                    if outage_deadline is None:
+                        await observer.run(forward)
+                    else:
+                        assert running_deadline is not None
+                        attempt_timeout = asyncio.timeout_at(min(outage_deadline, running_deadline))
+                        async with attempt_timeout:
+                            await observer.run(forward)
+                except TimeoutError:
+                    if connected:
+                        forward(ObserverHealth(ObserverState.CONNECTION_LOST))
+                    assert outage_deadline is not None
+                    if observer_failure is None:
+                        observer_failure = (
+                            ExecutionFailureCode.TIMEOUT
+                            if running_deadline is not None and running_deadline <= outage_deadline
+                            else ExecutionFailureCode.OBSERVER_LOST
+                        )
+                    changed.set()
+                    return
+                if observer_failure is not None or quit_requested:
+                    return
+                if (
+                    phase is not _Phase.RUNNING
+                    or last_day is not None
+                    and last_day >= target_day
+                    or terminal not in _RECOVERABLE_OBSERVER_STATES
+                ):
+                    return
+                now = asyncio.get_running_loop().time()
+                if outage_deadline is None:
+                    outage_deadline = now + self.options.reconnect_budget_seconds
+                assert outage_deadline is not None
+                assert running_deadline is not None
+                remaining = min(outage_deadline, running_deadline) - now
+                if remaining <= 0:
+                    observer_failure = (
+                        ExecutionFailureCode.TIMEOUT
+                        if running_deadline <= outage_deadline
+                        else ExecutionFailureCode.OBSERVER_LOST
+                    )
+                    changed.set()
+                    return
+                await asyncio.sleep(min(_reconnect_delay(retry), remaining))
+                retry += 1
+                if asyncio.get_running_loop().time() >= min(outage_deadline, running_deadline):
+                    observer_failure = (
+                        ExecutionFailureCode.TIMEOUT
+                        if running_deadline <= outage_deadline
+                        else ExecutionFailureCode.OBSERVER_LOST
+                    )
+                    changed.set()
+                    return
+
         try:
             self._check_cancellation()
             if self.telemetry_factory is not None:
@@ -480,19 +628,7 @@ class LiveSimulationRunner:
                     raise _RunFailure(ExecutionFailureCode.TIMEOUT)
                 await asyncio.sleep(min(0.025, endpoint_deadline - loop.time()))
             phase = _Phase.CONNECTING
-            observer = self.observer_factory(
-                "127.0.0.1",
-                prepared.admin_port,
-                prepared.admin_password,
-                "softdev2-live",
-                "1",
-                self.expected_identity,
-                connect_timeout=min(10.0, self.options.handshake_timeout_seconds),
-                handshake_timeout=self.options.handshake_timeout_seconds,
-                heartbeat_interval=self.options.heartbeat_interval_seconds,
-                heartbeat_timeout=self.options.heartbeat_timeout_seconds,
-            )
-            observer_task = asyncio.create_task(observer.run(emit))
+            observer_task = asyncio.create_task(observe_with_recovery())
             observer_task.add_done_callback(lambda _: changed.set())
             readiness_deadline = min(
                 endpoint_deadline, loop.time() + self.options.handshake_timeout_seconds
@@ -521,7 +657,11 @@ class LiveSimulationRunner:
                     self._check_cancellation()
                     if observer_failure is not None:
                         raise _RunFailure(observer_failure)
-                    if process.returncode is not None or observer_task.done() or drains[0].done():
+                    if (
+                        process.returncode is not None
+                        or (observer_task.done() and (last_day is None or last_day < target_day))
+                        or drains[0].done()
+                    ):
                         raise _RunFailure(ExecutionFailureCode.STARTUP_FAILURE)
                     remaining = endpoint_deadline - loop.time()
                     if remaining <= 0:
@@ -530,20 +670,32 @@ class LiveSimulationRunner:
                 self._check_cancellation()
                 if observer_failure is not None:
                     raise _RunFailure(observer_failure)
-                if process.returncode is not None or observer_task.done() or drains[0].done():
+                if (
+                    process.returncode is not None
+                    or (observer_task.done() and (last_day is None or last_day < target_day))
+                    or drains[0].done()
+                ):
                     raise _RunFailure(ExecutionFailureCode.STARTUP_FAILURE)
             finally:
                 console.clear(UNPAUSE_BARRIER_MARKER, unpause_seen)
             while last_day <= pre_unpause_day:
                 if observer_failure is not None:
                     raise _RunFailure(observer_failure)
-                if process.returncode is not None or observer_task.done() or drains[0].done():
+                if (
+                    process.returncode is not None
+                    or (observer_task.done() and (last_day is None or last_day < target_day))
+                    or drains[0].done()
+                ):
                     raise _RunFailure(ExecutionFailureCode.STARTUP_FAILURE)
                 await wait_change(endpoint_deadline)
             self._check_cancellation()
             if observer_failure is not None:
                 raise _RunFailure(observer_failure)
-            if process.returncode is not None or observer_task.done() or drains[0].done():
+            if (
+                process.returncode is not None
+                or (observer_task.done() and (last_day is None or last_day < target_day))
+                or drains[0].done()
+            ):
                 raise _RunFailure(ExecutionFailureCode.STARTUP_FAILURE)
             if loop.time() >= endpoint_deadline:
                 raise _RunFailure(ExecutionFailureCode.TIMEOUT)
@@ -554,6 +706,7 @@ class LiveSimulationRunner:
             assert running_seconds is not None
             running_deadline = loop.time() + running_seconds
             while last_day is None or last_day < target_day:
+                self._check_cancellation()
                 if observer_failure is not None:
                     raise _RunFailure(observer_failure)
                 if process.returncode is not None or observer_task.done():
