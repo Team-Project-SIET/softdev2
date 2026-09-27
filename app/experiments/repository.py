@@ -7,6 +7,7 @@ from typing import Literal
 
 from pydantic import ValidationError
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.experiments.domain import (
@@ -197,9 +198,21 @@ class ExperimentRepository:
             )
         )
         if scenario is None:
-            scenario = ExperimentScenario(**config.scenario.model_dump())
-            session.add(scenario)
-        elif scenario.openttd_config != config.scenario.openttd_config:
+            try:
+                with session.begin_nested():
+                    scenario = ExperimentScenario(**config.scenario.model_dump())
+                    session.add(scenario)
+                    session.flush()
+            except IntegrityError:
+                scenario = session.scalar(
+                    select(ExperimentScenario).where(
+                        ExperimentScenario.identifier == config.scenario.identifier,
+                        ExperimentScenario.version == config.scenario.version,
+                    )
+                )
+                if scenario is None:
+                    raise
+        if scenario.openttd_config != config.scenario.openttd_config:
             raise ValueError("scenario version already exists with different OpenTTD configuration")
         strategy = session.scalar(
             select(PlanningStrategyRecord).where(
@@ -208,11 +221,23 @@ class ExperimentRepository:
             )
         )
         if strategy is None:
-            strategy = PlanningStrategyRecord(
-                identifier=config.planning.strategy_identifier,
-                version=config.planning.strategy_version,
-            )
-            session.add(strategy)
+            try:
+                with session.begin_nested():
+                    strategy = PlanningStrategyRecord(
+                        identifier=config.planning.strategy_identifier,
+                        version=config.planning.strategy_version,
+                    )
+                    session.add(strategy)
+                    session.flush()
+            except IntegrityError:
+                strategy = session.scalar(
+                    select(PlanningStrategyRecord).where(
+                        PlanningStrategyRecord.identifier == config.planning.strategy_identifier,
+                        PlanningStrategyRecord.version == config.planning.strategy_version,
+                    )
+                )
+                if strategy is None:
+                    raise
         run = ExperimentRunRecord(
             scenario=scenario,
             strategy=strategy,
