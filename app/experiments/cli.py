@@ -12,6 +12,7 @@ from app.experiments.comparison import (
     run_comparison,
 )
 from app.experiments.domain import ExecutionMode, ExperimentConfig, ScenarioConfig
+from app.experiments.outcome_recovery import OutcomeRecoveryService, RecoveryStatus
 from app.experiments.service import ExperimentService
 from app.experiments.strategies import COMPARISON_STRATEGIES, BaselineStrategy
 
@@ -39,6 +40,11 @@ def main(argv: list[str] | None = None) -> int:
         default="batch",
         help="live runs at normal speed; incomplete telemetry returns exit code 3",
     )
+    recover_parser = commands.add_parser(
+        "recover", help="reconcile a validated live outcome manifest without rerunning"
+    )
+    recover_parser.add_argument("manifest", type=Path)
+    recover_parser.add_argument("--artifact-dir", type=Path, default=Path("artifacts/experiments"))
     compare_parser = commands.add_parser("compare", help="compare pinned SimpleAI mode policies")
     compare_parser.add_argument("--scenario", default="generated-256-square")
     compare_parser.add_argument("--strategies", required=True)
@@ -46,6 +52,21 @@ def main(argv: list[str] | None = None) -> int:
     compare_parser.add_argument("--days", type=int, default=730)
     compare_parser.add_argument("--artifact-dir", type=Path, default=Path("artifacts/experiments"))
     args = parser.parse_args(argv)
+
+    if args.command == "recover":
+        recovery = OutcomeRecoveryService().recover(args.artifact_dir, args.manifest)
+        run_part = f" run={recovery.run_id}" if recovery.run_id is not None else ""
+        cleanup_part = " workspace_cleanup=pending" if recovery.workspace_cleanup_pending else ""
+        print(f"recovery={recovery.status}{run_part}{cleanup_part}")
+        return (
+            0
+            if recovery.status
+            in {
+                RecoveryStatus.RECOVERED,
+                RecoveryStatus.ALREADY_RECONCILED,
+            }
+            else 1
+        )
 
     try:
         scenario = generated_scenario(getattr(args, "scenario", "generated-256-square"))

@@ -18,6 +18,7 @@ from app.experiments.domain import (
     SimulationResult,
     TelemetryStatus,
 )
+from app.experiments.outcome_recovery import RecoveryResult, RecoveryStatus
 
 
 class RecordingService:
@@ -60,6 +61,7 @@ class RecordingService:
             if self.telemetry_status is not None
             else None
         )
+
         simulation = (
             SimulationResult(
                 simulation_date=date(1951, 1, 2),
@@ -89,6 +91,39 @@ class RecordingService:
             terminal_persistence_failed=self.terminal_persistence_failed,
             outcome_manifest_failed=self.outcome_manifest_failed,
         )
+
+
+@pytest.mark.parametrize(
+    ("status", "expected_exit"),
+    [
+        (RecoveryStatus.RECOVERED, 0),
+        (RecoveryStatus.ALREADY_RECONCILED, 0),
+        (RecoveryStatus.INVALID_MANIFEST, 1),
+        (RecoveryStatus.CONFLICT, 1),
+    ],
+)
+def test_recover_command_uses_only_recovery_service(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    tmp_path: Path,
+    status: RecoveryStatus,
+    expected_exit: int,
+) -> None:
+    calls: list[tuple[Path, Path]] = []
+
+    class Recovery:
+        def recover(self, root: Path, manifest: Path) -> RecoveryResult:
+            calls.append((root, manifest))
+            return RecoveryResult(status=status, run_id=7)
+
+    monkeypatch.setattr(cli, "OutcomeRecoveryService", Recovery)
+    monkeypatch.setattr(
+        cli, "ExperimentService", lambda **kwargs: (_ for _ in ()).throw(AssertionError("run"))
+    )
+    manifest = tmp_path / "run-7/outcome-v1.json"
+    assert cli.main(["recover", str(manifest), "--artifact-dir", str(tmp_path)]) == expected_exit
+    assert calls == [(tmp_path, manifest)]
+    assert capsys.readouterr().out == f"recovery={status} run=7\n"
 
 
 @pytest.mark.parametrize(

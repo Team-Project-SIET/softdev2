@@ -29,6 +29,7 @@ from app.experiments.domain import (
     SimulationResult,
     TelemetryStatus,
 )
+from app.experiments.workspace_recovery import record_workspace_owner
 from app.simulation.openttd.admin_observer import (
     AdminObserver,
     ExpectedServerIdentity,
@@ -631,6 +632,7 @@ class LiveSimulationRunner:
                 stderr=asyncio.subprocess.PIPE,
                 start_new_session=True,
             )
+            record_workspace_owner(prepared.workspace, run_id, process.pid)
             assert process.stdin is not None and process.stdout is not None
             assert process.stderr is not None
             drains = (
