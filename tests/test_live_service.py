@@ -1,11 +1,13 @@
 """T10 service selection and history contracts, without starting OpenTTD."""
 
 import asyncio
+import hashlib
+import json
 from datetime import UTC, date, datetime
 from pathlib import Path
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import event, select
 from sqlalchemy.orm import Session, sessionmaker
 from test_experiments import FakeRunner, baseline_config
 from test_live_runner import _Assets, _config, _fixture_result, _identity, _options, _runtime
@@ -44,6 +46,19 @@ from app.simulation.openttd.telemetry import (
     PrimaryVehicleCounts,
     StationFacilityCounts,
 )
+
+
+def _controlled_artifacts(artifact_dir: Path, run_id: int) -> tuple[str, LiveExecutionSummary]:
+    (artifact_dir / "final.sav").write_bytes(b"controlled raw save")
+    (artifact_dir / "parsed.json.gz").write_bytes(b"controlled parsed artifact")
+    parsed_reference = f"run-{run_id}/parsed.json.gz"
+    return parsed_reference, LiveExecutionSummary(
+        telemetry_status=TelemetryStatus.INCOMPLETE,
+        raw_save_reference=f"run-{run_id}/final.sav",
+        parsed_artifact_reference=parsed_reference,
+        raw_save_sha256=hashlib.sha256(b"controlled raw save").hexdigest(),
+        parsed_artifact_sha256=hashlib.sha256(b"controlled parsed artifact").hexdigest(),
+    )
 
 
 def test_batch_default_never_touches_live_factory(
@@ -112,7 +127,9 @@ def test_live_creates_history_before_runner_and_persists_one_result(
         requested_target_day=712588,
         actual_final_day=712589,
         raw_save_reference="run-1/final.sav",
-        raw_save_sha256="a" * 64,
+        raw_save_sha256=hashlib.sha256(b"controlled raw save").hexdigest(),
+        parsed_artifact_reference="run-1/parsed.json.gz",
+        parsed_artifact_sha256=hashlib.sha256(b"controlled parsed artifact").hexdigest(),
     )
     seen = []
 
@@ -120,6 +137,8 @@ def test_live_creates_history_before_runner_and_persists_one_result(
         def run(
             self, config: ExperimentConfig, *, run_id: int, artifact_dir: Path
         ) -> SimulationResult:
+            (artifact_dir / "final.sav").write_bytes(b"controlled raw save")
+            (artifact_dir / "parsed.json.gz").write_bytes(b"controlled parsed artifact")
             with session_factory() as session:
                 row = session.get(ExperimentRunRecord, run_id)
                 telemetry = session.get(LiveTelemetrySessionRecord, run_id)
@@ -152,7 +171,9 @@ def test_live_creates_history_before_runner_and_persists_one_result(
     ).run(config, artifact_dir=tmp_path, execution_mode=ExecutionMode.LIVE, live_options=options)
     assert result.status is RunStatus.SUCCEEDED
     assert result.execution_mode is ExecutionMode.LIVE
-    assert result.live_summary == result.simulation.live_summary == summary
+    assert result.live_summary == result.simulation.live_summary
+    assert result.live_summary is not None
+    assert result.live_summary.outcome_manifest_reference == "run-1/outcome-v1.json"
     assert seen == [(result.run_id, tmp_path / f"run-{result.run_id}")]
     with session_factory() as session:
         row = session.get(ExperimentRunRecord, result.run_id)
@@ -181,11 +202,12 @@ def test_live_typed_failure_keeps_code_and_no_final_rows(
 ) -> None:
     class FailingRunner:
         def run(self, config, *, run_id, artifact_dir):
+            (artifact_dir / "partial.sav").write_bytes(b"controlled partial")
             raise SimulationExecutionError(
                 ExecutionFailure(
                     code=code,
                     message=code.value.replace("_", " "),
-                    partial_artifact_reference=str(tmp_path / "partial.sav"),
+                    partial_artifact_reference=f"run-{run_id}/partial.sav",
                     live_summary=LiveExecutionSummary(telemetry_status=TelemetryStatus.FAILED),
                 )
             )
@@ -202,7 +224,7 @@ def test_live_typed_failure_keeps_code_and_no_final_rows(
         row = session.get(ExperimentRunRecord, result.run_id)
         telemetry = session.get(LiveTelemetrySessionRecord, result.run_id)
         assert row is not None and row.failure_code == code
-        assert row.raw_artifact_reference == str(tmp_path / "partial.sav")
+        assert row.raw_artifact_reference == f"run-{result.run_id}/partial.sav"
         assert row.simulation is None
         assert telemetry is not None and telemetry.telemetry_status == "failed"
         assert session.scalar(select(ExperimentMetricRecord.id)) is None
@@ -302,6 +324,7 @@ def test_failed_telemetry_cannot_be_committed_as_live_success(
         def run(self, config, *, run_id, artifact_dir):
             nonlocal calls
             calls += 1
+            (artifact_dir / "final.sav").write_bytes(b"controlled save")
             if failed_source == "session":
                 with session_factory.begin() as session:
                     row = session.get(LiveTelemetrySessionRecord, run_id)
@@ -415,10 +438,13 @@ def test_terminal_transaction_failure_does_not_rerun_live_world(
         def run(self, config, *, run_id, artifact_dir):
             nonlocal calls
             calls += 1
+            reference, summary = _controlled_artifacts(artifact_dir, run_id)
             return SimulationResult(
                 simulation_date=date(1950, 1, 2),
                 savegame_version=302,
                 metrics=(Metric(name="company_money", value=1, unit="GBP"),),
+                raw_artifact_reference=reference,
+                live_summary=summary,
             )
 
     service = ExperimentService(
@@ -427,14 +453,275 @@ def test_terminal_transaction_failure_does_not_rerun_live_world(
         BrokenRepository(),
         live_runner_factory=lambda config, options, root, processor_factory: LiveRunner(),
     )
-    with pytest.raises(RuntimeError, match="terminal commit failure"):
-        service.run(baseline_config(), artifact_dir=tmp_path, execution_mode=ExecutionMode.LIVE)
+    result = service.run(
+        baseline_config(), artifact_dir=tmp_path, execution_mode=ExecutionMode.LIVE
+    )
+    assert result.status is RunStatus.FAILED
+    assert result.failure_code is ExecutionFailureCode.PERSISTENCE_FAILURE
+    assert result.terminal_persistence_failed
+    assert result.live_summary is not None
+    assert result.live_summary.outcome_manifest_reference == "run-1/outcome-v1.json"
+    assert (tmp_path / "run-1/outcome-v1.json").is_file()
+    manifest = json.loads((tmp_path / "run-1/outcome-v1.json").read_text())
+    assert manifest["intended_status"] == "succeeded"
+    assert manifest["simulation"]["metrics"][0]["value"] == 1
     assert calls == 1
     with session_factory() as session:
         run = session.scalar(select(ExperimentRunRecord))
         assert run is not None and run.status == "running"
         assert run.simulation is None
         assert session.scalar(select(ExperimentMetricRecord.id)) is None
+
+
+@pytest.mark.parametrize(
+    "code",
+    [
+        ExecutionFailureCode.TIMEOUT,
+        ExecutionFailureCode.CANCELLED,
+        ExecutionFailureCode.UNEXPECTED_SHUTDOWN,
+        ExecutionFailureCode.PERSISTENCE_FAILURE,
+    ],
+)
+def test_failed_execution_and_failed_terminal_write_preserve_original_code(
+    session_factory: sessionmaker[Session], tmp_path: Path, code: ExecutionFailureCode
+) -> None:
+    from app.experiments.repository import ExperimentRepository
+
+    calls = 0
+
+    class BrokenRepository(ExperimentRepository):
+        def fail_run(self, session, run_id, error, completed_at, **kwargs):
+            super().fail_run(session, run_id, error, completed_at, **kwargs)
+            raise RuntimeError("controlled terminal failure")
+
+    class FailingRunner:
+        def run(self, config, *, run_id, artifact_dir):
+            nonlocal calls
+            calls += 1
+            (artifact_dir / "partial.sav").write_bytes(b"controlled partial")
+            raise SimulationExecutionError(
+                ExecutionFailure(
+                    code=code,
+                    message=code.value.replace("_", " "),
+                    partial_artifact_reference=f"run-{run_id}/partial.sav",
+                    live_summary=LiveExecutionSummary(telemetry_status=TelemetryStatus.FAILED),
+                )
+            )
+
+    result = ExperimentService(
+        session_factory,
+        FakeRunner(),
+        BrokenRepository(),
+        live_runner_factory=lambda config, options, root, factory: FailingRunner(),
+    ).run(baseline_config(), artifact_dir=tmp_path, execution_mode=ExecutionMode.LIVE)
+    assert calls == 1
+    assert result.status is RunStatus.FAILED
+    assert result.failure_code is code
+    assert result.terminal_persistence_failed
+    manifest = json.loads((tmp_path / f"run-{result.run_id}/outcome-v1.json").read_text())
+    assert manifest["intended_status"] == "failed"
+    assert manifest["failure_code"] == code
+    assert manifest["simulation"] is None
+    assert manifest["partial_artifact_reference"] == f"run-{result.run_id}/partial.sav"
+    with session_factory() as session:
+        run = session.get(ExperimentRunRecord, result.run_id)
+        assert run is not None and run.status == RunStatus.RUNNING
+        assert run.simulation is None
+
+
+def test_failed_telemetry_summary_and_terminal_failure_stays_failed(
+    session_factory: sessionmaker[Session], tmp_path: Path
+) -> None:
+    from app.experiments.repository import ExperimentRepository
+
+    class BrokenRepository(ExperimentRepository):
+        def finish_live_session(self, session, run_id, completed_at, **kwargs):
+            raise RuntimeError("controlled terminal failure")
+
+    class LiveRunner:
+        def run(self, config, *, run_id, artifact_dir):
+            return SimulationResult(
+                simulation_date=date(1950, 1, 2),
+                savegame_version=302,
+                metrics=(Metric(name="company_money", value=42, unit="GBP"),),
+                live_summary=LiveExecutionSummary(telemetry_status=TelemetryStatus.FAILED),
+            )
+
+    result = ExperimentService(
+        session_factory,
+        FakeRunner(),
+        BrokenRepository(),
+        live_runner_factory=lambda config, options, root, maker: LiveRunner(),
+    ).run(baseline_config(), artifact_dir=tmp_path, execution_mode=ExecutionMode.LIVE)
+    assert result.status is RunStatus.FAILED
+    assert result.failure_code is ExecutionFailureCode.PERSISTENCE_FAILURE
+    manifest = json.loads((tmp_path / f"run-{result.run_id}/outcome-v1.json").read_text())
+    assert manifest["intended_status"] == "failed"
+    assert manifest["failure_code"] == "persistence_failure"
+    assert manifest["simulation"] is None
+
+
+def test_ambiguous_commit_is_checked_with_a_fresh_session(
+    session_factory: sessionmaker[Session], tmp_path: Path
+) -> None:
+    from app.experiments.repository import ExperimentRepository
+
+    class AmbiguousSession(Session):
+        pass
+
+    @event.listens_for(AmbiguousSession, "after_commit")
+    def lose_acknowledgement(session: AmbiguousSession) -> None:
+        if session.info.pop("lose_terminal_ack", False):
+            raise RuntimeError("commit acknowledgement lost")
+
+    class AmbiguousRepository(ExperimentRepository):
+        def complete_run(self, session, run_id, result, completed_at):
+            super().complete_run(session, run_id, result, completed_at)
+            session.info["lose_terminal_ack"] = True
+
+    factory = sessionmaker(
+        bind=session_factory.kw["bind"], class_=AmbiguousSession, expire_on_commit=False
+    )
+
+    class LiveRunner:
+        def run(self, config, *, run_id, artifact_dir):
+            reference, summary = _controlled_artifacts(artifact_dir, run_id)
+            return SimulationResult(
+                simulation_date=date(1950, 1, 2),
+                savegame_version=302,
+                metrics=(Metric(name="company_money", value=42, unit="GBP"),),
+                raw_artifact_reference=reference,
+                live_summary=summary,
+            )
+
+    result = ExperimentService(
+        factory,
+        FakeRunner(),
+        AmbiguousRepository(),
+        live_runner_factory=lambda config, options, root, maker: LiveRunner(),
+    ).run(baseline_config(), artifact_dir=tmp_path, execution_mode=ExecutionMode.LIVE)
+    assert result.status is RunStatus.SUCCEEDED
+    assert result.simulation is not None
+    assert result.live_summary is not None
+    assert result.live_summary.outcome_manifest_reference == "run-1/outcome-v1.json"
+    with factory() as session:
+        row = session.get(ExperimentRunRecord, result.run_id)
+        assert row is not None and row.simulation is not None
+
+
+def test_ambiguous_commit_rejects_conflicting_same_day_metrics(
+    session_factory: sessionmaker[Session], tmp_path: Path
+) -> None:
+    class LiveRunner:
+        def run(self, config, *, run_id, artifact_dir):
+            reference, summary = _controlled_artifacts(artifact_dir, run_id)
+            with session_factory.begin() as session:
+                row = session.get(ExperimentRunRecord, run_id)
+                assert row is not None and row.telemetry_session is not None
+                row.status = RunStatus.SUCCEEDED
+                row.telemetry_session.telemetry_status = TelemetryStatus.INCOMPLETE
+                row.simulation = SimulationRunRecord(
+                    simulation_date=date(1950, 1, 2),
+                    savegame_version=302,
+                    metrics=[ExperimentMetricRecord(name="company_money", value=999, unit="GBP")],
+                )
+            return SimulationResult(
+                simulation_date=date(1950, 1, 2),
+                savegame_version=302,
+                metrics=(Metric(name="company_money", value=42, unit="GBP"),),
+                raw_artifact_reference=reference,
+                live_summary=summary,
+            )
+
+    result = ExperimentService(
+        session_factory,
+        FakeRunner(),
+        live_runner_factory=lambda config, options, root, maker: LiveRunner(),
+    ).run(baseline_config(), artifact_dir=tmp_path, execution_mode=ExecutionMode.LIVE)
+    assert result.status is RunStatus.FAILED
+    assert result.terminal_persistence_failed
+    assert result.failure_code is ExecutionFailureCode.PERSISTENCE_FAILURE
+    with session_factory() as session:
+        row = session.get(ExperimentRunRecord, result.run_id)
+        assert row is not None and row.simulation is not None
+        assert row.simulation.metrics[0].value == 999
+
+
+def test_terminal_db_and_manifest_failure_never_claims_durable_outcome(
+    session_factory: sessionmaker[Session], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from app.experiments import service as service_module
+    from app.experiments.repository import ExperimentRepository
+
+    class BrokenRepository(ExperimentRepository):
+        def complete_run(self, session, run_id, result, completed_at):
+            raise RuntimeError("secret database failure")
+
+    class LiveRunner:
+        def run(self, config, *, run_id, artifact_dir):
+            reference, summary = _controlled_artifacts(artifact_dir, run_id)
+            return SimulationResult(
+                simulation_date=date(1950, 1, 2),
+                savegame_version=302,
+                metrics=(Metric(name="company_money", value=42, unit="GBP"),),
+                raw_artifact_reference=reference,
+                live_summary=summary,
+            )
+
+    def fail_publication(directory, manifest):
+        raise OSError("secret filesystem failure")
+
+    monkeypatch.setattr(service_module, "publish_manifest", fail_publication)
+    result = ExperimentService(
+        session_factory,
+        FakeRunner(),
+        BrokenRepository(),
+        live_runner_factory=lambda config, options, root, maker: LiveRunner(),
+    ).run(baseline_config(), artifact_dir=tmp_path, execution_mode=ExecutionMode.LIVE)
+    assert result.status is RunStatus.FAILED
+    assert result.failure_code is ExecutionFailureCode.PERSISTENCE_FAILURE
+    assert result.error == "outcome persistence unconfirmed; manifest unavailable"
+    assert result.terminal_persistence_failed and result.outcome_manifest_failed
+    assert result.live_summary is not None
+    assert result.live_summary.outcome_manifest_reference is None
+    assert not (tmp_path / "run-1/outcome-v1.json").exists()
+    assert "secret" not in result.model_dump_json()
+
+
+def test_manifest_write_failure_does_not_return_normal_success(
+    session_factory: sessionmaker[Session], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from app.experiments import service as service_module
+
+    class LiveRunner:
+        def run(self, config, *, run_id, artifact_dir):
+            reference, summary = _controlled_artifacts(artifact_dir, run_id)
+            return SimulationResult(
+                simulation_date=date(1950, 1, 2),
+                savegame_version=302,
+                metrics=(Metric(name="company_money", value=42, unit="GBP"),),
+                raw_artifact_reference=reference,
+                live_summary=summary,
+            )
+
+    def fail_publication(directory, manifest):
+        raise OSError("secret filesystem failure")
+
+    monkeypatch.setattr(service_module, "publish_manifest", fail_publication)
+    result = ExperimentService(
+        session_factory,
+        FakeRunner(),
+        live_runner_factory=lambda config, options, root, maker: LiveRunner(),
+    ).run(baseline_config(), artifact_dir=tmp_path, execution_mode=ExecutionMode.LIVE)
+    assert result.status is RunStatus.SUCCEEDED
+    assert result.failure_code is None
+    assert result.outcome_manifest_failed
+    assert result.live_summary is not None
+    assert result.live_summary.outcome_manifest_reference is None
+    assert "secret" not in result.model_dump_json()
+    with session_factory() as session:
+        row = session.get(ExperimentRunRecord, result.run_id)
+        assert row is not None and row.simulation is not None
 
 
 @pytest.mark.parametrize("complete", [False, True])
@@ -513,11 +800,13 @@ def test_postgres_live_processor_writes_before_final_simulation_row(
                 ]
                 assert kinds[:2] == ["diagnostic", "date"]
                 assert len(kinds) == live.received_count
+            reference, summary = _controlled_artifacts(artifact_dir, run_id)
             return SimulationResult(
                 simulation_date=date(1950, 1, 2),
                 savegame_version=302,
                 metrics=(Metric(name="company_money", value=42, unit="GBP"),),
-                live_summary=LiveExecutionSummary(telemetry_status=TelemetryStatus.INCOMPLETE),
+                raw_artifact_reference=reference,
+                live_summary=summary,
             )
 
     service = ExperimentService(
@@ -725,3 +1014,72 @@ def test_postgres_failed_live_run_retains_observations_without_final_metrics(
         assert live.persisted_count == 2
         assert len(session.scalars(select(TelemetryObservationRecord)).all()) == 2
         assert session.scalar(select(ExperimentMetricRecord.id)) is None
+
+
+def test_postgres_terminal_failure_keeps_telemetry_and_publishes_success_evidence(
+    postgres_factory: sessionmaker[Session], tmp_path: Path
+) -> None:
+    from sqlalchemy import text
+
+    from app.experiments.repository import ExperimentRepository
+
+    engine = postgres_factory.kw["bind"]
+    Base.metadata.create_all(engine)
+    with postgres_factory() as session:
+        schema = session.scalar(text("SELECT current_schema()"))
+    url = engine.url.update_query_dict({"options": f"-c search_path={schema}"})
+    calls = 0
+
+    class BrokenRepository(ExperimentRepository):
+        def complete_run(self, session, run_id, result, completed_at):
+            super().complete_run(session, run_id, result, completed_at)
+            raise RuntimeError("controlled terminal database failure")
+
+    class LiveRunner:
+        def __init__(self, processor_factory):
+            self.processor_factory = processor_factory
+
+        def run(self, config, *, run_id, artifact_dir):
+            nonlocal calls
+            calls += 1
+
+            async def observe() -> None:
+                processor = self.processor_factory(run_id)
+                processor.start()
+                processor.emit(ObserverHealth(ObserverState.CONNECTING))
+                processor.emit(ObserverHealth(ObserverState.CONNECTED))
+                processor.emit(ObserverHealth(ObserverState.AUTHENTICATED))
+                processor.emit(ObserverMeasurement(GameDateObservation(game_day=712223)))
+                await processor.close()
+
+            asyncio.run(observe())
+            reference, summary = _controlled_artifacts(artifact_dir, run_id)
+            return SimulationResult(
+                simulation_date=date(1950, 1, 2),
+                savegame_version=302,
+                metrics=(Metric(name="company_money", value=42, unit="GBP"),),
+                raw_artifact_reference=reference,
+                live_summary=summary,
+            )
+
+    result = ExperimentService(
+        postgres_factory,
+        FakeRunner(),
+        BrokenRepository(),
+        live_runner_factory=lambda config, options, root, factory: LiveRunner(factory),
+        telemetry_store_factory=lambda: TelemetryRepository(url),
+    ).run(baseline_config(), artifact_dir=tmp_path, execution_mode=ExecutionMode.LIVE)
+    assert calls == 1
+    assert result.failure_code is ExecutionFailureCode.PERSISTENCE_FAILURE
+    manifest = json.loads((tmp_path / f"run-{result.run_id}/outcome-v1.json").read_text())
+    assert manifest["run_id"] == result.run_id
+    assert manifest["intended_status"] == "succeeded"
+    assert manifest["simulation"]["metrics"][0]["value"] == 42
+    with postgres_factory() as session:
+        row = session.get(ExperimentRunRecord, result.run_id)
+        live = session.get(LiveTelemetrySessionRecord, result.run_id)
+        assert row is not None and row.status == RunStatus.RUNNING
+        assert row.simulation is None
+        assert live is not None and live.persisted_count == 2
+        assert session.scalar(select(ExperimentMetricRecord.id)) is None
+        assert len(session.scalars(select(TelemetryObservationRecord)).all()) == 2

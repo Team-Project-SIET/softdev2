@@ -28,11 +28,15 @@ class RecordingService:
         telemetry_status: TelemetryStatus | None = None,
         failure_code: ExecutionFailureCode | None = None,
         include_error: bool = True,
+        terminal_persistence_failed: bool = False,
+        outcome_manifest_failed: bool = False,
     ) -> None:
         self.status = status
         self.telemetry_status = telemetry_status
         self.failure_code = failure_code
         self.include_error = include_error
+        self.terminal_persistence_failed = terminal_persistence_failed
+        self.outcome_manifest_failed = outcome_manifest_failed
         self.calls: list[tuple[ExperimentConfig, Path, ExecutionMode]] = []
 
     def run(
@@ -82,6 +86,8 @@ class RecordingService:
             execution_mode=execution_mode,
             failure_code=self.failure_code,
             live_summary=summary,
+            terminal_persistence_failed=self.terminal_persistence_failed,
+            outcome_manifest_failed=self.outcome_manifest_failed,
         )
 
 
@@ -291,3 +297,33 @@ def test_live_failure_code_prints_without_error_text(
     output = capsys.readouterr().out
     assert "failure_code=protocol_failure" in output
     assert "error=" not in output
+
+
+@pytest.mark.parametrize(
+    ("status", "code", "terminal_failed", "manifest_failed", "expected_exit"),
+    [
+        (RunStatus.FAILED, ExecutionFailureCode.TIMEOUT, True, False, 1),
+        (RunStatus.FAILED, ExecutionFailureCode.CANCELLED, True, False, 1),
+        (RunStatus.FAILED, ExecutionFailureCode.TIMEOUT, False, True, 124),
+        (RunStatus.FAILED, ExecutionFailureCode.CANCELLED, False, True, 130),
+        (RunStatus.SUCCEEDED, None, False, True, 1),
+    ],
+)
+def test_live_outcome_evidence_failure_exits_one(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    status: RunStatus,
+    code: ExecutionFailureCode | None,
+    terminal_failed: bool,
+    manifest_failed: bool,
+    expected_exit: int,
+) -> None:
+    service = RecordingService(
+        status=status,
+        telemetry_status=TelemetryStatus.FAILED,
+        failure_code=code,
+        terminal_persistence_failed=terminal_failed,
+        outcome_manifest_failed=manifest_failed,
+    )
+    monkeypatch.setattr(cli, "ExperimentService", lambda **_kwargs: service)
+    assert cli.main(["run", "--mode", "live", "--artifact-dir", str(tmp_path)]) == expected_exit

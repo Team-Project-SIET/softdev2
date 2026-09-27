@@ -165,6 +165,10 @@ def main(argv: list[str] | None = None) -> int:
             print(f"error={result.error}")
         else:
             print(result.error, file=sys.stderr)
+    if result.terminal_persistence_failed or (
+        result.outcome_manifest_failed and result.status == "succeeded"
+    ):
+        return 1
     if result.status == "failed":
         if result.failure_code == "timeout":
             return 124

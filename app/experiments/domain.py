@@ -233,6 +233,8 @@ class ExperimentResult(BaseModel):
     execution_mode: ExecutionMode = ExecutionMode.BATCH
     failure_code: ExecutionFailureCode | None = None
     live_summary: LiveExecutionSummary | None = None
+    terminal_persistence_failed: bool = False
+    outcome_manifest_failed: bool = False
 
     # Let Pydantic retain the model JSON Schema instead of inferring a generic dict.
     @model_serializer(mode="wrap")
@@ -243,6 +245,10 @@ class ExperimentResult(BaseModel):
             result.pop("execution_mode", None)
         if self.failure_code is None:
             result.pop("failure_code", None)
+        if not self.terminal_persistence_failed:
+            result.pop("terminal_persistence_failed", None)
+        if not self.outcome_manifest_failed:
+            result.pop("outcome_manifest_failed", None)
         if self.live_summary is None:
             result.pop("live_summary", None)
         return result
