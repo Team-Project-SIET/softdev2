@@ -1,5 +1,6 @@
 """The argparse command delegates one typed result without starting a simulator."""
 
+import signal
 from datetime import UTC, date, datetime
 from pathlib import Path
 
@@ -102,7 +103,7 @@ def test_run_mode_delegates_once_with_existing_config(
     service = RecordingService(
         telemetry_status=TelemetryStatus.COMPLETE if expected_mode is ExecutionMode.LIVE else None
     )
-    monkeypatch.setattr(cli, "ExperimentService", lambda: service)
+    monkeypatch.setattr(cli, "ExperimentService", lambda **_kwargs: service)
     destination = tmp_path / "artifacts"
     exit_code = cli.main(
         ["run", *mode_args, "--seed", "23", "--days", "90", "--artifact-dir", str(destination)]
@@ -143,7 +144,7 @@ def test_compare_still_invokes_only_batch_runs(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], tmp_path: Path
 ) -> None:
     service = RecordingService()
-    monkeypatch.setattr(cli, "ExperimentService", lambda: service)
+    monkeypatch.setattr(cli, "ExperimentService", lambda **_kwargs: service)
     exit_code = cli.main(
         [
             "compare",
@@ -167,7 +168,7 @@ def test_live_incomplete_is_success_with_exit_three(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], tmp_path: Path
 ) -> None:
     service = RecordingService(telemetry_status=TelemetryStatus.INCOMPLETE)
-    monkeypatch.setattr(cli, "ExperimentService", lambda: service)
+    monkeypatch.setattr(cli, "ExperimentService", lambda **_kwargs: service)
     assert cli.main(["run", "--mode", "live", "--artifact-dir", str(tmp_path)]) == 3
     output = capsys.readouterr().out
     assert "run=7 mode=live status=succeeded telemetry=incomplete" in output
@@ -181,11 +182,57 @@ def test_live_incomplete_is_success_with_exit_three(
     assert "status=failed" not in output
 
 
+@pytest.mark.parametrize(
+    ("received_signal", "expected_exit"),
+    [(signal.SIGINT, 130), (signal.SIGTERM, 143)],
+)
+def test_catchable_live_signal_sets_runner_token_and_restores_handlers(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    received_signal: signal.Signals,
+    expected_exit: int,
+) -> None:
+    from app.experiments.cancellation import LiveCancellation
+
+    service = RecordingService(
+        status=RunStatus.FAILED,
+        telemetry_status=TelemetryStatus.FAILED,
+        failure_code=ExecutionFailureCode.CANCELLED,
+    )
+    requests: list[LiveCancellation] = []
+
+    def construct(*, live_cancellation: LiveCancellation) -> RecordingService:
+        requests.append(live_cancellation)
+        original_run = service.run
+
+        def run(
+            config: ExperimentConfig,
+            *,
+            artifact_dir: Path,
+            execution_mode: ExecutionMode = ExecutionMode.BATCH,
+        ) -> ExperimentResult:
+            signal.raise_signal(received_signal)
+            return original_run(config, artifact_dir=artifact_dir, execution_mode=execution_mode)
+
+        service.run = run
+        return service
+
+    previous_int = signal.getsignal(signal.SIGINT)
+    previous_term = signal.getsignal(signal.SIGTERM)
+    monkeypatch.setattr(cli, "ExperimentService", construct)
+    assert cli.main(["run", "--mode", "live", "--artifact-dir", str(tmp_path)]) == expected_exit
+    assert requests[0].event.is_set()
+    assert requests[0].signal_name == received_signal.name
+    assert signal.getsignal(signal.SIGINT) == previous_int
+    assert signal.getsignal(signal.SIGTERM) == previous_term
+    assert len(service.calls) == 1
+
+
 def test_batch_failure_keeps_simple_output_and_exits_one(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], tmp_path: Path
 ) -> None:
     service = RecordingService(status=RunStatus.FAILED)
-    monkeypatch.setattr(cli, "ExperimentService", lambda: service)
+    monkeypatch.setattr(cli, "ExperimentService", lambda **_kwargs: service)
     assert cli.main(["run", "--artifact-dir", str(tmp_path)]) == 1
     captured = capsys.readouterr()
     assert captured.out == "run=7 status=failed\n"
@@ -214,7 +261,7 @@ def test_live_failure_prints_only_sanitized_result_fields(
         telemetry_status=TelemetryStatus.FAILED,
         failure_code=code,
     )
-    monkeypatch.setattr(cli, "ExperimentService", lambda: service)
+    monkeypatch.setattr(cli, "ExperimentService", lambda **_kwargs: service)
     assert cli.main(["run", "--mode", "live", "--artifact-dir", str(tmp_path)]) == expected_exit
     assert len(service.calls) == 1
     captured = capsys.readouterr()
@@ -239,7 +286,7 @@ def test_live_failure_code_prints_without_error_text(
         failure_code=ExecutionFailureCode.PROTOCOL_FAILURE,
         include_error=False,
     )
-    monkeypatch.setattr(cli, "ExperimentService", lambda: service)
+    monkeypatch.setattr(cli, "ExperimentService", lambda **_kwargs: service)
     assert cli.main(["run", "--mode", "live", "--artifact-dir", str(tmp_path)]) == 1
     output = capsys.readouterr().out
     assert "failure_code=protocol_failure" in output

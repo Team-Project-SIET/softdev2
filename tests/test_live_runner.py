@@ -1,13 +1,16 @@
 """Controlled child and Admin peer prove T07 lifecycle without OpenTTD or SQL."""
 
 import asyncio
+import ctypes
 import fcntl
 import hashlib
 import os
+import select
 import shutil
 import signal
 import socket
 import stat
+import sys
 import threading
 import time
 from dataclasses import replace
@@ -236,7 +239,10 @@ def test_one_owned_child_reaches_date_target_and_returns_injected_final_result(
     assert assets.calls == 1
     assert len(launches) == 1
     args, kwargs = launches[0]
-    assert args[0] == str(runtime.executable_path)
+    assert args[0] == sys.executable
+    assert args[1].endswith("parent_death_exec.py")
+    assert args[2] == str(os.getpid())
+    assert args[3] == str(runtime.executable_path)
     assert kwargs["start_new_session"] is True
     assert "shell" not in kwargs
     assert final_calls[0][1].observed_start_day == date(1950, 1, 1).toordinal() + 365
@@ -1308,6 +1314,48 @@ def test_arbitrary_exec_cannot_be_sent_through_lifecycle_command(tmp_path: Path)
     asyncio.run(exercise())
 
 
+@pytest.mark.parametrize("action", ["pause_barrier", "save", "quit"])
+def test_cancellation_interrupts_blocked_command_drain(tmp_path: Path, action: str) -> None:
+    from app.simulation.openttd.live_runner import _RunFailure
+
+    runner, _ = _make_runner(tmp_path, "normal")
+    cancellation = threading.Event()
+    runner.cancellation = cancellation
+
+    async def exercise() -> None:
+        entered = asyncio.Event()
+
+        class BlockedStdin:
+            def is_closing(self) -> bool:
+                return False
+
+            def write(self, _command: bytes) -> None:
+                pass
+
+            async def drain(self) -> None:
+                entered.set()
+                await asyncio.Event().wait()
+
+        class Process:
+            stdin = BlockedStdin()
+
+        task = asyncio.create_task(
+            runner._command(
+                Process(),
+                action,
+                "partial" if action == "save" else None,
+                deadline=asyncio.get_running_loop().time() + 1,
+            )
+        )
+        await entered.wait()
+        cancellation.set()
+        with pytest.raises(_RunFailure) as failure:
+            await asyncio.wait_for(task, 0.5)
+        assert failure.value.code is ExecutionFailureCode.CANCELLED
+
+    asyncio.run(exercise())
+
+
 def test_cancellation_during_pause_barrier_reaps_child_without_saving(
     tmp_path: Path, monkeypatch
 ) -> None:
@@ -1639,6 +1687,75 @@ def test_forced_stop_signals_only_owned_group_before_lease_release(
     assert launch.prepared.lease.closed
 
 
+@pytest.mark.skipif(sys.platform != "linux", reason="Linux process-group contract")
+def test_sigkill_escalation_terminates_owned_descendant(tmp_path: Path, monkeypatch) -> None:
+    runner, launch = _make_runner(
+        tmp_path,
+        "ignore_term_with_descendant",
+        options=_options(shutdown_timeout_seconds=0.1, terminate_timeout_seconds=0.1),
+        port_range=(41000, 41200),
+    )
+    pidfds: list[int] = []
+    original_signal = os.killpg
+
+    def signal_group(pid: int, requested: int) -> None:
+        if requested == signal.SIGTERM:
+            descendant_pid = int((launch.prepared.workspace / "descendant.pid").read_text())
+            pidfd = ctypes.CDLL(None).syscall(434, descendant_pid, 0)
+            assert pidfd >= 0
+            pidfds.append(pidfd)
+        original_signal(pid, requested)
+
+    monkeypatch.setattr(os, "killpg", signal_group)
+    try:
+        with pytest.raises(SimulationExecutionError) as error:
+            runner.run(_config(), run_id=1, artifact_dir=tmp_path / "artifacts")
+        assert error.value.failure.code is ExecutionFailureCode.TIMEOUT
+        assert pidfds
+        assert select.select(pidfds, [], [], 2)[0] == pidfds
+        assert launch.prepared.lease.closed
+    finally:
+        for pidfd in pidfds:
+            os.close(pidfd)
+
+
+@pytest.mark.parametrize(
+    ("mode", "expected_signals"),
+    [("normal", ()), ("hang_on_quit", (signal.SIGTERM,))],
+)
+def test_graceful_or_sigterm_responsive_exit_never_sends_sigkill(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    mode: str,
+    expected_signals: tuple[signal.Signals, ...],
+) -> None:
+    runner, launch = _make_runner(
+        tmp_path,
+        mode,
+        options=_options(
+            shutdown_timeout_seconds=0.5 if mode == "normal" else 0.1,
+            terminate_timeout_seconds=0.5,
+        ),
+        port_range=(41000, 41200),
+    )
+    seen: list[int] = []
+    original_signal = os.killpg
+
+    def signal_group(pid: int, requested: int) -> None:
+        seen.append(requested)
+        original_signal(pid, requested)
+
+    monkeypatch.setattr(os, "killpg", signal_group)
+    if mode == "normal":
+        runner.run(_config(), run_id=1, artifact_dir=tmp_path / "artifacts")
+    else:
+        with pytest.raises(SimulationExecutionError) as error:
+            runner.run(_config(), run_id=1, artifact_dir=tmp_path / "artifacts")
+        assert error.value.failure.code is ExecutionFailureCode.TIMEOUT
+    assert tuple(seen) == expected_signals
+    assert launch.prepared.lease.closed
+
+
 def test_cancellation_interrupts_finalization_without_returning_success(
     tmp_path: Path,
 ) -> None:
@@ -1677,6 +1794,93 @@ def test_cancellation_interrupts_finalization_without_returning_success(
     finally:
         cancel.set()
         worker.join(5)
+
+
+def test_cancellation_after_final_result_before_return_cannot_succeed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    cancel = threading.Event()
+    runner, launch = _make_runner(tmp_path, "normal", port_range=(41000, 41200))
+    runner.cancellation = cancel
+    original_close = PreparedLiveRuntime.close
+
+    def close(prepared: PreparedLiveRuntime) -> None:
+        original_close(prepared)
+        cancel.set()
+
+    monkeypatch.setattr(PreparedLiveRuntime, "close", close)
+    with pytest.raises(SimulationExecutionError) as error:
+        runner.run(_config(), run_id=1, artifact_dir=tmp_path / "artifacts")
+    assert error.value.failure.code is ExecutionFailureCode.CANCELLED
+    assert launch.prepared.lease.closed
+
+
+def test_running_timeout_attempts_one_bounded_partial_save_before_quit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    commands: list[bytes] = []
+    original_close = PreparedLiveRuntime.close
+
+    def close(prepared: PreparedLiveRuntime) -> None:
+        commands.append((prepared.workspace / "commands.log").read_bytes())
+        original_close(prepared)
+
+    monkeypatch.setattr(PreparedLiveRuntime, "close", close)
+    runner, launch = _make_runner(
+        tmp_path,
+        "stall_after_unpause",
+        options=_options(running_timeout_seconds=0.1, shutdown_timeout_seconds=1),
+        port_range=(41000, 41200),
+    )
+    with pytest.raises(SimulationExecutionError) as error:
+        runner.run(_config(), run_id=4, artifact_dir=tmp_path / "artifacts")
+    assert error.value.failure.code is ExecutionFailureCode.TIMEOUT
+    assert commands == [
+        b"exec scripts/live_unpause_barrier.scr\n"
+        b"exec scripts/live_pause_barrier.scr\n"
+        b"save partial_run_4\nquit\n"
+    ]
+    artifact = tmp_path / "artifacts" / "partial_run_4.sav"
+    assert error.value.failure.partial_artifact_reference == str(artifact)
+    assert artifact.read_bytes() == b"controlled save"
+    assert not launch.prepared.workspace.exists()
+
+
+def test_cancellation_during_final_telemetry_flush_joins_writer(tmp_path: Path) -> None:
+    from app.simulation.openttd.telemetry_processor import TelemetryProcessor
+
+    cancel = threading.Event()
+
+    class HangingStore:
+        closed = False
+        started = False
+
+        async def write_batch(self, batch, *, deadline):
+            self.started = True
+            cancel.set()
+            await asyncio.Event().wait()
+
+        async def close(self):
+            self.closed = True
+
+    store = HangingStore()
+    processors: list[TelemetryProcessor] = []
+
+    def processor_factory(run_id: int) -> TelemetryProcessor:
+        processor = TelemetryProcessor(run_id, store, flush_timeout=1)
+        processors.append(processor)
+        return processor
+
+    runner, launch = _make_runner(tmp_path, "normal", port_range=(41000, 41200))
+    runner.cancellation = cancel
+    runner.telemetry_factory = processor_factory
+    with pytest.raises(SimulationExecutionError) as error:
+        runner.run(_config(), run_id=1, artifact_dir=tmp_path / "artifacts")
+    assert error.value.failure.code is ExecutionFailureCode.CANCELLED
+    assert store.started and store.closed
+    assert processors[0]._writer is not None and processors[0]._writer.done()
+    assert launch.prepared.lease.closed
+    assert not launch.prepared.workspace.exists()
 
 
 def test_observer_shutdown_interrupts_stalled_finalization(tmp_path: Path) -> None:

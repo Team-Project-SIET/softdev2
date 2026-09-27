@@ -3,6 +3,7 @@
 import re
 from datetime import datetime
 from decimal import Decimal
+from typing import Literal
 
 from pydantic import ValidationError
 from sqlalchemy import select
@@ -63,6 +64,9 @@ def _require_sanitized_metadata(metadata: dict) -> None:
                 raise ValueError("sensitive execution metadata is not permitted")
         elif key in {"raw_save_sha256", "parsed_artifact_sha256"}:
             if not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{64}", value) is None:
+                raise ValueError("sensitive execution metadata is not permitted")
+        elif key == "termination_signal":
+            if value not in {"SIGINT", "SIGTERM"}:
                 raise ValueError("sensitive execution metadata is not permitted")
         else:
             raise ValueError("sensitive execution metadata is not permitted")
@@ -258,6 +262,7 @@ class ExperimentRepository:
         *,
         failure_code: ExecutionFailureCode | None = None,
         partial_artifact_reference: str | None = None,
+        termination_signal: Literal["SIGINT", "SIGTERM"] | None = None,
     ) -> None:
         run = session.get(ExperimentRunRecord, run_id)
         if run is None or run.status != RunStatus.RUNNING:
@@ -267,5 +272,10 @@ class ExperimentRepository:
         if partial_artifact_reference is not None:
             _require_sanitized_metadata({"artifact_reference": partial_artifact_reference})
             run.raw_artifact_reference = partial_artifact_reference
+        if termination_signal is not None:
+            metadata = dict(run.execution_metadata or {})
+            metadata["termination_signal"] = termination_signal
+            _require_sanitized_metadata(metadata)
+            run.execution_metadata = metadata
         run.completed_at = completed_at
         run.status = RunStatus.FAILED

@@ -8,6 +8,7 @@ import shutil
 import signal
 import socket
 import struct
+import subprocess
 import sys
 import threading
 from datetime import date
@@ -55,8 +56,23 @@ commands = workspace / "commands.log"
 
 if mode == "exit_early":
     sys.exit(4)
-if mode == "ignore_term":
+if mode in {"ignore_term", "ignore_term_with_descendant"}:
     signal.signal(signal.SIGTERM, signal.SIG_IGN)
+if mode == "ignore_term_with_descendant":
+    descendant = subprocess.Popen(
+        [
+            sys.executable,
+            "-c",
+            "import signal,time; signal.signal(signal.SIGTERM, signal.SIG_IGN); "
+            "print('ready', flush=True); time.sleep(60)",
+        ],
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+    )
+    assert descendant.stdout is not None and descendant.stdout.readline() == b"ready\n"
+    descendant.stdout.close()
+    (workspace / "descendant.pid").write_text(str(descendant.pid))
 
 game_tcp = socket.socket()
 game_tcp.bind(("127.0.0.1", game_port))
@@ -331,7 +347,11 @@ for line in input_lines():
                     destination.write_bytes(b"controlled save")
             name = "old_save" if mode == "save_wrong_name" else basename
             print(f"Map successfully saved to '{name}.sav'.", flush=True)
-    if command == "quit" and mode not in {"hang_on_quit", "ignore_term"}:
+    if command == "quit" and mode not in {
+        "hang_on_quit",
+        "ignore_term",
+        "ignore_term_with_descendant",
+    }:
         break
 
 if connection is not None:

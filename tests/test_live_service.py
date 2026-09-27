@@ -13,6 +13,7 @@ from test_postgres_integration import postgres_factory as postgres_factory
 from test_telemetry_domain import _economy
 
 from app.database.base import Base
+from app.experiments.cancellation import LiveCancellation
 from app.experiments.domain import (
     ExecutionFailure,
     ExecutionFailureCode,
@@ -171,6 +172,8 @@ def test_live_creates_history_before_runner_and_persists_one_result(
         ExecutionFailureCode.PROTOCOL_FAILURE,
         ExecutionFailureCode.FINALIZATION_FAILURE,
         ExecutionFailureCode.CANCELLED,
+        ExecutionFailureCode.TIMEOUT,
+        ExecutionFailureCode.UNEXPECTED_SHUTDOWN,
     ],
 )
 def test_live_typed_failure_keeps_code_and_no_final_rows(
@@ -202,6 +205,69 @@ def test_live_typed_failure_keeps_code_and_no_final_rows(
         assert row.raw_artifact_reference == str(tmp_path / "partial.sav")
         assert row.simulation is None
         assert telemetry is not None and telemetry.telemetry_status == "failed"
+        assert session.scalar(select(ExperimentMetricRecord.id)) is None
+
+
+def test_sigterm_cancellation_persists_only_sanitized_signal_metadata(
+    session_factory: sessionmaker[Session], tmp_path: Path
+) -> None:
+    cancellation = LiveCancellation()
+    cancellation.request("SIGTERM")
+
+    class CancelledRunner:
+        def run(self, config, *, run_id, artifact_dir):
+            raise SimulationExecutionError(
+                ExecutionFailure(code=ExecutionFailureCode.CANCELLED, message="cancelled")
+            )
+
+    result = ExperimentService(
+        session_factory,
+        FakeRunner(),
+        live_runner_factory=lambda config, options, root, factory: CancelledRunner(),
+        live_cancellation=cancellation,
+    ).run(baseline_config(), artifact_dir=tmp_path, execution_mode=ExecutionMode.LIVE)
+    assert result.status is RunStatus.FAILED
+    assert result.failure_code is ExecutionFailureCode.CANCELLED
+    with session_factory() as session:
+        row = session.get(ExperimentRunRecord, result.run_id)
+        assert row is not None
+        assert row.failure_code == ExecutionFailureCode.CANCELLED
+        assert row.execution_metadata is not None
+        assert row.execution_metadata["termination_signal"] == "SIGTERM"
+        assert row.simulation is None
+
+
+def test_cancellation_observed_after_runner_result_cannot_commit_success(
+    session_factory: sessionmaker[Session], tmp_path: Path
+) -> None:
+    cancellation = LiveCancellation()
+    calls = 0
+
+    class LateCancelledRunner:
+        def run(self, config, *, run_id, artifact_dir):
+            nonlocal calls
+            calls += 1
+            cancellation.request("SIGINT")
+            return SimulationResult(
+                simulation_date=date(1950, 12, 2),
+                savegame_version=302,
+                metrics=(Metric(name="company_money", value=123, unit="GBP"),),
+                raw_artifact_reference="run-1/parsed.json.gz",
+            )
+
+    result = ExperimentService(
+        session_factory,
+        FakeRunner(),
+        live_runner_factory=lambda config, options, root, factory: LateCancelledRunner(),
+        live_cancellation=cancellation,
+    ).run(baseline_config(), artifact_dir=tmp_path, execution_mode=ExecutionMode.LIVE)
+    assert calls == 1
+    assert result.status is RunStatus.FAILED
+    assert result.failure_code is ExecutionFailureCode.CANCELLED
+    with session_factory() as session:
+        row = session.get(ExperimentRunRecord, result.run_id)
+        assert row is not None and row.status == RunStatus.FAILED
+        assert row.simulation is None
         assert session.scalar(select(ExperimentMetricRecord.id)) is None
 
 

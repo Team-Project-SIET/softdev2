@@ -9,6 +9,7 @@ import os
 import re
 import signal
 import stat
+import sys
 import threading
 import time
 from collections.abc import Callable
@@ -357,6 +358,8 @@ class LiveSimulationRunner:
         last_day: int | None = None,
         exit_code: int | None = None,
         cleanup: tuple[str, ...] = (),
+        summary: LiveExecutionSummary | None = None,
+        partial_artifact_reference: str | None = None,
     ) -> SimulationExecutionError:
         return SimulationExecutionError(
             ExecutionFailure(
@@ -365,6 +368,8 @@ class LiveSimulationRunner:
                 last_observed_day=last_day,
                 process_exit_code=exit_code,
                 cleanup_diagnostics=cleanup,
+                live_summary=summary,
+                partial_artifact_reference=partial_artifact_reference,
             )
         )
 
@@ -385,6 +390,7 @@ class LiveSimulationRunner:
         failure: ExecutionFailureCode | None = None
         diagnostics: list[str] = []
         result: SimulationResult | None = None
+        partial_artifact_reference: str | None = None
         first_day: int | None = None
         last_day: int | None = None
         target_day = start_day + config.duration_days
@@ -397,6 +403,17 @@ class LiveSimulationRunner:
         storage_health_task: asyncio.Task[object] | None = None
         changed = asyncio.Event()
         console = _ConsoleProbe()
+
+        def record_observer_failure(candidate: ExecutionFailureCode | None) -> None:
+            nonlocal observer_failure
+            if candidate is None:
+                return
+            if observer_failure is None or (
+                candidate is ExecutionFailureCode.PERSISTENCE_FAILURE
+                and observer_failure
+                in {ExecutionFailureCode.OBSERVER_LOST, ExecutionFailureCode.UNEXPECTED_SHUTDOWN}
+            ):
+                observer_failure = candidate
 
         def emit(event: ObserverEvent) -> None:
             nonlocal ready, first_day, last_day, observer_failure
@@ -422,23 +439,25 @@ class LiveSimulationRunner:
                         and event.state in _RECOVERABLE_OBSERVER_STATES
                     )
                 ):
-                    observer_failure = {
-                        ObserverState.AUTHENTICATION_REJECTED: (
-                            ExecutionFailureCode.AUTHENTICATION_FAILURE
-                        ),
-                        ObserverState.PROTOCOL_REJECTED: ExecutionFailureCode.PROTOCOL_FAILURE,
-                        ObserverState.MALFORMED_PACKET: ExecutionFailureCode.PROTOCOL_FAILURE,
-                        ObserverState.CONNECTION_REJECTED: ExecutionFailureCode.STARTUP_FAILURE,
-                        ObserverState.SERVER_SHUTDOWN: ExecutionFailureCode.UNEXPECTED_SHUTDOWN,
-                        ObserverState.WORLD_RESET: ExecutionFailureCode.UNEXPECTED_SHUTDOWN,
-                        ObserverState.EOF: (
-                            ExecutionFailureCode.FINALIZATION_FAILURE
-                            if phase is _Phase.STOPPING
-                            else ExecutionFailureCode.UNEXPECTED_SHUTDOWN
-                        ),
-                        ObserverState.CONNECTION_LOST: ExecutionFailureCode.OBSERVER_LOST,
-                        ObserverState.HEARTBEAT_FAILURE: ExecutionFailureCode.OBSERVER_LOST,
-                    }.get(event.state, observer_failure)
+                    record_observer_failure(
+                        {
+                            ObserverState.AUTHENTICATION_REJECTED: (
+                                ExecutionFailureCode.AUTHENTICATION_FAILURE
+                            ),
+                            ObserverState.PROTOCOL_REJECTED: ExecutionFailureCode.PROTOCOL_FAILURE,
+                            ObserverState.MALFORMED_PACKET: ExecutionFailureCode.PROTOCOL_FAILURE,
+                            ObserverState.CONNECTION_REJECTED: ExecutionFailureCode.STARTUP_FAILURE,
+                            ObserverState.SERVER_SHUTDOWN: ExecutionFailureCode.UNEXPECTED_SHUTDOWN,
+                            ObserverState.WORLD_RESET: ExecutionFailureCode.UNEXPECTED_SHUTDOWN,
+                            ObserverState.EOF: (
+                                ExecutionFailureCode.FINALIZATION_FAILURE
+                                if phase is _Phase.STOPPING
+                                else ExecutionFailureCode.UNEXPECTED_SHUTDOWN
+                            ),
+                            ObserverState.CONNECTION_LOST: ExecutionFailureCode.OBSERVER_LOST,
+                            ObserverState.HEARTBEAT_FAILURE: ExecutionFailureCode.OBSERVER_LOST,
+                        }.get(event.state)
+                    )
             changed.set()
             if processor is not None and not (
                 quit_requested
@@ -448,13 +467,12 @@ class LiveSimulationRunner:
                 try:
                     processor.emit(event)
                 except Exception:
-                    observer_failure = ExecutionFailureCode.PERSISTENCE_FAILURE
+                    record_observer_failure(ExecutionFailureCode.PERSISTENCE_FAILURE)
                     changed.set()
 
         def storage_failed(task: asyncio.Task[object]) -> None:
-            nonlocal observer_failure
             if not task.cancelled():
-                observer_failure = ExecutionFailureCode.PERSISTENCE_FAILURE
+                record_observer_failure(ExecutionFailureCode.PERSISTENCE_FAILURE)
                 changed.set()
 
         async def wait_change(deadline: float) -> None:
@@ -603,6 +621,9 @@ class LiveSimulationRunner:
                 storage_health_task = asyncio.create_task(processor.wait_fatal())
                 storage_health_task.add_done_callback(storage_failed)
             process = await asyncio.create_subprocess_exec(
+                sys.executable,
+                str(Path(__file__).with_name("parent_death_exec.py")),
+                str(os.getpid()),
                 *prepared.argv,
                 cwd=prepared.cwd,
                 stdin=asyncio.subprocess.PIPE,
@@ -825,6 +846,19 @@ class LiveSimulationRunner:
             phase = _Phase.FINISHED
         except _RunFailure as exc:
             failure = exc.code
+            if (
+                failure is ExecutionFailureCode.UNEXPECTED_SHUTDOWN
+                and self.cancellation is not None
+                and self.cancellation.is_set()
+            ):
+                failure = ExecutionFailureCode.CANCELLED
+            elif (
+                failure is ExecutionFailureCode.UNEXPECTED_SHUTDOWN
+                and phase is _Phase.RUNNING
+                and running_deadline is not None
+                and asyncio.get_running_loop().time() >= running_deadline
+            ):
+                failure = ExecutionFailureCode.TIMEOUT
         except asyncio.CancelledError:
             failure = ExecutionFailureCode.CANCELLED
         except Exception:
@@ -842,8 +876,26 @@ class LiveSimulationRunner:
                             loop.time() + self.options.shutdown_timeout_seconds
                         )
                         if grace_deadline > loop.time():
+                            if (
+                                failure
+                                in {ExecutionFailureCode.CANCELLED, ExecutionFailureCode.TIMEOUT}
+                                and phase is _Phase.RUNNING
+                                and drains
+                                and not drains[0].done()
+                            ):
+                                partial_artifact_reference = await self._partial_save(
+                                    process,
+                                    prepared,
+                                    artifact_dir,
+                                    run_id,
+                                    console,
+                                    drains[0],
+                                    grace_deadline,
+                                )
                             if not quit_requested:
-                                await self._command(process, "quit", deadline=grace_deadline)
+                                await self._command(
+                                    process, "quit", deadline=grace_deadline, during_cleanup=True
+                                )
                             assert process_wait is not None
                             await asyncio.wait_for(
                                 asyncio.shield(process_wait), grace_deadline - loop.time()
@@ -888,17 +940,34 @@ class LiveSimulationRunner:
                 except Exception:
                     diagnostics.append("process_wait_cleanup_timeout")
             if processor is not None:
+                close_task = asyncio.create_task(processor.close())
                 try:
-                    await processor.close()
+                    # Let close() enter its own finally block before a preexisting
+                    # cancellation token can cancel it and skip repository disposal.
+                    await asyncio.sleep(0)
+                    while not close_task.done():
+                        if self.cancellation is not None and self.cancellation.is_set():
+                            close_task.cancel()
+                            await asyncio.gather(close_task, return_exceptions=True)
+                            if failure is None:
+                                failure = ExecutionFailureCode.CANCELLED
+                            break
+                        await asyncio.wait({close_task}, timeout=0.05)
+                    if close_task.done() and not close_task.cancelled():
+                        close_task.result()
                 except TelemetryPipelineFailed:
                     if failure is None:
                         failure = ExecutionFailureCode.PERSISTENCE_FAILURE
+                    else:
+                        diagnostics.append("telemetry_flush_failure")
                 except asyncio.CancelledError:
                     if failure is None:
                         failure = ExecutionFailureCode.CANCELLED
                 except Exception:
                     if failure is None:
                         failure = ExecutionFailureCode.PERSISTENCE_FAILURE
+                    else:
+                        diagnostics.append("telemetry_cleanup_failure")
             if storage_health_task is not None:
                 storage_health_task.cancel()
                 await asyncio.gather(storage_health_task, return_exceptions=True)
@@ -909,12 +978,34 @@ class LiveSimulationRunner:
                     diagnostics.append("workspace_or_lease_cleanup_failure")
             if diagnostics and failure is None:
                 failure = ExecutionFailureCode.CLEANUP_FAILURE
+        if failure is None and self.cancellation is not None and self.cancellation.is_set():
+            failure = ExecutionFailureCode.CANCELLED
         if failure is not None:
+            base_summary = (
+                result.live_summary
+                if result is not None and result.live_summary is not None
+                else LiveExecutionSummary(telemetry_status=TelemetryStatus.INCOMPLETE)
+            )
+            failure_summary = base_summary.model_copy(
+                update={
+                    "last_observed_day": last_day,
+                    "requested_target_day": target_day,
+                    "process_exit_code": process.returncode if process is not None else None,
+                    "cleanup_succeeded": (
+                        (process is None or process.returncode is not None)
+                        and prepared.lease.closed
+                        and not diagnostics
+                    ),
+                    "cleanup_diagnostics": tuple(diagnostics),
+                }
+            )
             raise self._failure(
                 failure,
                 last_day=last_day,
                 exit_code=process.returncode if process is not None else None,
                 cleanup=tuple(diagnostics),
+                summary=failure_summary,
+                partial_artifact_reference=partial_artifact_reference,
             )
         assert process is not None and result is not None and last_day is not None
         live_summary = result.live_summary or LiveExecutionSummary(
@@ -933,6 +1024,61 @@ class LiveSimulationRunner:
             }
         )
 
+    async def _partial_save(
+        self,
+        process: asyncio.subprocess.Process,
+        prepared: PreparedLiveRuntime,
+        artifact_dir: Path,
+        run_id: int,
+        console: _ConsoleProbe,
+        stdout_drain: asyncio.Task[int],
+        deadline: float,
+    ) -> str | None:
+        """Best-effort failure artifact within the existing graceful shutdown budget."""
+        loop = asyncio.get_running_loop()
+
+        async def acknowledge(marker: asyncio.Future[None] | asyncio.Future[bool]) -> None:
+            while not marker.done():
+                if process.returncode is not None or stdout_drain.done():
+                    raise _RunFailure(ExecutionFailureCode.UNEXPECTED_SHUTDOWN)
+                remaining = deadline - loop.time()
+                if remaining <= 0:
+                    raise TimeoutError
+                await asyncio.wait({marker}, timeout=min(0.05, remaining))
+
+        pause_seen = console.expect(PAUSE_BARRIER_MARKER)
+        try:
+            await self._command(process, "pause_barrier", deadline=deadline, during_cleanup=True)
+            await acknowledge(pause_seen)
+        except TimeoutError, _RunFailure, OSError:
+            return None
+        finally:
+            console.clear(PAUSE_BARRIER_MARKER, pause_seen)
+
+        basename = f"partial_run_{run_id}"
+        waiter = console.register_save(basename)
+        try:
+            await self._command(process, "save", basename, deadline=deadline, during_cleanup=True)
+            await acknowledge(waiter.started)
+            await acknowledge(waiter.terminal)
+            if not waiter.terminal.result():
+                return None
+        except TimeoutError, _RunFailure, OSError:
+            return None
+        finally:
+            console.clear_save(waiter)
+        source = prepared.workspace / "save" / f"{basename}.sav"
+        try:
+            saved = source.lstat()
+            if not stat.S_ISREG(saved.st_mode) or source.is_symlink():
+                return None
+            artifact_dir.mkdir(parents=True, exist_ok=True)
+            destination = artifact_dir / f"{basename}.sav"
+            os.link(source, destination, follow_symlinks=False)
+        except OSError:
+            return None
+        return str(destination)
+
     async def _command(
         self,
         process: asyncio.subprocess.Process,
@@ -940,6 +1086,7 @@ class LiveSimulationRunner:
         save_name: str | None = None,
         *,
         deadline: float | None = None,
+        during_cleanup: bool = False,
     ) -> None:
         if action not in {"pause", "pause_barrier", "unpause", "unpause_barrier", "save", "quit"}:
             raise _RunFailure(ExecutionFailureCode.PROTOCOL_FAILURE)
@@ -960,19 +1107,23 @@ class LiveSimulationRunner:
             command = action + "\n"
         if process.stdin is None or process.stdin.is_closing():
             raise _RunFailure(ExecutionFailureCode.UNEXPECTED_SHUTDOWN)
+        drain_task: asyncio.Task[None] | None = None
         try:
             process.stdin.write(command.encode("ascii"))
-            remaining = (
-                min(
-                    self.options.shutdown_timeout_seconds,
-                    deadline - asyncio.get_running_loop().time(),
-                )
-                if deadline is not None
-                else self.options.shutdown_timeout_seconds
+            loop = asyncio.get_running_loop()
+            command_deadline = min(
+                deadline if deadline is not None else float("inf"),
+                loop.time() + self.options.shutdown_timeout_seconds,
             )
-            if remaining <= 0:
-                raise _RunFailure(ExecutionFailureCode.FINALIZATION_FAILURE)
-            await asyncio.wait_for(process.stdin.drain(), remaining)
+            drain_task = asyncio.create_task(process.stdin.drain())
+            while not drain_task.done():
+                if not during_cleanup:
+                    self._check_cancellation()
+                remaining = command_deadline - loop.time()
+                if remaining <= 0:
+                    raise TimeoutError
+                await asyncio.wait({drain_task}, timeout=min(remaining, 0.05))
+            drain_task.result()
         except TimeoutError:
             code = (
                 ExecutionFailureCode.FINALIZATION_FAILURE
@@ -982,6 +1133,10 @@ class LiveSimulationRunner:
             raise _RunFailure(code) from None
         except OSError:
             raise _RunFailure(ExecutionFailureCode.UNEXPECTED_SHUTDOWN) from None
+        finally:
+            if drain_task is not None and not drain_task.done():
+                drain_task.cancel()
+                await asyncio.gather(drain_task, return_exceptions=True)
 
     @staticmethod
     async def _signal_and_wait(

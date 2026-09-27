@@ -5,13 +5,16 @@ from __future__ import annotations
 import configparser
 from collections.abc import Callable
 from datetime import UTC, datetime
+from functools import partial
 from pathlib import Path
 from typing import TYPE_CHECKING, Protocol
 
 from sqlalchemy.orm import Session
 
 from app.database.session import create_session
+from app.experiments.cancellation import LiveCancellation
 from app.experiments.domain import (
+    ExecutionFailure,
     ExecutionFailureCode,
     ExecutionMode,
     ExperimentConfig,
@@ -49,6 +52,8 @@ def _default_live_runner(
     options: LiveExecutionOptions,
     artifact_root: Path,
     telemetry_factory: Callable[[int], TelemetryProcessor],
+    *,
+    cancellation: LiveCancellation | None = None,
 ) -> SimulationRunner:
     """Construct live dependencies only after its run/session creation commits."""
     from app.simulation.openttd.admin_observer import ExpectedServerIdentity
@@ -68,6 +73,7 @@ def _default_live_runner(
         ),
         options=options,
         telemetry_factory=telemetry_factory,
+        cancellation=cancellation.event if cancellation is not None else None,
     )
 
 
@@ -78,14 +84,18 @@ class ExperimentService:
         runner: SimulationRunner | None = None,
         repository: ExperimentRepository | None = None,
         *,
-        live_runner_factory: LiveRunnerFactory = _default_live_runner,
+        live_runner_factory: LiveRunnerFactory | None = None,
         telemetry_store_factory: Callable[[], AsyncTelemetryStore] = _default_telemetry_store,
+        live_cancellation: LiveCancellation | None = None,
     ) -> None:
         self.session_factory = session_factory
         self.runner = runner or OpenTTDLabRunner()  # Existing batch injection remains valid.
         self.repository = repository or ExperimentRepository()
-        self.live_runner_factory = live_runner_factory
+        self.live_runner_factory = live_runner_factory or partial(
+            _default_live_runner, cancellation=live_cancellation
+        )
         self.telemetry_store_factory = telemetry_store_factory
+        self.live_cancellation = live_cancellation
 
     def run(
         self,
@@ -186,6 +196,14 @@ class ExperimentService:
             run_artifacts.mkdir(parents=True, exist_ok=False)
             runner = self.live_runner_factory(config, options, artifact_root, processor_factory)
             simulation = runner.run(config, run_id=run_id, artifact_dir=run_artifacts)
+            if self.live_cancellation is not None and self.live_cancellation.event.is_set():
+                raise SimulationExecutionError(
+                    ExecutionFailure(
+                        code=ExecutionFailureCode.CANCELLED,
+                        message="cancelled",
+                        live_summary=simulation.live_summary,
+                    )
+                )
         except SimulationExecutionError as exc:
             completed_at = datetime.now(UTC)
             failure = exc.failure
@@ -205,6 +223,12 @@ class ExperimentService:
                     completed_at,
                     failure_code=failure.code,
                     partial_artifact_reference=failure.partial_artifact_reference,
+                    termination_signal=(
+                        self.live_cancellation.signal_name
+                        if failure.code is ExecutionFailureCode.CANCELLED
+                        and self.live_cancellation is not None
+                        else None
+                    ),
                 )
             return ExperimentResult(
                 run_id=run_id,

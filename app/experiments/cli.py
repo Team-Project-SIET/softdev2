@@ -1,9 +1,11 @@
 """Argparse presentation for batch experiments and one explicit live run."""
 
 import argparse
+import signal
 import sys
 from pathlib import Path
 
+from app.experiments.cancellation import LiveCancellation
 from app.experiments.comparison import (
     generate_comparison_configs,
     parse_seed_range,
@@ -107,7 +109,29 @@ def main(argv: list[str] | None = None) -> int:
         duration_days=args.days,
     )
     mode = ExecutionMode(args.mode)
-    result = ExperimentService().run(config, artifact_dir=args.artifact_dir, execution_mode=mode)
+    if mode is ExecutionMode.LIVE:
+        live_cancellation = LiveCancellation()
+        previous_int = signal.getsignal(signal.SIGINT)
+        previous_term = signal.getsignal(signal.SIGTERM)
+
+        def request_cancel(received: int, _frame: object) -> None:
+            live_cancellation.request("SIGINT" if received == signal.SIGINT else "SIGTERM")
+
+        try:
+            signal.signal(signal.SIGINT, request_cancel)
+            signal.signal(signal.SIGTERM, request_cancel)
+            result = ExperimentService(live_cancellation=live_cancellation).run(
+                config, artifact_dir=args.artifact_dir, execution_mode=mode
+            )
+        finally:
+            signal.signal(signal.SIGINT, previous_int)
+            signal.signal(signal.SIGTERM, previous_term)
+        cancellation = live_cancellation
+    else:
+        cancellation = None
+        result = ExperimentService().run(
+            config, artifact_dir=args.artifact_dir, execution_mode=mode
+        )
     if mode is ExecutionMode.LIVE:
         telemetry = result.live_summary.telemetry_status if result.live_summary else None
         suffix = f" telemetry={telemetry}" if telemetry is not None else ""
@@ -145,6 +169,8 @@ def main(argv: list[str] | None = None) -> int:
         if result.failure_code == "timeout":
             return 124
         if result.failure_code == "cancelled":
+            if cancellation is not None and cancellation.signal_name == "SIGTERM":
+                return 143
             return 130
         return 1
     if mode is ExecutionMode.LIVE and result.live_summary is not None:

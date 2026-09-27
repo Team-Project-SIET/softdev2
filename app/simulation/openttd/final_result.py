@@ -222,6 +222,9 @@ class FinalResultProcessor:
         try:
             child = await asyncio.create_subprocess_exec(
                 sys.executable,
+                str(Path(__file__).with_name("parent_death_exec.py")),
+                str(os.getpid()),
+                sys.executable,
                 "-m",
                 "app.simulation.openttd.final_result_worker",
                 stdin=asyncio.subprocess.PIPE,
