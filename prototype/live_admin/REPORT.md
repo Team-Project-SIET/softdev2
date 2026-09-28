@@ -1,5 +1,10 @@
 # Live Admin Network integration proof
 
+**Archived historical research.** T18 removed the executable prototype after
+the production path passed T17. The observations and hashes below remain as
+research evidence; the production run history is in the
+[T17 smoke record](../../docs/live-production-smoke.md).
+
 ## Verdict
 
 **FEASIBLE.** On 2026-09-24, one real simulation delivered independent live
@@ -140,12 +145,13 @@ state for them. No such architecture or optimization/control system was built he
 
 ## Files and preservation
 
-Only `prototype/live_admin/` was created by this task:
+The original prototype task created these files. T18 retained the documents
+and proof while removing the obsolete executable files:
 
-* `protocol.py`: minimum typed packet/framing subset.
-* `lab_seam.py`: isolated dedicated-mode Lab launch wrapper.
-* `run.py`: one-run supervisor and live listener.
-* `test_protocol.py`: focused synthetic checks.
+* `protocol.py`: minimum typed packet/framing subset (removed in T18).
+* `lab_seam.py`: isolated dedicated-mode Lab launch wrapper (removed in T18).
+* `run.py`: one-run supervisor and live listener (removed in T18).
+* `test_protocol.py`: focused synthetic checks (removed in T18; adapted production tests remain).
 * `README.md`: reproduction/config/protocol research and primary sources.
 * `REPORT.md`: verdict, findings and next-phase recommendation.
 * `proof.json`: compact credential-free evidence copied from the real run.

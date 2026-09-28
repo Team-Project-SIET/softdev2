@@ -1,28 +1,27 @@
-# Throwaway: live Admin telemetry alongside OpenTTDLab
+# Historical prototype: live Admin telemetry alongside OpenTTDLab
+
+This is archived research from before the production live runner. T18 removed its
+executable launcher, private OpenTTDLab interception, protocol client and tests.
+The current path is `ExperimentService` → `LiveSimulationRunner` →
+`AdminObserver`/`TelemetryProcessor`/`TelemetryRepository`, with explicit final
+save, public parser and outcome manifest. See the
+[T17 production smoke](../../docs/live-production-smoke.md) for the passing
+production evidence. The historical findings below describe the old prototype only.
 
 Question: can Python receive live telemetry from the same OpenTTD process whose
 monthly saves are subsequently processed by the existing experiment adapter?
 
-This is a Linux technical integration prototype. No production application or
-schema changes. It uses the current `devmodule2` workspace's existing
-`SimpleRoadOnlyStrategy` and `OpenTTDLabRunner`; its purpose is evidence, not reuse
+This was a Linux technical integration prototype. It made no production application
+or schema changes. It used the `devmodule2` workspace's then-existing
+`SimpleRoadOnlyStrategy` and `OpenTTDLabRunner`; its purpose was evidence, not reuse
 as an application service. The final verdict and real values are in `REPORT.md`.
 
-## Run
+## Archived execution context
 
-From the repository root, with the existing uv environment:
-
-```bash
-uv run python -m prototype.live_admin.run
-uv run pytest prototype/live_admin/test_protocol.py
-uv run ruff check prototype/live_admin
-```
-
-For this sandbox, use `UV_CACHE_DIR=/tmp/softdev2-uv-cache` before `uv` because the
-normal uv cache is read-only. The simulation takes approximately five minutes.
-The supervisor refuses to overwrite `artifacts/live-admin-proof`, preventing an
-accidental second experiment. Archive that directory explicitly before any
-future deliberate run. No database access is needed for this integration proof.
+The original prototype ran for approximately five minutes and produced the
+credential-free findings in `REPORT.md` and `proof.json`. Its former commands
+are intentionally unavailable; use the current production CLI and its opt-in
+smoke harness for live execution.
 
 ## The seam
 
