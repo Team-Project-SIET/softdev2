@@ -6,10 +6,11 @@ from collections.abc import Awaitable, Callable
 from contextvars import ContextVar
 from dataclasses import dataclass, field
 from datetime import UTC
+from enum import StrEnum
 from typing import Annotated, TypeVar
 
 import psycopg
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from sqlalchemy import select, text
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.engine import URL, make_url
@@ -19,6 +20,7 @@ from sqlalchemy.pool import NullPool
 
 from app.config import get_settings
 from app.experiments.model import LiveTelemetrySessionRecord, TelemetryObservationRecord
+from app.simulation.openttd.admin_protocol import AdminFrequency, AdminUpdateType
 from app.simulation.openttd.telemetry import ObservationKind, TelemetryObservation
 
 
@@ -44,6 +46,51 @@ class PermanentStorageError(TelemetryStorageError):
 Count = Annotated[int, Field(strict=True, ge=0)]
 
 
+class SubscriptionKind(StrEnum):
+    DATE = "date"
+    COMPANY_INFO = "company_info"
+    COMPANY_ECONOMY = "company_economy"
+    COMPANY_STATS = "company_stats"
+
+
+class SubscriptionFrequency(StrEnum):
+    DAILY = "daily"
+    AUTOMATIC = "automatic"
+    MONTHLY = "monthly"
+
+
+class NegotiatedSubscription(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    update_type: SubscriptionKind
+    frequency: SubscriptionFrequency
+
+    @classmethod
+    def from_admin(
+        cls, update_type: AdminUpdateType, frequency: AdminFrequency
+    ) -> NegotiatedSubscription:
+        return cls(
+            update_type=SubscriptionKind(update_type.name.lower()),
+            frequency=SubscriptionFrequency(frequency.name.lower()),
+        )
+
+
+class NegotiatedSubscriptions(BaseModel):
+    """Effective frequencies of the latest connection that reached READY."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    connection_epoch: Annotated[int, Field(strict=True, gt=0)]
+    subscriptions: tuple[NegotiatedSubscription, ...] = Field(min_length=1)
+
+    @model_validator(mode="after")
+    def require_distinct_kinds(self) -> NegotiatedSubscriptions:
+        kinds = [item.update_type for item in self.subscriptions]
+        if len(kinds) != len(set(kinds)):
+            raise ValueError("negotiated subscription kinds must be distinct")
+        return self
+
+
 class TelemetryProgress(BaseModel):
     """Absolute receive-side counters, safe to replay after an ambiguous commit."""
 
@@ -55,6 +102,16 @@ class TelemetryProgress(BaseModel):
     dropped_count: Count = 0
     last_observed_sequence: Annotated[int, Field(strict=True, gt=0)] | None = None
     last_observed_day: Annotated[int, Field(strict=True, ge=366)] | None = None
+    negotiated_subscriptions: NegotiatedSubscriptions | None = None
+
+    @model_validator(mode="after")
+    def require_ready_epoch(self) -> TelemetryProgress:
+        if (
+            self.negotiated_subscriptions is not None
+            and self.negotiated_subscriptions.connection_epoch > self.connection_count
+        ):
+            raise ValueError("negotiated epoch cannot exceed connection count")
+        return self
 
 
 @dataclass(frozen=True)
@@ -226,6 +283,17 @@ class TelemetryRepository:
             row.last_observed_day = progress.last_observed_day
         if row.telemetry_status == "pending":
             row.telemetry_status = "recording"
+        negotiated = progress.negotiated_subscriptions
+        if negotiated is not None:
+            stored = (
+                NegotiatedSubscriptions.model_validate(row.negotiated_subscriptions)
+                if row.negotiated_subscriptions is not None
+                else None
+            )
+            if stored is None or negotiated.connection_epoch > stored.connection_epoch:
+                row.negotiated_subscriptions = negotiated.model_dump(mode="json")
+            elif negotiated.connection_epoch == stored.connection_epoch and negotiated != stored:
+                raise PermanentStorageError()
 
     async def write_batch(self, batch: TelemetryBatch, *, deadline: float) -> None:
         async def write(session: AsyncSession) -> None:

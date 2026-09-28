@@ -14,6 +14,10 @@ from app.experiments.domain import ExecutionMode
 from app.experiments.model import LiveTelemetrySessionRecord
 from app.experiments.repository import ExperimentRepository
 from app.experiments.telemetry_repository import (
+    NegotiatedSubscription,
+    NegotiatedSubscriptions,
+    SubscriptionFrequency,
+    SubscriptionKind,
     TelemetryBatch,
     TelemetryProgress,
     TelemetryRepository,
@@ -86,6 +90,73 @@ def test_async_exact_payload_and_idempotent_counter_round_trip(telemetry_databas
             await repository.close()
 
     asyncio.run(exercise())
+
+
+def test_negotiated_subscriptions_keep_latest_ready_epoch_and_run_isolation(
+    telemetry_database, postgres_factory
+):
+    url, run_a = telemetry_database
+    with postgres_factory.begin() as session:
+        repository = ExperimentRepository()
+        run_b = repository.create_run(
+            session, baseline_config(), NOW, execution_mode=ExecutionMode.LIVE
+        )
+        repository.create_live_session(session, run_b, NOW)
+
+    def negotiated(epoch: int, frequency: SubscriptionFrequency) -> NegotiatedSubscriptions:
+        return NegotiatedSubscriptions(
+            connection_epoch=epoch,
+            subscriptions=(
+                NegotiatedSubscription(update_type=SubscriptionKind.DATE, frequency=frequency),
+            ),
+        )
+
+    async def exercise():
+        repository = TelemetryRepository(url)
+        deadline = asyncio.get_running_loop().time() + 10
+        try:
+            for run_id, epoch, frequency in (
+                (run_a, 2, SubscriptionFrequency.DAILY),
+                (run_b, 1, SubscriptionFrequency.MONTHLY),
+            ):
+                await repository.write_batch(
+                    TelemetryBatch(
+                        (economy(run_id),),
+                        TelemetryProgress(
+                            received_count=1,
+                            connection_count=epoch,
+                            last_observed_sequence=1,
+                            negotiated_subscriptions=negotiated(epoch, frequency),
+                        ),
+                    ),
+                    deadline=deadline,
+                )
+            await repository.write_batch(
+                TelemetryBatch(
+                    (economy(run_a, 2),),
+                    TelemetryProgress(
+                        received_count=2,
+                        connection_count=2,
+                        last_observed_sequence=2,
+                        negotiated_subscriptions=negotiated(1, SubscriptionFrequency.MONTHLY),
+                    ),
+                ),
+                deadline=deadline,
+            )
+        finally:
+            await repository.close()
+
+    asyncio.run(exercise())
+    with postgres_factory() as session:
+        a = session.get(LiveTelemetrySessionRecord, run_a)
+        b = session.get(LiveTelemetrySessionRecord, run_b)
+        assert a is not None and b is not None
+        assert NegotiatedSubscriptions.model_validate(a.negotiated_subscriptions) == negotiated(
+            2, SubscriptionFrequency.DAILY
+        )
+        assert NegotiatedSubscriptions.model_validate(b.negotiated_subscriptions) == negotiated(
+            1, SubscriptionFrequency.MONTHLY
+        )
 
 
 def test_conflicting_retry_rolls_back_whole_batch_and_preserves_counters(telemetry_database):

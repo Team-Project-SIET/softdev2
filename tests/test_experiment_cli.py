@@ -165,6 +165,44 @@ def test_run_mode_delegates_once_with_existing_config(
         assert "run=7 mode=live status=succeeded telemetry=complete" in output
 
 
+def test_live_run_selects_existing_simple_ai_road_only_strategy(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    service = RecordingService(telemetry_status=TelemetryStatus.INCOMPLETE)
+    monkeypatch.setattr(cli, "ExperimentService", lambda **_kwargs: service)
+
+    assert (
+        cli.main(
+            [
+                "run",
+                "--mode",
+                "live",
+                "--strategy",
+                "road-only",
+                "--seed",
+                "17",
+                "--days",
+                "120",
+                "--artifact-dir",
+                str(tmp_path),
+            ]
+        )
+        == 3
+    )
+    assert len(service.calls) == 1
+    config, _, mode = service.calls[0]
+    assert mode is ExecutionMode.LIVE
+    assert config.planning.strategy_identifier == "simple-road-only"
+    assert config.ai.name == "SimpleAI"
+    assert config.ai.content_id == "534d504c"
+    assert config.ai.md5 == "b3137bbd0c73641cf510ead06e36dab6"
+    assert config.ai.parameters == (
+        ("use_aircraft", "0"),
+        ("use_roadvehs", "1"),
+        ("use_trains", "0"),
+    )
+
+
 @pytest.mark.parametrize(
     "args",
     [

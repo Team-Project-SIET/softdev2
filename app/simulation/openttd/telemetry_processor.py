@@ -8,6 +8,8 @@ from enum import StrEnum
 from typing import Protocol
 
 from app.experiments.telemetry_repository import (
+    NegotiatedSubscription,
+    NegotiatedSubscriptions,
     TelemetryBatch,
     TelemetryProgress,
     TelemetryStorageError,
@@ -66,7 +68,7 @@ class TelemetryPipelineFailed(RuntimeError):
         super().__init__(health.code.value)
 
 
-_PAYLOAD_KINDS = {
+_PAYLOAD_KINDS: dict[type[ObservationPayload], ObservationKind] = {
     GameDateObservation: ObservationKind.DATE,
     CompanyInfoObservation: ObservationKind.COMPANY_INFO,
     CompanyEconomyObservation: ObservationKind.COMPANY_ECONOMY,
@@ -120,6 +122,7 @@ class TelemetryProcessor:
         self._sequence = 0
         self._epoch = 0
         self._protocol: int | None = None
+        self._negotiated: NegotiatedSubscriptions | None = None
         self._date: tuple[int, int] | None = None
         self._last_day: int | None = None
         self._missing_reported = False
@@ -144,6 +147,7 @@ class TelemetryProcessor:
             gap_count=self._gaps,
             last_observed_sequence=self._sequence or None,
             last_observed_day=self._last_day,
+            negotiated_subscriptions=self._negotiated,
         )
 
     def start(self) -> None:
@@ -278,6 +282,18 @@ class TelemetryProcessor:
                 if not self._transport_open:
                     raise ValueError("authentication requires connected transport")
                 self._protocol = 2
+            elif event.state is ObserverState.READY:
+                if self._protocol != 2 or not self._transport_open or self._epoch <= 0:
+                    raise ValueError("READY requires authenticated transport")
+                if event.subscriptions is None:
+                    raise ValueError("READY requires effective subscriptions")
+                self._negotiated = NegotiatedSubscriptions(
+                    connection_epoch=self._epoch,
+                    subscriptions=tuple(
+                        NegotiatedSubscription.from_admin(kind, frequency)
+                        for kind, frequency in event.subscriptions
+                    ),
+                )
             elif event.state in {
                 ObserverState.CONNECTION_LOST,
                 ObserverState.EOF,

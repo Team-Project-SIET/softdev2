@@ -18,6 +18,7 @@ from datetime import date
 from pathlib import Path
 
 import pytest
+from port_release_probe import verify_port_release
 from test_runtime_assets import _fixture_assets, _LocalSource, _tar
 
 from app.experiments.domain import (
@@ -258,6 +259,37 @@ def test_one_owned_child_reaches_date_target_and_returns_injected_final_result(
     ]
     assert not final_calls[0][0].workspace.exists()
     assert final_calls[0][0].lease.closed
+
+
+def test_controlled_child_reaps_before_game_and_admin_port_release_proof(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    runner, launch = _make_runner(tmp_path, "normal")
+    child_pids: list[int] = []
+    original_spawn = asyncio.create_subprocess_exec
+
+    async def record_spawn(*args, **kwargs):
+        child = await original_spawn(*args, **kwargs)
+        child_pids.append(child.pid)
+        return child
+
+    monkeypatch.setattr(asyncio, "create_subprocess_exec", record_spawn)
+    result = runner.run(_config(), run_id=1, artifact_dir=tmp_path / "artifacts")
+    assert result.live_summary is not None and result.live_summary.cleanup_succeeded
+    assert len(child_pids) == 1 and not Path(f"/proc/{child_pids[0]}").exists()
+    assert launch.prepared.lease.closed and not launch.prepared.workspace.exists()
+    evidence = verify_port_release(
+        launch.prepared.game_port,
+        launch.prepared.admin_port,
+        owned_pgid=child_pids[0],
+        process_checks_passed=True,
+    )
+    assert [(item.role, item.protocol) for item in evidence] == [
+        ("game", "tcp"),
+        ("game", "udp"),
+        ("admin", "tcp"),
+    ]
+    assert all(item.state in {"released", "bind_blocked_without_listener"} for item in evidence)
 
 
 def test_observer_events_reach_one_scoped_telemetry_processor(tmp_path: Path) -> None:

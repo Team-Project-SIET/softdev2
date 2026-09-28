@@ -85,6 +85,13 @@ class ObserverState(StrEnum):
 @dataclass(frozen=True)
 class ObserverHealth:
     state: ObserverState
+    subscriptions: tuple[tuple[AdminUpdateType, AdminFrequency], ...] | None = None
+
+    def __post_init__(self) -> None:
+        if self.state is ObserverState.READY and not self.subscriptions:
+            raise ValueError("READY requires effective subscriptions")
+        if self.state is not ObserverState.READY and self.subscriptions is not None:
+            raise ValueError("READY requires effective subscriptions")
 
 
 type MeasurementPayload = (
@@ -238,6 +245,7 @@ class AdminObserver:
             await connected_writer.drain()
             decoder = AdminFrameDecoder()
             phase = _Phase.PROTOCOL
+            selected_subscriptions: tuple[tuple[AdminUpdateType, AdminFrequency], ...] | None = None
             last_month: tuple[int, int] | None = None
             ping_token = 0
             pending_ping: int | None = None
@@ -331,7 +339,8 @@ class AdminObserver:
                             await publish(ObserverHealth(ObserverState.PROTOCOL_REJECTED))
                             return
                         phase = _Phase.INITIAL_DATE
-                        for update_type, frequency in self._subscriptions():
+                        selected_subscriptions = self._subscriptions()
+                        for update_type, frequency in selected_subscriptions:
                             connected_writer.write(
                                 encode_admin_update_frequency(update_type, frequency)
                             )
@@ -386,7 +395,10 @@ class AdminObserver:
                             if phase is _Phase.INITIAL_DATE:
                                 phase = _Phase.READY
                                 next_ping_at = self._timing.now() + self.heartbeat_interval
-                                await publish(ObserverHealth(ObserverState.READY))
+                                assert selected_subscriptions is not None
+                                await publish(
+                                    ObserverHealth(ObserverState.READY, selected_subscriptions)
+                                )
             # No process or persistence ownership here.
         except asyncio.CancelledError:
             await publish(ObserverHealth(ObserverState.CANCELLED))

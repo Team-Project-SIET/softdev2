@@ -186,6 +186,101 @@ def test_live_creates_history_before_runner_and_persists_one_result(
         assert session.scalar(select(SimulationRunRecord.id)) == row.simulation.id
 
 
+def test_live_service_normalizes_owned_absolute_parser_artifacts(
+    session_factory: sessionmaker[Session], tmp_path: Path
+) -> None:
+    calls = 0
+
+    class AbsoluteArtifactRunner:
+        def run(
+            self, config: ExperimentConfig, *, run_id: int, artifact_dir: Path
+        ) -> SimulationResult:
+            nonlocal calls
+            calls += 1
+            raw = artifact_dir / "final.sav"
+            parsed = artifact_dir / "parsed.json.gz"
+            raw.write_bytes(b"controlled raw save")
+            parsed.write_bytes(b"controlled parsed artifact")
+            summary = LiveExecutionSummary(
+                telemetry_status=TelemetryStatus.COMPLETE,
+                raw_save_reference=str(raw.resolve()),
+                parsed_artifact_reference=str(parsed.resolve()),
+                raw_save_sha256=hashlib.sha256(raw.read_bytes()).hexdigest(),
+                parsed_artifact_sha256=hashlib.sha256(parsed.read_bytes()).hexdigest(),
+            )
+            return SimulationResult(
+                simulation_date=date(1950, 5, 1),
+                savegame_version=302,
+                metrics=(Metric(name="company_money", value=123, unit="GBP"),),
+                raw_artifact_reference=str(parsed.resolve()),
+                live_summary=summary,
+            )
+
+    result = ExperimentService(
+        session_factory,
+        FakeRunner(),
+        live_runner_factory=lambda config, options, root, processor_factory: (
+            AbsoluteArtifactRunner()
+        ),
+    ).run(baseline_config(), artifact_dir=tmp_path, execution_mode=ExecutionMode.LIVE)
+
+    assert calls == 1
+    assert result.status is RunStatus.SUCCEEDED
+    assert not result.outcome_manifest_failed
+    assert result.simulation is not None
+    assert result.simulation.raw_artifact_reference == f"run-{result.run_id}/parsed.json.gz"
+    assert result.live_summary is not None
+    assert result.live_summary.raw_save_reference == f"run-{result.run_id}/final.sav"
+    assert result.live_summary.parsed_artifact_reference == f"run-{result.run_id}/parsed.json.gz"
+    assert (tmp_path / f"run-{result.run_id}/outcome-v1.json").is_file()
+    with session_factory() as session:
+        row = session.get(ExperimentRunRecord, result.run_id)
+        assert row is not None and row.status == RunStatus.SUCCEEDED
+        assert row.raw_artifact_reference == f"run-{result.run_id}/parsed.json.gz"
+        assert row.simulation is not None
+
+
+def test_live_service_normalizes_owned_absolute_partial_failure_artifact(
+    session_factory: sessionmaker[Session], tmp_path: Path
+) -> None:
+    class AbsolutePartialRunner:
+        def run(self, config: ExperimentConfig, *, run_id: int, artifact_dir: Path):
+            partial = artifact_dir / "partial.sav"
+            partial.write_bytes(b"controlled partial")
+            raise SimulationExecutionError(
+                ExecutionFailure(
+                    code=ExecutionFailureCode.TIMEOUT,
+                    message="timeout",
+                    partial_artifact_reference=str(partial.resolve()),
+                    live_summary=LiveExecutionSummary(
+                        telemetry_status=TelemetryStatus.INCOMPLETE,
+                        raw_save_reference=str(partial.resolve()),
+                    ),
+                )
+            )
+
+    result = ExperimentService(
+        session_factory,
+        FakeRunner(),
+        live_runner_factory=lambda config, options, root, processor_factory: (
+            AbsolutePartialRunner()
+        ),
+    ).run(baseline_config(), artifact_dir=tmp_path, execution_mode=ExecutionMode.LIVE)
+
+    assert result.status is RunStatus.FAILED
+    assert result.failure_code is ExecutionFailureCode.TIMEOUT
+    assert not result.outcome_manifest_failed
+    assert result.live_summary is not None
+    assert result.live_summary.raw_save_reference == f"run-{result.run_id}/partial.sav"
+    manifest = json.loads((tmp_path / f"run-{result.run_id}/outcome-v1.json").read_text())
+    assert manifest["partial_artifact_reference"] == f"run-{result.run_id}/partial.sav"
+    assert manifest["failure_code"] == ExecutionFailureCode.TIMEOUT
+    with session_factory() as session:
+        row = session.get(ExperimentRunRecord, result.run_id)
+        assert row is not None and row.status == RunStatus.FAILED
+        assert row.raw_artifact_reference == f"run-{result.run_id}/partial.sav"
+
+
 @pytest.mark.parametrize(
     "code",
     [
@@ -836,8 +931,16 @@ def test_postgres_live_processor_writes_before_final_simulation_row(
         assert session.scalar(select(ExperimentMetricRecord.value)) == 42
 
 
+@pytest.mark.parametrize(
+    ("mode", "connection_count", "gap_count"),
+    [("normal", 1, 0), ("reconnect_success", 2, 1)],
+)
 def test_postgres_recovered_gap_stays_ordered_and_marks_success_incomplete(
-    postgres_factory: sessionmaker[Session], tmp_path: Path
+    postgres_factory: sessionmaker[Session],
+    tmp_path: Path,
+    mode: str,
+    connection_count: int,
+    gap_count: int,
 ) -> None:
     from sqlalchemy import text
 
@@ -850,7 +953,7 @@ def test_postgres_recovered_gap_stays_ordered_and_marks_success_incomplete(
     with postgres_factory() as session:
         schema = session.scalar(text("SELECT current_schema()"))
     url = engine.url.update_query_dict({"options": f"-c search_path={schema}"})
-    runtime = _runtime(tmp_path, "reconnect_success")
+    runtime = _runtime(tmp_path, mode)
 
     def live_factory(config, options, root, processor_factory):
         return LiveSimulationRunner(
@@ -885,8 +988,17 @@ def test_postgres_recovered_gap_stays_ordered_and_marks_success_incomplete(
     with postgres_factory() as session:
         live = session.get(LiveTelemetrySessionRecord, result.run_id)
         assert live is not None
-        assert live.connection_count == 2
-        assert live.gap_count == 1
+        assert live.connection_count == connection_count
+        assert live.gap_count == gap_count
+        assert live.negotiated_subscriptions == {
+            "connection_epoch": connection_count,
+            "subscriptions": [
+                {"update_type": "date", "frequency": "daily"},
+                {"update_type": "company_info", "frequency": "automatic"},
+                {"update_type": "company_economy", "frequency": "monthly"},
+                {"update_type": "company_stats", "frequency": "monthly"},
+            ],
+        }
         assert live.telemetry_status == "incomplete"
         rows = session.scalars(
             select(TelemetryObservationRecord)
@@ -894,18 +1006,57 @@ def test_postgres_recovered_gap_stays_ordered_and_marks_success_incomplete(
             .order_by(TelemetryObservationRecord.sequence)
         ).all()
         assert [row.sequence for row in rows] == list(range(1, len(rows) + 1))
-        assert {row.connection_epoch for row in rows if row.kind == ObservationKind.DATE} == {
-            1,
-            2,
-        }
+        assert {row.connection_epoch for row in rows if row.kind == ObservationKind.DATE} == set(
+            range(1, connection_count + 1)
+        )
         assert (
             sum(
                 row.kind == ObservationKind.DIAGNOSTIC
                 and row.payload["code"] == DiagnosticCode.CONNECTION_GAP
                 for row in rows
             )
-            == 1
+            == gap_count
         )
+
+
+@pytest.mark.parametrize("mode", ["bad_auth", "bad_protocol"])
+def test_postgres_pre_ready_failure_has_no_negotiated_subscriptions(
+    postgres_factory: sessionmaker[Session], tmp_path: Path, mode: str
+) -> None:
+    from sqlalchemy import text
+
+    from app.simulation.openttd.live_launch import LiveLaunchPreparation
+    from app.simulation.openttd.live_runner import LiveSimulationRunner
+
+    engine = postgres_factory.kw["bind"]
+    Base.metadata.create_all(engine)
+    with postgres_factory() as session:
+        schema = session.scalar(text("SELECT current_schema()"))
+    url = engine.url.update_query_dict({"options": f"-c search_path={schema}"})
+    runtime = _runtime(tmp_path, mode)
+
+    def live_factory(config, options, root, processor_factory):
+        return LiveSimulationRunner(
+            _Assets(runtime, config),
+            LiveLaunchPreparation(
+                tmp_path / "runs", lock_root=tmp_path / "locks", port_range=(41000, 41200)
+            ),
+            expected_identity=_identity(),
+            final_result=_fixture_result,
+            options=options,
+            telemetry_factory=processor_factory,
+        )
+
+    result = ExperimentService(
+        postgres_factory,
+        FakeRunner(),
+        live_runner_factory=live_factory,
+        telemetry_store_factory=lambda: TelemetryRepository(url),
+    ).run(_config(), artifact_dir=tmp_path, execution_mode=ExecutionMode.LIVE)
+    assert result.status is RunStatus.FAILED
+    with postgres_factory() as session:
+        live = session.get(LiveTelemetrySessionRecord, result.run_id)
+        assert live is not None and live.negotiated_subscriptions is None
 
 
 def test_postgres_reconnect_exhaustion_keeps_gap_and_typed_failure(
@@ -962,6 +1113,8 @@ def test_postgres_reconnect_exhaustion_keeps_gap_and_typed_failure(
         assert live.connection_count == 1
         assert live.gap_count == 1
         assert live.telemetry_status == "failed"
+        assert live.negotiated_subscriptions is not None
+        assert live.negotiated_subscriptions["connection_epoch"] == 1
         assert session.scalar(select(ExperimentMetricRecord.id)) is None
 
 

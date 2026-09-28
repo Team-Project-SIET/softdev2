@@ -33,6 +33,9 @@ def main(argv: list[str] | None = None) -> int:
     run_parser = commands.add_parser("run", help="run the pinned trAIns baseline")
     run_parser.add_argument("--seed", type=int, default=17)
     run_parser.add_argument("--days", type=int, default=730)
+    run_parser.add_argument(
+        "--strategy", choices=("baseline", *COMPARISON_STRATEGIES), default="baseline"
+    )
     run_parser.add_argument("--artifact-dir", type=Path, default=Path("artifacts/experiments"))
     run_parser.add_argument(
         "--mode",
@@ -119,7 +122,10 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         return 0
 
-    planning, ai = BaselineStrategy().configure(scenario)
+    strategy = (
+        BaselineStrategy() if args.strategy == "baseline" else COMPARISON_STRATEGIES[args.strategy]
+    )
+    planning, ai = strategy.configure(scenario)
     config = ExperimentConfig(
         scenario=scenario,
         planning=planning,

@@ -52,6 +52,31 @@ class LiveRunnerFactory(Protocol):
     ) -> SimulationRunner: ...
 
 
+def _run_local_reference(reference: str | None, run_artifacts: Path) -> str | None:
+    """Express an owned parser path using the run-relative artifact contract."""
+    if reference is None:
+        return None
+    path = Path(reference)
+    if path.is_absolute() and path.parent == run_artifacts.resolve():
+        return f"{run_artifacts.name}/{path.name}"
+    return reference
+
+
+def _run_local_summary(
+    summary: LiveExecutionSummary | None, run_artifacts: Path
+) -> LiveExecutionSummary | None:
+    if summary is None:
+        return None
+    return summary.model_copy(
+        update={
+            "raw_save_reference": _run_local_reference(summary.raw_save_reference, run_artifacts),
+            "parsed_artifact_reference": _run_local_reference(
+                summary.parsed_artifact_reference, run_artifacts
+            ),
+        }
+    )
+
+
 def _matches_terminal(
     row: ExperimentRunRecord | None,
     config: ExperimentConfig,
@@ -298,6 +323,24 @@ class ExperimentService:
         integration_failure: bool = False,
     ) -> ExperimentResult:
         """Publish intended evidence before the terminal DB commit can fail."""
+        if simulation is not None:
+            simulation = simulation.model_copy(
+                update={
+                    "raw_artifact_reference": _run_local_reference(
+                        simulation.raw_artifact_reference, run_artifacts
+                    ),
+                    "live_summary": _run_local_summary(simulation.live_summary, run_artifacts),
+                }
+            )
+        if failure is not None:
+            failure = failure.model_copy(
+                update={
+                    "partial_artifact_reference": _run_local_reference(
+                        failure.partial_artifact_reference, run_artifacts
+                    ),
+                    "live_summary": _run_local_summary(failure.live_summary, run_artifacts),
+                }
+            )
         completed_at = datetime.now(UTC)
         message = (
             failure.code.value.replace("_", " ")

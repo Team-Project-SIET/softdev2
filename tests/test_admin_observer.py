@@ -18,6 +18,7 @@ from app.simulation.openttd.admin_observer import (
     ObserverState,
     ObserverUnknownPacket,
 )
+from app.simulation.openttd.admin_protocol import AdminFrequency, AdminUpdateType
 from app.simulation.openttd.telemetry import (
     CompanyEconomyObservation,
     CompanyInfoObservation,
@@ -98,6 +99,16 @@ def _welcome(
     )
 
 
+def test_ready_event_requires_negotiated_subscriptions() -> None:
+    with pytest.raises(ValueError, match="effective subscriptions"):
+        ObserverHealth(ObserverState.READY)
+    with pytest.raises(ValueError, match="effective subscriptions"):
+        ObserverHealth(
+            ObserverState.CONNECTED,
+            ((AdminUpdateType.DATE, AdminFrequency.DAILY),),
+        )
+
+
 async def _read_frame(reader: asyncio.StreamReader) -> tuple[int, bytes]:
     length = struct.unpack("<H", await reader.readexactly(2))[0]
     data = await reader.readexactly(length - 2)
@@ -172,7 +183,18 @@ def test_authentication_readiness_and_typed_date() -> None:
             (3, 0xFFFFFFFF),
             (4, 0xFFFFFFFF),
         ]
-        assert ObserverHealth(ObserverState.READY) in events
+        ready = [
+            event
+            for event in events
+            if isinstance(event, ObserverHealth) and event.state is ObserverState.READY
+        ]
+        assert len(ready) == 1
+        assert ready[0].subscriptions == (
+            (AdminUpdateType.DATE, AdminFrequency.DAILY),
+            (AdminUpdateType.COMPANY_INFO, AdminFrequency.AUTOMATIC),
+            (AdminUpdateType.COMPANY_ECONOMY, AdminFrequency.MONTHLY),
+            (AdminUpdateType.COMPANY_STATS, AdminFrequency.MONTHLY),
+        )
         assert any(
             isinstance(event, ObserverMeasurement) and event.payload.game_day == 712223
             for event in events
@@ -235,7 +257,9 @@ def test_rejection_reason_is_classified_without_password_retry(
     events, outbound = asyncio.run(_scripted_observation(_frame(rejection_id, payload)))
     assert ObserverHealth(state) in events
     assert [packet_id for packet_id, _ in outbound] == [0]
-    assert ObserverHealth(ObserverState.READY) not in events
+    assert not any(
+        isinstance(event, ObserverHealth) and event.state is ObserverState.READY for event in events
+    )
 
 
 @pytest.mark.parametrize(
@@ -254,7 +278,9 @@ def test_rejection_reason_is_classified_without_password_retry(
 def test_protocol_version_frequencies_and_welcome_identity_must_match(response: bytes) -> None:
     events, _ = asyncio.run(_scripted_observation(response))
     assert ObserverHealth(ObserverState.PROTOCOL_REJECTED) in events
-    assert ObserverHealth(ObserverState.READY) not in events
+    assert not any(
+        isinstance(event, ObserverHealth) and event.state is ObserverState.READY for event in events
+    )
 
 
 def test_missing_initial_date_never_reports_ready() -> None:
@@ -294,7 +320,10 @@ def test_missing_initial_date_never_reports_ready() -> None:
         await _with_peer(peer, observe)
         assert ObserverHealth(ObserverState.AUTHENTICATED) in events
         assert ObserverHealth(ObserverState.PROTOCOL_REJECTED) in events
-        assert ObserverHealth(ObserverState.READY) not in events
+        assert not any(
+            isinstance(event, ObserverHealth) and event.state is ObserverState.READY
+            for event in events
+        )
         assert [packet_id for packet_id, _ in outbound].count(0) == 1
 
     asyncio.run(scenario())
@@ -488,7 +517,7 @@ def test_heartbeat_ping_pong_and_missing_pong_deadline() -> None:
         async def observe(host: str, port: int) -> None:
             def emit(event: object) -> None:
                 events.append(event)
-                if event == ObserverHealth(ObserverState.READY):
+                if isinstance(event, ObserverHealth) and event.state is ObserverState.READY:
                     ready.set()
 
             task = asyncio.create_task(
@@ -543,7 +572,7 @@ def test_cancellation_closes_socket_without_background_observer_tasks() -> None:
         async def observe(host: str, port: int) -> None:
             def emit(event: object) -> None:
                 events.append(event)
-                if event == ObserverHealth(ObserverState.READY):
+                if isinstance(event, ObserverHealth) and event.state is ObserverState.READY:
                     ready.set()
 
             task = asyncio.create_task(
