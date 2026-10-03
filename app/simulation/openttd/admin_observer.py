@@ -33,9 +33,9 @@ from app.simulation.openttd.admin_protocol import (
     encode_admin_join,
     encode_admin_ping,
     encode_admin_poll,
-    encode_admin_quit,
     encode_admin_update_frequency,
 )
+from app.simulation.openttd.admin_session import AdminSession, AdminSessionStopped
 from app.simulation.openttd.telemetry import (
     CompanyEconomyObservation,
     CompanyInfoObservation,
@@ -55,7 +55,8 @@ class ExpectedServerIdentity:
 
     def matches(self, welcome: ServerWelcome) -> bool:
         return (
-            welcome.revision == self.revision
+            welcome.revision in {"13.4", "OpenTTD 13.4"}
+            and welcome.revision == self.revision
             and welcome.seed == self.seed
             and welcome.map_name == self.map_name
             and welcome.width == self.width
@@ -80,6 +81,7 @@ class ObserverState(StrEnum):
     CANCELLED = "cancelled"
     HEARTBEAT_FAILURE = "heartbeat_failure"
     WORLD_RESET = "world_reset"
+    STOPPED = "stopped"
 
 
 @dataclass(frozen=True)
@@ -126,8 +128,17 @@ class ObserverUnknownPacket:
     payload_length: int
 
 
+@dataclass(frozen=True)
+class ObserverWelcome:
+    server: ServerWelcome
+
+
 type ObserverEvent = (
-    ObserverHealth | ObserverMeasurement | ObserverCompanyLifecycle | ObserverUnknownPacket
+    ObserverHealth
+    | ObserverMeasurement
+    | ObserverCompanyLifecycle
+    | ObserverUnknownPacket
+    | ObserverWelcome
 )
 type EventSink = Callable[[ObserverEvent], None | Awaitable[None]]
 
@@ -205,8 +216,12 @@ class AdminObserver:
         self.heartbeat_timeout = heartbeat_timeout
         self._timing = timing or _AsyncioTiming()
 
-    async def run(self, emit: EventSink) -> None:
-        """Observe one connection until a terminal peer event or cancellation."""
+    async def run(self, emit: EventSink, *, stop: asyncio.Event | None = None) -> None:
+        """Observe one connection; setting `stop` interrupts reads and sends Quit.
+
+        Task cancellation also closes the session and propagates CancelledError.
+        The observer never starts a server or reconnects after a terminal event.
+        """
 
         async def publish(event: ObserverEvent) -> None:
             result = emit(event)
@@ -214,19 +229,17 @@ class AdminObserver:
                 await result
 
         await publish(ObserverHealth(ObserverState.CONNECTING))
-        writer: asyncio.StreamWriter | None = None
+        session: AdminSession | None = None
         authenticated = False
         terminal = False
         try:
             try:
-                reader, writer = await asyncio.wait_for(
-                    asyncio.open_connection(self.host, self.port), self.connect_timeout
-                )
+                session = await AdminSession.connect(self.host, self.port, self.connect_timeout)
             except OSError, TimeoutError:
                 await publish(ObserverHealth(ObserverState.CONNECTION_LOST))
                 return
-            assert writer is not None
-            peer = writer.get_extra_info("peername")
+            assert session is not None
+            peer = session.peername
             try:
                 peer_is_local = (
                     isinstance(peer, tuple) and ipaddress.ip_address(peer[0]).is_loopback
@@ -236,13 +249,11 @@ class AdminObserver:
             if not peer_is_local:
                 await publish(ObserverHealth(ObserverState.CONNECTION_REJECTED))
                 return
-            connected_writer = writer
             await publish(ObserverHealth(ObserverState.CONNECTED))
             handshake_deadline = self._timing.now() + self.handshake_timeout
-            connected_writer.write(
+            await session.send(
                 encode_admin_join(self._password, self._client_name, self._client_version)
             )
-            await connected_writer.drain()
             decoder = AdminFrameDecoder()
             phase = _Phase.PROTOCOL
             selected_subscriptions: tuple[tuple[AdminUpdateType, AdminFrequency], ...] | None = None
@@ -271,13 +282,15 @@ class AdminObserver:
                         await publish(ObserverHealth(ObserverState.HEARTBEAT_FAILURE))
                         return
                     ping_token = (ping_token + 1) & 0xFFFFFFFF
-                    connected_writer.write(encode_admin_ping(ping_token))
-                    await connected_writer.drain()
+                    await session.send(encode_admin_ping(ping_token))
                     pending_ping = ping_token
                     ping_sent_at = self._timing.now()
                     continue
                 try:
-                    chunk = await self._timing.read(reader, deadline - now)
+                    chunk = await session.read(self._timing.read, deadline - now, stop)
+                except AdminSessionStopped:
+                    await publish(ObserverHealth(ObserverState.STOPPED))
+                    return
                 except TimeoutError:
                     continue
                 except OSError:
@@ -338,15 +351,16 @@ class AdminObserver:
                         ):
                             await publish(ObserverHealth(ObserverState.PROTOCOL_REJECTED))
                             return
+                        await publish(ObserverWelcome(packet))
                         phase = _Phase.INITIAL_DATE
                         selected_subscriptions = self._subscriptions()
-                        for update_type, frequency in selected_subscriptions:
-                            connected_writer.write(
-                                encode_admin_update_frequency(update_type, frequency)
-                            )
-                        for update_type in self._initial_polls():
-                            connected_writer.write(encode_admin_poll(update_type))
-                        await connected_writer.drain()
+                        await session.send(
+                            *(
+                                encode_admin_update_frequency(kind, frequency)
+                                for kind, frequency in selected_subscriptions
+                            ),
+                            *(encode_admin_poll(kind) for kind in self._initial_polls()),
+                        )
                         continue
                     if isinstance(packet, (ServerProtocol, ServerWelcome)):
                         await publish(ObserverHealth(ObserverState.PROTOCOL_REJECTED))
@@ -369,10 +383,9 @@ class AdminObserver:
                         reason = packet.reason_code if isinstance(packet, CompanyRemove) else None
                         await publish(ObserverCompanyLifecycle(kind, packet.company_id, reason))
                         if kind is not CompanyLifecycleKind.REMOVE:
-                            connected_writer.write(
+                            await session.send(
                                 encode_admin_poll(AdminUpdateType.COMPANY_INFO, packet.company_id)
                             )
-                            await connected_writer.drain()
                         continue
                     if isinstance(
                         packet,
@@ -387,10 +400,7 @@ class AdminObserver:
                         if isinstance(packet, GameDateObservation):
                             month = (packet.calendar_date.year, packet.calendar_date.month)
                             if last_month is not None and month != last_month:
-                                connected_writer.write(
-                                    encode_admin_poll(AdminUpdateType.COMPANY_INFO)
-                                )
-                                await connected_writer.drain()
+                                await session.send(encode_admin_poll(AdminUpdateType.COMPANY_INFO))
                             last_month = month
                             if phase is _Phase.INITIAL_DATE:
                                 phase = _Phase.READY
@@ -406,18 +416,8 @@ class AdminObserver:
         except OSError:
             await publish(ObserverHealth(ObserverState.CONNECTION_LOST))
         finally:
-            if writer is not None:
-                if authenticated and not terminal and not writer.is_closing():
-                    writer.write(encode_admin_quit())
-                    try:
-                        await asyncio.wait_for(writer.drain(), 1.0)
-                    except OSError, TimeoutError:
-                        pass
-                writer.close()
-                try:
-                    await asyncio.wait_for(writer.wait_closed(), 1.0)
-                except OSError, TimeoutError:
-                    pass
+            if session is not None:
+                await session.close(quit=authenticated and not terminal)
 
     @staticmethod
     def _subscriptions() -> tuple[tuple[AdminUpdateType, AdminFrequency], ...]:

@@ -368,10 +368,23 @@ class AdminFrameDecoder:
 
 
 def _admin_frame(packet_id: int, payload: bytes = b"") -> bytes:
+    if packet_id not in AdminClientPacketType:
+        raise AdminProtocolError("outbound Admin packet is not read-only")
     length = len(payload) + 3
     if length > AdminFrameDecoder.MAX_FRAME_LENGTH:
         raise AdminProtocolError("outbound Admin frame exceeds maximum length")
     return struct.pack("<HB", length, packet_id) + payload
+
+
+def validate_admin_client_frame(frame: bytes) -> None:
+    """Require exactly one allowed client frame before it reaches a socket."""
+    if len(frame) < 3:
+        raise AdminProtocolError("truncated outbound Admin frame")
+    length, packet_id = struct.unpack_from("<HB", frame)
+    if length != len(frame) or length > AdminFrameDecoder.MAX_FRAME_LENGTH:
+        raise AdminProtocolError("invalid outbound Admin frame length")
+    if packet_id not in AdminClientPacketType:
+        raise AdminProtocolError("outbound Admin packet is not read-only")
 
 
 def _admin_string(value: str) -> bytes:

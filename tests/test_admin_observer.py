@@ -3,7 +3,7 @@
 import ast
 import asyncio
 import struct
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Coroutine
 from pathlib import Path
 
 import pytest
@@ -23,6 +23,7 @@ from app.simulation.openttd.telemetry import (
     CompanyEconomyObservation,
     CompanyInfoObservation,
     CompanyStatsObservation,
+    GameDateObservation,
 )
 
 
@@ -116,7 +117,7 @@ async def _read_frame(reader: asyncio.StreamReader) -> tuple[int, bytes]:
 
 
 async def _with_peer(
-    peer: Callable[[asyncio.StreamReader, asyncio.StreamWriter], Awaitable[None]],
+    peer: Callable[[asyncio.StreamReader, asyncio.StreamWriter], Coroutine[object, object, None]],
     observe: Callable[[str, int], Awaitable[None]],
 ) -> None:
     tasks: set[asyncio.Task[None]] = set()
@@ -196,7 +197,9 @@ def test_authentication_readiness_and_typed_date() -> None:
             (AdminUpdateType.COMPANY_STATS, AdminFrequency.MONTHLY),
         )
         assert any(
-            isinstance(event, ObserverMeasurement) and event.payload.game_day == 712223
+            isinstance(event, ObserverMeasurement)
+            and isinstance(event.payload, GameDateObservation)
+            and event.payload.game_day == 712223
             for event in events
         )
         assert ObserverHealth(ObserverState.SERVER_SHUTDOWN) in events
@@ -610,3 +613,184 @@ def test_observer_has_no_prototype_process_or_game_control_imports() -> None:
     assert not any(
         name.startswith(("prototype", "subprocess", "signal", "os")) for name in imported
     )
+
+
+def test_graceful_stop_emits_welcome_and_closes_idle_connection(monkeypatch) -> None:
+    from app.simulation.openttd.admin_observer import ObserverWelcome
+
+    async def scenario() -> None:
+        reader = asyncio.StreamReader()
+        reader.feed_data(_protocol() + _welcome() + _frame(107, struct.pack("<I", 712223)))
+        writer = _RecordingWriter()
+        stop = asyncio.Event()
+        events: list[object] = []
+
+        async def connect(*args):
+            return reader, writer
+
+        monkeypatch.setattr(asyncio, "open_connection", connect)
+
+        def emit(event):
+            events.append(event)
+            if isinstance(event, ObserverHealth) and event.state is ObserverState.READY:
+                stop.set()
+
+        await asyncio.wait_for(_observer().run(emit, stop=stop), 1)
+        welcomes = [event for event in events if isinstance(event, ObserverWelcome)]
+        assert len(welcomes) == 1 and welcomes[0].server.revision == "OpenTTD 13.4"
+        assert ObserverHealth(ObserverState.STOPPED) in events
+        assert writer.close_count == writer.wait_closed_count == 1
+        assert writer.packets[-1] == _frame(1)
+
+    asyncio.run(scenario())
+
+
+class _RecordingWriter:
+    def __init__(self, *, fail_quit: bool = False) -> None:
+        self.packets: list[bytes] = []
+        self.close_count = 0
+        self.wait_closed_count = 0
+        self.fail_quit = fail_quit
+
+    def get_extra_info(self, name):
+        return ("127.0.0.1", 3977) if name == "peername" else None
+
+    def write(self, data: bytes) -> None:
+        if self.fail_quit and data[2] == 1:
+            raise OSError("quit write failed")
+        self.packets.append(data)
+
+    async def drain(self) -> None:
+        pass
+
+    def is_closing(self) -> bool:
+        return self.close_count > 0
+
+    def close(self) -> None:
+        self.close_count += 1
+
+    async def wait_closed(self) -> None:
+        self.wait_closed_count += 1
+
+
+def _observer() -> AdminObserver:
+    return AdminObserver(
+        "127.0.0.1",
+        3977,
+        "password",
+        "observer",
+        "1",
+        ExpectedServerIdentity("OpenTTD 13.4", 17, "", 256, 256, 0),
+    )
+
+
+@pytest.mark.parametrize(
+    "ending", ["eof", "partial_eof", "malformed", "shutdown", "cancel", "sink_error", "quit_error"]
+)
+def test_fake_stream_cleanup_closes_once_on_all_exit_paths(monkeypatch, ending: str) -> None:
+    async def scenario() -> None:
+        reader = asyncio.StreamReader()
+        response = _protocol() + _welcome() + _frame(107, struct.pack("<I", 712223))
+        if ending == "malformed":
+            response += _frame(117, b"\x01")
+        elif ending == "shutdown":
+            response += _frame(106)
+        reader.feed_data(response)
+        if ending in {"eof", "partial_eof", "quit_error"}:
+            if ending == "partial_eof":
+                reader.feed_data(b"\x04")
+            reader.feed_eof()
+        writer = _RecordingWriter(fail_quit=ending == "quit_error")
+        events: list[object] = []
+        ready = asyncio.Event()
+
+        async def connect(*args):
+            return reader, writer
+
+        def emit(event):
+            events.append(event)
+            if isinstance(event, ObserverHealth) and event.state is ObserverState.READY:
+                ready.set()
+                if ending == "sink_error":
+                    raise RuntimeError("sink failed")
+
+        monkeypatch.setattr(asyncio, "open_connection", connect)
+        task = asyncio.create_task(_observer().run(emit))
+        if ending == "cancel":
+            await asyncio.wait_for(ready.wait(), 1)
+            task.cancel()
+            with pytest.raises(asyncio.CancelledError):
+                await task
+            assert ObserverHealth(ObserverState.CANCELLED) in events
+        elif ending == "sink_error":
+            with pytest.raises(RuntimeError, match="sink failed"):
+                await task
+        else:
+            await asyncio.wait_for(task, 1)
+            state = (
+                ObserverState.MALFORMED_PACKET
+                if ending in {"malformed", "partial_eof"}
+                else ObserverState.SERVER_SHUTDOWN
+                if ending == "shutdown"
+                else ObserverState.EOF
+            )
+            assert ObserverHealth(state) in events
+        assert writer.close_count == writer.wait_closed_count == 1
+        assert all(packet[2] in {0, 1, 2, 3, 7} for packet in writer.packets)
+
+    asyncio.run(scenario())
+
+
+def test_fragmented_handshake_with_coalesced_monthly_measurements(monkeypatch) -> None:
+    async def scenario() -> None:
+        reader = asyncio.StreamReader()
+        info = b"\x02Road Co\0Manager\0" + struct.pack(
+            "<BBIBB4B", 1, 0, 1950, 1, 0, 255, 255, 255, 255
+        )
+        economy = struct.pack("<BqqqHqHHqHH", 2, 50, 100, -2500, 2, 800, 3, 2, 0, 0, 0)
+        stats = struct.pack("<B10H", 2, *range(1, 11))
+        monthly = (
+            _frame(107, struct.pack("<I", 712254))
+            + _frame(114, info)
+            + _frame(117, economy)
+            + _frame(118, stats)
+            + _frame(106)
+        )
+        writer = _RecordingWriter()
+        events: list[object] = []
+
+        async def connect(*args):
+            return reader, writer
+
+        monkeypatch.setattr(asyncio, "open_connection", connect)
+        task = asyncio.create_task(_observer().run(events.append))
+        for value in _protocol() + _welcome() + _frame(107, struct.pack("<I", 712223)):
+            reader.feed_data(bytes([value]))
+            await asyncio.sleep(0)
+        reader.feed_data(monthly)
+        await asyncio.wait_for(task, 1)
+        payloads = [event.payload for event in events if isinstance(event, ObserverMeasurement)]
+        assert [type(payload).__name__ for payload in payloads] == [
+            "GameDateObservation",
+            "GameDateObservation",
+            "CompanyInfoObservation",
+            "CompanyEconomyObservation",
+            "CompanyStatsObservation",
+        ]
+        assert writer.packets[-1] == _frame(3, struct.pack("<BI", 2, 0xFFFFFFFF))
+        assert writer.close_count == writer.wait_closed_count == 1
+
+    asyncio.run(scenario())
+
+
+def test_matching_identity_does_not_allow_a_different_openttd_release() -> None:
+    events, _ = asyncio.run(
+        _scripted_observation(
+            _protocol()
+            + _welcome(revision=b"14.0")
+            + _frame(107, struct.pack("<I", 712223))
+            + _frame(106),
+            expected=ExpectedServerIdentity("14.0", 17, "", 256, 256, 0),
+        )
+    )
+    assert ObserverHealth(ObserverState.PROTOCOL_REJECTED) in events

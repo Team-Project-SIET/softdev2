@@ -250,7 +250,7 @@ def test_production_protocol_and_types_do_not_import_prototype_runtime() -> None
     for filename in ("admin_protocol.py", "telemetry.py"):
         syntax = ast.parse((root / filename).read_text())
         imports = (
-            node.module if isinstance(node, ast.ImportFrom) else alias.name
+            node.module if isinstance(node, ast.ImportFrom) else alias.name if alias else ""
             for node in ast.walk(syntax)
             if isinstance(node, (ast.Import, ast.ImportFrom))
             for alias in (node.names if isinstance(node, ast.Import) else [None])
@@ -273,3 +273,21 @@ def test_read_only_admin_client_packets_follow_13_4_wire_layouts() -> None:
         encode_admin_join("bad\0password", "observer", "1")
     with pytest.raises(AdminProtocolError):
         encode_admin_poll(AdminUpdateType.DATE, -1)
+
+
+@pytest.mark.parametrize("packet_id", [n for n in range(256) if n not in {0, 1, 2, 3, 7}])
+def test_client_codec_rejects_every_non_allowlisted_packet(packet_id: int) -> None:
+    from app.simulation.openttd.admin_protocol import _admin_frame, validate_admin_client_frame
+
+    with pytest.raises(AdminProtocolError, match="not read-only"):
+        _admin_frame(packet_id)
+    with pytest.raises(AdminProtocolError, match="not read-only"):
+        validate_admin_client_frame(_frame(packet_id))
+
+
+@pytest.mark.parametrize("frame", [b"", b"\x02\x00", b"\x04\x00\x01", _frame(1) + _frame(4)])
+def test_outbound_validation_rejects_truncated_and_concatenated_frames(frame: bytes) -> None:
+    from app.simulation.openttd.admin_protocol import validate_admin_client_frame
+
+    with pytest.raises(AdminProtocolError):
+        validate_admin_client_frame(frame)
