@@ -1,6 +1,12 @@
 # P01 — Simulation-Ready Planning Contracts and OpenTTD Executor Boundary
 
-Status: specification only. Planning schema: **v1**. No P01 runtime behavior exists yet.
+Status: P01 design specification, with current implementation context updated through
+P04 (`84ccb61`). Planning schema: **v1**. P02 implements contracts and prelaunch
+validation; P03 implements plan transport and runtime acknowledgement; P04 completes
+Admin observation. The network optimizer, construction/purchase/order executor and
+plan-attributed evaluation loop remain unimplemented. The target responsibilities
+below remain design requirements, not claims that the complete loop exists.
+See [current architecture and project status](../../README.md#current-architecture-and-project-status).
 
 ## 1. Problem statement
 
@@ -30,14 +36,23 @@ P01 does not implement a planner, optimizer, route construction algorithm, exact
 | `FleetPlan` | Selected vehicle groups and counts for routes. |
 | `InfrastructurePlan` | Explicit construction intent and build ordering. |
 | `ExecutionPlan` | Immutable envelope containing all decisions required of the executor. |
-| Prepared world manifest | Versioned evidence that scenario-local nodes, tiles, cargo and vehicle definitions resolve in the world to be launched. This is a future prerequisite, not a current capability. |
+| Prepared world manifest | Versioned evidence that scenario-local nodes, tiles, cargo and vehicle definitions resolve in the world to be launched. P02 represents this evidence and P03 validates supplied prepared-world facts; general world extraction/preparation is not thereby implemented. |
 | Estimated / realized | Planner predictions / measured OpenTTD outcomes, stored and named separately. |
 
 ## 5. Current architecture and evidence
 
-The active production path is `ExperimentService → LiveSimulationRunner` or `OpenTTDLabRunner → OpenTTD → Admin telemetry → final save/public parser → experiment persistence`. `SimulationRunner.run(config, run_id, artifact_dir)` returns `SimulationResult`. The live path prepares pinned OpenTTD 13.4/OpenGFX 7.1 assets and a private workspace, launches one owned process, observes it over loopback Admin, explicitly saves, parses the save via public OpenTTDLab, and records terminal evidence. [T17 production smoke](../live-production-smoke.md) proves the live path with SimpleAI road-only, one world, complete telemetry, final save, artifact hashes, and a persisted result. [T16 failure matrix](../live-failure-matrix.md) records existing startup, observation, finalization, and persistence failure handling.
+The active production path selects either `ExperimentService → OpenTTDLabRunner → OpenTTD → public save parser → experiment persistence` for batch execution, or `ExperimentService → LiveSimulationRunner → owned OpenTTD → Admin telemetry + explicit final save/public parser → experiment persistence` for live execution. Batch execution does not construct live observation dependencies. `SimulationRunner.run(config, run_id, artifact_dir)` returns `SimulationResult`. The live path prepares pinned OpenTTD 13.4/OpenGFX 7.1 assets and a private workspace, launches one owned process, observes it over loopback Admin, explicitly saves, parses the save via public OpenTTDLab, and records terminal evidence. [T17 production smoke](../live-production-smoke.md) proves the live path with SimpleAI road-only, one world, complete telemetry, final save, artifact hashes, and a persisted result. [T16 failure matrix](../live-failure-matrix.md) records existing startup, observation, finalization, and persistence failure handling.
 
-`PlanningStrategy.configure` currently yields `PlanningConfiguration` plus `AIConfig`; baseline trAIns and SimpleAI road-only/multimodal strategies delegate actual planning to those AIs. `PlanningStrategyRecord` identifies this strategy selection, **not** a Python planner or a stored route plan. `LiveLaunchPreparation` currently accepts only these known strategy/configuration pairs, validates integer AI settings, and copies a pinned AI archive into a per-run workspace. The planned executor needs a new, explicit allowed configuration and staging path in a later ticket. No present AI consumes `ExecutionPlan`.
+`PlanningStrategy.configure` currently yields `PlanningConfiguration` plus `AIConfig`; baseline trAIns and SimpleAI road-only/multimodal strategies delegate actual planning to those AIs. `PlanningStrategyRecord` identifies this strategy selection, **not** a Python planner or a stored route plan. `LiveLaunchPreparation` currently accepts only these known strategy/configuration pairs, validates integer AI settings, and copies a pinned AI archive into a per-run workspace. P03 now supplies a separate explicit staging path in `app/planning/transport.py`:
+Python validates, hashes and stages an `ExecutionPlan` and matching prepared-world
+evidence into a generated data module packaged with `P03ThinExecutor`. The thin AI
+consumes/decodes that plan, validates transported identities and runtime-world facts,
+and acknowledges route, fleet-group and infrastructure-action IDs. It does not
+perform infrastructure construction, fleet purchase or service-order execution;
+its accepted receipt proves receipt/validation, not action execution. This path is
+not yet accepted as plan input by the production `ExperimentService` or its pinned
+external-AI launch preparation. [Runtime identity and proof coverage](../planning-runtime-world-identity.md)
+describe Attempt #6 against the current thin-AI source.
 
 `AdminObserver` is an observation seam, with outbound join, quit, subscription, poll, and ping packets. Its company-level economy and vehicle/facility counts do not reveal train consist, route-level throughput, or gross revenue and costs separately. The final parser currently exposes money, loan, current-period income, expenses, and cargo delivered, not a complete profit breakdown. The [retained prototype report](../../prototype/live_admin/REPORT.md) confirms these limits. Admin is not a general plan command channel.
 
@@ -123,7 +138,12 @@ Conceptual port: submit a validated `ExecutionPlan` plus matching prepared-world
 
 ## 21. Thin OpenTTD AI responsibilities
 
-The future AI reads the supplied plan, verifies its identity/version and prepared world, builds stated infrastructure in order, purchases stated vehicles/consists, assigns stated orders, starts service, and emits bounded setup evidence. It may resolve plan IDs to runtime handles and enforce engine API preconditions. It may not choose a different location, connection, fleet, timetable, cargo, route, or objective. A world-dependent resolution failure is a setup failure. Python is authoritative for optimization. A plan-driven AI is distinct from current trAIns/SimpleAI strategy experiments and must be explicitly identified and pinned.
+The implemented P03 AI reads/decodes the supplied plan, checks its declared
+identity/version and runtime world, and emits bounded acknowledgement evidence.
+It then sleeps without constructing infrastructure, purchasing vehicles or assigning
+orders. The target execution responsibilities remain: build stated infrastructure
+in order, purchase stated vehicles/consists, assign stated orders, start service,
+and emit evidence of actual action results. It may resolve plan IDs to runtime handles and enforce engine API preconditions. It may not choose a different location, connection, fleet, timetable, cargo, route, or objective. A world-dependent resolution failure is a setup failure. Python is authoritative for optimization. A plan-driven AI is distinct from current trAIns/SimpleAI strategy experiments and must be explicitly identified and pinned.
 
 ## 22. Plan transport recommendation
 
@@ -131,10 +151,12 @@ The future AI reads the supplied plan, verifies its identity/version and prepare
 | --- | --- | --- |
 | Raw JSON/static plan file in AI directory | AI file access and parser behavior are unproven here | Readable and size-flexible, but requires a verified 13.4 AI sandbox/file API and safe parser; not selected without proof. |
 | AI settings carrying plan data | Existing launcher accepts only integer setting values | Too small for routes/infrastructure and prone to encoding/version errors; use at most a bounded plan identifier/hash if supported later. |
-| Generated Squirrel data module inside a pinned thin-AI package | AI code loads package modules; exact loader and packaging must be proven in the next ticket | Deterministic generated constants can encode a bounded v1 plan; inspectable in retained source/package artifact; requires strict escaping, size cap, and hash/checksum checks. |
+| Generated Squirrel data module inside a pinned thin-AI package | P03 implements and proves module loading and isolated packaging for its bounded v1 fixture | Deterministic generated constants can encode a bounded v1 plan; inspectable in retained source/package artifact; requires strict escaping, size cap, and hash/checksum checks. |
 | Other deterministic pre-start artifact | Depends on verified 13.4 APIs | May be reconsidered if a simpler file read is proven. |
 
-**Recommended v1:** validate canonical JSON in Python, then generate a data-only Squirrel module using a fixed serializer and package it with a pinned thin AI in the isolated pre-start workspace. Python planning code emits only the JSON contract; the transport adapter owns generation. Retain the canonical JSON, generated module/package digest, generator version, and plan hash. Prove OpenTTD 13.4 load limits and exact packaging behavior with a minimal opt-in spike before general execution. Reject oversized or unrepresentable plans prelaunch. Treat generated data as untrusted text: escape strings, allowlist tokens, cap size/depth, and never interpolate raw plan text as executable code. The existing `LiveLaunchPreparation` pinned-AI allowlist and asset checks must be extended explicitly in the later implementation; this recommendation is **not** a claim that current code supports it. Admin remains observation-oriented, never a general command transport.
+**Recommended v1:** validate canonical JSON in Python, then generate a data-only Squirrel module using a fixed serializer and package it with a pinned thin AI in the isolated pre-start workspace. Python planning code emits only the JSON contract; the transport adapter owns generation. Retain the canonical JSON, generated module/package digest, generator version, and plan hash. P03's retained Attempt #6 proves this transport for the bounded fixture;
+it does not establish arbitrary OpenTTD load limits or general construction execution. Reject oversized or unrepresentable plans prelaunch. Treat generated data as untrusted text: escape strings, allowlist tokens, cap size/depth, and never interpolate raw plan text as executable code. The existing `LiveLaunchPreparation` pinned-AI allowlist and asset checks must be extended explicitly in the later implementation; P03's separate staging supports plan transport, while production launch integration
+and actual action execution remain absent. Admin remains observation-oriented, never a general command transport.
 
 ## 23. Experiment and provenance integration
 

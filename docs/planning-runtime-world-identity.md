@@ -72,12 +72,34 @@ canonical projection. Coordinates remain the independently validated runtime
 facts; planner site IDs do not determine runtime identity. A later invalid alias
 still fails even if an earlier reference to that object validated successfully.
 
-The controlled post-review fix changes `thin_ai/main.nut`. Attempt #5 remains
-valid evidence for its historical source, and its artifacts remain immutable.
+Attempt #5 remains immutable historical evidence for its then-current source.
+The separately authorized **Attempt #6** now covers the current thin-AI source and
+is retained under `artifacts/planning/p03-proof-attempt6-20261003/`:
 
-ATTEMPT #5 PROOF NO LONGER COVERS CURRENT RUNTIME SOURCE
+- [Prelaunch record](../artifacts/planning/p03-proof-attempt6-20261003/p03-proof-prelaunch.json)
+  records attempt number 6 and staged source hashes. Its `main.nut` SHA-256 is
+  `9ae9312479b7b0d2fe35cf3af14d40c875fd8de114e71c0232ea6c5e6a96bdc1`,
+  and its `info.nut` SHA-256 is
+  `fcdec167438bdf3162bd7b6e49cbc4ca1bacc52658a38231c7d935ab3a42f51c`;
+  both match the current files in `app/planning/thin_ai/`.
+- [Runtime evidence](../artifacts/planning/p03-proof-attempt6-20261003/p03-proof-evidence.json)
+  records `status: accepted`, `failure_code: NONE`,
+  `WORLD_VALIDATION_SUCCEEDED` and matching independently parsed observed/expected
+  runtime-world hashes. It acknowledges the supplied road route, fleet group and
+  infrastructure-action IDs from runtime instance 0.
+- [Diagnostics](../artifacts/planning/p03-proof-attempt6-20261003/p03-proof-diagnostics.json)
+  and [cleanup](../artifacts/planning/p03-proof-attempt6-20261003/p03-proof-cleanup.json)
+  record process exit 0, a reaped process and removed owned workspace.
 
-Current duplicate-reference coverage combines static AI validation/emission
-checks with independent Python observation parsing and canonical-hash checks.
-It does not execute the modified AI in OpenTTD. A separately authorized real
-proof is required before committing P03.
+P03 is completed in commit `7260f8c`. Attempt #6 executed the current source,
+including validation-before-deduplication and canonical object ordering, against
+the retained fixture. Specific duplicate-alias and mixed-kind/numeric-order cases
+remain covered by static AI assertions and independent Python parsing/hash checks
+in `tests/test_planning_world_evidence.py`; the real fixture observes two distinct
+industries and does not prove every such case in OpenTTD.
+
+This proves plan transport, decoding, runtime-world validation and acknowledgement.
+It does not prove infrastructure construction, vehicle purchase, service-order
+execution or economic performance. The retained proof artifacts are unchanged;
+they are local retained evidence under the ignored artifacts tree, not files
+embedded in the P03 commit.

@@ -1,14 +1,76 @@
 # Transport Planning Experimentation Platform
 
-This repository is moving to reproducible transport strategy research using Python,
-[OpenTTDLab](https://github.com/michalc/OpenTTDLab), headless OpenTTD, and PostgreSQL.
-The first working slice records a fixed-seed baseline simulation, parsed metrics, and a
-compressed parsed savegame artifact. OpenTTDLab is an external, version-pinned dependency.
+The core goal is transport route, network and infrastructure optimization evaluated
+in OpenTTD: choose connections, construction corridors, stations, transport modes and
+fleet capacity, then measure the resulting network's efficiency and economics.
+OpenTTD supplies the simulated world, vehicle behavior, cargo and company economics.
+Its lower-level vehicle pathfinding, including YAPF, navigates infrastructure that
+already exists; it does not replace the repository's intended network-design optimizer.
+See the pinned [OpenTTD 13.4 road YAPF source](https://github.com/OpenTTD/OpenTTD/blob/13.4/src/pathfinder/yapf/yapf_road.cpp).
+
+The implemented experiment platform uses Python, version-pinned
+[OpenTTDLab](https://github.com/michalc/OpenTTDLab), headless OpenTTD and PostgreSQL
+to compare external AI policies reproducibly. Those AIs currently design, construct
+and operate the networks; Python selects their configuration and records outcomes.
+
+## Current architecture and project status
 
 ```text
-Scenario + PlanningStrategy -> pinned AI configuration -> OpenTTDLab -> OpenTTD
-    -> parsed savegame -> typed metrics -> PostgreSQL experiment history
+CURRENT EXPERIMENT PATH
+Scenario + versioned AI policy -> ExperimentService
+    -> batch: OpenTTDLabRunner -> OpenTTD + pinned external AI -> public save parser
+    -> live:  LiveSimulationRunner -> owned OpenTTD + pinned external AI
+                 -> P04 AdminObserver -> typed telemetry -> PostgreSQL
+                 -> explicit final save -> public save parser
+    -> typed final metrics + PostgreSQL experiment history + retained artifacts
+
+SEPARATE PLANNING BOUNDARY
+PlanningScenario + PreparedWorldManifest
+    -> repository-owned Python network optimizer                     [missing]
+    -> P02 ExecutionPlan contracts -> validate/hash -> P03 staging
+    -> P03ThinExecutor: decode/validate world/acknowledge              [implemented]
+    -> infrastructure construction, fleet purchase and service orders [missing]
+    -> plan-attributed simulation evaluation loop                     [missing]
+
+RETAINED OPERATIONAL CAPABILITIES
+Textual TUI -> routing/packing services -> CVRP/packing solvers + PostgreSQL
 ```
+
+- **P01** defines the [planning/executor boundary](docs/specs/planning-executor-boundary.md).
+- **P02** implements pure typed planning contracts, canonical serialization/hashing
+  and prelaunch semantic validation (`app/planning/`); it does not generate plans.
+- **P03** implements deterministic plan transport and a thin Squirrel executor.
+  Python validates and stages the plan; `P03ThinExecutor` consumes/decodes it,
+  validates runtime-world facts and acknowledges its IDs. The accepted receipt
+  does not establish construction, vehicle purchase or service-order execution.
+  [Runtime identity and Attempt #6 coverage](docs/planning-runtime-world-identity.md)
+  describe the completed proof and its limits.
+- **P04** completes the read-only Admin observation boundary used by the live
+  runner: protocol framing/validation, owned session cleanup, authentication,
+  identity checks, subscriptions, polling and heartbeat observations. Process
+  launch, reconnect policy and persistence belong to surrounding components.
+
+The repository-owned network optimizer, construction executor and evaluation loop
+that attributes realized results to an executed plan are still missing. P03 staging
+is separate from the production `ExperimentService` input path; P04 observations
+support evaluation but do not complete that loop. Final-save period metrics and
+company-level Admin observations are not a complete route-level profit measure.
+These are current implementation gaps, not new task definitions.
+
+### Documented history
+
+Commit `6b612fa` cleaned up older pre-T-series documents and scaffolding; retained
+operational modules remain available. **T01–T18 are the current project's production
+telemetry/runtime foundation**, documented in the
+[ticket definitions and completion context](docs/specs/realtime-openttd-telemetry-ticket-plan.md).
+T17's accepted production proof is retained in [the smoke report](docs/live-production-smoke.md)
+and commit `eca5a44`. T18 (`5a7e5ee`) retired the executable prototype, preserving
+reference evidence; it did not retire the production T-series implementation.
+
+P01–P04 are later planning/integration work: P01's specification, P02 (`76e176c`),
+P03 (`7260f8c`) and P04 (`84ccb61`). The repository defines no one-to-one T-to-P
+mapping and no P05. Historical proof reports retain their original attempt status;
+current status comes from the accepted evidence and implementation history.
 
 ## Run the baseline experiment
 
@@ -45,8 +107,11 @@ The comparison uses the same pinned SimpleAI 14 archive (MD5
 strategy definitions and serializes their exact AI settings. `multimodal` sets
 `use_trains=1`, `use_roadvehs=1`, and `use_aircraft=1`; `road-only` sets them to `0`, `1`,
 and `0`. SimpleAI then constructs and operates routes inside OpenTTD. This is a transport
-mode policy comparison, not a claim that one mode is universally better. No custom Squirrel
-planner is copied into this repository.
+mode policy comparison, not a claim that one mode is universally better. This experiment
+path uses pinned external AIs rather than a repository-owned Squirrel optimizer.
+The repository does contain the P03 thin Squirrel executor and generated plan-data
+transport; that executor validates and acknowledges supplied decisions without
+optimizing the network or executing construction.
 
 ```bash
 uv run transport-experiment compare \
@@ -63,12 +128,13 @@ sample standard deviation for each metric, then saves the full comparison as a J
 under `artifacts/experiments/`. Failed runs remain visible and do not contribute to
 summaries. The descriptive statistics make no significance claim.
 
-`app/routing/` remains a road-specific CVRP component for later adaptation. The existing
-packing, driver, shipment, LINE, and operational TUI modules remain available as legacy
-code; none is required by the experiment command. Physical package placement is not a
-simulation feasibility constraint.
+`app/routing/` retains operational shipment CVRP over a geographic distance matrix;
+it is not an OpenTTD tile/network optimizer. Packing, driver, shipment, LINE and
+operational TUI modules remain available as retained operational capabilities,
+separate from the OpenTTD research core; none is required by the experiment command.
+Physical package placement is not a simulation feasibility constraint.
 
-## Legacy operational modules
+## Retained operational modules
 
 ### Logistics Optimizer
 
@@ -76,7 +142,7 @@ A Python logistics system with a Textual interface and Capacitated Vehicle Routi
 (CVRP) optimization and delivery-aware 3D package loading. The application manages customers,
 shipments, packages, vehicles, drivers, persisted route plans, and loading plans.
 
-## Stack and architecture
+## Stack and operational architecture
 
 - Python 3.14+
 - Textual
@@ -134,6 +200,9 @@ app/
 ├── customer/          # Customer ORM model and Pydantic schemas
 ├── database/          # Base, session factory, model registry, seed command
 ├── driver/            # Driver ORM model and Pydantic schemas
+├── experiments/       # Scenario/policy selection, batch/live service, history and CLI
+├── simulation/openttd/# Batch adapter, live lifecycle, Admin observation and final parsing
+├── planning/          # P02 contracts/validation and P03 transport/thin executor
 ├── integrations/line/ # Saved-route read service and LINE Messaging API client
 ├── packing/           # Delivery-aware packing heuristic, schemas, models, repository, service
 ├── routing/           # CVRP solver, distance provider, models, repository, service
@@ -142,7 +211,7 @@ app/
 └── vehicle/           # Vehicle model, schemas, repository, service
 alembic/
 └── versions/          # Versioned database migrations
-tests/                 # SQLite-isolated unit and TUI tests
+tests/                 # Pure contracts, controlled runtime/peer tests and opt-in real proofs
 docker-compose.yml
 ```
 
@@ -319,7 +388,7 @@ Packing tests cover boundaries, overlap, weight, rotation, supported stacks, acc
 determinism, partial results, saved CVRP route integration and TUI actions. Migration `0003` has
 SQLite upgrade/downgrade and metadata parity checks plus PostgreSQL SQL-generation coverage.
 
-## Current routing scope
+## Operational CVRP scope
 
 The solver supports one depot, one to three vehicles, package-weight capacity, and one delivery
 node per shipment. It does not include time windows, live traffic, pickups, multiple depots, split

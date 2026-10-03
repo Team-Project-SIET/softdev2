@@ -1,15 +1,27 @@
-# Realtime OpenTTD telemetry — draft ticket plan
+# Realtime OpenTTD telemetry — T01–T18 production foundation
 
-**Status: DRAFT — awaiting user validation. Not published; not ready-for-agent.**
+**Status: implemented T01–T18 production telemetry/runtime foundation.**
+The original ticket definitions below are preserved as historical scope and
+acceptance criteria, not an active incomplete draft or instructions to rerun work.
+Implementation history reaches T17 completion (`eca5a44`) with the accepted sixth
+attempt in [the production smoke report](../live-production-smoke.md), then T18
+prototype retirement (`5a7e5ee`). T18 removed the executable prototype and retained
+reference material; the production T-series implementation remains current.
+
+Older pre-T-series documents/scaffolding were cleaned up in `6b612fa`; this does
+not make T01–T18 obsolete. P01–P04 are later planning/integration work, with P02
+(`76e176c`), P03 (`7260f8c`) and P04 (`84ccb61`) following T18. No one-to-one T-to-P
+mapping or P05 is defined. See [current architecture](../../README.md#current-architecture-and-project-status).
 
 Source SHA-256 at planning: `d605200c4bf2a5240b4fbeb84372f8b603824e45e27b0342e8313db7c3b280dd`.
 
 Sole implementation source of truth: [production specification](realtime-openttd-telemetry.md).
 Repository: Team-Project-SIET/softdev2. Integration branch: devmodule2.
-This document proposes ticket boundaries, not additional product requirements.
+This document records the original ticket boundaries, not additional product requirements.
 If a ticket summary and the specification differ, the specification wins.
-No implementation, migration, simulation, tracker issue or tracker label is created
-by drafting this plan. The source specification remains unchanged.
+The planning-time source digest above is historical provenance, not a current
+completion ledger. Consult implementation history and retained proof reports for
+completion evidence; the task definitions do not add requirements to the specification.
 
 ## Plan rules and sequencing
 
@@ -40,7 +52,7 @@ by drafting this plan. The source specification remains unchanged.
   create one file/interface per responsibility. Existing file paths are included
   at the user's request and must be rechecked when implementation starts.
 
-## Proposed breakdown for validation
+## Recorded task breakdown
 
 1. **T01 — Preserve batch behavior with execution-mode metadata.** Blocked by: none. Delivers compatible domain/result metadata and an executable batch-regression contract.
 2. **T02 — Persist mode metadata and add the telemetry schema.** Blocked by: T01. Delivers a reversible PostgreSQL migration plus existing batch-history round trips.
@@ -65,7 +77,7 @@ Initially available frontier: T01, T03, T05. After T11, T12, T13 and T14 are
 independent; T15 follows T14. T16 joins those policy slices before the real proof.
 These are scheduling opportunities, not instructions to spawn agents now.
 
-## Draft ticket bodies
+## Preserved ticket definitions
 
 ### T01 — Preserve batch behavior with execution-mode metadata
 
