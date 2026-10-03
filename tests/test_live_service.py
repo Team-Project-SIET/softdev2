@@ -7,11 +7,11 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 
 import pytest
+from postgres_support import postgres_factory as postgres_factory
 from sqlalchemy import event, select
 from sqlalchemy.orm import Session, sessionmaker
 from test_experiments import FakeRunner, baseline_config
 from test_live_runner import _Assets, _config, _fixture_result, _identity, _options, _runtime
-from test_postgres_integration import postgres_factory as postgres_factory
 from test_telemetry_domain import _economy
 
 from app.database.base import Base

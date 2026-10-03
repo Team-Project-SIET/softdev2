@@ -1,1 +1,0 @@
-"""Textual user interface component."""

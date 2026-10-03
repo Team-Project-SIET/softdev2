@@ -4,9 +4,9 @@ import asyncio
 from datetime import UTC, datetime
 
 import pytest
+from postgres_support import postgres_factory as postgres_factory
 from sqlalchemy import text
 from test_experiments import baseline_config
-from test_postgres_integration import postgres_factory as postgres_factory
 from test_telemetry_domain import _economy
 
 from app.database.base import Base

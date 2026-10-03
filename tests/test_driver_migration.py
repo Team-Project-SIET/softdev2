@@ -1,17 +1,13 @@
+"""Historical driver migration coverage without retired runtime ORM models."""
+
 from io import StringIO
 from pathlib import Path
 
 import pytest
-from alembic.autogenerate import compare_metadata
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
 from alembic.script import ScriptDirectory
-from sqlalchemy import create_engine, inspect, select
-from sqlalchemy.orm import Session
-
-from app.database import models as _models  # noqa: F401
-from app.database.base import Base
-from app.driver.model import Driver
+from sqlalchemy import create_engine, inspect, text
 
 
 def driver_migration():
@@ -19,13 +15,20 @@ def driver_migration():
     return scripts.get_revision("0004").module
 
 
-def test_driver_line_id_migration_round_trip_and_metadata_parity() -> None:
+def create_historical_schema(connection) -> None:
+    scripts = ScriptDirectory(str(Path(__file__).resolve().parents[1] / "alembic"))
+    for revision in ("0001", "0002", "0003", "0004"):
+        scripts.get_revision(revision).module.upgrade()
+
+
+def test_driver_line_id_migration_round_trip() -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     try:
         with engine.begin() as connection:
-            Base.metadata.create_all(connection)
             context = MigrationContext.configure(connection)
             with Operations.context(context):
+                create_historical_schema(connection)
+                before = inspect(connection).get_columns("drivers")
                 driver_migration().downgrade()
                 line_column = next(
                     column
@@ -34,7 +37,10 @@ def test_driver_line_id_migration_round_trip_and_metadata_parity() -> None:
                 )
                 assert not line_column["nullable"]
                 driver_migration().upgrade()
-                assert compare_metadata(context, Base.metadata) == []
+                after = inspect(connection).get_columns("drivers")
+                assert [(c["name"], str(c["type"]), c["nullable"]) for c in after] == [
+                    (c["name"], str(c["type"]), c["nullable"]) for c in before
+                ]
     finally:
         engine.dispose()
 
@@ -42,18 +48,19 @@ def test_driver_line_id_migration_round_trip_and_metadata_parity() -> None:
 def test_downgrade_refuses_to_invent_line_ids() -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     try:
-        Base.metadata.create_all(engine)
-        with Session(engine) as session, session.begin():
-            session.add(Driver(name="No LINE", phone="123", line_user_id=None))
         with engine.begin() as connection:
             context = MigrationContext.configure(connection)
-            with (
-                Operations.context(context),
-                pytest.raises(RuntimeError, match="assign LINE user IDs"),
-            ):
-                driver_migration().downgrade()
-        with Session(engine) as session:
-            assert session.scalar(select(Driver.line_user_id)) is None
+            with Operations.context(context):
+                create_historical_schema(connection)
+                connection.execute(
+                    text(
+                        "INSERT INTO drivers (name, phone, line_user_id) "
+                        "VALUES ('No LINE', '123', NULL)"
+                    )
+                )
+                with pytest.raises(RuntimeError, match="assign LINE user IDs"):
+                    driver_migration().downgrade()
+            assert connection.scalar(text("SELECT line_user_id FROM drivers")) is None
     finally:
         engine.dispose()
 

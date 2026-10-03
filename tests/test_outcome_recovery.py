@@ -6,10 +6,10 @@ from datetime import UTC, date, datetime
 from pathlib import Path
 
 import pytest
+from postgres_support import postgres_factory as postgres_factory
 from sqlalchemy import event, select
 from sqlalchemy.orm import Session, sessionmaker
 from test_experiments import baseline_config
-from test_postgres_integration import postgres_factory as postgres_factory
 
 from app.database.base import Base
 from app.experiments.domain import (

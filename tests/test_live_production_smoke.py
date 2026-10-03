@@ -13,11 +13,11 @@ from pathlib import Path
 import pytest
 from alembic.config import Config
 from port_release_probe import PortReleaseError, verify_port_release
+from postgres_support import postgres_factory as postgres_factory
+from postgres_support import upgrade_isolated
 from sqlalchemy import select, text
 from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session, sessionmaker
-from test_postgres_integration import _upgrade_isolated
-from test_postgres_integration import postgres_factory as postgres_factory
 
 from app.config import get_settings
 from app.experiments import cli
@@ -60,7 +60,7 @@ def test_one_real_production_live_run(
     migrations.set_main_option(
         "script_location", str(Path(__file__).resolve().parents[1] / "alembic")
     )
-    _upgrade_isolated(migrations, engine, "head")
+    upgrade_isolated(migrations, engine, "head")
     with postgres_factory() as session:
         assert session.scalar(text("SELECT version_num FROM alembic_version")) == "0007"
         schema = session.scalar(text("SELECT current_schema()"))

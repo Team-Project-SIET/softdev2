@@ -1,13 +1,10 @@
 from pathlib import Path
 
-from alembic.autogenerate import compare_metadata
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
 from alembic.script import ScriptDirectory
+from postgres_support import current_metadata_diff
 from sqlalchemy import create_engine, inspect
-
-from app.database import models as _models  # noqa: F401
-from app.database.base import Base
 
 
 def test_experiment_migration_is_additive_and_reversible() -> None:
@@ -22,18 +19,14 @@ def test_experiment_migration_is_additive_and_reversible() -> None:
         "experiment_metrics",
     }
     telemetry_names = {"live_telemetry_sessions", "telemetry_observations"}
-    old_tables = [
-        table
-        for table in Base.metadata.sorted_tables
-        if table.name not in new_names | telemetry_names
-    ]
     engine = create_engine("sqlite+pysqlite:///:memory:")
     try:
         with engine.begin() as connection:
-            Base.metadata.create_all(connection, tables=old_tables)
-            before = set(inspect(connection).get_table_names())
             context = MigrationContext.configure(connection)
             with Operations.context(context):
+                for revision in ("0001", "0002", "0003", "0004"):
+                    scripts.get_revision(revision).module.upgrade()
+                before = set(inspect(connection).get_table_names())
                 migration.upgrade()
                 assert set(inspect(connection).get_table_names()) == before | new_names
                 telemetry_migration.upgrade()
@@ -41,7 +34,7 @@ def test_experiment_migration_is_additive_and_reversible() -> None:
                     set(inspect(connection).get_table_names())
                     == before | new_names | telemetry_names
                 )
-                assert compare_metadata(context, Base.metadata) == []
+                assert current_metadata_diff(connection) == []
                 telemetry_migration.downgrade()
                 assert set(inspect(connection).get_table_names()) == before | new_names
                 migration.downgrade()

@@ -1,14 +1,10 @@
 from io import StringIO
 from pathlib import Path
 
-from alembic.autogenerate import compare_metadata
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
 from alembic.script import ScriptDirectory
 from sqlalchemy import create_engine, inspect
-
-from app.database import models
-from app.database.base import Base
 
 
 def loading_migration():
@@ -16,19 +12,31 @@ def loading_migration():
     return scripts.get_revision("0003").module
 
 
-def test_loading_migration_upgrades_match_metadata_and_downgrades() -> None:
+def test_loading_migration_upgrades_and_downgrades() -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
-    new_tables = {models.LoadingPlan.__table__, models.PackagePlacement.__table__}
-    old_tables = [table for table in Base.metadata.sorted_tables if table not in new_tables]
     try:
         with engine.begin() as connection:
-            Base.metadata.create_all(connection, tables=old_tables)
             context = MigrationContext.configure(connection)
             with Operations.context(context):
+                scripts = ScriptDirectory(str(Path(__file__).resolve().parents[1] / "alembic"))
+                for revision in ("0001", "0002"):
+                    scripts.get_revision(revision).module.upgrade()
+                before = set(inspect(connection).get_table_names())
                 loading_migration().upgrade()
-                assert compare_metadata(context, Base.metadata) == []
+                assert set(inspect(connection).get_table_names()) == before | {
+                    "loading_plans",
+                    "package_placements",
+                }
+                assert {
+                    fk["referred_table"]
+                    for fk in inspect(connection).get_foreign_keys("package_placements")
+                } == {"loading_plans", "packages"}
+                assert {
+                    fk["referred_table"]
+                    for fk in inspect(connection).get_foreign_keys("loading_plans")
+                } == {"routes", "vehicles"}
                 loading_migration().downgrade()
-            assert set(inspect(connection).get_table_names()) == {t.name for t in old_tables}
+            assert set(inspect(connection).get_table_names()) == before
     finally:
         engine.dispose()
 

@@ -6,8 +6,9 @@ standalone replacement SRS or a new set of requirements.
 The project goal is transport network and infrastructure optimization evaluated
 in OpenTTD. Current experiments compare pinned external AI policies; the
 repository-owned network optimizer and construction executor remain absent.
-OpenTTD handles simulation and lower-level vehicle pathfinding. Operational
-shipment CVRP and packing remain separate retained capabilities.
+OpenTTD handles simulation and lower-level vehicle pathfinding. Legacy operational
+shipment CVRP and physical packing code have been retired; historical specification
+references retain the prior design context.
 
 ## Authoritative specifications and implementation context
 

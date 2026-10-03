@@ -7,17 +7,15 @@ requires-python = ">=3.14"
 dependencies = [
     "alembic>=1.13",
     "openttdlab==0.0.75",
+    # Intentionally retained for future optimization research; no current network optimizer.
     "ortools>=9.10",
     "psycopg[binary]>=3.1",
     "pydantic>=2.7",
     "pydantic-settings>=2.2",
     "sqlalchemy>=2.0",
-    "textual>=0.58",
 ]
 
 [project.scripts]
-logistics-tui = "app.tui.app:main"
-logistics-seed = "app.database.seed:main"
 transport-experiment = "app.experiments.cli:main"
 
 [dependency-groups]
