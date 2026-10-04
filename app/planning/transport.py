@@ -8,6 +8,10 @@ import os
 import stat
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from app.planning.execution import ExecutionBindings
 
 from app.planning.domain import ExecutionPlan, PlanningScenario
 from app.planning.serialization import plan_artifact_bytes, verify_plan_hash
@@ -66,7 +70,12 @@ def _literal(value: object, depth: int = 0) -> str:
     raise PlanTransportError("transport value is not a JSON literal")
 
 
-def transport_bytes(plan: ExecutionPlan, scenario: PlanningScenario, declared_hash: str) -> bytes:
+def transport_bytes(
+    plan: ExecutionPlan,
+    scenario: PlanningScenario,
+    declared_hash: str,
+    execution: ExecutionBindings | None = None,
+) -> bytes:
     """Validate before rendering an immutable schema-v1 Squirrel data module."""
     verify_plan_hash(plan, declared_hash)
     validate_execution_plan(plan, scenario)
@@ -108,6 +117,10 @@ def transport_bytes(plan: ExecutionPlan, scenario: PlanningScenario, declared_ha
         ],
         "artifact": artifact,
     }
+    if execution is not None:
+        from app.planning.execution import execution_payload
+
+        payload["execution"] = execution_payload(plan, scenario, execution)
     receipt_length = (
         sum(
             len(identifier) + 1
@@ -188,10 +201,11 @@ def materialize_plan(
     declared_hash: str,
     workspace: Path,
     world_source: Path,
+    execution: ExecutionBindings | None = None,
 ) -> MaterializedPlan:
     """Create one package in a new, owned 0700 workspace; never overwrite."""
     verify_world_source(scenario, world_source)
-    module = transport_bytes(plan, scenario, declared_hash)
+    module = transport_bytes(plan, scenario, declared_hash, execution)
     artifact = plan_artifact_bytes(plan)
     if (
         ".." in workspace.parts
@@ -211,6 +225,8 @@ def materialize_plan(
     sources = Path(__file__).parent / "thin_ai"
     info = (sources / "info.nut").read_bytes()
     main = (sources / "main.nut").read_bytes()
+    if execution is not None:
+        main += b"\n" + (sources / "execution.nut").read_bytes()
     _write_exclusive(workspace / "execution-plan.json", artifact)
     _write_exclusive(ai_dir / "info.nut", info)
     _write_exclusive(ai_dir / "main.nut", main)

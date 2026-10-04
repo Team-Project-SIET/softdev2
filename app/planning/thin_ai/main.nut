@@ -28,6 +28,7 @@ class P03Executor extends AIController {
             routes + "|" + fleet + "|" + actions;
         AILog.Info(record);
         this._terminal_emitted = true;
+        if (status == "failed" && "execution" in plan) P06Execution(plan).RejectSetup(code);
     }
 
     function _world_failure(data, reason, site, actual) {
@@ -204,6 +205,7 @@ class P03Executor extends AIController {
             }
         }
         _emit("accepted", "NONE", data);
+        if ("execution" in data) P06Execution(data).Run();
         while (true) Sleep(1000);
     }
 }

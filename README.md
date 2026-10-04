@@ -29,7 +29,7 @@ PlanningScenario + PreparedWorldManifest
     -> P05 baseline candidate-network optimizer (supplied corridors)  [implemented]
     -> P02 ExecutionPlan contracts -> validate/hash -> P03 staging
     -> P03ThinExecutor: decode/validate world/acknowledge              [implemented]
-    -> infrastructure construction, fleet purchase and service orders [missing]
+    -> P06 construction, fleet purchase and service orders           [implemented; road proof passed]
     -> plan-attributed simulation evaluation loop                     [missing]
 ```
 
@@ -49,8 +49,13 @@ PlanningScenario + PreparedWorldManifest
 
 **P05** implements the baseline [candidate-network optimizer](docs/specs/planning-executor-boundary.md#p05--baseline-candidate-network-optimizer)
 over supplied road/rail corridors, with shared construction costs, fleet sizing and
-minimum-capex CP-SAT selection. Construction execution and the evaluation loop
-that attributes realized results to an executed plan are still missing. P03 staging
+minimum-capex CP-SAT selection. **P06** adds faithful road/rail construction, exact
+fleet purchase and repeating service orders, with separate execution receipts and
+partial-failure evidence. Controlled tests execute the production Squirrel against
+stub command APIs. Real OpenTTD 13.4 Attempt #2 passed the complete road setup
+lifecycle; rail remains covered by controlled tests.
+The optimizer → ExecutionPlan → executor chain exists structurally. The evaluation
+loop that attributes realized results to an executed plan remains missing. P03 staging
 is separate from the production `ExperimentService` input path; P04 observations
 support evaluation but do not complete that loop. Final-save period metrics and
 company-level Admin observations are not a complete route-level profit measure.
@@ -108,8 +113,9 @@ and `0`. SimpleAI then constructs and operates routes inside OpenTTD. This is a 
 mode policy comparison, not a claim that one mode is universally better. This experiment
 path uses pinned external AIs rather than a repository-owned Squirrel optimizer.
 The repository does contain the P03 thin Squirrel executor and generated plan-data
-transport; that executor validates and acknowledges supplied decisions without
-optimizing the network or executing construction.
+transport. Its default P03 mode validates and acknowledges supplied decisions.
+Optional P06 execution uses explicit runtime catalog bindings and faithfully executes
+the validated plan; optimization remains in Python.
 
 ```bash
 uv run transport-experiment compare \
@@ -138,7 +144,7 @@ app/
 ├── database/          # Shared Base, session factory and current ORM registry
 ├── experiments/       # Scenarios, policies, batch/live service, history and CLI
 ├── simulation/openttd/# Runtime, Admin observation, telemetry and final parsing
-└── planning/          # P02 contracts/validation and P03 transport/thin executor
+└── planning/          # P02 contracts, P03 transport, P05 optimizer and P06 executor
 alembic/versions/      # Published migration history 0001 through 0007
 tests/                # Contracts, controlled runtime tests and opt-in real proofs
 docker-compose.yml    # PostgreSQL service and persistent database volume

@@ -140,8 +140,8 @@ Conceptual port: submit a validated `ExecutionPlan` plus matching prepared-world
 
 The implemented P03 AI reads/decodes the supplied plan, checks its declared
 identity/version and runtime world, and emits bounded acknowledgement evidence.
-It then sleeps without constructing infrastructure, purchasing vehicles or assigning
-orders. The target execution responsibilities remain: build stated infrastructure
+Default P03 staging then sleeps without mutation. Optional P06 staging adds the
+controlled construction/service executor described below: build stated infrastructure
 in order, purchase stated vehicles/consists, assign stated orders, start service,
 and emit evidence of actual action results. It may resolve plan IDs to runtime handles and enforce engine API preconditions. It may not choose a different location, connection, fleet, timetable, cargo, route, or objective. A world-dependent resolution failure is a setup failure. Python is authoritative for optimization. A plan-driven AI is distinct from current trAIns/SimpleAI strategy experiments and must be explicitly identified and pinned.
 
@@ -297,3 +297,100 @@ independent choices cost £920 while a globally selected shared rail network cos
 £770. No OpenTTD launch is required. P05 does not extract arbitrary worlds, generate
 arbitrary physical tile paths, execute construction, or evaluate realized plan performance.
 It has no database, Admin, thin-AI, process-control or persistence integration.
+
+
+## P06 — OpenTTD Construction & Service Executor
+
+Status: complete with controlled verification and a successful real OpenTTD 13.4
+road setup proof (Attempt #2, 2026-10-04). P03 transport, identity, runtime-world
+validation and its separate
+acknowledgement remain unchanged. P05 chooses the supplied network and fleet in
+Python. P06 executes those decisions in Squirrel. The optimizer → ExecutionPlan →
+executor chain exists structurally; realized performance evaluation remains a later
+integration step until demonstrated end-to-end. No real OpenTTD launch is part of
+the controlled tests, and an actual world mutation requires separate authorization.
+
+`app/planning/execution.py` validates the existing P02 plan and supported execution
+mapping before staging. `ExecutionBindings` resolves catalog names to native engine,
+cargo and road/rail type IDs, with expected native names/labels; it contains no
+planning decisions. Pass it as the optional `execution` argument to P03
+`materialize_plan`/`transport_bytes`. The package hash covers the appended production
+`thin_ai/execution.nut`; default P03 packages retain their original behavior.
+Squirrel checks runtime catalog identity and engine compatibility before mutation.
+
+Execution stages are ordered:
+
+1. `PLAN_ACCEPTED`
+2. `WORLD_VALIDATED`
+3. `INFRASTRUCTURE_STARTED`
+4. `INFRASTRUCTURE_COMPLETED`
+5. `FLEET_STARTED`
+6. `FLEET_COMPLETED`
+7. `ORDERS_STARTED`
+8. `ORDERS_COMPLETED`
+9. `SETUP_VERIFIED`
+10. `EXECUTION_RECEIPT_EMITTED`
+
+Actions execute once in declared dependency order, with start/success/failure and
+native command evidence. Road supports explicit adjacent orthogonal tile sequences,
+1×1 terminal bus/truck stops and depots. Rail supports straight, adjacent orthogonal
+corridors, rectangular stations with explicit platform dimensions, and 1×1 depots.
+Sites require consistent explicit orientation; every facility footprint and corridor
+must be flat. Depot entrances must touch a supplied corridor. A road depot's native
+construction requires connecting its site to its declared adjacent front tile; this
+fixed connector is emitted and verified as part of the depot action. Rail depot and
+station axes must match their corridor. Shared actions are constructed once and
+referenced by their original users. No path discovery, geometry substitution,
+terraforming, demolition, bridges, tunnels or speculative repair is performed.
+Unsupported geometry is rejected; native command failures stop execution.
+
+Each fleet group creates one native protected group. Road buys the exact type and
+count. Rail buys each planned locomotive and each wagon type/count in declared
+composition order, attaches wagons, and repeats for the exact train count. Native
+engine identities, cargo capacities, wagon sequence and total train length are read
+back. Articulated engines are rejected. Each group currently requires one route and
+one cargo and `start_day = 0`; delayed activation is rejected before staging. Road
+station kind must match the native cargo class. Orders target the planned pickup station (`OF_NO_UNLOAD`), delivery
+station (`OF_UNLOAD | OF_NO_LOAD`) and depot (`OF_NONE`); native order lists repeat.
+`SERVICE` waypoints are rejected before staging. Vehicles remain stopped until all
+facilities, groups, consists and orders pass verification; activation is then explicit.
+OpenTTD/YAPF determines vehicle movement over the constructed network.
+
+OpenTTD commands are irreversible at this boundary. A failure before a mutation
+attempt is `PRE_EXECUTION_FAILURE`; once any mutation command is attempted, failure
+is conservatively `PARTIAL_EXECUTION`, even if that command reports failure. Evidence
+retains the failed stage/entity, command arguments/error, completed actions, created
+vehicles, native groups and any partial order assignment. Execution stops immediately,
+without rollback or cleanup claims. Activation can fail after earlier vehicles started;
+such a result is partial, never successful.
+
+`P06_EXECUTION_V1` is a separate, exactly-once terminal JSON receipt, bound to plan
+hash, world fingerprint, independently observed runtime-world hash and executor
+version. It carries completed construction IDs/candidate IDs/tiles, native station and
+depot handles, all purchased vehicle IDs and engine identities, fleet/native group IDs,
+route IDs, capacity/length readbacks and order targets/flags/results. Earlier P03 setup
+failure produces one pre-execution P06 receipt without an observed runtime hash.
+`app/planning/execution_evidence.py` independently validates the log, P03 identity
+and runtime-world evidence, stage/event ordering, receipt correlation, exact expected
+action/purchase/order prefixes, and terminal completeness. Duplicate or forged
+identities/entities and success after partial execution are rejected. Parsing is bounded
+to 64 KiB per record and 1 MiB per stream; a conservative plan-size bound rejects
+oversized execution evidence before staging.
+
+Verification uses the OpenTTD 13.4 AI APIs for facility tile/front/axis/type, road
+adjacency and rail track presence, native group membership/count, primary vehicle
+engine, ordered wagon engines, cargo capacity, train length, and order count/type/
+target/flags. Integer scenario lengths are tile upper bounds: actual native train
+length in sixteenths is recorded and must not exceed the planned bound. Exact
+sub-tile length cannot be inferred from the current catalog contract. These checks do
+not prove station catchment, cargo availability, traffic deadlock freedom, travel time,
+delivery throughput, profitability or successful movement. No signals are inferred.
+Real Attempt #2 verified construction, one Balogh Coal Truck, native group membership
+via `AIVehicle.GetGroupID`, all three order readbacks, activation, exact stage ordering
+and exactly one successful terminal receipt. Attempt #1 remains immutable local failure
+evidence: the incorrect `GetGroup` call was corrected, and regression tests reject it
+against a fake exposing the real API name. The 51 focused P06 tests and full controlled
+suite (918 passed, 32 skipped, 3 deselected) passed before and after Attempt #2. Rail
+remains controlled-test-covered. Local proof artifacts are retained separately from
+source commits. Controlled tests run the actual Squirrel source in `squirrel-lang`
+against deterministic stub APIs.
