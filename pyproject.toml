@@ -7,7 +7,7 @@ requires-python = ">=3.14"
 dependencies = [
     "alembic>=1.13",
     "openttdlab==0.0.75",
-    # Intentionally retained for future optimization research; no current network optimizer.
+    # P05 candidate-network selection uses the CP-SAT solver.
     "ortools>=9.10",
     "psycopg[binary]>=3.1",
     "pydantic>=2.7",

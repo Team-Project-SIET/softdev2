@@ -1,10 +1,10 @@
 # P01 — Simulation-Ready Planning Contracts and OpenTTD Executor Boundary
 
 Status: P01 design specification, with current implementation context updated through
-P04 (`84ccb61`). Planning schema: **v1**. P02 implements contracts and prelaunch
+P05 (worktree implementation). Planning schema: **v1**. P02 implements contracts and prelaunch
 validation; P03 implements plan transport and runtime acknowledgement; P04 completes
-Admin observation. The network optimizer, construction/purchase/order executor and
-plan-attributed evaluation loop remain unimplemented. The target responsibilities
+Admin observation. P05 implements baseline selection over supplied candidate corridors.
+The construction/purchase/order executor and plan-attributed evaluation loop remain unimplemented. The target responsibilities
 below remain design requirements, not claims that the complete loop exists.
 See [current architecture and project status](../../README.md#current-architecture-and-project-status).
 
@@ -239,3 +239,61 @@ P01 is satisfied when this document unambiguously defines the planner's `Plannin
 ## Next implementation ticket recommendation
 
 **P02 — Planning schema v1, canonical serialization, and prelaunch validation.** Implement immutable typed `PlanningScenario`/`ExecutionPlan` contracts and world-manifest references, canonical SHA-256 artifacts, and strict cross-reference validation against a tiny fixed fixture. Stop before AI transport, construction, experiment persistence, or a new optimizer.
+
+
+## P05 — Baseline Candidate-Network Optimizer
+
+`app.planning.optimizer.optimize_candidate_network(PlanningScenario)` returns an
+immutable `OptimizationResult` containing a P02-validated `ExecutionPlan` and separate
+`EstimatedPlanMetrics`. P05 is the first repository-owned network optimizer. It
+selects prepared/supplied infrastructure candidates; OpenTTD/YAPF still handles
+vehicle pathfinding over constructed infrastructure.
+
+The deterministic graph indexes station/depot locations and directed SEGMENT edges,
+retaining candidate IDs, explicit tiles, mode, build cost and rail type. Each demand
+gets exactly one route: pickup station, delivery station, final compatible depot,
+and one supplied corridor directly connecting the two stations. No multi-edge paths
+or SERVICE waypoints are introduced. A road fleet uses `ceil(quantity/capacity)`
+vehicles. Rail searches compatible mixed-wagon counts within option, scenario and
+both station platform limits, choosing the minimum total purchase cost including
+locomotives and the number of trains. Every vehicle/train plans one trip; service
+starts within demand and fleet availability windows. No travel-time or throughput
+assumptions are inferred from speed or distance.
+
+OR-Tools CP-SAT selects exactly one alternative per demand. Candidate activation is
+linked to its route users, so construction is charged once and fleets per route.
+P02 site/corridor overlap restrictions are included in the global model. The primary
+objective is total construction plus vehicle purchase capex. The solver first proves
+the unconstrained optimum to distinguish global infeasibility from budget infeasibility;
+then fixes that capex and applies the budget constraint and secondary tie-breaks.
+A capex-only budget cannot change a feasible minimum-capex solution: it either
+admits that optimum or makes full service infeasible.
+
+Costs use exact integer GBP units at `10**max(2, fractional_digits)` across objective
+amounts and budget, ignoring trailing zeros. There is no rounding. More than 18
+fractional digits or a sum of integer coefficients and budget at least `2**62` is
+rejected as unsupported, before constructing the objective. Authoritative catalog
+purchase amounts are checked before fleet-sizing arithmetic. Rail search supports
+at most 128 compatible wagon types and 100,000 visited composition states per alternative; exceeding that bound raises
+unsupported-scenario failure instead of returning an approximate plan.
+
+Solving uses one worker and seed zero, accepts only proven optima, fixes primary
+capex using the integer solver value, then minimizes and fixes canonical alternative
+rank for each demand in sorted demand-ID order. Infrastructure candidate IDs, fleet
+option IDs and canonical composition bytes define alternative order. SHA-256 IDs,
+scenario hashing, explicit sorted routes/fleets/users and station → depot → segment
+construction ordering make repeated canonical output byte-identical. Segments depend
+on their selected endpoint station actions. Every shared candidate produces one action
+whose `route_ids` describe exactly its users. P02 contracts and validation are unchanged.
+
+Estimated metrics report full assigned cargo, shared infrastructure spend and fleet
+purchase costs. Revenue, running/finance costs, penalties and net profit remain `None`:
+P05 has no realized performance or service-time model. Typed failures distinguish
+missing station pairs, missing corridors, incompatible fleet/depot/cargo, infeasible
+rail consists, budget infeasibility, global infeasibility and unsupported scenarios.
+
+Status: implemented with controlled tests, including a two-demand case where
+independent choices cost £920 while a globally selected shared rail network costs
+£770. No OpenTTD launch is required. P05 does not extract arbitrary worlds, generate
+arbitrary physical tile paths, execute construction, or evaluate realized plan performance.
+It has no database, Admin, thin-AI, process-control or persistence integration.

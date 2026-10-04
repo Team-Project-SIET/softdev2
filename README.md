@@ -26,7 +26,7 @@ Scenario + versioned AI policy -> ExperimentService
 
 SEPARATE PLANNING BOUNDARY
 PlanningScenario + PreparedWorldManifest
-    -> repository-owned Python network optimizer                     [missing]
+    -> P05 baseline candidate-network optimizer (supplied corridors)  [implemented]
     -> P02 ExecutionPlan contracts -> validate/hash -> P03 staging
     -> P03ThinExecutor: decode/validate world/acknowledge              [implemented]
     -> infrastructure construction, fleet purchase and service orders [missing]
@@ -47,7 +47,9 @@ PlanningScenario + PreparedWorldManifest
   identity checks, subscriptions, polling and heartbeat observations. Process
   launch, reconnect policy and persistence belong to surrounding components.
 
-The repository-owned network optimizer, construction executor and evaluation loop
+**P05** implements the baseline [candidate-network optimizer](docs/specs/planning-executor-boundary.md#p05--baseline-candidate-network-optimizer)
+over supplied road/rail corridors, with shared construction costs, fleet sizing and
+minimum-capex CP-SAT selection. Construction execution and the evaluation loop
 that attributes realized results to an executed plan are still missing. P03 staging
 is separate from the production `ExperimentService` input path; P04 observations
 support evaluation but do not complete that loop. Final-save period metrics and
@@ -65,8 +67,8 @@ reference evidence; it did not retire the production T-series implementation.
 
 P01–P04 are later planning/integration work: P01's specification, P02 (`76e176c`),
 P03 (`7260f8c`) and P04 (`84ccb61`). The repository defines no one-to-one T-to-P
-mapping and no P05. Historical proof reports retain their original attempt status;
-current status comes from the accepted evidence and implementation history.
+mapping. P05 adds repository-owned candidate-network selection. Historical proof
+reports retain their original attempt status; current status comes from the accepted evidence and implementation history.
 
 ## Run the baseline experiment
 
