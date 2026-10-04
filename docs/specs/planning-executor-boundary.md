@@ -394,3 +394,70 @@ suite (918 passed, 32 skipped, 3 deselected) passed before and after Attempt #2.
 remains controlled-test-covered. Local proof artifacts are retained separately from
 source commits. Controlled tests run the actual Squirrel source in `squirrel-lang`
 against deterministic stub APIs.
+
+## P07 — Plan-Attributed Simulation Evaluation
+
+P05 optimizes the supplied candidate network; P06 faithfully constructs its plan;
+P07 evaluates that immutable plan. `ExperimentService.run_plan` accepts a validated
+`PlanEvaluationInput` and the prepared save. `PlanEvaluationInput.optimize` resolves
+P05 before run creation. Replay supplies the same frozen input. Neither launch nor
+runtime calls the optimizer. The existing external-AI experiment path is preserved.
+
+Before creating a run, P07 reparses a canonical input snapshot, checks P02/P06
+compatibility and verifies the prepared-save digest. A plan run has explicit
+`input_kind = execution_plan`, no external-AI `PlanningStrategyRecord`, and one
+`PlanEvaluationRecord`. The record indexes plan/world identity and stores typed
+artifact references plus hashes, rather than whole ORM planning dumps. Migration
+0008 is forward-only while plan history exists: downgrade refuses until those runs
+have been explicitly archived/removed. Historical migrations 0001–0007 are unchanged.
+
+The live runner stages the generated P03/P06 package into its owned workspace,
+loads the exact prepared save, isolates its single AI company through paced console
+commands and awaits independently parsed P06 evidence. Setup must include all ten
+stages, `SETUP_VERIFIED`, exactly one successful receipt and matching plan/world/
+runtime hashes. Setup-time health checks preserve cancellation, observer and
+persistence precedence. Partial execution cannot produce valid realized metrics,
+even if a final save exists. Bounded console evidence continues through shutdown;
+late duplicate terminals or script errors invalidate evaluation.
+
+After setup, the next observed Admin Date begins the **unchanged scenario horizon**.
+P07 records requested days, observed start/terminal game days and time coverage in
+`evaluation-evidence.json`, including failed/early runs. The existing runtime owns
+Admin observation, pause/save barriers, final public-parser operation, process
+reaping and workspace cleanup. Its terminal outcome manifest additionally binds
+plan provenance. Recovery verifies canonical input identity, receipt evidence,
+realized/comparison hashes and final artifacts before reconciling the same run.
+A failed terminal database write retains its intended outcome and plan identity;
+recovery never reruns or regenerates a plan.
+
+Artifacts are exclusively published and made read-only: scenario, manifest, plan,
+bindings, optional estimates, execution receipt/raw evidence, runtime/package
+provenance, telemetry, evaluation coverage, realized metrics and comparison.
+References are run-local filenames; SHA-256 content digests provide identity.
+`RealizedSimulationMetrics` is strict and immutable, with exact Decimal values and
+plan/run/scenario/world/planner/strategy/executor/runtime identities. Telemetry's
+ordered observations retain their company, epoch, date context, source and payload;
+coverage records connections, received/persisted counts, gaps and drops. A separate
+post-setup observation window excludes earlier company evidence and marks missing
+dates or required observation kinds incomplete. P04 economy,
+vehicle and facility observations remain available in that referenced time series;
+P07 does not invent per-route observations or aggregate them into unsupported totals.
+
+Final-save values preserve the current public parser's semantics: company money
+and loan are terminal snapshots; income, expenses and delivered cargo are
+**current-economy-period** values. They are not full-run profit or full-horizon cargo.
+Realized construction/purchase cost and total profit remain unavailable. Estimated
+and realized metrics are separate artifacts. Deterministic comparisons record
+units, source, horizon/period semantics and compatibility; only matching metrics
+with explicit full-horizon semantics admit differences (absolute error in original
+units and signed relative error; a zero estimate has no relative difference). Current-period economics
+and cargo are incompatible with full-horizon estimates, and unavailable estimates
+or sources remain unavailable. No coercion, ranking or adaptive replanning occurs.
+
+Status: controlled implementation is verified: 990 controlled tests passed, including
+40 focused P07 tests and real PostgreSQL fresh/0007 upgrade and outcome recovery
+checks. Ruff, format, scoped typecheck, diff, whitespace and import/scope audits pass.
+OpenTTD launches: zero. The executor → simulation → observation → attributed metrics
+chain exists structurally and is covered by controlled peers. A separately authorized
+real P07 evaluation proof is still required before claiming end-to-end realized
+evaluation. Closed-loop candidate improvement remains future work.

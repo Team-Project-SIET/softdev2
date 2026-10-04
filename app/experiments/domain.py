@@ -94,6 +94,9 @@ class ExecutionFailureCode(StrEnum):
     CANCELLED = "cancelled"
     FINALIZATION_FAILURE = "finalization_failure"
     CLEANUP_FAILURE = "cleanup_failure"
+    PLAN_TRANSPORT_FAILURE = "plan_transport_failure"
+    PLAN_SETUP_FAILURE = "plan_setup_failure"
+    PARTIAL_EXECUTION = "partial_execution"
 
 
 NonNegativeCount = Annotated[int, Field(strict=True, ge=0)]

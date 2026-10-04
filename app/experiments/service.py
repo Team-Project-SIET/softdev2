@@ -29,6 +29,7 @@ from app.experiments.domain import (
 )
 from app.experiments.model import ExperimentRunRecord
 from app.experiments.outcome_manifest import OutcomeManifest, new_manifest, publish_manifest
+from app.experiments.plan_evaluation import PlanFinalizationFailure, PlanProvenance
 from app.experiments.repository import ExperimentRepository
 from app.simulation.openttd.runner import OpenTTDLabRunner, SimulationRunner
 
@@ -85,6 +86,7 @@ def _matches_terminal(
     message: str | None,
     summary: LiveExecutionSummary | None,
     partial_reference: str | None,
+    plan_provenance: PlanProvenance | None = None,
 ) -> bool:
     """Confirm an ambiguous commit only if the stored outcome is this outcome."""
     if row is None or row.execution_mode != ExecutionMode.LIVE:
@@ -93,14 +95,19 @@ def _matches_terminal(
         row.scenario.identifier != config.scenario.identifier
         or row.scenario.version != config.scenario.version
         or row.scenario.openttd_config != config.scenario.openttd_config
-        or row.strategy.identifier != config.planning.strategy_identifier
-        or row.strategy.version != config.planning.strategy_version
+        or row.strategy_identity()
+        != (config.planning.strategy_identifier, config.planning.strategy_version)
         or row.strategy_configuration != config.planning.parameters
         or row.ai_configuration != config.ai.model_dump(mode="json")
         or row.openttd_version != config.openttd_version
         or row.opengfx_version != config.opengfx_version
         or row.seed != config.seed
         or row.duration_days != config.duration_days
+    ):
+        return False
+    if plan_provenance is not None and (
+        row.plan_evaluation is None
+        or row.plan_evaluation.provenance != plan_provenance.model_dump(mode="json")
     ):
         return False
     live = row.telemetry_session
@@ -235,6 +242,27 @@ class ExperimentService:
         assert options is not None
         return self._run_live(config, run_id, started_at, artifact_dir, options)
 
+    def run_plan(
+        self,
+        value,
+        *,
+        world_source: Path,
+        artifact_dir: Path,
+        live_options: LiveExecutionOptions | None = None,
+        runner_factory=None,
+    ):
+        """Evaluate a resolved immutable plan; the external-AI run path is unchanged."""
+        from app.experiments.plan_service import run_plan
+
+        return run_plan(
+            self,
+            value,
+            world_source=world_source,
+            artifact_dir=artifact_dir,
+            live_options=live_options,
+            runner_factory=runner_factory,
+        )
+
     def _run_batch(
         self, config: ExperimentConfig, run_id: int, started_at: datetime, artifact_dir: Path
     ) -> ExperimentResult:
@@ -321,6 +349,8 @@ class ExperimentService:
         simulation: SimulationResult | None = None,
         failure: ExecutionFailure | None = None,
         integration_failure: bool = False,
+        plan_provenance: PlanProvenance | None = None,
+        plan_finalizer: Callable[[Session, LiveExecutionSummary], PlanProvenance] | None = None,
     ) -> ExperimentResult:
         """Publish intended evidence before the terminal DB commit can fail."""
         if simulation is not None:
@@ -386,6 +416,7 @@ class ExperimentService:
                 failure_message=message,
                 partial_artifact_reference=partial_reference,
                 live_summary=summary,
+                plan_provenance=plan_provenance,
             )
 
         try:
@@ -405,6 +436,17 @@ class ExperimentService:
                 ):
                     code = ExecutionFailureCode.PERSISTENCE_FAILURE
                     message = "persistence failure"
+                if plan_finalizer is not None:
+                    try:
+                        plan_provenance = plan_finalizer(session, summary)
+                    except Exception as exc:
+                        if isinstance(exc, PlanFinalizationFailure):
+                            plan_provenance = exc.provenance
+                        if code is None and not integration_failure:
+                            code = ExecutionFailureCode.FINALIZATION_FAILURE
+                            message = "finalization failure"
+                if plan_provenance is not None:
+                    self.repository.record_plan_provenance(session, run_id, plan_provenance)
                 terminal_simulation = (
                     simulation.model_copy(update={"live_summary": summary})
                     if simulation is not None and code is None and not integration_failure
@@ -466,6 +508,7 @@ class ExperimentService:
                             if code is not None and summary is not None
                             else None
                         ),
+                        plan_provenance,
                     )
             except Exception:
                 pass

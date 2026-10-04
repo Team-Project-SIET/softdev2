@@ -16,11 +16,14 @@ from pathlib import Path
 from typing import IO
 
 from app.experiments.domain import ExperimentConfig
+from app.experiments.plan_evaluation import PlanEvaluationInput
 from app.experiments.strategies import (
     BaselineStrategy,
     SimpleMultimodalStrategy,
     SimpleRoadOnlyStrategy,
 )
+from app.planning.canonical import plan_hash
+from app.planning.transport import materialize_plan, verify_world_source
 from app.simulation.openttd.runtime_assets import PreparedRuntime
 
 
@@ -240,6 +243,13 @@ class LiveLaunchPreparation:
         self.workspace_root = workspace_root
         self.lock_root = lock_root
         self.port_range = port_range
+        self.plan_input: PlanEvaluationInput | None = None
+        self.world_source: Path | None = None
+
+    def for_plan(self, value: PlanEvaluationInput, world_source: Path):
+        self.plan_input = value
+        self.world_source = world_source
+        return self
 
     def prepare(
         self,
@@ -257,8 +267,9 @@ class LiveLaunchPreparation:
         save_name = _safe_save_name(save_name)
         if config.openttd_version != "13.4" or config.opengfx_version != "7.1":
             raise LiveLaunchError(LiveLaunchCode.INVALID_CONFIGURATION)
+        plan_input = self.plan_input
         strategies = (BaselineStrategy(), SimpleRoadOnlyStrategy(), SimpleMultimodalStrategy())
-        if not any(
+        if plan_input is None and not any(
             strategy.configure(config.scenario) == (config.planning, config.ai)
             for strategy in strategies
         ):
@@ -272,6 +283,17 @@ class LiveLaunchPreparation:
             self.workspace_root.mkdir(parents=True, exist_ok=True)
             workspace = Path(tempfile.mkdtemp(prefix="live-", dir=self.workspace_root))
             workspace.chmod(0o700)
+            staged = None
+            if plan_input is not None:
+                assert self.world_source is not None
+                staged = materialize_plan(
+                    plan_input.plan,
+                    plan_input.scenario,
+                    plan_hash(plan_input.plan),
+                    workspace,
+                    self.world_source,
+                    plan_input.bindings,
+                )
             for directory in ("save", "baseset", "ai", "ai/library", "scripts"):
                 (workspace / directory).mkdir(parents=True, exist_ok=True)
             final_save = workspace / "save" / save_name
@@ -283,8 +305,16 @@ class LiveLaunchPreparation:
             )
             for source, target in (
                 (runtime.opengfx_archive_path, graphics),
-                (runtime.ai_archive_path, ai_archive),
-                *zip(runtime.dependency_archive_paths, dependencies, strict=True),
+                *(
+                    (
+                        (
+                            (runtime.ai_archive_path, ai_archive),
+                            *zip(runtime.dependency_archive_paths, dependencies, strict=True),
+                        )
+                    )
+                    if plan_input is None
+                    else ()
+                ),
             ):
                 _copy_runtime_file(source, target, deadline)
             _check_deadline(deadline)
@@ -311,9 +341,13 @@ class LiveLaunchPreparation:
             ai_parameters = ",".join(f"{key}={value}" for key, value in config.ai.parameters)
             _write_owned(
                 workspace / "scripts" / "game_start.scr",
-                f"start_ai {config.ai.name}"
-                + (f" {ai_parameters}" if ai_parameters else "")
-                + "\n",
+                (
+                    f"start_ai {config.ai.name}"
+                    + (f" {ai_parameters}" if ai_parameters else "")
+                    + "\n"
+                )
+                if plan_input is None
+                else "echo __P03_HANDSHAKE_READY__\n",
             )
             _write_owned(
                 workspace / PAUSE_BARRIER_SCRIPT,
@@ -323,17 +357,27 @@ class LiveLaunchPreparation:
                 workspace / UNPAUSE_BARRIER_SCRIPT,
                 f"unpause\necho {UNPAUSE_BARRIER_MARKER}\n",
             )
+            if plan_input is not None:
+                assert self.world_source is not None
+                _copy_runtime_file(self.world_source, workspace / "prepared.sav", deadline)
+                verify_world_source(plan_input.scenario, workspace / "prepared.sav")
+                _write_owned(
+                    workspace / "scripts/p03_unpause.scr", "unpause\necho __P03_UNPAUSE_ACK__\n"
+                )
             _check_deadline(deadline)
             argv = (
                 str(runtime.executable_path),
                 f"-D127.0.0.1:{lease.game_port}",
                 "-g",
-                "-G",
-                str(config.seed),
+                *(
+                    ("-G", str(config.seed))
+                    if plan_input is None
+                    else (str(workspace / "prepared.sav"),)
+                ),
                 "-I",
                 "OpenGFX",
                 "-d",
-                "console=4",
+                "console=4" if plan_input is None else "console=4,script=5",
                 "-c",
                 str(main),
                 "-x",
@@ -345,8 +389,8 @@ class LiveLaunchPreparation:
                 main_config_path=main,
                 private_config_path=private,
                 secrets_config_path=secret,
-                ai_archive_path=ai_archive,
-                dependency_archive_paths=dependencies,
+                ai_archive_path=staged.ai_directory if staged else ai_archive,
+                dependency_archive_paths=dependencies if staged is None else (),
                 graphics_archive_path=graphics,
                 final_save_path=final_save,
                 admin_password=password,
@@ -354,6 +398,11 @@ class LiveLaunchPreparation:
                 argv=argv,
                 provenance={
                     "execution_mode": "live",
+                    **(
+                        {"plan_hash": staged.plan_hash, "package_sha256": staged.package_sha256}
+                        if staged is not None
+                        else {}
+                    ),
                     "config_schema": "openttd-13.4-ini-v2",
                     "runtime": runtime.provenance,
                     "strategy_identifier": config.planning.strategy_identifier,

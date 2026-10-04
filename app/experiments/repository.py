@@ -1,5 +1,6 @@
 """SQLAlchemy persistence for experiment history."""
 
+import json
 import re
 from datetime import datetime
 from decimal import Decimal
@@ -25,10 +26,12 @@ from app.experiments.model import (
     ExperimentRunRecord,
     ExperimentScenario,
     LiveTelemetrySessionRecord,
+    PlanEvaluationRecord,
     PlanningStrategyRecord,
     SimulationRunRecord,
     TelemetryObservationRecord,
 )
+from app.experiments.plan_evaluation import PlanProvenance
 
 
 def _require_sanitized_metadata(metadata: dict) -> None:
@@ -188,6 +191,7 @@ class ExperimentRepository:
         *,
         execution_mode: ExecutionMode = ExecutionMode.BATCH,
         execution_metadata: dict | None = None,
+        plan_provenance: PlanProvenance | None = None,
     ) -> int:
         if execution_metadata is not None:
             _require_sanitized_metadata(execution_metadata)
@@ -214,33 +218,37 @@ class ExperimentRepository:
                     raise
         if scenario.openttd_config != config.scenario.openttd_config:
             raise ValueError("scenario version already exists with different OpenTTD configuration")
-        strategy = session.scalar(
-            select(PlanningStrategyRecord).where(
-                PlanningStrategyRecord.identifier == config.planning.strategy_identifier,
-                PlanningStrategyRecord.version == config.planning.strategy_version,
-            )
-        )
-        if strategy is None:
-            try:
-                with session.begin_nested():
-                    strategy = PlanningStrategyRecord(
-                        identifier=config.planning.strategy_identifier,
-                        version=config.planning.strategy_version,
-                    )
-                    session.add(strategy)
-                    session.flush()
-            except IntegrityError:
-                strategy = session.scalar(
-                    select(PlanningStrategyRecord).where(
-                        PlanningStrategyRecord.identifier == config.planning.strategy_identifier,
-                        PlanningStrategyRecord.version == config.planning.strategy_version,
-                    )
+        strategy = None
+        if plan_provenance is None:
+            strategy = session.scalar(
+                select(PlanningStrategyRecord).where(
+                    PlanningStrategyRecord.identifier == config.planning.strategy_identifier,
+                    PlanningStrategyRecord.version == config.planning.strategy_version,
                 )
-                if strategy is None:
-                    raise
+            )
+            if strategy is None:
+                try:
+                    with session.begin_nested():
+                        strategy = PlanningStrategyRecord(
+                            identifier=config.planning.strategy_identifier,
+                            version=config.planning.strategy_version,
+                        )
+                        session.add(strategy)
+                        session.flush()
+                except IntegrityError:
+                    strategy = session.scalar(
+                        select(PlanningStrategyRecord).where(
+                            PlanningStrategyRecord.identifier
+                            == config.planning.strategy_identifier,
+                            PlanningStrategyRecord.version == config.planning.strategy_version,
+                        )
+                    )
+                    if strategy is None:
+                        raise
         run = ExperimentRunRecord(
             scenario=scenario,
             strategy=strategy,
+            input_kind="external_ai" if plan_provenance is None else "execution_plan",
             strategy_configuration=config.planning.parameters,
             ai_configuration=config.ai.model_dump(mode="json"),
             openttd_version=config.openttd_version,
@@ -252,9 +260,41 @@ class ExperimentRepository:
             execution_mode=execution_mode,
             execution_metadata=execution_metadata,
         )
+        if plan_provenance is not None:
+            run.plan_evaluation = PlanEvaluationRecord(
+                plan_hash=plan_provenance.plan_hash,
+                world_fingerprint=plan_provenance.world_fingerprint,
+                strategy_identifier=config.planning.strategy_identifier,
+                strategy_version=config.planning.strategy_version,
+                provenance=plan_provenance.model_dump(mode="json"),
+            )
         session.add(run)
         session.flush()
         return run.id
+
+    def record_plan_provenance(self, session: Session, run_id: int, value: PlanProvenance) -> None:
+        row = session.get(PlanEvaluationRecord, run_id)
+        if (
+            row is None
+            or row.plan_hash != value.plan_hash
+            or row.world_fingerprint != value.world_fingerprint
+        ):
+            raise ValueError("missing/mismatched plan evaluation")
+        original = PlanProvenance.model_validate_json(json.dumps(row.provenance))
+        if any(
+            getattr(original, name) != getattr(value, name)
+            for name in (
+                "plan_hash",
+                "world_fingerprint",
+                "scenario_hash",
+                "manifest_hash",
+                "input_artifact",
+            )
+        ):
+            raise ValueError("immutable plan provenance mismatch")
+        if original.receipt is not None and original != value:
+            raise ValueError("terminal plan provenance already recorded")
+        row.provenance = value.model_dump(mode="json")
 
     def complete_run(
         self, session: Session, run_id: int, result: SimulationResult, completed_at

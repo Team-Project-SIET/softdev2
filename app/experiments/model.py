@@ -54,6 +54,11 @@ class ExperimentRunRecord(Base):
     __tablename__ = "experiment_runs"
     __table_args__ = (
         CheckConstraint(
+            "(input_kind = 'external_ai' AND strategy_id IS NOT NULL) OR "
+            "(input_kind = 'execution_plan' AND strategy_id IS NULL AND execution_mode = 'live')",
+            name="input_kind_valid",
+        ),
+        CheckConstraint(
             allowed_values("execution_mode", tuple(ExecutionMode)), name="execution_mode_valid"
         ),
         CheckConstraint(
@@ -70,7 +75,10 @@ class ExperimentRunRecord(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     scenario_id: Mapped[int] = mapped_column(ForeignKey("experiment_scenarios.id"))
-    strategy_id: Mapped[int] = mapped_column(ForeignKey("planning_strategies.id"))
+    strategy_id: Mapped[int | None] = mapped_column(ForeignKey("planning_strategies.id"))
+    input_kind: Mapped[str] = mapped_column(
+        String(20), default="external_ai", server_default=text("'external_ai'")
+    )
     strategy_configuration: Mapped[dict] = mapped_column(JSON)
     ai_configuration: Mapped[dict] = mapped_column(JSON)
     openttd_version: Mapped[str] = mapped_column(String(40))
@@ -89,13 +97,27 @@ class ExperimentRunRecord(Base):
     execution_metadata: Mapped[dict | None] = mapped_column(JSONDocument)
 
     scenario: Mapped[ExperimentScenario] = relationship()
-    strategy: Mapped[PlanningStrategyRecord] = relationship()
+    strategy: Mapped[PlanningStrategyRecord | None] = relationship()
+    plan_evaluation: Mapped[PlanEvaluationRecord | None] = relationship(
+        uselist=False, cascade="all, delete-orphan"
+    )
     simulation: Mapped[SimulationRunRecord | None] = relationship(
         back_populates="experiment", uselist=False
     )
     telemetry_session: Mapped[LiveTelemetrySessionRecord | None] = relationship(
         back_populates="experiment", uselist=False, cascade="all, delete-orphan"
     )
+
+    def strategy_identity(self) -> tuple[str, str]:
+        if (
+            self.input_kind == "execution_plan"
+            and self.strategy is None
+            and self.plan_evaluation is not None
+        ):
+            return self.plan_evaluation.strategy_identifier, self.plan_evaluation.strategy_version
+        if self.input_kind == "external_ai" and self.strategy is not None:
+            return self.strategy.identifier, self.strategy.version
+        raise ValueError("missing run input identity")
 
 
 class LiveTelemetrySessionRecord(Base):
@@ -272,3 +294,17 @@ class ExperimentMetricRecord(Base):
     unit: Mapped[str] = mapped_column(String(40))
 
     simulation: Mapped[SimulationRunRecord] = relationship(back_populates="metrics")
+
+
+class PlanEvaluationRecord(Base):
+    """Only typed artifact references and identities; never whole planning artifacts."""
+
+    __tablename__ = "plan_evaluations"
+    experiment_run_id: Mapped[int] = mapped_column(
+        ForeignKey("experiment_runs.id", ondelete="CASCADE"), primary_key=True
+    )
+    plan_hash: Mapped[str] = mapped_column(String(64))
+    world_fingerprint: Mapped[str] = mapped_column(String(64))
+    strategy_identifier: Mapped[str] = mapped_column(String(120))
+    strategy_version: Mapped[str] = mapped_column(String(80))
+    provenance: Mapped[dict] = mapped_column(JSONDocument)

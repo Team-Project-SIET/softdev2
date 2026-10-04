@@ -1,6 +1,8 @@
 """Explicit reconciliation of a validated T14 live outcome into PostgreSQL."""
 
 import errno
+import gzip
+import json
 import os
 import re
 import stat
@@ -35,8 +37,14 @@ from app.experiments.outcome_manifest import (
     _validate_reference,
     config_digest,
 )
+from app.experiments.plan_artifacts import final_save_values
+from app.experiments.plan_evaluation import PlanEvaluationInput, accept_execution, realized_metrics
+from app.experiments.plan_service import runtime_config
 from app.experiments.repository import ExperimentRepository
 from app.experiments.workspace_recovery import cleanup_abandoned_workspaces
+from app.planning.canonical import canonical_bytes, plan_hash, scenario_hash, world_manifest_hash
+from app.planning.execution_evidence import parse_execution_evidence
+from app.planning.realized import RealizedSimulationMetrics, compare_metrics
 
 MAX_MANIFEST_BYTES = 1024 * 1024
 
@@ -173,6 +181,124 @@ def _verify_artifacts(directory_fd: int, run_dir: Path, manifest: OutcomeManifes
         if actual != expected:
             raise _ManifestError("manifest artifact hash does not match")
 
+    if manifest.plan_provenance is not None:
+        provenance = manifest.plan_provenance
+
+        def load(ref):
+            verify(f"run-{manifest.run_id}/{ref.reference}", ref.sha256)
+            name = _validate_reference(f"run-{manifest.run_id}/{ref.reference}", run_dir).name
+            descriptor = os.open(name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=directory_fd)
+            with os.fdopen(descriptor, "rb") as source:
+                data = source.read(4 * 1024 * 1024 + 1)
+            if len(data) > 4 * 1024 * 1024:
+                raise _ManifestError("plan artifact too large")
+            return data
+
+        for field in ("receipt", "realized", "comparison", "evaluation", "telemetry", "runtime"):
+            ref = getattr(provenance, field)
+            if ref is not None:
+                if field == "telemetry":
+                    verify(f"run-{manifest.run_id}/{ref.reference}", ref.sha256)
+                else:
+                    load(ref)
+        value = PlanEvaluationInput.model_validate_json(load(provenance.input_artifact))
+        if (
+            plan_hash(value.plan),
+            scenario_hash(value.scenario),
+            world_manifest_hash(value.scenario.world_manifest),
+            value.scenario.world_fingerprint,
+        ) != (
+            provenance.plan_hash,
+            provenance.scenario_hash,
+            provenance.manifest_hash,
+            provenance.world_fingerprint,
+        ):
+            raise _ManifestError("plan input identity mismatch")
+        if provenance.receipt is not None:
+            descriptor = os.open(
+                "execution-evidence.log", os.O_RDONLY | os.O_NOFOLLOW, dir_fd=directory_fd
+            )
+            with os.fdopen(descriptor, "rb") as source:
+                receipt_log = source.read(1024 * 1024 + 1).decode()
+            parsed_receipt = parse_execution_evidence(
+                receipt_log, value.plan, value.scenario, value.bindings
+            )
+            if canonical_bytes(parsed_receipt) != load(provenance.receipt):
+                raise _ManifestError("receipt identity differs")
+        if manifest.intended_status is RunStatus.SUCCEEDED:
+            if (
+                provenance.receipt is None
+                or provenance.realized is None
+                or manifest.live_summary is None
+            ):
+                raise _ManifestError("successful plan lacks evaluation")
+            name = "execution-evidence.log"
+            descriptor = os.open(name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=directory_fd)
+            with os.fdopen(descriptor, "rb") as source:
+                log = source.read(1024 * 1024 + 1).decode()
+            receipt = accept_execution(value, log)
+            if canonical_bytes(receipt) != load(provenance.receipt):
+                raise _ManifestError("execution receipt differs")
+            realized = RealizedSimulationMetrics.model_validate_json(load(provenance.realized))
+            if (
+                realized.plan_hash != provenance.plan_hash
+                or realized.run_id != manifest.run_id
+                or realized.world_fingerprint != provenance.world_fingerprint
+                or realized.execution_receipt != provenance.receipt
+                or realized.final_save.sha256 != manifest.live_summary.raw_save_sha256
+                or realized.final_result.sha256 != manifest.live_summary.parsed_artifact_sha256
+            ):
+                raise _ManifestError("realized provenance differs")
+            for reference in (realized.final_save, realized.final_result):
+                verify(f"run-{manifest.run_id}/{reference.reference}", reference.sha256)
+            if (
+                realized.observations.status,
+                realized.observations.received,
+                realized.observations.persisted,
+                realized.observations.gaps,
+                realized.observations.dropped,
+            ) != (
+                manifest.live_summary.telemetry_status.value,
+                manifest.live_summary.received_count,
+                manifest.live_summary.persisted_count,
+                manifest.live_summary.gap_count,
+                manifest.live_summary.dropped_count,
+            ):
+                raise _ManifestError("realized telemetry coverage differs")
+            final_name = _validate_reference(
+                f"run-{manifest.run_id}/{realized.final_result.reference}", run_dir
+            ).name
+            descriptor = os.open(final_name, os.O_RDONLY | os.O_NOFOLLOW, dir_fd=directory_fd)
+            with os.fdopen(descriptor, "rb") as source, gzip.open(source, "rt") as parser:
+                parsed = json.load(parser)
+            recomputed = realized_metrics(
+                value,
+                manifest.run_id,
+                receipt,
+                provenance.receipt,
+                start_day=realized.observed_start_day,
+                terminal_day=realized.observed_terminal_day,
+                coverage=realized.observations,
+                final_save=realized.final_save,
+                final_result=realized.final_result,
+                metrics=final_save_values(parsed, runtime_config(value)),
+            )
+            if (
+                canonical_bytes(recomputed) != canonical_bytes(realized)
+                or manifest.live_summary.requested_target_day
+                != realized.observed_start_day + value.scenario.horizon_days
+                or manifest.live_summary.actual_final_day != realized.observed_terminal_day
+            ):
+                raise _ManifestError("realized source/horizon differs")
+            verify(
+                f"run-{manifest.run_id}/{realized.observations.telemetry.reference}",
+                realized.observations.telemetry.sha256,
+            )
+            if value.estimated is not None:
+                if provenance.comparison is None or canonical_bytes(
+                    compare_metrics(value.estimated, realized)
+                ) != load(provenance.comparison):
+                    raise _ManifestError("comparison differs")
     if manifest.intended_status is RunStatus.SUCCEEDED:
         if manifest.simulation is None or manifest.live_summary is None:
             raise _ManifestError("successful manifest lacks final evidence")
@@ -197,6 +323,7 @@ def _verify_artifacts(directory_fd: int, run_dir: Path, manifest: OutcomeManifes
 
 
 def _stored_config(row: ExperimentRunRecord) -> ExperimentConfig:
+    strategy_identifier, strategy_version = row.strategy_identity()
     return ExperimentConfig(
         scenario=ScenarioConfig(
             identifier=row.scenario.identifier,
@@ -204,8 +331,8 @@ def _stored_config(row: ExperimentRunRecord) -> ExperimentConfig:
             openttd_config=row.scenario.openttd_config,
         ),
         planning=PlanningConfiguration(
-            strategy_identifier=row.strategy.identifier,
-            strategy_version=row.strategy.version,
+            strategy_identifier=strategy_identifier,
+            strategy_version=strategy_version,
             parameters=row.strategy_configuration,
         ),
         ai=AIConfig.model_validate(row.ai_configuration),
@@ -228,6 +355,13 @@ def _summary_matches(row: LiveTelemetrySessionRecord, summary: LiveExecutionSumm
 
 
 def _terminal_matches(row: ExperimentRunRecord, manifest: OutcomeManifest) -> bool:
+    if (row.input_kind == "execution_plan") != (manifest.plan_provenance is not None):
+        return False
+    if manifest.plan_provenance is not None and (
+        row.plan_evaluation is None
+        or row.plan_evaluation.provenance != manifest.plan_provenance.model_dump(mode="json")
+    ):
+        return False
     live = row.telemetry_session
     summary = manifest.live_summary
     if (
@@ -323,10 +457,16 @@ class OutcomeRecoveryService:
                     raise _Conflict("missing or wrong-mode run")
                 try:
                     matches_config = config_digest(_stored_config(row)) == manifest.config_sha256
-                except ValidationError:
+                except ValueError:
                     matches_config = False
                 if not matches_config:
                     raise _Conflict("run configuration differs")
+                if (row.input_kind == "execution_plan") != (manifest.plan_provenance is not None):
+                    raise _Conflict("run input kind differs")
+                if manifest.plan_provenance is not None:
+                    self.repository.record_plan_provenance(
+                        session, manifest.run_id, manifest.plan_provenance
+                    )
                 live = row.telemetry_session
                 summary = manifest.live_summary
                 if live is None or summary is None or not _summary_matches(live, summary):

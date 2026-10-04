@@ -105,7 +105,9 @@ def test_telemetry_migration_preserves_history_and_downgrades(
             assert connection.scalar(
                 text("SELECT simulation_date FROM simulation_runs WHERE id=1")
             ) == date(1950, 1, 31)
+            scripts.get_revision("0008").module.upgrade()
             assert current_metadata_diff(connection) == []
+            scripts.get_revision("0008").module.downgrade()
             connection.execute(
                 text(
                     "INSERT INTO live_telemetry_sessions "
@@ -144,7 +146,7 @@ def test_postgresql_telemetry_storage_constraints_and_cascade(
     with engine.begin() as connection:
         context = MigrationContext.configure(connection)
         with Operations.context(context):
-            for revision in ("0001", "0002", "0003", "0004", "0005", "0006", "0007"):
+            for revision in ("0001", "0002", "0003", "0004", "0005", "0006", "0007", "0008"):
                 scripts.get_revision(revision).module.upgrade()
         indexes = {
             index["name"]: index
@@ -480,7 +482,7 @@ def test_existing_0002_and_fresh_postgresql_upgrades_match(
     upgrade_isolated(config, legacy_engine, "head")
 
     with legacy_engine.connect() as connection:
-        assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "0007"
+        assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "0008"
         legacy_signature = _schema_signature(connection)
         legacy_tables = {table: legacy_signature[table] for table in before_comments}
         assert _without_column_comments(legacy_tables) == _without_column_comments(before_comments)
@@ -492,6 +494,7 @@ def test_existing_0002_and_fresh_postgresql_upgrades_match(
             "experiment_metrics",
             "live_telemetry_sessions",
             "telemetry_observations",
+            "plan_evaluations",
         }
         assert _column_comments(legacy_signature, "routes")["total_distance"] == "Kilometers"
         assert _column_comments(legacy_signature, "routes")["total_weight"] == "Kilograms"
@@ -543,7 +546,7 @@ def test_existing_0002_and_fresh_postgresql_upgrades_match(
             text=True,
         )
         with fresh_engine.connect() as connection:
-            assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "0007"
+            assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "0008"
             assert _schema_signature(connection) == legacy_signature
             assert current_metadata_diff(connection) == []
     finally:

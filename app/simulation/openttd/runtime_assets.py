@@ -475,6 +475,7 @@ class PinnedRuntimePreparer:
         *,
         deadline: float | None = None,
         acquisition_policy: AcquisitionPolicy = AcquisitionPolicy.ALLOW_PROVISIONING,
+        plan_package: bool = False,
     ) -> PreparedRuntime:
         _check_deadline(deadline)
         if not isinstance(acquisition_policy, AcquisitionPolicy):
@@ -483,23 +484,33 @@ class PinnedRuntimePreparer:
             raise RuntimePreparationError(RuntimePreparationCode.UNSUPPORTED_PIN)
         if config.openttd_version != "13.4" or config.opengfx_version != "7.1":
             raise RuntimePreparationError(RuntimePreparationCode.UNSUPPORTED_PIN)
-        strategies: dict[str, PlanningStrategy] = {
-            "trains-baseline": BaselineStrategy(),
-            "simple-road-only": SimpleRoadOnlyStrategy(),
-            "simple-multimodal": SimpleMultimodalStrategy(),
-        }
-        strategy = strategies.get(config.planning.strategy_identifier)
-        if strategy is None or strategy.configure(config.scenario) != (config.planning, config.ai):
-            raise RuntimePreparationError(RuntimePreparationCode.UNSUPPORTED_PIN)
-        ai_key = "trains" if strategy.identifier == "trains-baseline" else "simpleai"
-        try:
+        if plan_package:
+            if config.ai.name != "P03ThinExecutor":
+                raise RuntimePreparationError(RuntimePreparationCode.UNSUPPORTED_PIN)
+            ai_key = "openttd"  # No external AI is acquired or staged in a plan run.
             ai_pin = self.pins[ai_key]
-            required = ("openttd", "opengfx", ai_key, *ai_pin.dependencies)
-            pins = [self.pins[key] for key in required]
-        except KeyError as exc:
-            raise RuntimePreparationError(RuntimePreparationCode.DEPENDENCY_FAILURE) from exc
-        if ai_pin.content_id != config.ai.content_id or ai_pin.md5 != config.ai.md5:
-            raise RuntimePreparationError(RuntimePreparationCode.UNSUPPORTED_PIN)
+            pins = [self.pins[key] for key in ("openttd", "opengfx")]
+        else:
+            strategies: dict[str, PlanningStrategy] = {
+                "trains-baseline": BaselineStrategy(),
+                "simple-road-only": SimpleRoadOnlyStrategy(),
+                "simple-multimodal": SimpleMultimodalStrategy(),
+            }
+            strategy = strategies.get(config.planning.strategy_identifier)
+            if strategy is None or strategy.configure(config.scenario) != (
+                config.planning,
+                config.ai,
+            ):
+                raise RuntimePreparationError(RuntimePreparationCode.UNSUPPORTED_PIN)
+            ai_key = "trains" if strategy.identifier == "trains-baseline" else "simpleai"
+            try:
+                ai_pin = self.pins[ai_key]
+                required = ("openttd", "opengfx", ai_key, *ai_pin.dependencies)
+                pins = [self.pins[key] for key in required]
+            except KeyError as exc:
+                raise RuntimePreparationError(RuntimePreparationCode.DEPENDENCY_FAILURE) from exc
+            if ai_pin.content_id != config.ai.content_id or ai_pin.md5 != config.ai.md5:
+                raise RuntimePreparationError(RuntimePreparationCode.UNSUPPORTED_PIN)
         root = self.cache_root / "openttd-13.4-pinned-v1"
         try:
             if acquisition_policy is AcquisitionPolicy.CACHE_ONLY:
@@ -569,7 +580,7 @@ class PinnedRuntimePreparer:
                 "openttd_version": "13.4",
                 "opengfx_version": "7.1",
                 "ai_content_id": config.ai.content_id,
-                "ai_version": ai_pin.version,
+                "ai_version": "1" if plan_package else ai_pin.version,
                 "ai_md5": config.ai.md5,
                 "cache_identity": "openttd-13.4-pinned-v1",
                 "assets": asset_metadata,

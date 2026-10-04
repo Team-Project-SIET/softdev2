@@ -10,6 +10,7 @@ from app.experiments.model import (
     ExperimentRunRecord,
     ExperimentScenario,
     LiveTelemetrySessionRecord,
+    PlanEvaluationRecord,
     PlanningStrategyRecord,
     SimulationRunRecord,
     TelemetryObservationRecord,
@@ -21,6 +22,7 @@ __all__ = [
     "ExperimentScenario",
     "LiveTelemetrySessionRecord",
     "PlanningStrategyRecord",
+    "PlanEvaluationRecord",
     "SimulationRunRecord",
     "TelemetryObservationRecord",
 ]

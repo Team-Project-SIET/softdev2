@@ -48,6 +48,7 @@ from app.simulation.openttd.live_launch import (
     LiveLaunchPreparation,
     PreparedLiveRuntime,
 )
+from app.simulation.openttd.plan_setup import PlanSetup, PlanSetupFailure
 from app.simulation.openttd.runtime_assets import (
     AcquisitionPolicy,
     PinnedRuntimePreparer,
@@ -158,7 +159,8 @@ def _configured_start_day(path: Path) -> tuple[int, int, int]:
 class _ConsoleProbe:
     """Bounded, connection-local console markers fed by the sole stdout reader."""
 
-    def __init__(self) -> None:
+    def __init__(self, plan_setup: PlanSetup | None = None) -> None:
+        self.plan_setup = plan_setup
         self._tail = bytearray()
         self._pending: dict[str, asyncio.Future[None]] = {}
         self._save: _SaveWaiter | None = None
@@ -193,6 +195,8 @@ class _ConsoleProbe:
             future.cancel()
 
     def feed(self, chunk: bytes) -> None:
+        if self.plan_setup is not None:
+            self.plan_setup.feed(chunk)
         for part in chunk.split(b"\n")[:-1]:
             self._tail.extend(part)
             if len(self._tail) > 4096:
@@ -266,6 +270,7 @@ class LiveSimulationRunner:
         observer_factory: type[AdminObserver] = AdminObserver,
         cancellation: threading.Event | None = None,
         telemetry_factory: Callable[[int], TelemetryProcessor] | None = None,
+        plan_setup: PlanSetup | None = None,
     ) -> None:
         self.assets = assets
         self.launch = launch
@@ -279,6 +284,7 @@ class LiveSimulationRunner:
         self.observer_factory = observer_factory
         self.cancellation = cancellation
         self.telemetry_factory = telemetry_factory
+        self.plan_setup = plan_setup
 
     def _check_cancellation(self) -> None:
         if self.cancellation is not None and self.cancellation.is_set():
@@ -307,6 +313,7 @@ class LiveSimulationRunner:
                     config,
                     deadline=deadline,
                     acquisition_policy=AcquisitionPolicy.CACHE_ONLY,
+                    **({"plan_package": True} if self.plan_setup is not None else {}),
                 )
             except RuntimePreparationError:
                 code = (
@@ -326,6 +333,16 @@ class LiveSimulationRunner:
                 )
                 raise _RunFailure(code) from None
             self._check_cancellation()
+            if self.plan_setup is not None:
+                import json
+
+                from app.experiments.plan_evaluation import retain_bytes
+
+                retain_bytes(
+                    json.dumps(prepared.provenance, sort_keys=True, separators=(",", ":")).encode(),
+                    artifact_dir,
+                    "runtime-provenance.json",
+                )
             start_day, width, height = _configured_start_day(prepared.main_config_path)
             if (
                 self.expected_identity.revision != "13.4"
@@ -403,7 +420,7 @@ class LiveSimulationRunner:
         processor: TelemetryProcessor | None = None
         storage_health_task: asyncio.Task[object] | None = None
         changed = asyncio.Event()
-        console = _ConsoleProbe()
+        console = _ConsoleProbe(self.plan_setup)
 
         def record_observer_failure(candidate: ExecutionFailureCode | None) -> None:
             nonlocal observer_failure
@@ -629,16 +646,17 @@ class LiveSimulationRunner:
                 cwd=prepared.cwd,
                 stdin=asyncio.subprocess.PIPE,
                 stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.STDOUT
+                if self.plan_setup is not None
+                else asyncio.subprocess.PIPE,
                 start_new_session=True,
             )
             record_workspace_owner(prepared.workspace, run_id, process.pid)
             assert process.stdin is not None and process.stdout is not None
-            assert process.stderr is not None
-            drains = (
-                asyncio.create_task(_drain(process.stdout, console)),
-                asyncio.create_task(_drain(process.stderr)),
-            )
+            drains = (asyncio.create_task(_drain(process.stdout, console)),)
+            if self.plan_setup is None:
+                assert process.stderr is not None
+                drains += (asyncio.create_task(_drain(process.stderr)),)
             process_wait = asyncio.create_task(process.wait())
             process_wait.add_done_callback(lambda _: changed.set())
             loop = asyncio.get_running_loop()
@@ -668,15 +686,55 @@ class LiveSimulationRunner:
                 raise _RunFailure(observer_failure or ExecutionFailureCode.UNEXPECTED_SHUTDOWN)
             self._check_cancellation()
             assert last_day is not None
-            pre_unpause_day = last_day
-            # OpenTTD 13.4 executes each exec script line synchronously, then
-            # drains the posted unpause command after the console invocation.
-            # The marker proves command consumption; a newer Admin Date proves
-            # the world subsequently resumed. Neither changes target_day.
-            unpause_seen = console.expect(UNPAUSE_BARRIER_MARKER)
-            try:
-                await self._command(process, "unpause_barrier")
-                while not unpause_seen.done():
+            if self.plan_setup is not None:
+
+                def setup_health():
+                    self._check_cancellation()
+                    if observer_failure is not None:
+                        raise _RunFailure(observer_failure)
+                    if observer_task.done():
+                        raise _RunFailure(ExecutionFailureCode.OBSERVER_LOST)
+
+                try:
+                    await self.plan_setup.execute(
+                        process, artifact_dir, startup_deadline, setup_health
+                    )
+                except PlanSetupFailure as exc:
+                    raise _RunFailure(exc.code) from None
+                if last_day is None:
+                    raise _RunFailure(ExecutionFailureCode.PLAN_SETUP_FAILURE)
+                post_setup_day = last_day
+                while last_day is not None and last_day <= post_setup_day:
+                    setup_health()
+                    await wait_change(endpoint_deadline)
+                first_day = last_day
+                self.plan_setup.observed_start_day = first_day
+                target_day = first_day + config.duration_days
+            else:
+                pre_unpause_day = last_day
+                # OpenTTD 13.4 executes each exec script line synchronously, then
+                # drains the posted unpause command after the console invocation.
+                # The marker proves command consumption; a newer Admin Date proves
+                # the world subsequently resumed. Neither changes target_day.
+                unpause_seen = console.expect(UNPAUSE_BARRIER_MARKER)
+                try:
+                    await self._command(process, "unpause_barrier")
+                    while not unpause_seen.done():
+                        self._check_cancellation()
+                        if observer_failure is not None:
+                            raise _RunFailure(observer_failure)
+                        if (
+                            process.returncode is not None
+                            or (
+                                observer_task.done() and (last_day is None or last_day < target_day)
+                            )
+                            or drains[0].done()
+                        ):
+                            raise _RunFailure(ExecutionFailureCode.STARTUP_FAILURE)
+                        remaining = endpoint_deadline - loop.time()
+                        if remaining <= 0:
+                            raise _RunFailure(ExecutionFailureCode.TIMEOUT)
+                        await asyncio.wait({unpause_seen}, timeout=min(0.05, remaining))
                     self._check_cancellation()
                     if observer_failure is not None:
                         raise _RunFailure(observer_failure)
@@ -686,10 +744,18 @@ class LiveSimulationRunner:
                         or drains[0].done()
                     ):
                         raise _RunFailure(ExecutionFailureCode.STARTUP_FAILURE)
-                    remaining = endpoint_deadline - loop.time()
-                    if remaining <= 0:
-                        raise _RunFailure(ExecutionFailureCode.TIMEOUT)
-                    await asyncio.wait({unpause_seen}, timeout=min(0.05, remaining))
+                finally:
+                    console.clear(UNPAUSE_BARRIER_MARKER, unpause_seen)
+                while last_day <= pre_unpause_day:
+                    if observer_failure is not None:
+                        raise _RunFailure(observer_failure)
+                    if (
+                        process.returncode is not None
+                        or (observer_task.done() and (last_day is None or last_day < target_day))
+                        or drains[0].done()
+                    ):
+                        raise _RunFailure(ExecutionFailureCode.STARTUP_FAILURE)
+                    await wait_change(endpoint_deadline)
                 self._check_cancellation()
                 if observer_failure is not None:
                     raise _RunFailure(observer_failure)
@@ -699,29 +765,8 @@ class LiveSimulationRunner:
                     or drains[0].done()
                 ):
                     raise _RunFailure(ExecutionFailureCode.STARTUP_FAILURE)
-            finally:
-                console.clear(UNPAUSE_BARRIER_MARKER, unpause_seen)
-            while last_day <= pre_unpause_day:
-                if observer_failure is not None:
-                    raise _RunFailure(observer_failure)
-                if (
-                    process.returncode is not None
-                    or (observer_task.done() and (last_day is None or last_day < target_day))
-                    or drains[0].done()
-                ):
-                    raise _RunFailure(ExecutionFailureCode.STARTUP_FAILURE)
-                await wait_change(endpoint_deadline)
-            self._check_cancellation()
-            if observer_failure is not None:
-                raise _RunFailure(observer_failure)
-            if (
-                process.returncode is not None
-                or (observer_task.done() and (last_day is None or last_day < target_day))
-                or drains[0].done()
-            ):
-                raise _RunFailure(ExecutionFailureCode.STARTUP_FAILURE)
-            if loop.time() >= endpoint_deadline:
-                raise _RunFailure(ExecutionFailureCode.TIMEOUT)
+                if loop.time() >= endpoint_deadline:
+                    raise _RunFailure(ExecutionFailureCode.TIMEOUT)
             phase = _Phase.RUNNING
             running_seconds = self.options.resolved_for_duration(
                 config.duration_days
@@ -927,6 +972,16 @@ class LiveSimulationRunner:
                     await asyncio.wait_for(asyncio.gather(observer_task, return_exceptions=True), 2)
                 except Exception:
                     diagnostics.append("observer_cleanup_timeout")
+            if (
+                self.plan_setup is not None
+                and drains
+                and process is not None
+                and process.returncode is not None
+            ):
+                try:
+                    await asyncio.wait_for(asyncio.gather(*drains), 2)
+                except Exception:
+                    diagnostics.append("plan_evidence_drain_failure")
             for task in drains:
                 if not task.done():
                     task.cancel()
@@ -980,6 +1035,15 @@ class LiveSimulationRunner:
                     diagnostics.append("workspace_or_lease_cleanup_failure")
             if diagnostics and failure is None:
                 failure = ExecutionFailureCode.CLEANUP_FAILURE
+        if self.plan_setup is not None:
+            try:
+                self.plan_setup.finalize_evidence(artifact_dir)
+            except PlanSetupFailure as exc:
+                if failure is None:
+                    failure = exc.code
+            except Exception:
+                if failure is None:
+                    failure = ExecutionFailureCode.FINALIZATION_FAILURE
         if failure is None and self.cancellation is not None and self.cancellation.is_set():
             failure = ExecutionFailureCode.CANCELLED
         if failure is not None:

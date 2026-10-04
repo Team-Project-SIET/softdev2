@@ -15,7 +15,7 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_serializer, model_validator
 
 from app.experiments.domain import (
     ExecutionFailureCode,
@@ -25,6 +25,7 @@ from app.experiments.domain import (
     RunStatus,
     SimulationResult,
 )
+from app.experiments.plan_evaluation import PlanProvenance
 
 
 class TerminalPersistence(StrEnum):
@@ -35,6 +36,13 @@ class TerminalPersistence(StrEnum):
 
 class OutcomeManifest(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
+
+    @model_serializer(mode="wrap")
+    def serialize(self, handler):
+        result = handler(self)
+        if self.plan_provenance is None:
+            result.pop("plan_provenance", None)
+        return result
 
     schema_version: int = Field(default=1, ge=1, le=1)
     run_id: int = Field(gt=0)
@@ -50,6 +58,7 @@ class OutcomeManifest(BaseModel):
     partial_artifact_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     final_artifact_sha256: str | None = Field(default=None, pattern=r"^[0-9a-f]{64}$")
     live_summary: LiveExecutionSummary | None = None
+    plan_provenance: PlanProvenance | None = None
 
     @model_validator(mode="after")
     def validate_evidence(self) -> OutcomeManifest:
@@ -183,6 +192,21 @@ def publish_manifest(artifact_root: Path, manifest: OutcomeManifest) -> str:
 def _publish_in_directory(
     directory_fd: int, run_dir: Path, manifest: OutcomeManifest
 ) -> OutcomeManifest:
+    if manifest.plan_provenance is not None:
+        for field in (
+            "input_artifact",
+            "receipt",
+            "realized",
+            "comparison",
+            "evaluation",
+            "telemetry",
+            "runtime",
+        ):
+            ref = getattr(manifest.plan_provenance, field)
+            if ref is not None:
+                path = _validate_reference(f"run-{manifest.run_id}/{ref.reference}", run_dir)
+                if _sha256(directory_fd, path.name) != ref.sha256:
+                    raise ValueError("plan artifact identity mismatch")
     if manifest.partial_artifact_reference is not None:
         partial = _validate_reference(manifest.partial_artifact_reference, run_dir)
         manifest = manifest.model_copy(
@@ -266,6 +290,7 @@ def new_manifest(
     failure_message: str | None = None,
     partial_artifact_reference: str | None = None,
     live_summary: LiveExecutionSummary | None = None,
+    plan_provenance: PlanProvenance | None = None,
 ) -> OutcomeManifest:
     return OutcomeManifest(
         run_id=run_id,
@@ -279,4 +304,5 @@ def new_manifest(
         failure_message=failure_message,
         partial_artifact_reference=partial_artifact_reference,
         live_summary=live_summary,
+        plan_provenance=plan_provenance,
     )

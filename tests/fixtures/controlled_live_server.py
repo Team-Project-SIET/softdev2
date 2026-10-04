@@ -11,6 +11,7 @@ import struct
 import subprocess
 import sys
 import threading
+import time
 from datetime import date
 from pathlib import Path
 
@@ -48,6 +49,8 @@ secrets.read(workspace / "secrets.cfg")
 game_port = int(config["network"]["server_port"])
 admin_port = int(config["network"]["server_admin_port"])
 start_day = date(1950, 1, 1).toordinal() + 365
+map_width = 1 << config.getint("game_creation", "map_x", fallback=8)
+map_height = 1 << config.getint("game_creation", "map_y", fallback=8)
 password = secrets["network"]["admin_password"]
 lock = threading.Lock()
 connection: socket.socket | None = None
@@ -133,13 +136,13 @@ def peer() -> None:
                 + b"\x00"
             )
             welcome = b"Server\x0013.4\x00\x01\x00" + struct.pack(
-                "<IBIHH", 17, 0, start_day, 256, 256
+                "<IBIHH", 17, 0, start_day, map_width, map_height
             )
             if mode == "wrong_identity" or (
                 mode == "reconnect_wrong_identity" and connection_number == 2
             ):
                 welcome = b"Server\0wrong-revision\0\x01\0" + struct.pack(
-                    "<IBIHH", 17, 0, start_day, 256, 256
+                    "<IBIHH", 17, 0, start_day, map_width, map_height
                 )
             send(frame(103, protocol) + frame(104, welcome))
             if connection_number == 2 and mode in {
@@ -242,10 +245,38 @@ def input_lines():
         yield from sys.stdin
 
 
+plan_company = "old"
+if mode == "plan_evaluation":
+    print("__P03_HANDSHAKE_READY__", flush=True)
+
 for line in input_lines():
     command = line.strip()
     with commands.open("a") as output:
         output.write(line)
+    if mode == "plan_evaluation":
+        print("dbg: [console] Executing cmdline: '" + command + "'", flush=True)
+        if command.startswith("echo "):
+            print(command[5:], flush=True)
+        elif command == "companies" and plan_company != "empty":
+            print(
+                "#:1(Test) Company Name: 'Test'  Year Founded: 1950  (T:0, R:0, P:0, S:0) AI",
+                flush=True,
+            )
+        elif command == "stop_ai 1":
+            plan_company = "empty"
+            print("AI stopped, company deleted.", flush=True)
+        elif command == "start_ai P03ThinExecutor":
+            plan_company = "new"
+        elif command == "exec scripts/p03_unpause.scr":
+            print("__P03_UNPAUSE_ACK__", flush=True)
+            print((Path(__file__).parent / "execution.log").read_text(), flush=True)
+
+            def advance_plan_horizon():
+                for delta in (2, 3, 123):
+                    time.sleep(0.2)
+                    send(frame(107, struct.pack("<I", start_day + delta)))
+
+            threading.Thread(target=advance_plan_horizon, daemon=True).start()
     if command == "echo __T09_DIRECT_STDIN_PROBE__":
         print("__T09_DIRECT_STDIN_PROBE__", flush=True)
     if command == "exec scripts/t09_exec_probe.scr":

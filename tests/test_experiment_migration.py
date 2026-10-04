@@ -34,7 +34,9 @@ def test_experiment_migration_is_additive_and_reversible() -> None:
                     set(inspect(connection).get_table_names())
                     == before | new_names | telemetry_names
                 )
+                scripts.get_revision("0008").module.upgrade()
                 assert current_metadata_diff(connection) == []
+                scripts.get_revision("0008").module.downgrade()
                 telemetry_migration.downgrade()
                 assert set(inspect(connection).get_table_names()) == before | new_names
                 migration.downgrade()

@@ -224,3 +224,12 @@ docker compose down
 
 This stops containers while preserving `postgres_data`. Removing database volumes
 would also delete current experiment and telemetry history.
+
+P07 adds explicit plan-attributed evaluation through `ExperimentService.run_plan`:
+P05 optimization → immutable ExecutionPlan → P03/P06 setup → existing live runner,
+P04 telemetry and final-save parser → plan-linked realized metrics and conservative
+estimate comparisons. Plan runs use explicit provenance rather than external-AI
+strategy rows (forward migration 0008). Current-period income/expenses/cargo retain
+their period semantics; full-run profit and realized construction costs are unavailable.
+Controlled implementation passes 990 tests, including PostgreSQL checks; a real
+P07 evaluation proof requires separate authorization. Closed-loop optimization is not yet implemented.
