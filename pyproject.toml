@@ -12,6 +12,7 @@ dependencies = [
     "psycopg[binary]>=3.1",
     "pydantic>=2.7",
     "pydantic-settings>=2.2",
+    "pymonocypher==4.0.3.2",
     "sqlalchemy>=2.0",
 ]
 
@@ -43,3 +44,6 @@ line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP"]
+
+[tool.ty.environment]
+extra-paths = ["typings"]

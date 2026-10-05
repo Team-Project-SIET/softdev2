@@ -1,0 +1,80 @@
+OpenTTD 15.3
+
+
+Command line options:
+  -v drv              = Set video driver (see below)
+  -s drv              = Set sound driver (see below)
+  -m drv              = Set music driver (see below)
+  -b drv              = Set the blitter to use (see below)
+  -r res              = Set resolution (for instance 800x600)
+  -h                  = Display this help text
+  -t year             = Set starting year
+  -d [[fac=]lvl[,...]]= Debug mode
+  -e                  = Start Editor
+  -g [savegame|scenario|heightmap] = Start new/savegame/scenario/heightmap immediately
+  -G seed             = Set random seed
+  -n host[:port][#company]= Join network game
+  -p password         = Password to join server
+  -D [host][:port]    = Start dedicated server
+  -f                  = Fork into the background (dedicated only)
+  -I graphics_set     = Force the graphics set (see below)
+  -S sounds_set       = Force the sounds set (see below)
+  -M music_set        = Force the music set (see below)
+  -c config_file      = Use 'config_file' instead of 'openttd.cfg'
+  -x                  = Never save configuration changes to disk
+  -X                  = Don't use global folders to search for files
+  -q savegame         = Write some information about the savegame and exit
+  -Q                  = Don't scan for/load NewGRF files on startup
+  -QQ                 = Disable NewGRF scanning/loading entirely
+
+List of graphics sets:
+      original_dos: Original Transport Tycoon Deluxe DOS edition graphics. (unusable: 5 missing files)
+  original_windows: Original Transport Tycoon Deluxe Windows edition graphics. (unusable: 5 missing files)
+
+List of sounds sets:
+  original_windows: Original Transport Tycoon Deluxe Windows edition sounds. (unusable: 1 missing file)
+           NoSound: A sound pack without any sounds.
+
+List of music sets:
+      original_tto: Original Transport Tycoon (Original/World Editor) DOS edition music. (unusable: 17 missing files)
+      original_dos: Original Transport Tycoon Deluxe DOS edition music. (unusable: 22 missing files)
+  original_windows: Original Transport Tycoon Deluxe Windows edition music. (unusable: 22 missing files)
+           NoMusic: A music pack without actual music.
+
+List of music drivers:
+        fluidsynth: FluidSynth MIDI Driver
+           extmidi: External MIDI Driver
+              null: Null Music Driver
+
+List of sound drivers:
+               sdl: SDL Sound Driver (param hz,samples)
+              null: Null Sound Driver
+
+List of video drivers:
+        sdl-opengl: SDL OpenGL Video Driver
+               sdl: SDL Video Driver
+         dedicated: Dedicated Video Driver
+              null: Null Video Driver
+
+List of blitters:
+        32bpp-anim: 32bpp Animation Blitter (palette animation)
+   32bpp-optimized: 32bpp Optimized Blitter (no palette animation)
+      32bpp-simple: 32bpp Simple Blitter (no palette animation)
+        32bpp-sse2: 32bpp SSE2 Blitter (no palette animation)
+   32bpp-sse2-anim: 32bpp partially SSE2 Animation Blitter (palette animation)
+        32bpp-sse4: 32bpp SSE4 Blitter (no palette animation)
+   32bpp-sse4-anim: 32bpp SSE4 Blitter (palette animation)
+       32bpp-ssse3: 32bpp SSSE3 Blitter (no palette animation)
+        40bpp-anim: 40bpp Animation Blitter (OpenGL)
+    8bpp-optimized: 8bpp Optimized Blitter (compression + all-ZoomLevel cache)
+       8bpp-simple: 8bpp Simple Blitter (relative slow, but never wrong)
+              null: Null Blitter (does nothing)
+
+List of debug facility names:
+driver, grf, map, misc, net, sprite, oldloader, yapf, fontcache, script, sl, gamelog, desync, console
+
+List of AIs:
+
+List of Game Scripts:
+
+

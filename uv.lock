@@ -193,6 +193,7 @@ dependencies = [
     { name = "psycopg", extra = ["binary"] },
     { name = "pydantic" },
     { name = "pydantic-settings" },
+    { name = "pymonocypher" },
     { name = "sqlalchemy" },
 ]
 
@@ -211,6 +212,7 @@ requires-dist = [
     { name = "psycopg", extras = ["binary"], specifier = ">=3.1" },
     { name = "pydantic", specifier = ">=2.7" },
     { name = "pydantic-settings", specifier = ">=2.2" },
+    { name = "pymonocypher", specifier = "==4.0.3.2" },
     { name = "sqlalchemy", specifier = ">=2.0" },
 ]
 
@@ -583,6 +585,18 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/49/2e/ced460408999b33da6b31b0021b0f37d329e202d4169aeb164493778f25b/pygments-2.21.0.tar.gz", hash = "sha256:610ca751c9bc2492b38eb9a38a7fbc93edbbb2d7182edaf34e66ae493dee5c8c", size = 5005329, upload-time = "2026-08-17T08:02:48.824Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/71/46/17f022dd3e953bf20a04a028a21ec746d942f8d2af30fa0f124fa0e6a684/pygments-2.21.0-py3-none-any.whl", hash = "sha256:2363c69b61c4a97c838da3b130dcd6468f4848992b21a82f2a63ec34377137d9", size = 1250147, upload-time = "2026-08-17T08:02:44.912Z" },
+]
+
+[[package]]
+name = "pymonocypher"
+version = "4.0.3.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/96/52/6a7a54c660f7f7c23a4384bb4f569734ee82580545732d6157d6852ad5c9/pymonocypher-4.0.3.2.tar.gz", hash = "sha256:02e9e5d7cd249742d23f90d1d396d5d5748d71bd157185f24c80b137cdaa8874", size = 459953, upload-time = "2026-08-04T17:59:22.018Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/26/f8/f1bda63d45a889e8b48a729d39f5e2af48d9090ae200c4528b9246eda6c1/pymonocypher-4.0.3.2-cp314-cp314-macosx_10_15_universal2.whl", hash = "sha256:c1ee333dfdfc59937f3a3336521437890e59370e30a5a65b5f9dca784815aedb", size = 204656, upload-time = "2026-08-04T17:59:17.022Z" },
+    { url = "https://files.pythonhosted.org/packages/01/c4/af3e11d1abf7749ee45a1296913a3b5bdeb47e7fe8a979db43eba09292c9/pymonocypher-4.0.3.2-cp314-cp314-manylinux2014_aarch64.manylinux_2_17_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:8958bd20c2c194aabf210404713c052a8128a5d0d6a6b9befe8488372da0c35a", size = 489835, upload-time = "2026-08-04T17:59:18.371Z" },
+    { url = "https://files.pythonhosted.org/packages/d1/f9/3d145d78907d7799db6cbf7eeb282ec701fa46614479d7edf58e79d870ae/pymonocypher-4.0.3.2-cp314-cp314-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:d42375e281764684bd3d644eb0a4b44215e6be43b59d2f5ecd32038b940f70de", size = 499267, upload-time = "2026-08-04T17:59:19.694Z" },
+    { url = "https://files.pythonhosted.org/packages/86/47/82067a5421033fa8f2310c9b1a2238dd230e589601c967410c443564e6e3/pymonocypher-4.0.3.2-cp314-cp314-win_amd64.whl", hash = "sha256:67ea8a584e2882f8b3f43b44db541306510e2ed8a349d53ffd4fee8d49ff4d1b", size = 93944, upload-time = "2026-08-04T17:59:20.872Z" },
 ]
 
 [[package]]

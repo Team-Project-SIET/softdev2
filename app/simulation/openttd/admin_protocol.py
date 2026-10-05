@@ -343,22 +343,29 @@ class AdminFrameDecoder:
         self._closed = False
 
     def feed(self, chunk: bytes) -> list[ServerPacket]:
+        return [decode_server_packet(kind, payload) for kind, payload in self.feed_frames(chunk)]
+
+    def feed_frames(self, chunk: bytes) -> list[tuple[int, bytes]]:
+        """Shared plaintext framing, also verified against OpenTTD 15.3 packet.cpp."""
+        return [(frame[2], frame[3:]) for frame in self.feed_wire_frames(chunk)]
+
+    def feed_wire_frames(self, chunk: bytes) -> list[bytes]:
+        """Shared length framing; encrypted type/payload remain opaque here."""
         if self._closed:
             raise AdminProtocolError("frame decoder is closed")
         if len(chunk) > self.MAX_FEED_BYTES:
             raise AdminProtocolError("Admin input chunk exceeds bounded length")
         self._buffer.extend(chunk)
-        packets: list[ServerPacket] = []
+        packets: list[bytes] = []
         while len(self._buffer) >= 2:
             length = self._buffer[0] | (self._buffer[1] << 8)
             if not 3 <= length <= self.MAX_FRAME_LENGTH:
                 raise AdminProtocolError("invalid Admin frame length")
             if len(self._buffer) < length:
                 break
-            packet_id = self._buffer[2]
-            payload = bytes(self._buffer[3:length])
+            frame = bytes(self._buffer[:length])
             del self._buffer[:length]
-            packets.append(decode_server_packet(packet_id, payload))
+            packets.append(frame)
         return packets
 
     def finish(self) -> None:
@@ -370,6 +377,13 @@ class AdminFrameDecoder:
 def _admin_frame(packet_id: int, payload: bytes = b"") -> bytes:
     if packet_id not in AdminClientPacketType:
         raise AdminProtocolError("outbound Admin packet is not read-only")
+    return encode_admin_frame(packet_id, payload)
+
+
+def encode_admin_frame(packet_id: int, payload: bytes = b"") -> bytes:
+    """Wire primitive; caller-specific sessions enforce outbound policy."""
+    if not 0 <= packet_id <= 255:
+        raise AdminProtocolError("packet ID outside uint8 range")
     length = len(payload) + 3
     if length > AdminFrameDecoder.MAX_FRAME_LENGTH:
         raise AdminProtocolError("outbound Admin frame exceeds maximum length")

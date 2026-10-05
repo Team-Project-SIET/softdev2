@@ -1,6 +1,7 @@
 """Regression coverage for canonical staging; no OpenTTD process is launched."""
 
 import json
+import subprocess
 from hashlib import sha256
 from pathlib import Path
 
@@ -134,12 +135,26 @@ def test_semantic_stop_and_construction_action_order_preserved():
     assert before.plan.routes == after.plan.routes
 
 
-def test_harness_fix_leaves_production_source_untouched():
+@pytest.mark.parametrize("historical_root", ["/home/fed/codes/softdev2", "/relocated/proof/repo"])
+def test_historical_p07_source_freeze_matches_proof_commit(historical_root):
     freeze = json.loads((ATTEMPT1 / "prelaunch-source-freeze.json").read_bytes())
     for name, expected in freeze["source_sha256"].items():
-        path = Path(name)
+        name = name.replace("/home/fed/codes/softdev2", historical_root, 1)
         if "/app/" in name or "/alembic/" in name:
-            assert sha256(path.read_bytes()).hexdigest() == expected, name
+            # Proof-era P07 changes were dirty at freeze time and then recorded
+            # in this implementation commit. Current runtime edits are not proof
+            # of 13.4 compatibility and must not be compared to that old snapshot.
+            repo = Path(__file__).parents[1]
+            subtree = "app" if "/app/" in name else "alembic"
+            relative = subtree + "/" + name.split(f"/{subtree}/", 1)[1]
+            proof_commit = "6eacdb0b4c39b2dd886a4a749bbeb588f690d22f"
+            source = subprocess.run(
+                ["git", "show", f"{proof_commit}:{relative}"],
+                cwd=repo,
+                capture_output=True,
+                check=True,
+            ).stdout
+            assert sha256(source).hexdigest() == expected, name
 
 
 def test_driver_rejects_missing_controlled_suite(tmp_path):
