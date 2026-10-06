@@ -401,9 +401,18 @@ def test_verified_15_3_game_api_names_and_read_only_implementation():
         )
         assert f"p->Send_uint16(Map::Size{axis}());" in network
     source = (BRIDGE_DIRECTORY / "main.nut").read_text()
-    assert set(re.findall(r"GSMap\.([A-Za-z]+)\(", source)) == {"GetMapSizeX", "GetMapSizeY"}
+    assert set(re.findall(r"GSMap\.([A-Za-z]+)\(", source)) == {
+        "GetMapSizeX",
+        "GetMapSizeY",
+        "GetTileX",
+        "GetTileY",
+        "IsValidTile",
+    }
     assert set(re.findall(r"\bGS[A-Za-z0-9_]+\b", source)) == {
         "GSMap",
+        "GSList",
+        "GSIndustryList",
+        "GSIndustry",
         "GSController",
         "GSLog",
         "GSAdmin",

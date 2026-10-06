@@ -228,7 +228,7 @@ def test_ping_request_identity_and_new_read_only_bridge_package(tmp_path):
         )
         assert (
             json.loads((prepared.directory / "bridge-package-identity.json").read_text())["sha256"]
-            == "b7392d59e44f0b973a1a8bbd6de4ab395df5eb58df79c45cbde33bef7427a783"
+            == "2151a6a4b9669c3e9a0fef595c758f6f8aeae20a21a26c6f808ab23fcefdccfc"
         )
     finally:
         prepared.dispose()

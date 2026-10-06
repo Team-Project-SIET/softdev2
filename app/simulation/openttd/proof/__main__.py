@@ -8,6 +8,10 @@ from pathlib import Path
 
 from .attempt import execute_attempt
 from .harness import PROJECT, prepare_proof
+from .industry_contract import INDUSTRY_PRELAUNCH_DIRECTORY
+from .industry_native import IndustryNativeBackend
+from .inventory_contract import INVENTORY_PRELAUNCH_DIRECTORY
+from .inventory_native import InventoryNativeBackend
 from .native import NativeBackend, load_prepared
 from .preflight import preflight_prepared
 from .world_native import WorldNativeBackend
@@ -21,17 +25,30 @@ def main() -> None:
         type=Path,
         default=None,
     )
-    parser.add_argument("--mode", choices=("ack", "world-info"), default="ack")
+    parser.add_argument(
+        "--mode",
+        choices=("ack", "world-info", "industry-page", "industry-inventory"),
+        default="ack",
+    )
     parser.add_argument("--authorize-one-launch", action="store_true")
     args = parser.parse_args()
     if args.directory is None:
         name = (
-            "openttd-15.3-world-info-real-prelaunch"
+            INVENTORY_PRELAUNCH_DIRECTORY
+            if args.mode == "industry-inventory"
+            else INDUSTRY_PRELAUNCH_DIRECTORY
+            if args.mode == "industry-page"
+            else "openttd-15.3-world-info-real-prelaunch"
             if args.mode == "world-info"
             else "openttd-15.3-real-ack-attempt2-prelaunch-v3"
         )
         args.directory = PROJECT / "artifacts/runtime" / name
-    backend_type = WorldNativeBackend if args.mode == "world-info" else NativeBackend
+    backend_type = {
+        "ack": NativeBackend,
+        "world-info": WorldNativeBackend,
+        "industry-page": IndustryNativeBackend,
+        "industry-inventory": InventoryNativeBackend,
+    }[args.mode]
     if args.command == "prepare":
         prepared = prepare_proof(args.directory, mode=args.mode)
         print(f"PRELAUNCH only: {prepared.directory}")
@@ -47,8 +64,15 @@ def main() -> None:
                 load_prepared(args.directory, mode=args.mode),
                 backend_type(authorized_one_launch=True),
             )
+            result["process_creation_blocked"] = True
             print(json.dumps(result, sort_keys=True))
         except Exception as error:
+            if args.mode in ("industry-page", "industry-inventory"):
+                from .world_attempt import record_prelaunch_failure
+
+                failure = args.directory.with_name(args.directory.name + "-gate-failure")
+                if not failure.exists():
+                    record_prelaunch_failure(args.directory, error)
             print(
                 json.dumps(
                     {
@@ -64,7 +88,35 @@ def main() -> None:
     else:
         if not args.authorize_one_launch:
             parser.error("Separate explicit one-launch authorization required")
-        if args.mode == "world-info":
+        if args.mode == "industry-inventory":
+            from .inventory_attempt import execute_inventory_attempt
+            from .world_attempt import record_prelaunch_failure
+
+            try:
+                prepared = load_prepared(args.directory, mode=args.mode)
+            except Exception as error:
+                record_prelaunch_failure(args.directory, error)
+                raise SystemExit("PRELAUNCH_FAILED; no execution") from None
+            result = asyncio.run(
+                execute_inventory_attempt(
+                    prepared, InventoryNativeBackend(authorized_one_launch=True)
+                )
+            )
+        elif args.mode == "industry-page":
+            from .industry_attempt import execute_industry_attempt
+            from .world_attempt import record_prelaunch_failure
+
+            try:
+                prepared = load_prepared(args.directory, mode=args.mode)
+            except Exception as error:
+                record_prelaunch_failure(args.directory, error)
+                raise SystemExit("PRELAUNCH_FAILED; no execution") from None
+            result = asyncio.run(
+                execute_industry_attempt(
+                    prepared, IndustryNativeBackend(authorized_one_launch=True)
+                )
+            )
+        elif args.mode == "world-info":
             from .world_attempt import execute_world_attempt, record_prelaunch_failure
 
             try:

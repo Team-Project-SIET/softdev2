@@ -32,6 +32,8 @@ from .harness import (
     launch_argv,
     sha256,
 )
+from .industry_contract import INDUSTRY_ATTEMPT, INDUSTRY_MODEL, INDUSTRY_REQUEST, INDUSTRY_REVISION
+from .inventory_contract import INVENTORY_FIRST_REQUEST, INVENTORY_MODEL
 from .network_evidence import RecordedProofSession
 
 
@@ -51,13 +53,30 @@ def load_prepared(directory: Path, *, mode: str = "ack") -> PreparedProof:
     directory = directory.resolve(strict=True)
     data = json.loads((directory / "PRELAUNCH.json").read_text())
     world = mode == "world-info"
-    request = WORLD_REQUEST if world else REQUEST
-    if mode not in ("ack", "world-info"):
+    industry = mode == "industry-page"
+    inventory = mode == "industry-inventory"
+    if mode not in ("ack", "world-info", "industry-page", "industry-inventory"):
         raise ValueError("Unsupported proof mode")
+    request = {
+        "ack": REQUEST,
+        "world-info": WORLD_REQUEST,
+        "industry-page": INDUSTRY_REQUEST,
+        "industry-inventory": INVENTORY_FIRST_REQUEST,
+    }[mode]
     if (
-        data.get("attempt") != (1 if world else 2)
-        or data.get("prelaunch_revision") != (1 if world else 3)
-        or data.get("proof_model") != (WORLD_MODEL if world else PROOF_MODEL)
+        data.get("attempt") != (INDUSTRY_ATTEMPT if industry else 1 if world or inventory else 2)
+        or data.get("prelaunch_revision")
+        != (INDUSTRY_REVISION if industry else 1 if world or inventory else 3)
+        or data.get("proof_model")
+        != (
+            INVENTORY_MODEL
+            if inventory
+            else INDUSTRY_MODEL
+            if industry
+            else WORLD_MODEL
+            if world
+            else PROOF_MODEL
+        )
         or (directory / "request.json").read_bytes() != request.to_bytes()
     ):
         raise ValueError("Attempt2 frozen request/preparation required")

@@ -20,6 +20,13 @@ from .harness import (
     source_freeze,
     verify_freeze,
 )
+from .industry_contract import INDUSTRY_ATTEMPT_DIRECTORY, INDUSTRY_REQUEST, industry_contract
+from .inventory_contract import (
+    INVENTORY_ATTEMPT_DIRECTORY,
+    INVENTORY_FIRST_REQUEST,
+    inventory_contract,
+    inventory_contract_digest,
+)
 
 
 def historical_snapshot(parent: Path, exclude: Path) -> dict:
@@ -81,7 +88,12 @@ def validate_native_inputs(prepared: PreparedProof) -> dict:
     request = prepared.request.to_bytes()
     metadata = json.loads((directory / "PRELAUNCH.json").read_text())
     if (
-        request != (WORLD_REQUEST if metadata.get("mode") == "world-info" else REQUEST).to_bytes()
+        request
+        != {
+            "world-info": WORLD_REQUEST,
+            "industry-page": INDUSTRY_REQUEST,
+            "industry-inventory": INVENTORY_FIRST_REQUEST,
+        }.get(metadata.get("mode"), REQUEST).to_bytes()
         or (directory / "request.json").read_bytes() != request
         or hashlib.sha256(request).hexdigest() != metadata["request_sha256"]
     ):
@@ -102,6 +114,39 @@ def validate_native_inputs(prepared: PreparedProof) -> dict:
         ):
             raise ValueError("World-info evidence contract changed")
         WorldLifecycle()  # Load the same typed partial-order proof model used by the runner.
+    if metadata.get("mode") == "industry-page":
+        if directory.with_name(directory.name + "-gate-failure").exists():
+            raise ValueError("Previous industry prelaunch failure; no retry")
+        from .industry_attempt import IndustryLifecycle
+        from .industry_verification import verify_industry_page
+
+        contract = json.loads((directory / "industry-page-contract.json").read_text())
+        if contract != industry_contract() or metadata["attempt_directory"] != str(
+            directory.with_name(INDUSTRY_ATTEMPT_DIRECTORY)
+        ):
+            raise ValueError("Industry-page evidence contract changed")
+        if bridge["commands"] != ["ping", "world_info", "industry_page"] or bridge["api"] != "15":
+            raise ValueError("Industry bridge command/API identity changed")
+        IndustryLifecycle()
+        if not callable(verify_industry_page):
+            raise ValueError("Industry validator unavailable")
+    if metadata.get("mode") == "industry-inventory":
+        from .inventory_attempt import InventoryLifecycle
+        from .inventory_contract import verify_inventory
+
+        if directory.with_name(directory.name + "-gate-failure").exists():
+            raise ValueError("Previous inventory prelaunch failure; no retry")
+        contract = json.loads((directory / "inventory-contract.json").read_text())
+        if (
+            contract != inventory_contract()
+            or metadata.get("proof_config_sha256") != inventory_contract_digest()
+            or metadata["attempt_directory"]
+            != str(directory.with_name(INVENTORY_ATTEMPT_DIRECTORY))
+        ):
+            raise ValueError("Inventory frozen evidence/session contract changed")
+        if bridge["sha256"] != contract["bridge_digest"] or not callable(verify_inventory):
+            raise ValueError("Inventory bridge/validator changed")
+        InventoryLifecycle()
     if Path(metadata["attempt_directory"]).exists():
         raise ValueError("Proof attempt already claimed")
     config = workspace.config.read_text()
@@ -119,6 +164,8 @@ def validate_native_inputs(prepared: PreparedProof) -> dict:
     ):
         raise ValueError("Credential/executable permissions invalid")
     key = prepared.key_path.read_bytes()
+    if AuthorizedKey.from_bytes(key).public_hex != prepared.public_key:
+        raise ValueError("Private/public authorized key mismatch")
     if any(
         key in path.read_bytes() or key.hex().encode() in path.read_bytes()
         for path in directory.iterdir()
@@ -139,6 +186,13 @@ def validate_native_inputs(prepared: PreparedProof) -> dict:
         "evidence_destination": metadata["attempt_directory"],
         "semantic_contract": metadata.get("semantic_authority"),
         "validator_loaded": True,
+        "welcome_bounds_validator_wired": metadata.get("mode")
+        in ("industry-page", "industry-inventory"),
+        "canonical_evidence_policy_loaded": metadata.get("mode")
+        in ("industry-page", "industry-inventory"),
+        "inventory_session": inventory_contract()
+        if metadata.get("mode") == "industry-inventory"
+        else None,
         "launches": 0,
         "connections": 0,
         "requests": 0,

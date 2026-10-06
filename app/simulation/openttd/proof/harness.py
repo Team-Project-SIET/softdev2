@@ -3,6 +3,7 @@
 import hashlib
 import json
 import os
+import re
 import socket
 import sys
 from dataclasses import asdict, dataclass, field
@@ -11,6 +12,7 @@ from pathlib import Path
 from app.simulation.openttd.admin_crypto import AuthorizedKey
 from app.simulation.openttd.gamescript_bridge import BRIDGE_DIRECTORY, PACKAGE_FILES, stage_bridge
 from app.simulation.openttd.gamescript_protocol import PingRequest
+from app.simulation.openttd.industry_page import IndustryPageRequest
 from app.simulation.openttd.runtime.base import LaunchSpecification
 from app.simulation.openttd.runtime.config import AdminSettings, RuntimeWorkspace
 from app.simulation.openttd.runtime.identity import RuntimeIdentity
@@ -18,6 +20,15 @@ from app.simulation.openttd.world_info import WorldInfoRequest
 
 from .causality import PROOF_MODEL
 from .graphics import ARCHIVE_SHA256, stage_opengfx
+from .industry_contract import (
+    INDUSTRY_ATTEMPT,
+    INDUSTRY_ATTEMPT_DIRECTORY,
+    INDUSTRY_MODEL,
+    INDUSTRY_REQUEST,
+    INDUSTRY_REVISION,
+    industry_contract,
+)
+from .inventory_contract import INVENTORY_FIRST_REQUEST
 
 BINARY = Path("/home/fed/Downloads/openttd-15.3-linux-generic-amd64/openttd")
 BINARY_SHA256 = "276d5b698a6b706154f3af588f6f885b3aebe518f4ecc8f869abf71383b1904c"
@@ -110,7 +121,7 @@ class PreparedProof:
     key_path: Path = field(repr=False)
     public_key: str
     endpoints: tuple[int, int]
-    request: PingRequest | WorldInfoRequest = REQUEST
+    request: PingRequest | WorldInfoRequest | IndustryPageRequest = REQUEST
 
     def dispose(self) -> None:
         self.key_path.unlink(missing_ok=True)
@@ -141,9 +152,14 @@ def prepare_proof(
     graphics: Path = PROJECT / "artifacts/runtime/verified-assets/opengfx-8.0-all.zip",
     graphics_sha256: str = ARCHIVE_SHA256,
 ) -> PreparedProof:
-    if mode not in ("ack", "world-info"):
+    if mode not in ("ack", "world-info", "industry-page", "industry-inventory"):
         raise ValueError("Unsupported proof mode")
-    request = WORLD_REQUEST if mode == "world-info" else REQUEST
+    request = {
+        "ack": REQUEST,
+        "world-info": WORLD_REQUEST,
+        "industry-page": INDUSTRY_REQUEST,
+        "industry-inventory": INVENTORY_FIRST_REQUEST,
+    }[mode]
     binary = binary.resolve(strict=True)
     if not binary.is_file() or not os.access(binary, os.X_OK) or sha256(binary) != binary_sha256:
         raise ValueError("Pinned executable verification failed")
@@ -208,13 +224,19 @@ def prepare_proof(
             "GSVehicle",
             "GSOrder",
             "GSTile",
-            "GSIndustry",
             "GSCompany",
             "RCON",
             "Save(",
             "Load(",
         )
-        if 'return "15"' not in info or any(symbol in main for symbol in forbidden):
+        industry_symbols = set(re.findall(r"\bGSIndustry[A-Za-z0-9_]*\b", main))
+        industry_methods = set(re.findall(r"GSIndustry\s*\.\s*([A-Za-z0-9_]+)", main))
+        if (
+            'return "15"' not in info
+            or any(symbol in main for symbol in forbidden)
+            or not industry_symbols <= {"GSIndustry", "GSIndustryList"}
+            or not industry_methods <= {"IsValidIndustry", "GetLocation", "GetIndustryType"}
+        ):
             raise ValueError("Bridge API/mutation surface changed")
         argv = launch_argv(binary, workspace.config, reservation.game_port)
         identity = RuntimeIdentity(binary, "15.3", binary_sha256)
@@ -263,7 +285,7 @@ def prepare_proof(
                 "name": "NoMutationBridge",
                 "version": 2,
                 "api": "15",
-                "commands": ["ping", "world_info"],
+                "commands": ["ping", "world_info", "industry_page"],
                 "sha256": bridge.sha256,
                 "files": {name: sha256(bridge.directory / name) for name in PACKAGE_FILES},
             },
@@ -432,6 +454,83 @@ def prepare_proof(
                     ),
                 },
             )
+        if mode == "industry-page":
+            import json
+
+            metadata_path = directory / "PRELAUNCH.json"
+            metadata = json.loads(metadata_path.read_text())
+            metadata.update(
+                state="PREPARED",
+                attempt=INDUSTRY_ATTEMPT,
+                prelaunch_revision=INDUSTRY_REVISION,
+                proof_model=INDUSTRY_MODEL,
+                semantic_authority="record invariants with encrypted SERVER_WELCOME map bounds; "
+                "no independent industry inventory",
+                attempt_directory=str(directory.with_name(INDUSTRY_ATTEMPT_DIRECTORY)),
+                expected_future_evidence=[
+                    "final-report.md",
+                    "proof-evidence.json",
+                    "runtime-identity.json",
+                    "graphics-identity.json",
+                    "bridge-package-identity.json",
+                    "source-freeze.json",
+                    "sanitized-config.json",
+                    "admin-auth-evidence.json",
+                    "protocol-evidence.json",
+                    "welcome-evidence.json",
+                    "industry-page-request.json",
+                    "industry-page-response.json",
+                    "transport-receipt.json",
+                    "industry-page-verification.json",
+                    "industry-page-contract.json",
+                    "source-authority.json",
+                    "gamescript-proof-evidence.json",
+                    "gamescript-supporting.log",
+                    "network-evidence.json",
+                    "transaction-correlation.json",
+                    "process-lifecycle.json",
+                    "stdout.log",
+                    "stderr.log",
+                    "artifact-manifest.sha256",
+                ],
+                real_application_requests=0,
+            )
+            metadata_path.write_text(json.dumps(metadata, sort_keys=True, indent=2) + "\n")
+            write_json(directory / "industry-page-contract.json", industry_contract())
+            authority_path = PROJECT / "tests/reference/industry_page_bindings_15_3/manifest.json"
+            authority = json.loads(authority_path.read_text())
+            evidence_authority_path = (
+                PROJECT / "tests/reference/industry_evidence_15_3/manifest.json"
+            )
+            evidence_authority = json.loads(evidence_authority_path.read_text())
+            authority["files"].update(evidence_authority["files"])
+            frozen[str(evidence_authority_path)] = sha256(evidence_authority_path)
+            for path, entry in authority["files"].items():
+                reference = PROJECT / path
+                if sha256(reference) != entry["sha256"]:
+                    raise ValueError("Industry API source authority changed")
+                frozen[str(reference.resolve())] = entry["sha256"]
+            frozen[str(authority_path)] = sha256(authority_path)
+            write_json(directory / "source-authority.json", authority)
+            for name in (
+                "PRELAUNCH.json",
+                "request.json",
+                "industry-page-contract.json",
+                "source-authority.json",
+                "runtime-identity.json",
+                "graphics-identity.json",
+                "bridge-package-identity.json",
+                "sanitized-config.json",
+                "historical-integrity.json",
+            ):
+                frozen[str(directory / name)] = sha256(directory / name)
+            (directory / "source-freeze.json").write_text(
+                json.dumps(dict(sorted(frozen.items())), sort_keys=True, indent=2) + "\n"
+            )
+        if mode == "industry-inventory":
+            from .inventory_preparation import freeze_inventory_preparation
+
+            freeze_inventory_preparation(directory, frozen, bridge.sha256)
         (directory / "artifact-manifest.sha256").write_text(manifest(directory))
         return PreparedProof(directory, spec, key_path, key.public_hex, ports, request)
     except BaseException as error:

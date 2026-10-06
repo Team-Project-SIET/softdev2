@@ -3,6 +3,7 @@
 import asyncio
 import math
 import struct
+from dataclasses import dataclass
 from enum import IntEnum
 
 from app.simulation.openttd.admin_protocol import (
@@ -23,16 +24,34 @@ from app.simulation.openttd.gamescript_protocol import (
     MalformedMessage,
     PingRequest,
 )
+from app.simulation.openttd.industry_page import (
+    PAGE_NETWORK_SEQUENCE,
+    IndustryPageExchange,
+    IndustryPageReceipt,
+    IndustryPageRequest,
+)
 from app.simulation.openttd.world_info import (
     NETWORK_SEQUENCE,
     WorldInfoExchange,
     WorldInfoReceipt,
     WorldInfoRequest,
+    WorldInfoResponse,
 )
 
 ADMIN_GAMESCRIPT = 6
 SERVER_GAMESCRIPT = 124
 GAMESCRIPT_UPDATE = 9
+
+
+@dataclass
+class _ProtocolOperations:
+    limit: int | None = None
+    used: int = 0
+
+    def consume(self, count: int) -> None:
+        if self.limit is not None and self.used + count > self.limit:
+            raise TransportProtocolError("protocol operation budget exhausted")
+        self.used += count
 
 
 class ServerLifecyclePacket(IntEnum):
@@ -83,7 +102,10 @@ class GameScriptSession(AdminStream):
             try:
                 PingRequest.parse(payload)
             except BridgeProtocolError:
-                WorldInfoRequest.parse(payload)
+                try:
+                    WorldInfoRequest.parse(payload)
+                except BridgeProtocolError:
+                    IndustryPageRequest.parse(payload)
         elif kind == AdminClientPacketType.PING and len(frame) == 7:
             pass  # Read-only ordering barrier after GameScript subscription.
         elif frame not in (gamescript_subscription(), encode_admin_quit()):
@@ -140,7 +162,13 @@ class GameScriptTransport:
     def registered(self) -> bool:
         return self._registered
 
-    async def subscribe(self, *, token: int = 0x153, timeout: float = 5.0) -> None:
+    async def subscribe(
+        self,
+        *,
+        token: int = 0x153,
+        timeout: float = 5.0,
+        _operations: _ProtocolOperations | None = None,
+    ) -> None:
         """15.3 has no subscription ACK; ordered AdminPong confirms processing.
 
         Errors preceding the barrier fail the gate. This sends no bridge request.
@@ -157,6 +185,8 @@ class GameScriptTransport:
         completed = False
         try:
             async with asyncio.timeout(timeout):
+                if _operations is not None:
+                    _operations.consume(2)
                 await self.session.send(gamescript_subscription(), encode_admin_ping(token))
                 while True:
                     chunk = await self.session.receive()
@@ -164,7 +194,10 @@ class GameScriptTransport:
                         self._decoder.finish()
                         raise TransportDisconnected("disconnect before subscription barrier")
                     matched = False
-                    for kind, body in self._decoder.feed_frames(chunk):
+                    frames = self._decoder.feed_frames(chunk)
+                    if _operations is not None:
+                        _operations.consume(len(frames))
+                    for kind, body in frames:
                         if kind == 126:
                             if body != struct.pack("<I", token):
                                 raise TransportProtocolError("wrong subscription barrier token")
@@ -252,6 +285,32 @@ class GameScriptTransport:
     async def world_info(
         self, request: WorldInfoRequest, *, timeout: float = 5.0
     ) -> WorldInfoExchange:
+        result = await self._read_query(request, timeout=timeout)
+        assert isinstance(result, WorldInfoExchange)
+        return result
+
+    async def industry_page(
+        self,
+        request: IndustryPageRequest,
+        world: WorldInfoResponse,
+        *,
+        timeout: float = 5.0,
+        operation_budget: int | None = None,
+    ) -> IndustryPageExchange:
+        result = await self._read_query(
+            request, world=world, timeout=timeout, operation_budget=operation_budget
+        )
+        assert isinstance(result, IndustryPageExchange)
+        return result
+
+    async def _read_query(
+        self,
+        request: WorldInfoRequest | IndustryPageRequest,
+        *,
+        world: WorldInfoResponse | None = None,
+        timeout: float = 5.0,
+        operation_budget: int | None = None,
+    ) -> WorldInfoExchange | IndustryPageExchange:
         """One bounded read-only query, with duplicate-response completion barrier.
 
         Uses the existing secure production session; no connection or retry is opened.
@@ -263,14 +322,20 @@ class GameScriptTransport:
             raise TransportProtocolError("transport unavailable or already pending")
         if request.request_id in self._used_ids or len(self._used_ids) >= self.MAX_REQUESTS:
             raise TransportProtocolError("use a fresh request_id or new session")
+        if operation_budget is not None and (
+            type(operation_budget) is not int or operation_budget < 1
+        ):
+            raise ValueError("operation budget must be a positive integer")
+        operations = _ProtocolOperations(operation_budget)
         payload = request.to_bytes()
         completed = False
         try:
             async with asyncio.timeout(timeout):
                 if not self._registered:
-                    await self.subscribe(timeout=timeout)
+                    await self.subscribe(timeout=timeout, _operations=operations)
                 self._pending = request.request_id
                 self._used_ids.add(request.request_id)
+                operations.consume(1)
                 await self.session.send(encode_gamescript(payload))
                 response = None
                 receipt = None
@@ -278,45 +343,65 @@ class GameScriptTransport:
                     chunk = await self.session.receive(4096)
                     if not chunk:
                         self._decoder.finish()
-                        raise TransportDisconnected("disconnect before world_info response")
-                    for kind, body in self._decoder.feed_frames(chunk):
+                        raise TransportDisconnected("disconnect before query response")
+                    frames = self._decoder.feed_frames(chunk)
+                    operations.consume(len(frames))
+                    for kind, body in frames:
                         if kind == SERVER_GAMESCRIPT:
                             if response is not None:
-                                raise TransportProtocolError("duplicate world_info response")
+                                raise TransportProtocolError("duplicate query response")
                             response = decode_gamescript(body)
                             self.response_payload = response
-                            receipt = WorldInfoReceipt.correlate(payload, response)
+                            receipt = (
+                                IndustryPageReceipt.correlate(payload, response)
+                                if isinstance(request, IndustryPageRequest)
+                                else WorldInfoReceipt.correlate(payload, response)
+                            )
                         elif kind == ServerLifecyclePacket.SHUTDOWN:
-                            raise TransportDisconnected("server shutdown during world_info")
+                            raise TransportDisconnected("server shutdown during query")
                         elif kind in ServerLifecyclePacket:
-                            raise TransportProtocolError("world_info runtime changed/error")
+                            raise TransportProtocolError("query runtime changed/error")
                 assert receipt is not None
                 # Independently ordered Python chain already reached receipt creation.
                 # Drain all packets through an ordered protocol barrier, rejecting a
                 # queued second response even when it arrives in a different read.
                 token = 0x154
+                operations.consume(1)
                 await self.session.send(encode_admin_ping(token))
                 barrier = False
                 while not barrier:
                     chunk = await self.session.receive(4096)
                     if not chunk:
                         self._decoder.finish()
-                        raise TransportDisconnected(
-                            "disconnect before world_info completion barrier"
-                        )
-                    for kind, body in self._decoder.feed_frames(chunk):
+                        raise TransportDisconnected("disconnect before query completion barrier")
+                    frames = self._decoder.feed_frames(chunk)
+                    operations.consume(len(frames))
+                    for kind, body in frames:
                         if kind == SERVER_GAMESCRIPT:
-                            raise TransportProtocolError("duplicate/unrelated world_info response")
+                            raise TransportProtocolError("duplicate/unrelated query response")
                         if kind == 126:
                             if body != struct.pack("<I", token):
-                                raise TransportProtocolError("wrong world_info completion token")
+                                raise TransportProtocolError("wrong query completion token")
                             barrier = True
                         elif kind == ServerLifecyclePacket.SHUTDOWN:
-                            raise TransportDisconnected("server shutdown after world_info response")
+                            raise TransportDisconnected("server shutdown after query response")
                         elif kind in ServerLifecyclePacket:
-                            raise TransportProtocolError("world_info runtime changed/error")
-                result = WorldInfoExchange(payload, response, receipt, NETWORK_SEQUENCE, 1, 1, 0)
-                result.validate()
+                            raise TransportProtocolError("query runtime changed/error")
+                if isinstance(receipt, IndustryPageReceipt):
+                    assert world is not None
+                    result = IndustryPageExchange(
+                        payload,
+                        response,
+                        receipt,
+                        PAGE_NETWORK_SEQUENCE,
+                        protocol_operations=operations.used,
+                    )
+                    result.validate(world)
+                else:
+                    result = WorldInfoExchange(
+                        payload, response, receipt, NETWORK_SEQUENCE, 1, 1, 0
+                    )
+                    result.validate()
                 self.response_payload = response
                 completed = True
                 return result
@@ -329,9 +414,9 @@ class GameScriptTransport:
                 raise
             raise TransportProtocolError(str(error)) from error
         except TimeoutError as error:
-            raise TransportTimeout("world_info deadline expired") from error
+            raise TransportTimeout("query deadline expired") from error
         except OSError as error:
-            raise TransportDisconnected("world_info I/O failed") from error
+            raise TransportDisconnected("query I/O failed") from error
         finally:
             self._pending = None
             if not completed:

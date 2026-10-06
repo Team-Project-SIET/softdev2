@@ -1,0 +1,85 @@
+{
+  "version": "15.3",
+  "files": {
+    "tests/reference/industry_page_15_3/script_industry.hpp": {
+      "source_path": "src/script/api/script_industry.hpp",
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/script/api/script_industry.hpp",
+      "sha256": "65beb5d22bd6c0cb683fc5843512ff0fdfa951fe4d9e85f0b067746f32c51d38"
+    },
+    "tests/reference/industry_page_15_3/script_industrylist.hpp": {
+      "source_path": "src/script/api/script_industrylist.hpp",
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/script/api/script_industrylist.hpp",
+      "sha256": "5a6e1e664e594ae0c79d120f376afe4345ad942ccef611cd8bd61c5eb4bf0d02"
+    },
+    "tests/reference/industry_page_15_3/script_industry.cpp": {
+      "source_path": "src/script/api/script_industry.cpp",
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/script/api/script_industry.cpp",
+      "sha256": "95d0a6794b4aeb13d2e2d42e33fe8eb1e6c82bbe6af4cec290eb607c4aad5df9"
+    },
+    "tests/reference/industry_page_15_3/script_industrylist.cpp": {
+      "source_path": "src/script/api/script_industrylist.cpp",
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/script/api/script_industrylist.cpp",
+      "sha256": "a76805f2b880f235391856fad09b356fff93962391d8f2fa975a11b8ffca4f71"
+    },
+    "tests/reference/industry_page_15_3/script_list.hpp": {
+      "source_path": "src/script/api/script_list.hpp",
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/script/api/script_list.hpp",
+      "sha256": "fa1faaf736743e127f601db61b73b4066d05e037b572df0d3eca5697cbc32a09"
+    },
+    "tests/reference/industry_page_15_3/script_list.cpp": {
+      "source_path": "src/script/api/script_list.cpp",
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/script/api/script_list.cpp",
+      "sha256": "c265df3005f36ad2029c1c1dd3d0cd452d07ccb40f2231420e5ec75e3a93a138"
+    },
+    "tests/reference/world_info_15_3/script_map.hpp": {
+      "source_path": "src/script/api/script_map.hpp",
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/script/api/script_map.hpp",
+      "sha256": "5c0343c873dde461add158cd11cb2a65e70052569ea62b72be1d2c43ca0e7101"
+    },
+    "tests/reference/world_info_15_3/script_map.cpp": {
+      "source_path": "src/script/api/script_map.cpp",
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/script/api/script_map.cpp",
+      "sha256": "d8a6ebb9840e59626245b90041dc6eef5056c5daf44982e8ca8656599bb8c36b"
+    },
+    "tests/reference/industry_page_15_3/script_admin.cpp": {
+      "source_path": "src/script/api/script_admin.cpp",
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/script/api/script_admin.cpp",
+      "sha256": "d3dce4d19dfd1e28d1f369db3a063ad4b471bae958c30b5eed1750ea124bbba3"
+    },
+    "tests/reference/industry_page_15_3/industry_type.h": {
+      "source_path": "src/industry_type.h",
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/industry_type.h",
+      "sha256": "a96ba79538f96c6c27b2b3b9185a6e8a6a7a4ac75b152a447e7c90efc117578a"
+    },
+    "tests/reference/industry_page_15_3/pool_type.hpp": {
+      "source_path": "src/core/pool_type.hpp",
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/core/pool_type.hpp",
+      "sha256": "82d68ca24b14a6195b43b92db43b773a96cdd391849b377a1f28cb68b10313ba"
+    },
+    "tests/reference/industry_page_15_3/map_type.h": {
+      "source_path": "src/map_type.h",
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/map_type.h",
+      "sha256": "82d1a5a7bc6eefa3193cbb7d2bb1a31ddb2362acd6a3259c0a2c221a6e7a7689"
+    },
+    "tests/reference/industry_page_15_3/map_func.h": {
+      "source_path": "src/map_func.h",
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/map_func.h",
+      "sha256": "a5efd0b63fdc7faedd4eabcef00b99b0f65384010e5c82154a220ea87177a656"
+    },
+    "tests/reference/industry_page_bindings_15_3/CMakeLists.txt": {
+      "source_path": "src/script/api/CMakeLists.txt",
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/script/api/CMakeLists.txt",
+      "sha256": "a61d0fc3bd3482f502cbb1adefec91e11c1cb91c62e74d3bbf8c1524266135e5"
+    },
+    "tests/reference/industry_page_bindings_15_3/squirrel_export.sq.hpp.in": {
+      "source_path": "src/script/api/squirrel_export.sq.hpp.in",
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/script/api/squirrel_export.sq.hpp.in",
+      "sha256": "0f566b9324a248ab702362e8bef5e2040ecd4079fdbbe4866761dd6370e7721d"
+    },
+    "tests/reference/industry_page_bindings_15_3/SquirrelExport.cmake": {
+      "source_path": "cmake/scripts/SquirrelExport.cmake",
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/cmake/scripts/SquirrelExport.cmake",
+      "sha256": "59a1372537c0895ee478543edaebccc961e7d62d7741599cdc1bf95e29f24a1b"
+    }
+  }
+}
