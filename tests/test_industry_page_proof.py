@@ -15,14 +15,25 @@ def make_industry_prepared(tmp_path):
     binary.chmod(0o700)
     archive = tmp_path / "graphics.zip"
     digest = graphics_archive(archive)
-    return prepare_proof(
-        tmp_path / "industry-prelaunch",
-        mode="industry-page",
-        binary=binary,
-        binary_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
-        graphics=archive,
-        graphics_sha256=digest,
-    )
+    # Preserve the existing single-page proof contract with its checkpoint bridge.
+    from pathlib import Path
+
+    from app.simulation.openttd import gamescript_bridge
+
+    with pytest.MonkeyPatch.context() as checkpoint:
+        checkpoint.setattr(
+            gamescript_bridge,
+            "BRIDGE_DIRECTORY",
+            Path("tests/fixtures/industry_inventory_checkpoint_bridge"),
+        )
+        return prepare_proof(
+            tmp_path / "industry-prelaunch",
+            mode="industry-page",
+            binary=binary,
+            binary_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
+            graphics=archive,
+            graphics_sha256=digest,
+        )
 
 
 def test_industry_preparation_freezes_canonical_request_and_limit(tmp_path):

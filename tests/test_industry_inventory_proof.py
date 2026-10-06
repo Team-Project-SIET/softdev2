@@ -39,14 +39,25 @@ def make_prepared(tmp_path):
     binary.chmod(0o700)
     archive = tmp_path / "graphics.zip"
     digest = graphics_archive(archive)
-    return prepare_proof(
-        tmp_path / "prelaunch",
-        mode="industry-inventory",
-        binary=binary,
-        binary_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
-        graphics=archive,
-        graphics_sha256=digest,
-    )
+    # This proof contract pins the successful pre-cargo bridge. Never weaken its digest.
+    from pathlib import Path
+
+    from app.simulation.openttd import gamescript_bridge
+
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(
+            gamescript_bridge,
+            "BRIDGE_DIRECTORY",
+            Path("tests/fixtures/industry_inventory_checkpoint_bridge"),
+        )
+        return prepare_proof(
+            tmp_path / "prelaunch",
+            mode="industry-inventory",
+            binary=binary,
+            binary_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
+            graphics=archive,
+            graphics_sha256=digest,
+        )
 
 
 class ControlledInventoryBackend:

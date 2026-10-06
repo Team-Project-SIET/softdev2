@@ -1,0 +1,40 @@
+{
+  "version": "15.3",
+  "files": {
+    "tests/reference/industry_cargo_15_3/script_cargolist.hpp": {
+      "source_path": "src/script/api/script_cargolist.hpp",
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/script/api/script_cargolist.hpp",
+      "sha256": "7a82a3ff4428de014b0da8546e8fedda7c7934ef3b7cc9a7ca6bb5430d4d612d"
+    },
+    "tests/reference/industry_cargo_15_3/script_cargolist.cpp": {
+      "source_path": "src/script/api/script_cargolist.cpp",
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/script/api/script_cargolist.cpp",
+      "sha256": "6cd053a766abc56351066a6134dd984a21dc58d2773ad7d8c2cfb98264f40ed8"
+    },
+    "tests/reference/industry_cargo_15_3/script_cargo.hpp": {
+      "source_path": "src/script/api/script_cargo.hpp",
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/script/api/script_cargo.hpp",
+      "sha256": "15e08e0fdca3b85f2d88c057bf97328233f13e421a38ba3f344e38d8a2b5ce10"
+    },
+    "tests/reference/industry_cargo_15_3/cargo_type.h": {
+      "source_path": "src/cargo_type.h",
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/cargo_type.h",
+      "sha256": "24b4fa4167403867a7dcee6ec1104dab47f37a43a734d52edcb2d6772cc7d918"
+    },
+    "tests/reference/industry_cargo_15_3/industry_type.h": {
+      "source_path": "src/industry_type.h",
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/industry_type.h",
+      "sha256": "a96ba79538f96c6c27b2b3b9185a6e8a6a7a4ac75b152a447e7c90efc117578a"
+    },
+    "tests/reference/industry_cargo_15_3/industry.h": {
+      "source_path": "src/industry.h",
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/industry.h",
+      "sha256": "f7a0c67c70daacf9ad1a80a85238fcd35201697081acea51f75e687f172cef8e"
+    },
+    "tests/reference/industry_cargo_15_3/industry_cmd.cpp": {
+      "source_path": "src/industry_cmd.cpp",
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/industry_cmd.cpp",
+      "sha256": "313c5a7a7104ed4cf89aa59f161d649f35f2784cd82ca2b889be077be79eeac7"
+    }
+  }
+}

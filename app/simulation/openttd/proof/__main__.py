@@ -7,6 +7,10 @@ import sys
 from pathlib import Path
 
 from .attempt import execute_attempt
+from .cargo_contract import CARGO_PRELAUNCH_DIRECTORY
+from .cargo_native import CargoNativeBackend
+from .enrichment_contract import ENRICHMENT_PRELAUNCH_DIRECTORY
+from .enrichment_native import EnrichmentNativeBackend
 from .harness import PROJECT, prepare_proof
 from .industry_contract import INDUSTRY_PRELAUNCH_DIRECTORY
 from .industry_native import IndustryNativeBackend
@@ -27,14 +31,25 @@ def main() -> None:
     )
     parser.add_argument(
         "--mode",
-        choices=("ack", "world-info", "industry-page", "industry-inventory"),
+        choices=(
+            "ack",
+            "world-info",
+            "industry-page",
+            "industry-inventory",
+            "industry-cargo",
+            "industry-enrichment",
+        ),
         default="ack",
     )
     parser.add_argument("--authorize-one-launch", action="store_true")
     args = parser.parse_args()
     if args.directory is None:
         name = (
-            INVENTORY_PRELAUNCH_DIRECTORY
+            ENRICHMENT_PRELAUNCH_DIRECTORY
+            if args.mode == "industry-enrichment"
+            else CARGO_PRELAUNCH_DIRECTORY
+            if args.mode == "industry-cargo"
+            else INVENTORY_PRELAUNCH_DIRECTORY
             if args.mode == "industry-inventory"
             else INDUSTRY_PRELAUNCH_DIRECTORY
             if args.mode == "industry-page"
@@ -48,6 +63,8 @@ def main() -> None:
         "world-info": WorldNativeBackend,
         "industry-page": IndustryNativeBackend,
         "industry-inventory": InventoryNativeBackend,
+        "industry-cargo": CargoNativeBackend,
+        "industry-enrichment": EnrichmentNativeBackend,
     }[args.mode]
     if args.command == "prepare":
         prepared = prepare_proof(args.directory, mode=args.mode)
@@ -67,7 +84,12 @@ def main() -> None:
             result["process_creation_blocked"] = True
             print(json.dumps(result, sort_keys=True))
         except Exception as error:
-            if args.mode in ("industry-page", "industry-inventory"):
+            if args.mode in (
+                "industry-page",
+                "industry-inventory",
+                "industry-cargo",
+                "industry-enrichment",
+            ):
                 from .world_attempt import record_prelaunch_failure
 
                 failure = args.directory.with_name(args.directory.name + "-gate-failure")
@@ -88,7 +110,33 @@ def main() -> None:
     else:
         if not args.authorize_one_launch:
             parser.error("Separate explicit one-launch authorization required")
-        if args.mode == "industry-inventory":
+        if args.mode == "industry-enrichment":
+            from .enrichment_attempt import execute_enrichment_attempt
+            from .world_attempt import record_prelaunch_failure
+
+            try:
+                prepared = load_prepared(args.directory, mode=args.mode)
+            except Exception as error:
+                record_prelaunch_failure(args.directory, error)
+                raise SystemExit("PRELAUNCH_FAILED; no execution") from None
+            result = asyncio.run(
+                execute_enrichment_attempt(
+                    prepared, EnrichmentNativeBackend(authorized_one_launch=True)
+                )
+            )
+        elif args.mode == "industry-cargo":
+            from .cargo_attempt import execute_cargo_attempt
+            from .world_attempt import record_prelaunch_failure
+
+            try:
+                prepared = load_prepared(args.directory, mode=args.mode)
+            except Exception as error:
+                record_prelaunch_failure(args.directory, error)
+                raise SystemExit("PRELAUNCH_FAILED; no execution") from None
+            result = asyncio.run(
+                execute_cargo_attempt(prepared, CargoNativeBackend(authorized_one_launch=True))
+            )
+        elif args.mode == "industry-inventory":
             from .inventory_attempt import execute_inventory_attempt
             from .world_attempt import record_prelaunch_failure
 

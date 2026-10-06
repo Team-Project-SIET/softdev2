@@ -24,6 +24,12 @@ from app.simulation.openttd.gamescript_protocol import (
     MalformedMessage,
     PingRequest,
 )
+from app.simulation.openttd.industry_cargo import (
+    CARGO_NETWORK_SEQUENCE,
+    IndustryCargoExchange,
+    IndustryCargoReceipt,
+    IndustryCargoRequest,
+)
 from app.simulation.openttd.industry_page import (
     PAGE_NETWORK_SEQUENCE,
     IndustryPageExchange,
@@ -105,7 +111,10 @@ class GameScriptSession(AdminStream):
                 try:
                     WorldInfoRequest.parse(payload)
                 except BridgeProtocolError:
-                    IndustryPageRequest.parse(payload)
+                    try:
+                        IndustryPageRequest.parse(payload)
+                    except BridgeProtocolError:
+                        IndustryCargoRequest.parse(payload)
         elif kind == AdminClientPacketType.PING and len(frame) == 7:
             pass  # Read-only ordering barrier after GameScript subscription.
         elif frame not in (gamescript_subscription(), encode_admin_quit()):
@@ -303,14 +312,25 @@ class GameScriptTransport:
         assert isinstance(result, IndustryPageExchange)
         return result
 
+    async def industry_cargo(
+        self,
+        request: IndustryCargoRequest,
+        *,
+        timeout: float = 5.0,
+        operation_budget: int | None = None,
+    ) -> IndustryCargoExchange:
+        result = await self._read_query(request, timeout=timeout, operation_budget=operation_budget)
+        assert isinstance(result, IndustryCargoExchange)
+        return result
+
     async def _read_query(
         self,
-        request: WorldInfoRequest | IndustryPageRequest,
+        request: WorldInfoRequest | IndustryPageRequest | IndustryCargoRequest,
         *,
         world: WorldInfoResponse | None = None,
         timeout: float = 5.0,
         operation_budget: int | None = None,
-    ) -> WorldInfoExchange | IndustryPageExchange:
+    ) -> WorldInfoExchange | IndustryPageExchange | IndustryCargoExchange:
         """One bounded read-only query, with duplicate-response completion barrier.
 
         Uses the existing secure production session; no connection or retry is opened.
@@ -353,7 +373,9 @@ class GameScriptTransport:
                             response = decode_gamescript(body)
                             self.response_payload = response
                             receipt = (
-                                IndustryPageReceipt.correlate(payload, response)
+                                IndustryCargoReceipt.correlate(payload, response)
+                                if isinstance(request, IndustryCargoRequest)
+                                else IndustryPageReceipt.correlate(payload, response)
                                 if isinstance(request, IndustryPageRequest)
                                 else WorldInfoReceipt.correlate(payload, response)
                             )
@@ -387,7 +409,16 @@ class GameScriptTransport:
                             raise TransportDisconnected("server shutdown after query response")
                         elif kind in ServerLifecyclePacket:
                             raise TransportProtocolError("query runtime changed/error")
-                if isinstance(receipt, IndustryPageReceipt):
+                if isinstance(receipt, IndustryCargoReceipt):
+                    result = IndustryCargoExchange(
+                        payload,
+                        response,
+                        receipt,
+                        CARGO_NETWORK_SEQUENCE,
+                        protocol_operations=operations.used,
+                    )
+                    result.validate()
+                elif isinstance(receipt, IndustryPageReceipt):
                     assert world is not None
                     result = IndustryPageExchange(
                         payload,

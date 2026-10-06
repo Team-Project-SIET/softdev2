@@ -12,13 +12,16 @@ from pathlib import Path
 from app.simulation.openttd.admin_crypto import AuthorizedKey
 from app.simulation.openttd.gamescript_bridge import BRIDGE_DIRECTORY, PACKAGE_FILES, stage_bridge
 from app.simulation.openttd.gamescript_protocol import PingRequest
+from app.simulation.openttd.industry_cargo import IndustryCargoRequest
 from app.simulation.openttd.industry_page import IndustryPageRequest
 from app.simulation.openttd.runtime.base import LaunchSpecification
 from app.simulation.openttd.runtime.config import AdminSettings, RuntimeWorkspace
 from app.simulation.openttd.runtime.identity import RuntimeIdentity
 from app.simulation.openttd.world_info import WorldInfoRequest
 
+from .cargo_contract import CARGO_REQUEST
 from .causality import PROOF_MODEL
+from .enrichment_contract import ENRICHMENT_FIRST_REQUEST
 from .graphics import ARCHIVE_SHA256, stage_opengfx
 from .industry_contract import (
     INDUSTRY_ATTEMPT,
@@ -121,7 +124,7 @@ class PreparedProof:
     key_path: Path = field(repr=False)
     public_key: str
     endpoints: tuple[int, int]
-    request: PingRequest | WorldInfoRequest | IndustryPageRequest = REQUEST
+    request: PingRequest | WorldInfoRequest | IndustryPageRequest | IndustryCargoRequest = REQUEST
 
     def dispose(self) -> None:
         self.key_path.unlink(missing_ok=True)
@@ -152,13 +155,22 @@ def prepare_proof(
     graphics: Path = PROJECT / "artifacts/runtime/verified-assets/opengfx-8.0-all.zip",
     graphics_sha256: str = ARCHIVE_SHA256,
 ) -> PreparedProof:
-    if mode not in ("ack", "world-info", "industry-page", "industry-inventory"):
+    if mode not in (
+        "ack",
+        "world-info",
+        "industry-page",
+        "industry-inventory",
+        "industry-cargo",
+        "industry-enrichment",
+    ):
         raise ValueError("Unsupported proof mode")
     request = {
         "ack": REQUEST,
         "world-info": WORLD_REQUEST,
         "industry-page": INDUSTRY_REQUEST,
         "industry-inventory": INVENTORY_FIRST_REQUEST,
+        "industry-cargo": CARGO_REQUEST,
+        "industry-enrichment": ENRICHMENT_FIRST_REQUEST,
     }[mode]
     binary = binary.resolve(strict=True)
     if not binary.is_file() or not os.access(binary, os.X_OK) or sha256(binary) != binary_sha256:
@@ -252,10 +264,19 @@ def prepare_proof(
         ports = (reservation.game_port, reservation.admin_port)
         from .preflight import historical_snapshot
 
-        write_json(
-            directory / "historical-integrity.json",
-            historical_snapshot(directory.parent, directory),
-        )
+        if mode == "industry-enrichment":
+            from .enrichment_contract import ENRICHMENT_ATTEMPT_DIRECTORY
+            from .historical_protection import capture_protection, protection_base
+
+            history = capture_protection(
+                protection_base(PROJECT, directory.parent),
+                directory.parent,
+                directory,
+                directory.with_name(ENRICHMENT_ATTEMPT_DIRECTORY),
+            )
+        else:
+            history = historical_snapshot(directory.parent, directory)
+        write_json(directory / "historical-integrity.json", history)
         frozen = source_freeze()
         frozen[str(binary)] = binary_sha256
         frozen[str(graphics.resolve())] = graphics_sha256
@@ -285,7 +306,8 @@ def prepare_proof(
                 "name": "NoMutationBridge",
                 "version": 2,
                 "api": "15",
-                "commands": ["ping", "world_info", "industry_page"],
+                "commands": ["ping", "world_info", "industry_page"]
+                + (["industry_cargo"] if "GSCargoList_IndustryProducing" in main else []),
                 "sha256": bridge.sha256,
                 "files": {name: sha256(bridge.directory / name) for name in PACKAGE_FILES},
             },
@@ -531,6 +553,14 @@ def prepare_proof(
             from .inventory_preparation import freeze_inventory_preparation
 
             freeze_inventory_preparation(directory, frozen, bridge.sha256)
+        if mode == "industry-cargo":
+            from .cargo_preparation import freeze_cargo_preparation
+
+            freeze_cargo_preparation(directory, frozen, bridge.sha256)
+        if mode == "industry-enrichment":
+            from .enrichment_preparation import freeze_enrichment_preparation
+
+            freeze_enrichment_preparation(directory, frozen, bridge.sha256)
         (directory / "artifact-manifest.sha256").write_text(manifest(directory))
         return PreparedProof(directory, spec, key_path, key.public_hex, ports, request)
     except BaseException as error:

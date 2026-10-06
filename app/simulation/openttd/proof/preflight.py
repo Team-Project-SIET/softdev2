@@ -8,6 +8,19 @@ from pathlib import Path
 from app.simulation.openttd.admin_crypto import AuthorizedKey
 from app.simulation.openttd.gamescript_bridge import PACKAGE_FILES
 
+from .cargo_contract import (
+    CARGO_ATTEMPT_DIRECTORY,
+    CARGO_BRIDGE_DIGEST,
+    CARGO_REQUEST,
+    cargo_contract,
+    cargo_contract_digest,
+)
+from .enrichment_contract import (
+    ENRICHMENT_ATTEMPT_DIRECTORY,
+    ENRICHMENT_FIRST_REQUEST,
+    enrichment_contract,
+    enrichment_contract_digest,
+)
 from .graphics import validate_baseset
 from .harness import (
     REQUEST,
@@ -60,9 +73,23 @@ def validate_native_inputs(prepared: PreparedProof) -> dict:
     if any(frozen.get(path) != digest for path, digest in source_freeze().items()):
         raise ValueError("Runtime-critical source inventory changed")
     history = json.loads((directory / "historical-integrity.json").read_text())
-    current = historical_snapshot(directory.parent, directory)
-    if any(current.get(name) != files for name, files in history.items()):
-        raise ValueError("Historical artifact integrity changed")
+    metadata = json.loads((directory / "PRELAUNCH.json").read_text())
+    protected_count = None
+    lineage_count = None
+    if metadata.get("mode") == "industry-enrichment":
+        from .harness import PROJECT
+        from .historical_protection import protection_base, validate_protection
+
+        protected_count = validate_protection(protection_base(PROJECT, directory.parent), history)
+        if (
+            metadata.get("protected_unique_count") != protected_count
+            or metadata.get("protected_manifest_sha256") != history["sha256"]
+        ):
+            raise ValueError("Historical frozen manifest identity mismatch")
+    else:
+        current = historical_snapshot(directory.parent, directory)
+        if any(current.get(name) != files for name, files in history.items()):
+            raise ValueError("Historical artifact integrity changed")
     workspace = prepared.spec.workspace
     if prepared.spec.argv != launch_argv(
         prepared.spec.identity.executable, workspace.config, prepared.endpoints[0]
@@ -93,6 +120,8 @@ def validate_native_inputs(prepared: PreparedProof) -> dict:
             "world-info": WORLD_REQUEST,
             "industry-page": INDUSTRY_REQUEST,
             "industry-inventory": INVENTORY_FIRST_REQUEST,
+            "industry-cargo": CARGO_REQUEST,
+            "industry-enrichment": ENRICHMENT_FIRST_REQUEST,
         }.get(metadata.get("mode"), REQUEST).to_bytes()
         or (directory / "request.json").read_bytes() != request
         or hashlib.sha256(request).hexdigest() != metadata["request_sha256"]
@@ -147,6 +176,66 @@ def validate_native_inputs(prepared: PreparedProof) -> dict:
         if bridge["sha256"] != contract["bridge_digest"] or not callable(verify_inventory):
             raise ValueError("Inventory bridge/validator changed")
         InventoryLifecycle()
+    if metadata.get("mode") == "industry-cargo":
+        from .cargo_attempt import CargoLifecycle
+        from .cargo_verification import verify_industry_cargo
+
+        if directory.with_name(directory.name + "-gate-failure").exists():
+            raise ValueError("Previous cargo prelaunch failure; no retry")
+        contract = json.loads((directory / "industry-cargo-contract.json").read_text())
+        if (
+            contract != cargo_contract()
+            or metadata.get("proof_config_sha256") != cargo_contract_digest()
+            or metadata["attempt_directory"] != str(directory.with_name(CARGO_ATTEMPT_DIRECTORY))
+            or bridge["sha256"] != CARGO_BRIDGE_DIGEST
+            or bridge["commands"] != ["ping", "world_info", "industry_page", "industry_cargo"]
+            or bridge["api"] != "15"
+        ):
+            raise ValueError("Cargo frozen evidence/bridge contract changed")
+        authority = json.loads((directory / "source-authority.json").read_text())
+        if authority.get("version") != "OpenTTD 15.3" or not any(
+            "script_cargolist.hpp" in p for p in authority.get("files", {})
+        ):
+            raise ValueError("Cargo native API authority unavailable")
+        CargoLifecycle()
+        if not callable(verify_industry_cargo):
+            raise ValueError("Cargo validator unavailable")
+    if metadata.get("mode") == "industry-enrichment":
+        from app.simulation.openttd.industry_enrichment import IndustryEnrichmentSession
+
+        from .enrichment_attempt import EnrichmentLifecycle
+        from .enrichment_contract import ENRICHMENT_REVISION
+        from .enrichment_lineage import validate_lineage
+        from .enrichment_preparation import checkpoint_head
+
+        lineage = json.loads((directory / "attempt-lineage.json").read_text())
+        lineage_count = validate_lineage(
+            directory,
+            lineage,
+            ENRICHMENT_REVISION,
+            directory.with_name(ENRICHMENT_ATTEMPT_DIRECTORY),
+        )
+        if (
+            metadata.get("lineage_digest") != lineage["lineage_digest"]
+            or metadata.get("attempt_id") != lineage["attempt_id"]
+            or metadata.get("predecessor_attempt_ids")
+            != [row["attempt_id"] for row in lineage["supersedes_prelaunch_attempts"]]
+        ):
+            raise ValueError("Frozen attempt lineage metadata mismatch")
+        contract = json.loads((directory / "enrichment-contract.json").read_text())
+        if (
+            contract != enrichment_contract()
+            or metadata.get("proof_config_sha256") != enrichment_contract_digest()
+            or metadata["attempt_directory"]
+            != str(directory.with_name(ENRICHMENT_ATTEMPT_DIRECTORY))
+            or metadata.get("checkpoint_head") != checkpoint_head()
+            or bridge["sha256"] != CARGO_BRIDGE_DIGEST
+            or bridge["commands"] != ["ping", "world_info", "industry_page", "industry_cargo"]
+        ):
+            raise ValueError("Enrichment frozen contract/checkpoint/bridge changed")
+        EnrichmentLifecycle()
+        if not callable(IndustryEnrichmentSession):
+            raise ValueError("Enrichment session unavailable")
     if Path(metadata["attempt_directory"]).exists():
         raise ValueError("Proof attempt already claimed")
     config = workspace.config.read_text()
@@ -176,6 +265,10 @@ def validate_native_inputs(prepared: PreparedProof) -> dict:
         "state": "READY_TO_LAUNCH",
         "source_freeze": True,
         "historical_integrity": True,
+        "lineage_validated": lineage_count is not None,
+        "lineage_predecessor_count": lineage_count,
+        "protected_unique_count": protected_count,
+        "protected_manifest_sha256": history.get("sha256"),
         "workspace": str(workspace.root),
         "key_path_resolved": True,
         "config": str(workspace.config),
@@ -187,9 +280,17 @@ def validate_native_inputs(prepared: PreparedProof) -> dict:
         "semantic_contract": metadata.get("semantic_authority"),
         "validator_loaded": True,
         "welcome_bounds_validator_wired": metadata.get("mode")
-        in ("industry-page", "industry-inventory"),
+        in ("industry-page", "industry-inventory", "industry-enrichment"),
         "canonical_evidence_policy_loaded": metadata.get("mode")
-        in ("industry-page", "industry-inventory"),
+        in ("industry-page", "industry-inventory", "industry-cargo", "industry-enrichment"),
+        "enrichment_contract": enrichment_contract()
+        if metadata.get("mode") == "industry-enrichment"
+        else None,
+        "inventory_phase_loaded": metadata.get("mode") == "industry-enrichment",
+        "capability_phase_loaded": metadata.get("mode") == "industry-enrichment",
+        "same_run_digest_wiring_loaded": metadata.get("mode") == "industry-enrichment",
+        "native_api_authority_loaded": metadata.get("mode") == "industry-cargo",
+        "cargo_contract": cargo_contract() if metadata.get("mode") == "industry-cargo" else None,
         "inventory_session": inventory_contract()
         if metadata.get("mode") == "industry-inventory"
         else None,

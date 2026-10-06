@@ -23,12 +23,11 @@ class NoMutationBridge extends GSController {
     }
 
     function Handle(request) {
-        if (typeof request != "table" || (request.len() != 3 && request.len() != 4 && request.len() != 5)) return false;
+        if (typeof request != "table" || (request.len() != 3 && request.len() != 5)) return false;
         if (!("protocol" in request) || !("type" in request) || !("request_id" in request)) return false;
         if (typeof request.protocol != "integer" || request.protocol != 1) return false;
-        if (typeof request.type != "string" || (request.type != "ping" && request.type != "world_info" && request.type != "industry_page" && request.type != "industry_cargo")) return false;
+        if (typeof request.type != "string" || (request.type != "ping" && request.type != "world_info" && request.type != "industry_page")) return false;
         if (!this.ValidRequestID(request.request_id)) return false;
-        if (request.type == "industry_cargo") return this.IndustryCargo(request);
         if (request.type == "industry_page") return this.IndustryPage(request);
         if (request.len() != 3) return false;
         if (request.type == "world_info") return this.WorldInfo(request);
@@ -94,37 +93,6 @@ class NoMutationBridge extends GSController {
                            status = "ok", industries = records, next_after_id = next, has_more = more };
         if (!GSAdmin.Send(response)) return false;
         GSLog.Info("BRIDGE_RESPONSE_SENT request_id=" + request.request_id + " type=industry_page_result status=ok protocol=1");
-        return true;
-    }
-
-    function CargoIDs(source) {
-        source.Sort(GSList.SORT_BY_ITEM, GSList.SORT_ASCENDING);
-        local result = [];
-        for (local id = source.Begin(); !source.IsEnd(); id = source.Next()) {
-            if (typeof id != "integer" || id < 0 || id >= 64 || !GSCargo.IsValidCargo(id) ||
-                result.len() >= 16 || (result.len() && id <= result[result.len() - 1])) throw "invalid cargo list";
-            result.append(id);
-        }
-        return result;
-    }
-
-    function IndustryCargo(request) {
-        if (request.len() != 4 || !("industry_id" in request) || typeof request.industry_id != "integer" ||
-            request.industry_id < 0 || request.industry_id >= 64000 || !GSIndustry.IsValidIndustry(request.industry_id)) return false;
-        GSLog.Info("BRIDGE_REQUEST_RECEIVED request_id=" + request.request_id + " type=industry_cargo protocol=1");
-        local produces = this.CargoIDs(GSCargoList_IndustryProducing(request.industry_id));
-        local accepts = this.CargoIDs(GSCargoList_IndustryAccepting(request.industry_id));
-        GSLog.Info("INDUSTRY_CARGO_READ request_id=" + request.request_id + " industry_id=" + this.EvidenceOptionalInt(request.industry_id) +
-            " produced_count=" + this.EvidenceOptionalInt(produces.len()) + " accepted_count=" + this.EvidenceOptionalInt(accepts.len()) +
-            " first_produced=" + this.EvidenceOptionalInt(produces.len() ? produces[0] : null) +
-            " last_produced=" + this.EvidenceOptionalInt(produces.len() ? produces[produces.len() - 1] : null) +
-            " first_accepted=" + this.EvidenceOptionalInt(accepts.len() ? accepts[0] : null) +
-            " last_accepted=" + this.EvidenceOptionalInt(accepts.len() ? accepts[accepts.len() - 1] : null));
-        /* 64-byte ASCII request ID + industry ID<=63999 + two <=16 item cargo lists (0..63): <=300 bytes. */
-        local response = { protocol = 1, type = "industry_cargo_result", request_id = request.request_id,
-            status = "ok", industry_id = request.industry_id, produces = produces, accepts = accepts };
-        if (!GSAdmin.Send(response)) return false;
-        GSLog.Info("BRIDGE_RESPONSE_SENT request_id=" + request.request_id + " type=industry_cargo_result status=ok protocol=1");
         return true;
     }
 

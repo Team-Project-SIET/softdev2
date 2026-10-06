@@ -19,7 +19,9 @@ from app.simulation.openttd.runtime.identity import RuntimeIdentity
 from app.simulation.openttd.secure_admin import AuthDisconnected, AuthState, SecureAdminSession
 
 from .attempt import Gate, Gates
+from .cargo_contract import CARGO_MODEL, CARGO_REQUEST
 from .causality import PROOF_MODEL, NetworkProofEvidence
+from .enrichment_contract import ENRICHMENT_FIRST_REQUEST, ENRICHMENT_MODEL, ENRICHMENT_REVISION
 from .gamescript_evidence import GameScriptProofEvidence, parse_gamescript_evidence
 from .graphics import ARCHIVE_SHA256
 from .harness import (
@@ -55,21 +57,45 @@ def load_prepared(directory: Path, *, mode: str = "ack") -> PreparedProof:
     world = mode == "world-info"
     industry = mode == "industry-page"
     inventory = mode == "industry-inventory"
-    if mode not in ("ack", "world-info", "industry-page", "industry-inventory"):
+    cargo = mode == "industry-cargo"
+    enrichment = mode == "industry-enrichment"
+    if mode not in (
+        "ack",
+        "world-info",
+        "industry-page",
+        "industry-inventory",
+        "industry-cargo",
+        "industry-enrichment",
+    ):
         raise ValueError("Unsupported proof mode")
     request = {
         "ack": REQUEST,
         "world-info": WORLD_REQUEST,
         "industry-page": INDUSTRY_REQUEST,
         "industry-inventory": INVENTORY_FIRST_REQUEST,
+        "industry-cargo": CARGO_REQUEST,
+        "industry-enrichment": ENRICHMENT_FIRST_REQUEST,
     }[mode]
     if (
-        data.get("attempt") != (INDUSTRY_ATTEMPT if industry else 1 if world or inventory else 2)
+        data.get("attempt")
+        != (INDUSTRY_ATTEMPT if industry else 1 if world or inventory or cargo or enrichment else 2)
         or data.get("prelaunch_revision")
-        != (INDUSTRY_REVISION if industry else 1 if world or inventory else 3)
+        != (
+            ENRICHMENT_REVISION
+            if enrichment
+            else INDUSTRY_REVISION
+            if industry
+            else 1
+            if world or inventory or cargo
+            else 3
+        )
         or data.get("proof_model")
         != (
-            INVENTORY_MODEL
+            ENRICHMENT_MODEL
+            if enrichment
+            else CARGO_MODEL
+            if cargo
+            else INVENTORY_MODEL
             if inventory
             else INDUSTRY_MODEL
             if industry

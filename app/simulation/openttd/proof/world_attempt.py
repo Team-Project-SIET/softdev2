@@ -129,6 +129,21 @@ def record_prelaunch_failure(directory: Path, error: Exception) -> None:
             "retries": 0,
         },
     )
+    metadata_path = directory / "PRELAUNCH.json"
+    if metadata_path.exists():
+        metadata = json.loads(metadata_path.read_text())
+        if (
+            metadata.get("mode") == "industry-enrichment"
+            and metadata.get("prelaunch_revision", 0) >= 4
+        ):
+            from .enrichment_lineage import retain_attempt_identity
+
+            record = json.loads((failure / "PRELAUNCH-FAILURE.json").read_text())
+            record["preparation"] = str(directory)
+            (failure / "PRELAUNCH-FAILURE.json").write_text(
+                json.dumps(record, sort_keys=True, indent=2) + "\n"
+            )
+            retain_attempt_identity(failure, metadata, record)
     (failure / "artifact-manifest.sha256").write_text(manifest(failure))
 
 

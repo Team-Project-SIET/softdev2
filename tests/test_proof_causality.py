@@ -213,13 +213,22 @@ def test_obsolete_preparation_rejected_before_any_cleanup_or_write(tmp_path):
         prepared.dispose()
 
 
-def test_ping_request_identity_and_new_read_only_bridge_package(tmp_path):
+def test_ping_request_identity_and_checkpoint_read_only_bridge_package(tmp_path, monkeypatch):
     import hashlib
     import json
+    from pathlib import Path
 
     from test_real_ack_harness import make_prepared
 
-    prepared = make_prepared(tmp_path)
+    from app.simulation.openttd import gamescript_bridge
+
+    with monkeypatch.context() as checkpoint:
+        checkpoint.setattr(
+            gamescript_bridge,
+            "BRIDGE_DIRECTORY",
+            Path("tests/fixtures/industry_inventory_checkpoint_bridge"),
+        )
+        prepared = make_prepared(tmp_path)
     try:
         assert prepared.request.request_id == "openttd15-real-ack-002"
         assert (
