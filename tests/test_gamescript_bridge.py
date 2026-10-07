@@ -101,6 +101,7 @@ def test_bridge_symbols_are_minimal_and_api_version_is_15() -> None:
         "GSIndustryList",
         "GSIndustry",
         "GSCargo",
+        "GSCargoList",
         "GSCargoList_IndustryProducing",
         "GSCargoList_IndustryAccepting",
         "GSEventController",

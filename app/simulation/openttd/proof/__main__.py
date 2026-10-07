@@ -9,6 +9,12 @@ from pathlib import Path
 from .attempt import execute_attempt
 from .cargo_contract import CARGO_PRELAUNCH_DIRECTORY
 from .cargo_native import CargoNativeBackend
+from .cargo_page_contract import PAGE_PRELAUNCH_DIRECTORY
+from .cargo_page_native import CargoPageNativeBackend
+from .catalog_contract import (
+    CATALOG_PRELAUNCH_DIRECTORY,
+)
+from .catalog_native import CatalogNativeBackend
 from .enrichment_contract import ENRICHMENT_PRELAUNCH_DIRECTORY
 from .enrichment_native import EnrichmentNativeBackend
 from .harness import PROJECT, prepare_proof
@@ -38,6 +44,8 @@ def main() -> None:
             "industry-inventory",
             "industry-cargo",
             "industry-enrichment",
+            "cargo-page",
+            "cargo-catalog",
         ),
         default="ack",
     )
@@ -45,7 +53,11 @@ def main() -> None:
     args = parser.parse_args()
     if args.directory is None:
         name = (
-            ENRICHMENT_PRELAUNCH_DIRECTORY
+            CATALOG_PRELAUNCH_DIRECTORY
+            if args.mode == "cargo-catalog"
+            else PAGE_PRELAUNCH_DIRECTORY
+            if args.mode == "cargo-page"
+            else ENRICHMENT_PRELAUNCH_DIRECTORY
             if args.mode == "industry-enrichment"
             else CARGO_PRELAUNCH_DIRECTORY
             if args.mode == "industry-cargo"
@@ -65,6 +77,8 @@ def main() -> None:
         "industry-inventory": InventoryNativeBackend,
         "industry-cargo": CargoNativeBackend,
         "industry-enrichment": EnrichmentNativeBackend,
+        "cargo-page": CargoPageNativeBackend,
+        "cargo-catalog": CatalogNativeBackend,
     }[args.mode]
     if args.command == "prepare":
         prepared = prepare_proof(args.directory, mode=args.mode)
@@ -89,6 +103,8 @@ def main() -> None:
                 "industry-inventory",
                 "industry-cargo",
                 "industry-enrichment",
+                "cargo-page",
+                "cargo-catalog",
             ):
                 from .world_attempt import record_prelaunch_failure
 
@@ -110,7 +126,31 @@ def main() -> None:
     else:
         if not args.authorize_one_launch:
             parser.error("Separate explicit one-launch authorization required")
-        if args.mode == "industry-enrichment":
+        if args.mode == "cargo-catalog":
+            from .catalog_attempt import execute_catalog_attempt
+            from .world_attempt import record_prelaunch_failure
+
+            try:
+                prepared = load_prepared(args.directory, mode=args.mode)
+            except Exception as error:
+                record_prelaunch_failure(args.directory, error)
+                raise SystemExit("PRELAUNCH_FAILED; no execution") from None
+            result = asyncio.run(
+                execute_catalog_attempt(prepared, CatalogNativeBackend(authorized_one_launch=True))
+            )
+        elif args.mode == "cargo-page":
+            from .cargo_page_attempt import execute_page_attempt
+            from .world_attempt import record_prelaunch_failure
+
+            try:
+                prepared = load_prepared(args.directory, mode=args.mode)
+            except Exception as error:
+                record_prelaunch_failure(args.directory, error)
+                raise SystemExit("PRELAUNCH_FAILED; no execution") from None
+            result = asyncio.run(
+                execute_page_attempt(prepared, CargoPageNativeBackend(authorized_one_launch=True))
+            )
+        elif args.mode == "industry-enrichment":
             from .enrichment_attempt import execute_enrichment_attempt
             from .world_attempt import record_prelaunch_failure
 

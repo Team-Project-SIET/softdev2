@@ -46,14 +46,25 @@ def make_prepared(tmp_path):
     binary.chmod(0o700)
     archive = tmp_path / "graphics.zip"
     digest = graphics_archive(archive)
-    return prepare_proof(
-        tmp_path / "prelaunch",
-        mode="industry-cargo",
-        binary=binary,
-        binary_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
-        graphics=archive,
-        graphics_sha256=digest,
-    )
+    # Historical proof contract keeps the exact V4 bridge, not the new catalog branch.
+    from pathlib import Path
+
+    from app.simulation.openttd import gamescript_bridge
+
+    with pytest.MonkeyPatch.context() as checkpoint:
+        checkpoint.setattr(
+            gamescript_bridge,
+            "BRIDGE_DIRECTORY",
+            Path("tests/fixtures/industry_capability_checkpoint_bridge"),
+        )
+        return prepare_proof(
+            tmp_path / "prelaunch",
+            mode="industry-cargo",
+            binary=binary,
+            binary_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
+            graphics=archive,
+            graphics_sha256=digest,
+        )
 
 
 def test_public_cli_mode(monkeypatch, tmp_path, capsys):

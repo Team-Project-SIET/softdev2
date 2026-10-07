@@ -309,14 +309,25 @@ def make_prepared(tmp_path):
     binary.chmod(0o700)
     archive = tmp_path / "graphics.zip"
     digest = graphics_archive(archive)
-    return prepare_proof(
-        tmp_path / "prelaunch",
-        mode="industry-enrichment",
-        binary=binary,
-        binary_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
-        graphics=archive,
-        graphics_sha256=digest,
-    )
+    # Historical proof contract keeps the exact V4 bridge, not the new catalog branch.
+    from pathlib import Path
+
+    from app.simulation.openttd import gamescript_bridge
+
+    with pytest.MonkeyPatch.context() as checkpoint:
+        checkpoint.setattr(
+            gamescript_bridge,
+            "BRIDGE_DIRECTORY",
+            Path("tests/fixtures/industry_capability_checkpoint_bridge"),
+        )
+        return prepare_proof(
+            tmp_path / "prelaunch",
+            mode="industry-enrichment",
+            binary=binary,
+            binary_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
+            graphics=archive,
+            graphics_sha256=digest,
+        )
 
 
 def test_public_cli_mode(monkeypatch, tmp_path):
@@ -570,8 +581,6 @@ def test_freeze_key_and_no_p08_or_mutation(tmp_path):
     import ast
     import json
 
-    from app.simulation.openttd.gamescript_bridge import BRIDGE_DIRECTORY
-
     prepared = make_prepared(tmp_path)
     try:
         frozen = json.loads((prepared.directory / "source-freeze.json").read_text())
@@ -593,7 +602,7 @@ def test_freeze_key_and_no_p08_or_mutation(tmp_path):
             for node in ast.walk(ast.parse(p.read_text())):
                 if isinstance(node, ast.ImportFrom):
                     assert not (node.module or "").startswith("app.planning")
-        source = (BRIDGE_DIRECTORY / "main.nut").read_text()
+        source = Path("tests/fixtures/industry_capability_checkpoint_bridge/main.nut").read_text()
         for name in (
             "GetLastMonthProduction",
             "GetLastMonthTransported",

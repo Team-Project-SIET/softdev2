@@ -132,6 +132,24 @@ def record_prelaunch_failure(directory: Path, error: Exception) -> None:
     metadata_path = directory / "PRELAUNCH.json"
     if metadata_path.exists():
         metadata = json.loads(metadata_path.read_text())
+        if metadata.get("mode") == "cargo-catalog":
+            from .catalog_lineage import retain_attempt_identity
+
+            record = json.loads((failure / "PRELAUNCH-FAILURE.json").read_text())
+            record["preparation"] = str(directory)
+            (failure / "PRELAUNCH-FAILURE.json").write_text(
+                json.dumps(record, sort_keys=True, indent=2) + "\n"
+            )
+            retain_attempt_identity(failure, metadata, record)
+        if metadata.get("mode") == "cargo-page":
+            from .cargo_page_lineage import retain_attempt_identity as retain_page_identity
+
+            record = json.loads((failure / "PRELAUNCH-FAILURE.json").read_text())
+            record["preparation"] = str(directory)
+            (failure / "PRELAUNCH-FAILURE.json").write_text(
+                json.dumps(record, sort_keys=True, indent=2) + "\n"
+            )
+            retain_page_identity(failure, metadata, record)
         if (
             metadata.get("mode") == "industry-enrichment"
             and metadata.get("prelaunch_revision", 0) >= 4

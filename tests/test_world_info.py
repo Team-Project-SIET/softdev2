@@ -414,6 +414,7 @@ def test_verified_15_3_game_api_names_and_read_only_implementation():
         "GSIndustryList",
         "GSIndustry",
         "GSCargo",
+        "GSCargoList",
         "GSCargoList_IndustryProducing",
         "GSCargoList_IndustryAccepting",
         "GSController",

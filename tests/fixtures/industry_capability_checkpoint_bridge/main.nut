@@ -26,9 +26,8 @@ class NoMutationBridge extends GSController {
         if (typeof request != "table" || (request.len() != 3 && request.len() != 4 && request.len() != 5)) return false;
         if (!("protocol" in request) || !("type" in request) || !("request_id" in request)) return false;
         if (typeof request.protocol != "integer" || request.protocol != 1) return false;
-        if (typeof request.type != "string" || (request.type != "ping" && request.type != "world_info" && request.type != "industry_page" && request.type != "industry_cargo" && request.type != "cargo_page")) return false;
+        if (typeof request.type != "string" || (request.type != "ping" && request.type != "world_info" && request.type != "industry_page" && request.type != "industry_cargo")) return false;
         if (!this.ValidRequestID(request.request_id)) return false;
-        if (request.type == "cargo_page") return this.CargoPage(request);
         if (request.type == "industry_cargo") return this.IndustryCargo(request);
         if (request.type == "industry_page") return this.IndustryPage(request);
         if (request.len() != 3) return false;
@@ -126,64 +125,6 @@ class NoMutationBridge extends GSController {
             status = "ok", industry_id = request.industry_id, produces = produces, accepts = accepts };
         if (!GSAdmin.Send(response)) return false;
         GSLog.Info("BRIDGE_RESPONSE_SENT request_id=" + request.request_id + " type=industry_cargo_result status=ok protocol=1");
-        return true;
-    }
-
-    /* Four native bytes, not localized text: exact uppercase hex on the wire. */
-    function CargoLabelHex(label) {
-        if (typeof label != "string" || label.len() != 4) throw "invalid cargo label";
-        local hex = "0123456789ABCDEF";
-        local result = "";
-        for (local i = 0; i < 4; i++) {
-            local byte = label[i] & 255;
-            result += hex.slice(byte >> 4, (byte >> 4) + 1);
-            result += hex.slice(byte & 15, (byte & 15) + 1);
-        }
-        return result;
-    }
-
-    function CargoClasses(id) {
-        /* Project mask v1: ordered named ScriptCargo constants, no assumed native bit values. */
-        local classes = [GSCargo.CC_PASSENGERS, GSCargo.CC_MAIL, GSCargo.CC_EXPRESS, GSCargo.CC_ARMOURED, GSCargo.CC_BULK, GSCargo.CC_PIECE_GOODS, GSCargo.CC_LIQUID, GSCargo.CC_REFRIGERATED, GSCargo.CC_HAZARDOUS, GSCargo.CC_COVERED, GSCargo.CC_OVERSIZED, GSCargo.CC_POWDERIZED, GSCargo.CC_NON_POURABLE, GSCargo.CC_POTABLE, GSCargo.CC_NON_POTABLE];
-        local mask = 0;
-        for (local i = 0; i < classes.len(); i++) {
-            if (GSCargo.HasCargoClass(id, classes[i])) mask = mask | (1 << i);
-        }
-        return mask;
-    }
-
-    function CargoPage(request) {
-        if (request.len() != 5 || !("after_id" in request) || !("limit" in request)) return false;
-        if (request.after_id != null && (typeof request.after_id != "integer" || request.after_id < 0 || request.after_id > 63)) return false;
-        /* Worst-case record 76, empty envelope 186: four=493; five=570 (>512). */
-        if (typeof request.limit != "integer" || request.limit < 1 || request.limit > 4) return false;
-        GSLog.Info("BRIDGE_REQUEST_RECEIVED request_id=" + request.request_id + " type=cargo_page protocol=1");
-        local source = GSCargoList();
-        source.Sort(GSList.SORT_BY_ITEM, GSList.SORT_ASCENDING);
-        local records = [];
-        local more = false;
-        local previous = null;
-        for (local id = source.Begin(); !source.IsEnd(); id = source.Next()) {
-            if (typeof id != "integer" || id < 0 || id > 63 || !GSCargo.IsValidCargo(id) || (previous != null && id <= previous)) return false;
-            previous = id;
-            if (request.after_id != null && id <= request.after_id) continue;
-            if (records.len() == request.limit) { more = true; break; }
-            local label = this.CargoLabelHex(GSCargo.GetCargoLabel(id));
-            local freight = GSCargo.IsFreight(id);
-            local effect = GSCargo.GetTownEffect(id);
-            if (typeof freight != "bool" || typeof effect != "integer" || effect < 0 || effect > 5) return false;
-            records.append({ id = id, label = label, freight = freight, town_effect = effect, classes = this.CargoClasses(id) });
-        }
-        local next = more ? records[records.len() - 1].id : null;
-        GSLog.Info("CARGO_PAGE_READ request_id=" + request.request_id + " after_id=" + this.EvidenceOptionalInt(request.after_id) +
-            " limit=" + this.EvidenceOptionalInt(request.limit) + " returned_count=" + this.EvidenceOptionalInt(records.len()) +
-            " first_id=" + this.EvidenceOptionalInt(records.len() ? records[0].id : null) +
-            " last_id=" + this.EvidenceOptionalInt(records.len() ? records[records.len() - 1].id : null) +
-            " next_after_id=" + this.EvidenceOptionalInt(next) + " has_more=" + this.EvidenceBool(more));
-        local response = { protocol = 1, type = "cargo_page_result", request_id = request.request_id, status = "ok",
-            cargoes = records, next_after_id = next, has_more = more };
-        if (!GSAdmin.Send(response)) return false;
-        GSLog.Info("BRIDGE_RESPONSE_SENT request_id=" + request.request_id + " type=cargo_page_result status=ok protocol=1");
         return true;
     }
 

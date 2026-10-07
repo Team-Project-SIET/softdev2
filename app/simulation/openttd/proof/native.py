@@ -20,6 +20,12 @@ from app.simulation.openttd.secure_admin import AuthDisconnected, AuthState, Sec
 
 from .attempt import Gate, Gates
 from .cargo_contract import CARGO_MODEL, CARGO_REQUEST
+from .cargo_page_contract import PAGE_MODEL, PAGE_REQUEST, PAGE_REVISION
+from .catalog_contract import (
+    CATALOG_FIRST_REQUEST,
+    CATALOG_MODEL,
+    CATALOG_REVISION,
+)
 from .causality import PROOF_MODEL, NetworkProofEvidence
 from .enrichment_contract import ENRICHMENT_FIRST_REQUEST, ENRICHMENT_MODEL, ENRICHMENT_REVISION
 from .gamescript_evidence import GameScriptProofEvidence, parse_gamescript_evidence
@@ -59,6 +65,8 @@ def load_prepared(directory: Path, *, mode: str = "ack") -> PreparedProof:
     inventory = mode == "industry-inventory"
     cargo = mode == "industry-cargo"
     enrichment = mode == "industry-enrichment"
+    page = mode == "cargo-page"
+    catalog = mode == "cargo-catalog"
     if mode not in (
         "ack",
         "world-info",
@@ -66,6 +74,8 @@ def load_prepared(directory: Path, *, mode: str = "ack") -> PreparedProof:
         "industry-inventory",
         "industry-cargo",
         "industry-enrichment",
+        "cargo-page",
+        "cargo-catalog",
     ):
         raise ValueError("Unsupported proof mode")
     request = {
@@ -75,13 +85,25 @@ def load_prepared(directory: Path, *, mode: str = "ack") -> PreparedProof:
         "industry-inventory": INVENTORY_FIRST_REQUEST,
         "industry-cargo": CARGO_REQUEST,
         "industry-enrichment": ENRICHMENT_FIRST_REQUEST,
+        "cargo-page": PAGE_REQUEST,
+        "cargo-catalog": CATALOG_FIRST_REQUEST,
     }[mode]
     if (
         data.get("attempt")
-        != (INDUSTRY_ATTEMPT if industry else 1 if world or inventory or cargo or enrichment else 2)
+        != (
+            INDUSTRY_ATTEMPT
+            if industry
+            else 1
+            if world or inventory or cargo or enrichment or page or catalog
+            else 2
+        )
         or data.get("prelaunch_revision")
         != (
-            ENRICHMENT_REVISION
+            CATALOG_REVISION
+            if catalog
+            else PAGE_REVISION
+            if page
+            else ENRICHMENT_REVISION
             if enrichment
             else INDUSTRY_REVISION
             if industry
@@ -91,7 +113,11 @@ def load_prepared(directory: Path, *, mode: str = "ack") -> PreparedProof:
         )
         or data.get("proof_model")
         != (
-            ENRICHMENT_MODEL
+            CATALOG_MODEL
+            if catalog
+            else PAGE_MODEL
+            if page
+            else ENRICHMENT_MODEL
             if enrichment
             else CARGO_MODEL
             if cargo

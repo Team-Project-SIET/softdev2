@@ -15,6 +15,19 @@ from .cargo_contract import (
     cargo_contract,
     cargo_contract_digest,
 )
+from .cargo_page_contract import (
+    PAGE_ATTEMPT_DIRECTORY,
+    PAGE_BRIDGE_DIGEST,
+    PAGE_REQUEST,
+    PAGE_REVISION,
+    page_contract,
+    page_contract_digest,
+)
+from .catalog_contract import (
+    CATALOG_ATTEMPT_DIRECTORY,
+    CATALOG_FIRST_REQUEST,
+    CATALOG_REVISION,
+)
 from .enrichment_contract import (
     ENRICHMENT_ATTEMPT_DIRECTORY,
     ENRICHMENT_FIRST_REQUEST,
@@ -76,7 +89,7 @@ def validate_native_inputs(prepared: PreparedProof) -> dict:
     metadata = json.loads((directory / "PRELAUNCH.json").read_text())
     protected_count = None
     lineage_count = None
-    if metadata.get("mode") == "industry-enrichment":
+    if metadata.get("mode") in ("industry-enrichment", "cargo-page", "cargo-catalog"):
         from .harness import PROJECT
         from .historical_protection import protection_base, validate_protection
 
@@ -122,6 +135,8 @@ def validate_native_inputs(prepared: PreparedProof) -> dict:
             "industry-inventory": INVENTORY_FIRST_REQUEST,
             "industry-cargo": CARGO_REQUEST,
             "industry-enrichment": ENRICHMENT_FIRST_REQUEST,
+            "cargo-page": PAGE_REQUEST,
+            "cargo-catalog": CATALOG_FIRST_REQUEST,
         }.get(metadata.get("mode"), REQUEST).to_bytes()
         or (directory / "request.json").read_bytes() != request
         or hashlib.sha256(request).hexdigest() != metadata["request_sha256"]
@@ -236,6 +251,69 @@ def validate_native_inputs(prepared: PreparedProof) -> dict:
         EnrichmentLifecycle()
         if not callable(IndustryEnrichmentSession):
             raise ValueError("Enrichment session unavailable")
+    if metadata.get("mode") == "cargo-page":
+        from .cargo_page_attempt import CargoPageLifecycle
+        from .cargo_page_lineage import validate_lineage
+        from .cargo_page_verification import verify_cargo_page
+        from .enrichment_preparation import checkpoint_head
+
+        lineage = json.loads((directory / "attempt-lineage.json").read_text())
+        lineage_count = validate_lineage(
+            directory, lineage, PAGE_REVISION, directory.with_name(PAGE_ATTEMPT_DIRECTORY)
+        )
+        authority = json.loads((directory / "source-authority.json").read_text())
+        if (
+            json.loads((directory / "cargo-page-contract.json").read_text()) != page_contract()
+            or metadata.get("proof_config_sha256") != page_contract_digest()
+            or metadata.get("attempt_directory") != str(directory.with_name(PAGE_ATTEMPT_DIRECTORY))
+            or metadata.get("proof_kind") != "cargo-page"
+            or metadata.get("attempt_id") != lineage["attempt_id"]
+            or metadata.get("lineage_digest") != lineage["lineage_digest"]
+            or metadata.get("predecessor_attempt_ids")
+            != [r["attempt_id"] for r in lineage["supersedes_prelaunch_attempts"]]
+            or metadata.get("checkpoint_head") != checkpoint_head()
+            or bridge["sha256"] != PAGE_BRIDGE_DIGEST
+            or bridge["commands"] != page_contract()["commands"]
+            or authority.get("version") != "15.3"
+            or not any("script_cargo.cpp" in name for name in authority.get("files", {}))
+        ):
+            raise ValueError(
+                "Cargo-page frozen kind/request/destination/API/contract identity mismatch"
+            )
+        CargoPageLifecycle()
+        if not callable(verify_cargo_page):
+            raise ValueError("Cargo-page validator unavailable")
+    if metadata.get("mode") == "cargo-catalog":
+        from app.simulation.openttd.cargo_catalog import CargoCatalogSession
+
+        from .catalog_attempt import CatalogLifecycle
+        from .catalog_contract import catalog_contract, catalog_contract_digest
+        from .catalog_lineage import validate_lineage
+        from .enrichment_preparation import checkpoint_head
+
+        lineage = json.loads((directory / "attempt-lineage.json").read_text())
+        lineage_count = validate_lineage(
+            directory, lineage, CATALOG_REVISION, directory.with_name(CATALOG_ATTEMPT_DIRECTORY)
+        )
+        authority = json.loads((directory / "source-authority.json").read_text())
+        if (
+            json.loads((directory / "catalog-contract.json").read_text()) != catalog_contract()
+            or metadata.get("proof_config_sha256") != catalog_contract_digest()
+            or metadata.get("attempt_directory")
+            != str(directory.with_name(CATALOG_ATTEMPT_DIRECTORY))
+            or metadata.get("proof_kind") != "cargo-catalog"
+            or metadata.get("attempt_id") != lineage["attempt_id"]
+            or metadata.get("lineage_digest") != lineage["lineage_digest"]
+            or metadata.get("predecessor_attempt_ids")
+            != [e["attempt_id"] for e in lineage["supersedes_prelaunch_attempts"]]
+            or metadata.get("checkpoint_head") != checkpoint_head()
+            or bridge["sha256"] != PAGE_BRIDGE_DIGEST
+            or authority.get("version") != "15.3"
+        ):
+            raise ValueError("Catalog frozen kind/config/destination/API/lineage mismatch")
+        CatalogLifecycle()
+        if not callable(CargoCatalogSession):
+            raise ValueError("Catalog assembly unavailable")
     if Path(metadata["attempt_directory"]).exists():
         raise ValueError("Proof attempt already claimed")
     config = workspace.config.read_text()
@@ -282,14 +360,26 @@ def validate_native_inputs(prepared: PreparedProof) -> dict:
         "welcome_bounds_validator_wired": metadata.get("mode")
         in ("industry-page", "industry-inventory", "industry-enrichment"),
         "canonical_evidence_policy_loaded": metadata.get("mode")
-        in ("industry-page", "industry-inventory", "industry-cargo", "industry-enrichment"),
+        in (
+            "industry-page",
+            "industry-inventory",
+            "industry-cargo",
+            "industry-enrichment",
+            "cargo-page",
+            "cargo-catalog",
+        ),
         "enrichment_contract": enrichment_contract()
         if metadata.get("mode") == "industry-enrichment"
         else None,
         "inventory_phase_loaded": metadata.get("mode") == "industry-enrichment",
         "capability_phase_loaded": metadata.get("mode") == "industry-enrichment",
         "same_run_digest_wiring_loaded": metadata.get("mode") == "industry-enrichment",
-        "native_api_authority_loaded": metadata.get("mode") == "industry-cargo",
+        "native_api_authority_loaded": metadata.get("mode")
+        in ("industry-cargo", "cargo-page", "cargo-catalog"),
+        "catalog_session_loaded": metadata.get("mode") == "cargo-catalog",
+        "catalog_digest_loaded": metadata.get("mode") == "cargo-catalog",
+        "cargo_page_contract": page_contract() if metadata.get("mode") == "cargo-page" else None,
+        "proof_kind": metadata.get("proof_kind"),
         "cargo_contract": cargo_contract() if metadata.get("mode") == "industry-cargo" else None,
         "inventory_session": inventory_contract()
         if metadata.get("mode") == "industry-inventory"

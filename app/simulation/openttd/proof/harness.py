@@ -10,6 +10,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from app.simulation.openttd.admin_crypto import AuthorizedKey
+from app.simulation.openttd.cargo_page import CargoPageRequest
 from app.simulation.openttd.gamescript_bridge import BRIDGE_DIRECTORY, PACKAGE_FILES, stage_bridge
 from app.simulation.openttd.gamescript_protocol import PingRequest
 from app.simulation.openttd.industry_cargo import IndustryCargoRequest
@@ -20,6 +21,11 @@ from app.simulation.openttd.runtime.identity import RuntimeIdentity
 from app.simulation.openttd.world_info import WorldInfoRequest
 
 from .cargo_contract import CARGO_REQUEST
+from .cargo_page_contract import PAGE_ATTEMPT_DIRECTORY, PAGE_REQUEST
+from .catalog_contract import (
+    CATALOG_ATTEMPT_DIRECTORY,
+    CATALOG_FIRST_REQUEST,
+)
 from .causality import PROOF_MODEL
 from .enrichment_contract import ENRICHMENT_FIRST_REQUEST
 from .graphics import ARCHIVE_SHA256, stage_opengfx
@@ -124,7 +130,13 @@ class PreparedProof:
     key_path: Path = field(repr=False)
     public_key: str
     endpoints: tuple[int, int]
-    request: PingRequest | WorldInfoRequest | IndustryPageRequest | IndustryCargoRequest = REQUEST
+    request: (
+        PingRequest
+        | WorldInfoRequest
+        | IndustryPageRequest
+        | IndustryCargoRequest
+        | CargoPageRequest
+    ) = REQUEST
 
     def dispose(self) -> None:
         self.key_path.unlink(missing_ok=True)
@@ -162,6 +174,8 @@ def prepare_proof(
         "industry-inventory",
         "industry-cargo",
         "industry-enrichment",
+        "cargo-page",
+        "cargo-catalog",
     ):
         raise ValueError("Unsupported proof mode")
     request = {
@@ -171,6 +185,8 @@ def prepare_proof(
         "industry-inventory": INVENTORY_FIRST_REQUEST,
         "industry-cargo": CARGO_REQUEST,
         "industry-enrichment": ENRICHMENT_FIRST_REQUEST,
+        "cargo-page": PAGE_REQUEST,
+        "cargo-catalog": CATALOG_FIRST_REQUEST,
     }[mode]
     binary = binary.resolve(strict=True)
     if not binary.is_file() or not os.access(binary, os.X_OK) or sha256(binary) != binary_sha256:
@@ -264,7 +280,7 @@ def prepare_proof(
         ports = (reservation.game_port, reservation.admin_port)
         from .preflight import historical_snapshot
 
-        if mode == "industry-enrichment":
+        if mode in ("industry-enrichment", "cargo-page", "cargo-catalog"):
             from .enrichment_contract import ENRICHMENT_ATTEMPT_DIRECTORY
             from .historical_protection import capture_protection, protection_base
 
@@ -272,7 +288,13 @@ def prepare_proof(
                 protection_base(PROJECT, directory.parent),
                 directory.parent,
                 directory,
-                directory.with_name(ENRICHMENT_ATTEMPT_DIRECTORY),
+                directory.with_name(
+                    CATALOG_ATTEMPT_DIRECTORY
+                    if mode == "cargo-catalog"
+                    else PAGE_ATTEMPT_DIRECTORY
+                    if mode == "cargo-page"
+                    else ENRICHMENT_ATTEMPT_DIRECTORY
+                ),
             )
         else:
             history = historical_snapshot(directory.parent, directory)
@@ -307,7 +329,8 @@ def prepare_proof(
                 "version": 2,
                 "api": "15",
                 "commands": ["ping", "world_info", "industry_page"]
-                + (["industry_cargo"] if "GSCargoList_IndustryProducing" in main else []),
+                + (["industry_cargo"] if "GSCargoList_IndustryProducing" in main else [])
+                + (["cargo_page"] if "function CargoPage(" in main else []),
                 "sha256": bridge.sha256,
                 "files": {name: sha256(bridge.directory / name) for name in PACKAGE_FILES},
             },
@@ -561,6 +584,14 @@ def prepare_proof(
             from .enrichment_preparation import freeze_enrichment_preparation
 
             freeze_enrichment_preparation(directory, frozen, bridge.sha256)
+        if mode == "cargo-page":
+            from .cargo_page_preparation import freeze_page_preparation
+
+            freeze_page_preparation(directory, frozen, bridge.sha256)
+        if mode == "cargo-catalog":
+            from .catalog_preparation import freeze_catalog_preparation
+
+            freeze_catalog_preparation(directory, frozen, bridge.sha256)
         (directory / "artifact-manifest.sha256").write_text(manifest(directory))
         return PreparedProof(directory, spec, key_path, key.public_hex, ports, request)
     except BaseException as error:
