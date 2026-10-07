@@ -501,3 +501,7 @@ def test_payload_and_generic_defaults_stay_frozen():
         False,
     ).to_bytes()
     assert len(raw) == 307 < 512 < 1450
+
+
+# These historical modes retain their pre-production bridge safety contract.
+pytestmark = pytest.mark.usefixtures("checkpoint_structural_bridge")

@@ -359,6 +359,16 @@ async def execute_cargo_attempt(prepared, backend) -> dict:
         )
         if leaked:
             result["error"] = result["error"] or "Credential redaction failure"
+        try:
+            from .ownership import finalize_cleanup
+
+            finalize_cleanup(prepared, frozen, cleanup)
+            integrity = True
+            result["source_integrity"] = True
+        except Exception as error:
+            integrity = False
+            result["source_integrity"] = False
+            result["error"] = result["error"] or str(error)
         if result["error"] is None and (
             result["launches"],
             result["connections"],
@@ -389,8 +399,6 @@ async def execute_cargo_attempt(prepared, backend) -> dict:
             )
         )
         capture(lambda: (attempt / "artifact-manifest.sha256").write_text(manifest(attempt)))
-        if cleanup.get("reaped") and not cleanup.get("remaining_processes"):
-            capture(prepared.dispose)
         # A final artifact/disposal error must never leave a success classification.
         if result["error"] is not None and result["status"] == backend.kind + "_SUCCESS":
             result["status"] = backend.kind + "_FAILED"

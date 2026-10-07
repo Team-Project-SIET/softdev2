@@ -1,0 +1,57 @@
+{
+  "matching_responses": 1,
+  "ordered_sequence": [
+    "INDUSTRY_PRODUCTION_REQUEST_SENT",
+    "INDUSTRY_PRODUCTION_RESPONSE_RECEIVED",
+    "TRANSPORT_RECEIPT_CREATED",
+    "PRODUCTION_RECORD_VALIDATED"
+  ],
+  "packets": [
+    {
+      "direction": "outbound",
+      "packet_type": 2,
+      "record": 1,
+      "sha256": "a19f3b6f885f84b32c95065cbeecbf9ea733a1fd142430c8bd3f8064bfacd970"
+    },
+    {
+      "direction": "outbound",
+      "packet_type": 7,
+      "record": 2,
+      "sha256": "7ecb7d841dd31a9ebf066035b88aa0b2e45c1bf12105aa120e25001133253d51"
+    },
+    {
+      "direction": "inbound",
+      "packet_type": 126,
+      "record": 3,
+      "sha256": "663f54b27fa1634790b335830071beca73a2a4fe42a0fdec389929a9980d6a70"
+    },
+    {
+      "direction": "outbound",
+      "packet_type": 6,
+      "record": 4,
+      "sha256": "cfcf8ff6d13ce05fc5988f4e9dfc330d19cd5297d2f66437ea918b8b71080573"
+    },
+    {
+      "direction": "inbound",
+      "packet_type": 124,
+      "record": 5,
+      "sha256": "3fa57c530a0b2622000c2b89b1b4276208cd9eaf2b4f59140ef705e040846a6b"
+    },
+    {
+      "direction": "outbound",
+      "packet_type": 7,
+      "record": 6,
+      "sha256": "3ae87122bdd438bd8ee6d97ee85d8e6e66767f70893b9e73df4240e304a61d5a"
+    },
+    {
+      "direction": "inbound",
+      "packet_type": 126,
+      "record": 7,
+      "sha256": "b53c1aae51d65c445e1a4511b1e8dda55280158d27ffd62b46fafd0d77ddda2a"
+    }
+  ],
+  "request_sha256": "2ef8ec7084050cb0d40f108ca2700c091d52a6b1d8eec2dfe4b4d47d4428c670",
+  "requests_sent": 1,
+  "response_sha256": "5d96681fa83e0082ab17316d5751edaf00b3e21f2b7cd71d94e7b8ca50c18e51",
+  "retries": 0
+}

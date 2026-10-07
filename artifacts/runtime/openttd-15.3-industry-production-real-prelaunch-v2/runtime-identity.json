@@ -1,0 +1,7 @@
+{
+  "backend": "external",
+  "executable": "/home/fed/Downloads/openttd-15.3-linux-generic-amd64/openttd",
+  "sha256": "276d5b698a6b706154f3af588f6f885b3aebe518f4ecc8f869abf71383b1904c",
+  "version": "15.3",
+  "version_authority": "Prior inspection + pinned hash; no inspection/launch here"
+}

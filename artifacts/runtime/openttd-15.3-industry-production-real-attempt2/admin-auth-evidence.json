@@ -1,0 +1,7 @@
+{
+  "encrypted": true,
+  "method": "X25519_AuthorizedKey",
+  "public_key": "4e9efea4f79959cb732dbbfd198d80a2e330d8f8adc0af9b398963bfce539e7b",
+  "public_key_sha256": "7393046215b8e25e55a5005ccfd300b098faa138db729915e450fe9e9680593a",
+  "state": "ACTIVE"
+}

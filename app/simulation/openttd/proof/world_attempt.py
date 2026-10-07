@@ -132,6 +132,15 @@ def record_prelaunch_failure(directory: Path, error: Exception) -> None:
     metadata_path = directory / "PRELAUNCH.json"
     if metadata_path.exists():
         metadata = json.loads(metadata_path.read_text())
+        if metadata.get("mode") == "industry-production":
+            from .production_lineage import retain_attempt_identity as retain_production_identity
+
+            record = json.loads((failure / "PRELAUNCH-FAILURE.json").read_text())
+            record["preparation"] = str(directory)
+            (failure / "PRELAUNCH-FAILURE.json").write_text(
+                json.dumps(record, sort_keys=True, indent=2) + "\n"
+            )
+            retain_production_identity(failure, metadata, record)
         if metadata.get("mode") == "structural-world":
             from .structural_lineage import retain_attempt_identity as retain_structural_identity
 
@@ -428,6 +437,16 @@ async def execute_world_attempt(prepared: PreparedProof, backend: WorldBackend) 
                 if p.is_file()
             ):
                 result["error"] = result["error"] or "Credential redaction failure"
+        try:
+            from .ownership import finalize_cleanup
+
+            finalize_cleanup(prepared, frozen, cleanup)
+            integrity = True
+            result["source_integrity"] = True
+        except Exception as error:
+            integrity = False
+            result["source_integrity"] = False
+            result["error"] = result["error"] or str(error)
         if result["error"] is None and (
             result["launches"],
             result["connections"],
@@ -439,8 +458,6 @@ async def execute_world_attempt(prepared: PreparedProof, backend: WorldBackend) 
             lifecycle.fail()
         result["states"] = [state.name for state in lifecycle.states]
         result["source_integrity"] = integrity
-        if cleanup.get("reaped") and not cleanup.get("remaining_processes"):
-            prepared.dispose()
         if attempt.exists():
             semantic_pass = (
                 result["verification"] is not None and result["verification"]["verified"]

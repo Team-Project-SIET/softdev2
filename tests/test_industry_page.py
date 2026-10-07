@@ -444,7 +444,8 @@ def test_exact_15_3_source_provenance_and_read_only_api_boundary():
     generator = Path("tests/reference/industry_page_bindings_15_3/SquirrelExport.cmake").read_text()
     assert 'string(REGEX REPLACE "^Script" "${APIUC}" API_CLS' in generator
     source = (BRIDGE_DIRECTORY / "main.nut").read_text()
-    assert set(re.findall(r"GSIndustry\.([A-Za-z]+)\(", source)) == {
+    handler = source.split("function IndustryPage(", 1)[1].split("function ", 1)[0]
+    assert set(re.findall(r"GSIndustry\.([A-Za-z]+)\(", handler)) == {
         "IsValidIndustry",
         "GetLocation",
         "GetIndustryType",

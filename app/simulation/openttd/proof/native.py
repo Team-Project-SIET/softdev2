@@ -43,6 +43,11 @@ from .harness import (
 from .industry_contract import INDUSTRY_ATTEMPT, INDUSTRY_MODEL, INDUSTRY_REQUEST, INDUSTRY_REVISION
 from .inventory_contract import INVENTORY_FIRST_REQUEST, INVENTORY_MODEL
 from .network_evidence import RecordedProofSession
+from .production_contract import (
+    PRODUCTION_MODEL,
+    PRODUCTION_REQUEST,
+    PRODUCTION_REVISION,
+)
 from .structural_contract import (
     STRUCTURAL_MODEL,
     STRUCTURAL_REVISION,
@@ -73,6 +78,7 @@ def load_prepared(directory: Path, *, mode: str = "ack") -> PreparedProof:
     page = mode == "cargo-page"
     catalog = mode == "cargo-catalog"
     structural = mode == "structural-world"
+    production = mode == "industry-production"
     if mode not in (
         "ack",
         "world-info",
@@ -83,6 +89,7 @@ def load_prepared(directory: Path, *, mode: str = "ack") -> PreparedProof:
         "cargo-page",
         "cargo-catalog",
         "structural-world",
+        "industry-production",
     ):
         raise ValueError("Unsupported proof mode")
     request = {
@@ -95,19 +102,31 @@ def load_prepared(directory: Path, *, mode: str = "ack") -> PreparedProof:
         "cargo-page": PAGE_REQUEST,
         "cargo-catalog": CATALOG_FIRST_REQUEST,
         "structural-world": structural_first_request(),
+        "industry-production": PRODUCTION_REQUEST,
     }[mode]
     if (
         data.get("attempt")
         != (
-            INDUSTRY_ATTEMPT
+            json.loads((directory / "attempt-lineage.json").read_text())["attempt_number"]
+            if production
+            else INDUSTRY_ATTEMPT
             if industry
             else 1
-            if world or inventory or cargo or enrichment or page or catalog or structural
+            if world
+            or inventory
+            or cargo
+            or enrichment
+            or page
+            or catalog
+            or structural
+            or production
             else 2
         )
         or data.get("prelaunch_revision")
         != (
-            STRUCTURAL_REVISION
+            PRODUCTION_REVISION
+            if production
+            else STRUCTURAL_REVISION
             if structural
             else CATALOG_REVISION
             if catalog
@@ -123,7 +142,9 @@ def load_prepared(directory: Path, *, mode: str = "ack") -> PreparedProof:
         )
         or data.get("proof_model")
         != (
-            STRUCTURAL_MODEL
+            PRODUCTION_MODEL
+            if production
+            else STRUCTURAL_MODEL
             if structural
             else CATALOG_MODEL
             if catalog

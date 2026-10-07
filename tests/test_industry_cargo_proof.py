@@ -498,6 +498,8 @@ def test_mutation_and_dynamic_api_audit():
     from app.simulation.openttd.gamescript_bridge import BRIDGE_DIRECTORY
 
     source = (BRIDGE_DIRECTORY / "main.nut").read_text()
+    # Capability remains structural even when a separate dynamic handler is present.
+    handler = source.split("function IndustryCargo(", 1)[1].split("function ", 1)[0]
     for token in (
         "GetLastMonthProduction",
         "GetLastMonthTransported",
@@ -512,7 +514,7 @@ def test_mutation_and_dynamic_api_audit():
         "Terraform",
         "RCON",
     ):
-        assert token not in source
+        assert token not in handler
     for token in (
         "GSCargoList_IndustryProducing",
         "GSCargoList_IndustryAccepting",

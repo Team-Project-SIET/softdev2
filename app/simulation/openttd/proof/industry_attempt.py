@@ -341,6 +341,16 @@ async def execute_industry_attempt(prepared, backend) -> dict:
             if path.is_file()
         ):
             result["error"] = result["error"] or "Credential redaction failure"
+        try:
+            from .ownership import finalize_cleanup
+
+            finalize_cleanup(prepared, frozen, cleanup)
+            integrity = True
+            result["source_integrity"] = True
+        except Exception as error:
+            integrity = False
+            result["source_integrity"] = False
+            result["error"] = result["error"] or str(error)
         if result["error"] is None and (
             result["launches"],
             result["connections"],
@@ -363,8 +373,6 @@ async def execute_industry_attempt(prepared, backend) -> dict:
             f"error: {result['error']}.\n"
         )
         (attempt / "artifact-manifest.sha256").write_text(manifest(attempt))
-        if cleanup.get("reaped") and not cleanup.get("remaining_processes"):
-            prepared.dispose()
     return result
 
 

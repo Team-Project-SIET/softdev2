@@ -1,0 +1,22 @@
+{
+  "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v3/runtime-materializations.json": "662715dca2bfc72488a1a2a0922ae6ebbc209560353188a186306a6e84a7e8cd",
+  "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v3/production-target.json": "6a99dab169dfa8c0eae2096765050fe106a28385bfbcfda9772808cdcc9848ef",
+  "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v3/production-contract.json": "477c0072fe50a5d184bd14585c265d68d501504bedd8cff708aef641c2e954e6",
+  "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v3/source-authority.json": "7ef7840de4eb3fecf49cb9cf544771749896df8241d5925cd25cfbdfd4bbb5dd",
+  "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v3/historical-integrity.json": "32843aff9dc29946672dbff1bc548e9c3a6da952fd9bfdb9a6e6a59e9cbb7b57",
+  "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v3/path-ownership.json": "66e9adb58069ab0c2678b23259fd25ce3e7dc6a2bfb0943555311a65b7bb2875",
+  "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v3/sanitized-config.json": "48635fbd037882aeca994d2cf74415af2ca707154f6cd317a665a656c3e208ab",
+  "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v3/graphics-identity.json": "5bb095806bb7394b33846d72174cfaa6e07c51712451f6963c831986bad8042d",
+  "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v3/frame-accounting-identity.json": "006844742dd40b90cdc964e5fff89b34ac3905ff85e671b00dd018f3dee9acf8",
+  "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v3/artifact-manifest.sha256": "69aba998486a66b6bb6b52b69f71301032e8ec0ce98381fe3c794104551d2ffe",
+  "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v3/source-freeze.json": "ebe880fd404b78f433b3d348bfac503223ec92847d6d936be9ceece9b7522522",
+  "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v3/attempt-lineage.json": "863673d1a6755a5b0731f49648afd30b778dfd809b75e69b958399edef7073ad",
+  "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v3/bridge-package-identity.json": "4bbf0090fd55b50c012685f4c0f66b24809fc217047a4b40fc0cc746c69e4c10",
+  "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v3/runtime-identity.json": "f52aaac83eeb239ed77e609d5a29b4e934d692001f62a8bc40b882ed9123233b",
+  "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v3/PRELAUNCH.json": "a1cf634bbeb5cec87efdfe7c8d3801e5e80930bd1385f3af59cabc15c0db4819",
+  "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v3/request.json": "2ef8ec7084050cb0d40f108ca2700c091d52a6b1d8eec2dfe4b4d47d4428c670",
+  "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v3/materialization-inputs/openttd.cfg": "c5090c9d6169abc09ad8b9c4248b8e0d293bfccd654fa03e32c908d8ad88bcd9",
+  "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v3/materialization-inputs/.runtime-owned": "5ab26155b77749806479308e150364995838ab2bcfabcb57108b346a1e6f5536",
+  "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v3/materialization-inputs/private.cfg": "9f72f87446ee3e6f65f6895689cc4320aabd6a1529fd3ad607a583ccf70e5fb5",
+  "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v3/materialization-inputs/secrets.cfg": "1c953edc9d1f72cd7897b03e5525e0bfaa3e3e7980e51eb0191c15399d0fdf3d"
+}

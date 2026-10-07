@@ -1,0 +1,687 @@
+FFFF...................................EEEEEEEEEE....................... [ 52%]
+..................................................................       [100%]
+==================================== ERRORS ====================================
+_________ ERROR at setup of test_frozen_credential_target_destination __________
+
+tmp_path = PosixPath('/tmp/pytest-of-fed/pytest-19/test_frozen_credential_target_0')
+
+    @pytest.fixture
+    def prepared(tmp_path):
+        binary = tmp_path / "binary"
+        binary.write_bytes(b"controlled binary")
+        binary.chmod(0o700)
+        graphics = tmp_path / "graphics.zip"
+        digest = graphics_archive(graphics)
+>       value = prepare_proof(
+            tmp_path / "prelaunch",
+            mode="industry-production",
+            binary=binary,
+            binary_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
+            graphics=graphics,
+            graphics_sha256=digest,
+        )
+
+tests/test_industry_production_proof.py:91: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+app/simulation/openttd/proof/harness.py:232: in prepare_proof
+    check_production_preparation(directory)
+app/simulation/openttd/proof/production_preparation.py:159: in check_production_preparation
+    validate_target(select_historical_target())
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+app/simulation/openttd/proof/production_preparation.py:66: in select_historical_target
+    n: sha256(directory / n)
+       ^^^^^^^^^^^^^^^^^^^^^
+app/simulation/openttd/proof/harness.py:60: in sha256
+    with path.open("rb") as stream:
+         ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-structural-world-real-attempt1/production-target.json')
+mode = 'rb', buffering = -1, encoding = None, errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-structural-world-real-attempt1/production-target.json'
+
+../../.local/share/mise/installs/python/3.14.6/lib/python3.14/pathlib/__init__.py:771: FileNotFoundError
+_____________ ERROR at setup of test_destination_override_rejected _____________
+
+tmp_path = PosixPath('/tmp/pytest-of-fed/pytest-19/test_destination_override_reje0')
+
+    @pytest.fixture
+    def prepared(tmp_path):
+        binary = tmp_path / "binary"
+        binary.write_bytes(b"controlled binary")
+        binary.chmod(0o700)
+        graphics = tmp_path / "graphics.zip"
+        digest = graphics_archive(graphics)
+>       value = prepare_proof(
+            tmp_path / "prelaunch",
+            mode="industry-production",
+            binary=binary,
+            binary_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
+            graphics=graphics,
+            graphics_sha256=digest,
+        )
+
+tests/test_industry_production_proof.py:91: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+app/simulation/openttd/proof/harness.py:232: in prepare_proof
+    check_production_preparation(directory)
+app/simulation/openttd/proof/production_preparation.py:159: in check_production_preparation
+    validate_target(select_historical_target())
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+app/simulation/openttd/proof/production_preparation.py:66: in select_historical_target
+    n: sha256(directory / n)
+       ^^^^^^^^^^^^^^^^^^^^^
+app/simulation/openttd/proof/harness.py:60: in sha256
+    with path.open("rb") as stream:
+         ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-structural-world-real-attempt1/production-target.json')
+mode = 'rb', buffering = -1, encoding = None, errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-structural-world-real-attempt1/production-target.json'
+
+../../.local/share/mise/installs/python/3.14.6/lib/python3.14/pathlib/__init__.py:771: FileNotFoundError
+________ ERROR at setup of test_public_guarded_preflight_zero_activity _________
+
+tmp_path = PosixPath('/tmp/pytest-of-fed/pytest-19/test_public_guarded_preflight_0')
+
+    @pytest.fixture
+    def prepared(tmp_path):
+        binary = tmp_path / "binary"
+        binary.write_bytes(b"controlled binary")
+        binary.chmod(0o700)
+        graphics = tmp_path / "graphics.zip"
+        digest = graphics_archive(graphics)
+>       value = prepare_proof(
+            tmp_path / "prelaunch",
+            mode="industry-production",
+            binary=binary,
+            binary_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
+            graphics=graphics,
+            graphics_sha256=digest,
+        )
+
+tests/test_industry_production_proof.py:91: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+app/simulation/openttd/proof/harness.py:232: in prepare_proof
+    check_production_preparation(directory)
+app/simulation/openttd/proof/production_preparation.py:159: in check_production_preparation
+    validate_target(select_historical_target())
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+app/simulation/openttd/proof/production_preparation.py:66: in select_historical_target
+    n: sha256(directory / n)
+       ^^^^^^^^^^^^^^^^^^^^^
+app/simulation/openttd/proof/harness.py:60: in sha256
+    with path.open("rb") as stream:
+         ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-structural-world-real-attempt1/production-target.json')
+mode = 'rb', buffering = -1, encoding = None, errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-structural-world-real-attempt1/production-target.json'
+
+../../.local/share/mise/installs/python/3.14.6/lib/python3.14/pathlib/__init__.py:771: FileNotFoundError
+_ ERROR at setup of test_controlled_full_lifecycle_retains_failure_without_retry[None] _
+
+tmp_path = PosixPath('/tmp/pytest-of-fed/pytest-19/test_controlled_full_lifecycle0')
+
+    @pytest.fixture
+    def prepared(tmp_path):
+        binary = tmp_path / "binary"
+        binary.write_bytes(b"controlled binary")
+        binary.chmod(0o700)
+        graphics = tmp_path / "graphics.zip"
+        digest = graphics_archive(graphics)
+>       value = prepare_proof(
+            tmp_path / "prelaunch",
+            mode="industry-production",
+            binary=binary,
+            binary_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
+            graphics=graphics,
+            graphics_sha256=digest,
+        )
+
+tests/test_industry_production_proof.py:91: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+app/simulation/openttd/proof/harness.py:232: in prepare_proof
+    check_production_preparation(directory)
+app/simulation/openttd/proof/production_preparation.py:159: in check_production_preparation
+    validate_target(select_historical_target())
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+app/simulation/openttd/proof/production_preparation.py:66: in select_historical_target
+    n: sha256(directory / n)
+       ^^^^^^^^^^^^^^^^^^^^^
+app/simulation/openttd/proof/harness.py:60: in sha256
+    with path.open("rb") as stream:
+         ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-structural-world-real-attempt1/production-target.json')
+mode = 'rb', buffering = -1, encoding = None, errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-structural-world-real-attempt1/production-target.json'
+
+../../.local/share/mise/installs/python/3.14.6/lib/python3.14/pathlib/__init__.py:771: FileNotFoundError
+_ ERROR at setup of test_controlled_full_lifecycle_retains_failure_without_retry[receipt] _
+
+tmp_path = PosixPath('/tmp/pytest-of-fed/pytest-19/test_controlled_full_lifecycle1')
+
+    @pytest.fixture
+    def prepared(tmp_path):
+        binary = tmp_path / "binary"
+        binary.write_bytes(b"controlled binary")
+        binary.chmod(0o700)
+        graphics = tmp_path / "graphics.zip"
+        digest = graphics_archive(graphics)
+>       value = prepare_proof(
+            tmp_path / "prelaunch",
+            mode="industry-production",
+            binary=binary,
+            binary_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
+            graphics=graphics,
+            graphics_sha256=digest,
+        )
+
+tests/test_industry_production_proof.py:91: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+app/simulation/openttd/proof/harness.py:232: in prepare_proof
+    check_production_preparation(directory)
+app/simulation/openttd/proof/production_preparation.py:159: in check_production_preparation
+    validate_target(select_historical_target())
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+app/simulation/openttd/proof/production_preparation.py:66: in select_historical_target
+    n: sha256(directory / n)
+       ^^^^^^^^^^^^^^^^^^^^^
+app/simulation/openttd/proof/harness.py:60: in sha256
+    with path.open("rb") as stream:
+         ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-structural-world-real-attempt1/production-target.json')
+mode = 'rb', buffering = -1, encoding = None, errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-structural-world-real-attempt1/production-target.json'
+
+../../.local/share/mise/installs/python/3.14.6/lib/python3.14/pathlib/__init__.py:771: FileNotFoundError
+_ ERROR at setup of test_controlled_full_lifecycle_retains_failure_without_retry[read] _
+
+tmp_path = PosixPath('/tmp/pytest-of-fed/pytest-19/test_controlled_full_lifecycle2')
+
+    @pytest.fixture
+    def prepared(tmp_path):
+        binary = tmp_path / "binary"
+        binary.write_bytes(b"controlled binary")
+        binary.chmod(0o700)
+        graphics = tmp_path / "graphics.zip"
+        digest = graphics_archive(graphics)
+>       value = prepare_proof(
+            tmp_path / "prelaunch",
+            mode="industry-production",
+            binary=binary,
+            binary_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
+            graphics=graphics,
+            graphics_sha256=digest,
+        )
+
+tests/test_industry_production_proof.py:91: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+app/simulation/openttd/proof/harness.py:232: in prepare_proof
+    check_production_preparation(directory)
+app/simulation/openttd/proof/production_preparation.py:159: in check_production_preparation
+    validate_target(select_historical_target())
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+app/simulation/openttd/proof/production_preparation.py:66: in select_historical_target
+    n: sha256(directory / n)
+       ^^^^^^^^^^^^^^^^^^^^^
+app/simulation/openttd/proof/harness.py:60: in sha256
+    with path.open("rb") as stream:
+         ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-structural-world-real-attempt1/production-target.json')
+mode = 'rb', buffering = -1, encoding = None, errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-structural-world-real-attempt1/production-target.json'
+
+../../.local/share/mise/installs/python/3.14.6/lib/python3.14/pathlib/__init__.py:771: FileNotFoundError
+_ ERROR at setup of test_controlled_full_lifecycle_retains_failure_without_retry[sent] _
+
+tmp_path = PosixPath('/tmp/pytest-of-fed/pytest-19/test_controlled_full_lifecycle3')
+
+    @pytest.fixture
+    def prepared(tmp_path):
+        binary = tmp_path / "binary"
+        binary.write_bytes(b"controlled binary")
+        binary.chmod(0o700)
+        graphics = tmp_path / "graphics.zip"
+        digest = graphics_archive(graphics)
+>       value = prepare_proof(
+            tmp_path / "prelaunch",
+            mode="industry-production",
+            binary=binary,
+            binary_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
+            graphics=graphics,
+            graphics_sha256=digest,
+        )
+
+tests/test_industry_production_proof.py:91: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+app/simulation/openttd/proof/harness.py:232: in prepare_proof
+    check_production_preparation(directory)
+app/simulation/openttd/proof/production_preparation.py:159: in check_production_preparation
+    validate_target(select_historical_target())
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+app/simulation/openttd/proof/production_preparation.py:66: in select_historical_target
+    n: sha256(directory / n)
+       ^^^^^^^^^^^^^^^^^^^^^
+app/simulation/openttd/proof/harness.py:60: in sha256
+    with path.open("rb") as stream:
+         ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-structural-world-real-attempt1/production-target.json')
+mode = 'rb', buffering = -1, encoding = None, errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-structural-world-real-attempt1/production-target.json'
+
+../../.local/share/mise/installs/python/3.14.6/lib/python3.14/pathlib/__init__.py:771: FileNotFoundError
+_ ERROR at setup of test_controlled_full_lifecycle_retains_failure_without_retry[alive] _
+
+tmp_path = PosixPath('/tmp/pytest-of-fed/pytest-19/test_controlled_full_lifecycle4')
+
+    @pytest.fixture
+    def prepared(tmp_path):
+        binary = tmp_path / "binary"
+        binary.write_bytes(b"controlled binary")
+        binary.chmod(0o700)
+        graphics = tmp_path / "graphics.zip"
+        digest = graphics_archive(graphics)
+>       value = prepare_proof(
+            tmp_path / "prelaunch",
+            mode="industry-production",
+            binary=binary,
+            binary_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
+            graphics=graphics,
+            graphics_sha256=digest,
+        )
+
+tests/test_industry_production_proof.py:91: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+app/simulation/openttd/proof/harness.py:232: in prepare_proof
+    check_production_preparation(directory)
+app/simulation/openttd/proof/production_preparation.py:159: in check_production_preparation
+    validate_target(select_historical_target())
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+app/simulation/openttd/proof/production_preparation.py:66: in select_historical_target
+    n: sha256(directory / n)
+       ^^^^^^^^^^^^^^^^^^^^^
+app/simulation/openttd/proof/harness.py:60: in sha256
+    with path.open("rb") as stream:
+         ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-structural-world-real-attempt1/production-target.json')
+mode = 'rb', buffering = -1, encoding = None, errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-structural-world-real-attempt1/production-target.json'
+
+../../.local/share/mise/installs/python/3.14.6/lib/python3.14/pathlib/__init__.py:771: FileNotFoundError
+_ ERROR at setup of test_controlled_full_lifecycle_retains_failure_without_retry[semantic] _
+
+tmp_path = PosixPath('/tmp/pytest-of-fed/pytest-19/test_controlled_full_lifecycle5')
+
+    @pytest.fixture
+    def prepared(tmp_path):
+        binary = tmp_path / "binary"
+        binary.write_bytes(b"controlled binary")
+        binary.chmod(0o700)
+        graphics = tmp_path / "graphics.zip"
+        digest = graphics_archive(graphics)
+>       value = prepare_proof(
+            tmp_path / "prelaunch",
+            mode="industry-production",
+            binary=binary,
+            binary_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
+            graphics=graphics,
+            graphics_sha256=digest,
+        )
+
+tests/test_industry_production_proof.py:91: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+app/simulation/openttd/proof/harness.py:232: in prepare_proof
+    check_production_preparation(directory)
+app/simulation/openttd/proof/production_preparation.py:159: in check_production_preparation
+    validate_target(select_historical_target())
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+app/simulation/openttd/proof/production_preparation.py:66: in select_historical_target
+    n: sha256(directory / n)
+       ^^^^^^^^^^^^^^^^^^^^^
+app/simulation/openttd/proof/harness.py:60: in sha256
+    with path.open("rb") as stream:
+         ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-structural-world-real-attempt1/production-target.json')
+mode = 'rb', buffering = -1, encoding = None, errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-structural-world-real-attempt1/production-target.json'
+
+../../.local/share/mise/installs/python/3.14.6/lib/python3.14/pathlib/__init__.py:771: FileNotFoundError
+_ ERROR at setup of test_controlled_full_lifecycle_retains_failure_without_retry[cleanup] _
+
+tmp_path = PosixPath('/tmp/pytest-of-fed/pytest-19/test_controlled_full_lifecycle6')
+
+    @pytest.fixture
+    def prepared(tmp_path):
+        binary = tmp_path / "binary"
+        binary.write_bytes(b"controlled binary")
+        binary.chmod(0o700)
+        graphics = tmp_path / "graphics.zip"
+        digest = graphics_archive(graphics)
+>       value = prepare_proof(
+            tmp_path / "prelaunch",
+            mode="industry-production",
+            binary=binary,
+            binary_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
+            graphics=graphics,
+            graphics_sha256=digest,
+        )
+
+tests/test_industry_production_proof.py:91: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+app/simulation/openttd/proof/harness.py:232: in prepare_proof
+    check_production_preparation(directory)
+app/simulation/openttd/proof/production_preparation.py:159: in check_production_preparation
+    validate_target(select_historical_target())
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^
+app/simulation/openttd/proof/production_preparation.py:66: in select_historical_target
+    n: sha256(directory / n)
+       ^^^^^^^^^^^^^^^^^^^^^
+app/simulation/openttd/proof/harness.py:60: in sha256
+    with path.open("rb") as stream:
+         ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-structural-world-real-attempt1/production-target.json')
+mode = 'rb', buffering = -1, encoding = None, errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-structural-world-real-attempt1/production-target.json'
+
+../../.local/share/mise/installs/python/3.14.6/lib/python3.14/pathlib/__init__.py:771: FileNotFoundError
+=================================== FAILURES ===================================
+____________________ test_historical_first_produced_target _____________________
+
+    def test_historical_first_produced_target():
+>       target = select_historical_target()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_industry_production_proof.py:104: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+app/simulation/openttd/proof/production_preparation.py:66: in select_historical_target
+    n: sha256(directory / n)
+       ^^^^^^^^^^^^^^^^^^^^^
+app/simulation/openttd/proof/harness.py:60: in sha256
+    with path.open("rb") as stream:
+         ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-structural-world-real-attempt1/production-target.json')
+mode = 'rb', buffering = -1, encoding = None, errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-structural-world-real-attempt1/production-target.json'
+
+../../.local/share/mise/installs/python/3.14.6/lib/python3.14/pathlib/__init__.py:771: FileNotFoundError
+_______ test_accepted_only_arbitrary_or_nonfirst_target_rejected[pair0] ________
+
+pair = (1, 1)
+
+    @pytest.mark.parametrize("pair", [(1, 1), (0, 0), (9, 8)])
+    def test_accepted_only_arbitrary_or_nonfirst_target_rejected(pair):
+>       target = select_historical_target()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_industry_production_proof.py:117: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+app/simulation/openttd/proof/production_preparation.py:66: in select_historical_target
+    n: sha256(directory / n)
+       ^^^^^^^^^^^^^^^^^^^^^
+app/simulation/openttd/proof/harness.py:60: in sha256
+    with path.open("rb") as stream:
+         ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-structural-world-real-attempt1/production-target.json')
+mode = 'rb', buffering = -1, encoding = None, errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-structural-world-real-attempt1/production-target.json'
+
+../../.local/share/mise/installs/python/3.14.6/lib/python3.14/pathlib/__init__.py:771: FileNotFoundError
+_______ test_accepted_only_arbitrary_or_nonfirst_target_rejected[pair1] ________
+
+pair = (0, 0)
+
+    @pytest.mark.parametrize("pair", [(1, 1), (0, 0), (9, 8)])
+    def test_accepted_only_arbitrary_or_nonfirst_target_rejected(pair):
+>       target = select_historical_target()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_industry_production_proof.py:117: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+app/simulation/openttd/proof/production_preparation.py:66: in select_historical_target
+    n: sha256(directory / n)
+       ^^^^^^^^^^^^^^^^^^^^^
+app/simulation/openttd/proof/harness.py:60: in sha256
+    with path.open("rb") as stream:
+         ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-structural-world-real-attempt1/production-target.json')
+mode = 'rb', buffering = -1, encoding = None, errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-structural-world-real-attempt1/production-target.json'
+
+../../.local/share/mise/installs/python/3.14.6/lib/python3.14/pathlib/__init__.py:771: FileNotFoundError
+_______ test_accepted_only_arbitrary_or_nonfirst_target_rejected[pair2] ________
+
+pair = (9, 8)
+
+    @pytest.mark.parametrize("pair", [(1, 1), (0, 0), (9, 8)])
+    def test_accepted_only_arbitrary_or_nonfirst_target_rejected(pair):
+>       target = select_historical_target()
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/test_industry_production_proof.py:117: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+app/simulation/openttd/proof/production_preparation.py:66: in select_historical_target
+    n: sha256(directory / n)
+       ^^^^^^^^^^^^^^^^^^^^^
+app/simulation/openttd/proof/harness.py:60: in sha256
+    with path.open("rb") as stream:
+         ^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = PosixPath('/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-structural-world-real-attempt1/production-target.json')
+mode = 'rb', buffering = -1, encoding = None, errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed to by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+>       return io.open(self, mode, buffering, encoding, errors, newline)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       FileNotFoundError: [Errno 2] No such file or directory: '/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-structural-world-real-attempt1/production-target.json'
+
+../../.local/share/mise/installs/python/3.14.6/lib/python3.14/pathlib/__init__.py:771: FileNotFoundError
+=========================== short test summary info ============================
+FAILED tests/test_industry_production_proof.py::test_historical_first_produced_target
+FAILED tests/test_industry_production_proof.py::test_accepted_only_arbitrary_or_nonfirst_target_rejected[pair0]
+FAILED tests/test_industry_production_proof.py::test_accepted_only_arbitrary_or_nonfirst_target_rejected[pair1]
+FAILED tests/test_industry_production_proof.py::test_accepted_only_arbitrary_or_nonfirst_target_rejected[pair2]
+ERROR tests/test_industry_production_proof.py::test_frozen_credential_target_destination
+ERROR tests/test_industry_production_proof.py::test_destination_override_rejected
+ERROR tests/test_industry_production_proof.py::test_public_guarded_preflight_zero_activity
+ERROR tests/test_industry_production_proof.py::test_controlled_full_lifecycle_retains_failure_without_retry[None]
+ERROR tests/test_industry_production_proof.py::test_controlled_full_lifecycle_retains_failure_without_retry[receipt]
+ERROR tests/test_industry_production_proof.py::test_controlled_full_lifecycle_retains_failure_without_retry[read]
+ERROR tests/test_industry_production_proof.py::test_controlled_full_lifecycle_retains_failure_without_retry[sent]
+ERROR tests/test_industry_production_proof.py::test_controlled_full_lifecycle_retains_failure_without_retry[alive]
+ERROR tests/test_industry_production_proof.py::test_controlled_full_lifecycle_retains_failure_without_retry[semantic]
+ERROR tests/test_industry_production_proof.py::test_controlled_full_lifecycle_retains_failure_without_retry[cleanup]
+4 failed, 124 passed, 10 errors in 6.72s
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]

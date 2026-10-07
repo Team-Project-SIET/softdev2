@@ -1,0 +1,100 @@
+{
+  "admin_frame_accounting": {
+    "categories": {
+      "cleanup": 1,
+      "establishment": 2,
+      "production": 4,
+      "setup": 3
+    },
+    "failed": false,
+    "frames": [
+      {
+        "admitted": true,
+        "category": "establishment",
+        "direction": "inbound",
+        "packet_type": 103,
+        "sha256": "28b584bb6974cc85d94836ff775299ded03cc5444baa0029d2a70ea2c486167f"
+      },
+      {
+        "admitted": true,
+        "category": "establishment",
+        "direction": "inbound",
+        "packet_type": 104,
+        "sha256": "ebcc083bda68273f0d242d69c0cc2b67bdf48445eb33d6480492836cefa57c8b"
+      },
+      {
+        "admitted": true,
+        "category": "setup",
+        "direction": "outbound",
+        "packet_type": 2,
+        "sha256": "a19f3b6f885f84b32c95065cbeecbf9ea733a1fd142430c8bd3f8064bfacd970"
+      },
+      {
+        "admitted": true,
+        "category": "setup",
+        "direction": "outbound",
+        "packet_type": 7,
+        "sha256": "7ecb7d841dd31a9ebf066035b88aa0b2e45c1bf12105aa120e25001133253d51"
+      },
+      {
+        "admitted": true,
+        "category": "setup",
+        "direction": "inbound",
+        "packet_type": 126,
+        "sha256": "663f54b27fa1634790b335830071beca73a2a4fe42a0fdec389929a9980d6a70"
+      },
+      {
+        "admitted": true,
+        "category": "production",
+        "direction": "outbound",
+        "packet_type": 6,
+        "sha256": "cfcf8ff6d13ce05fc5988f4e9dfc330d19cd5297d2f66437ea918b8b71080573"
+      },
+      {
+        "admitted": true,
+        "category": "production",
+        "direction": "inbound",
+        "packet_type": 124,
+        "sha256": "3fa57c530a0b2622000c2b89b1b4276208cd9eaf2b4f59140ef705e040846a6b"
+      },
+      {
+        "admitted": true,
+        "category": "production",
+        "direction": "outbound",
+        "packet_type": 7,
+        "sha256": "3ae87122bdd438bd8ee6d97ee85d8e6e66767f70893b9e73df4240e304a61d5a"
+      },
+      {
+        "admitted": true,
+        "category": "production",
+        "direction": "inbound",
+        "packet_type": 126,
+        "sha256": "b53c1aae51d65c445e1a4511b1e8dda55280158d27ffd62b46fafd0d77ddda2a"
+      },
+      {
+        "admitted": true,
+        "category": "cleanup",
+        "direction": "outbound",
+        "packet_type": 1,
+        "sha256": "0f868d5011ab91a7f352a06a03be083abca12213ca27ab79cd4792a6a8ea0518"
+      }
+    ],
+    "query_operations": 4,
+    "total_post_auth_frames": 10
+  },
+  "cleanup_error": [],
+  "credential_removed": true,
+  "events": [
+    "quit_requested",
+    "reaped"
+  ],
+  "graceful_attempted": true,
+  "pid": 4,
+  "postrun_integrity_verified": true,
+  "quit_command": "quit",
+  "reaped": true,
+  "remaining_processes": [],
+  "returncode": 0,
+  "sockets_closed": true,
+  "workspace_disposed": true
+}

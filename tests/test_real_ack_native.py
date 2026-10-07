@@ -218,3 +218,7 @@ def test_native_adapter_controlled_secure_flow(tmp_path, monkeypatch, behavior):
             else 0
         )
         assert peers[0].closed
+
+
+# These historical modes retain their pre-production bridge safety contract.
+pytestmark = pytest.mark.usefixtures("checkpoint_structural_bridge")

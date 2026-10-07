@@ -32,6 +32,7 @@ from app.simulation.openttd.gamescript_protocol import (
 )
 from app.simulation.openttd.industry_cargo import (
     CARGO_NETWORK_SEQUENCE,
+    MAX_INDUSTRY_CARGOES,
     IndustryCargoExchange,
     IndustryCargoReceipt,
     IndustryCargoRequest,
@@ -41,6 +42,12 @@ from app.simulation.openttd.industry_page import (
     IndustryPageExchange,
     IndustryPageReceipt,
     IndustryPageRequest,
+)
+from app.simulation.openttd.industry_production import (
+    PRODUCTION_NETWORK_SEQUENCE,
+    IndustryProductionExchange,
+    IndustryProductionReceipt,
+    IndustryProductionRequest,
 )
 from app.simulation.openttd.world_info import (
     NETWORK_SEQUENCE,
@@ -123,7 +130,10 @@ class GameScriptSession(AdminStream):
                         try:
                             IndustryCargoRequest.parse(payload)
                         except BridgeProtocolError:
-                            CargoPageRequest.parse(payload)
+                            try:
+                                CargoPageRequest.parse(payload)
+                            except BridgeProtocolError:
+                                IndustryProductionRequest.parse(payload)
         elif kind == AdminClientPacketType.PING and len(frame) == 7:
             pass  # Read-only ordering barrier after GameScript subscription.
         elif frame not in (gamescript_subscription(), encode_admin_quit()):
@@ -172,6 +182,7 @@ class GameScriptTransport:
         self._registered = False
         self._pending: str | None = None
         self._used_ids: set[str] = set()
+        self._production_requests = 0
         self._usable = True
         self._subscribing = False
         self.response_payload: bytes | None = None
@@ -343,14 +354,35 @@ class GameScriptTransport:
         assert isinstance(result, CargoPageExchange)
         return result
 
+    async def industry_production(
+        self,
+        request: IndustryProductionRequest,
+        *,
+        timeout: float = 5.0,
+        operation_budget: int | None = None,
+    ) -> IndustryProductionExchange:
+        result = await self._read_query(request, timeout=timeout, operation_budget=operation_budget)
+        assert isinstance(result, IndustryProductionExchange)
+        return result
+
     async def _read_query(
         self,
-        request: WorldInfoRequest | IndustryPageRequest | IndustryCargoRequest | CargoPageRequest,
+        request: WorldInfoRequest
+        | IndustryPageRequest
+        | IndustryCargoRequest
+        | CargoPageRequest
+        | IndustryProductionRequest,
         *,
         world: WorldInfoResponse | None = None,
         timeout: float = 5.0,
         operation_budget: int | None = None,
-    ) -> WorldInfoExchange | IndustryPageExchange | IndustryCargoExchange | CargoPageExchange:
+    ) -> (
+        WorldInfoExchange
+        | IndustryPageExchange
+        | IndustryCargoExchange
+        | CargoPageExchange
+        | IndustryProductionExchange
+    ):
         """One bounded read-only query, with duplicate-response completion barrier.
 
         Uses the existing secure production session; no connection or retry is opened.
@@ -360,7 +392,14 @@ class GameScriptTransport:
             raise ValueError("timeout must be positive and finite")
         if not self._usable or self._pending is not None or self._subscribing:
             raise TransportProtocolError("transport unavailable or already pending")
-        if request.request_id in self._used_ids or len(self._used_ids) >= self.MAX_REQUESTS:
+        production = isinstance(request, IndustryProductionRequest)
+        # Structural96 + production512; each phase coordinator retains its own ceilings.
+        capacity = 96 + 32 * MAX_INDUSTRY_CARGOES if production else self.MAX_REQUESTS
+        if (
+            request.request_id in self._used_ids
+            or len(self._used_ids) >= capacity
+            or (production and self._production_requests >= 32 * MAX_INDUSTRY_CARGOES)
+        ):
             raise TransportProtocolError("use a fresh request_id or new session")
         if operation_budget is not None and (
             type(operation_budget) is not int or operation_budget < 1
@@ -375,6 +414,8 @@ class GameScriptTransport:
                     await self.subscribe(timeout=timeout, _operations=operations)
                 self._pending = request.request_id
                 self._used_ids.add(request.request_id)
+                if production:
+                    self._production_requests += 1
                 operations.consume(1)
                 await self.session.send(encode_gamescript(payload))
                 response = None
@@ -393,7 +434,9 @@ class GameScriptTransport:
                             response = decode_gamescript(body)
                             self.response_payload = response
                             receipt = (
-                                CargoPageReceipt.correlate(payload, response)
+                                IndustryProductionReceipt.correlate(payload, response)
+                                if isinstance(request, IndustryProductionRequest)
+                                else CargoPageReceipt.correlate(payload, response)
                                 if isinstance(request, CargoPageRequest)
                                 else IndustryCargoReceipt.correlate(payload, response)
                                 if isinstance(request, IndustryCargoRequest)
@@ -431,7 +474,16 @@ class GameScriptTransport:
                             raise TransportDisconnected("server shutdown after query response")
                         elif kind in ServerLifecyclePacket:
                             raise TransportProtocolError("query runtime changed/error")
-                if isinstance(receipt, CargoPageReceipt):
+                if isinstance(receipt, IndustryProductionReceipt):
+                    result = IndustryProductionExchange(
+                        payload,
+                        response,
+                        receipt,
+                        PRODUCTION_NETWORK_SEQUENCE,
+                        protocol_operations=operations.used,
+                    )
+                    result.validate()
+                elif isinstance(receipt, CargoPageReceipt):
                     result = CargoPageExchange(
                         payload,
                         response,

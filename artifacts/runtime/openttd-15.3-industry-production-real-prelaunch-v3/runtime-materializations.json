@@ -1,0 +1,134 @@
+{
+  "entries": [
+    {
+      "canonical_sha256": "5ab26155b77749806479308e150364995838ab2bcfabcb57108b346a1e6f5536",
+      "canonical_source": "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v3/materialization-inputs/.runtime-owned",
+      "classification": "GENERATED_RUNTIME",
+      "derivation": "generated-template-copy",
+      "path": "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v3/isolated/openttd-15.3-1vk9brsj/.runtime-owned",
+      "sha256": "5ab26155b77749806479308e150364995838ab2bcfabcb57108b346a1e6f5536"
+    },
+    {
+      "canonical_sha256": "43a0c1dabf39cb865394f3a6cc36d4da5c10ecfaaf55652043104806810903be",
+      "canonical_source": "/home/fed/codes/softdev2/artifacts/runtime/verified-assets/opengfx-8.0-all.zip",
+      "classification": "RUNTIME_COPY",
+      "derivation": "archive-member:opengfx-8.0/changelog.txt",
+      "path": "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v3/isolated/openttd-15.3-1vk9brsj/baseset/OpenGFX/changelog.txt",
+      "sha256": "809876a1746a2802634689efdb1f3a3c39e5497cbd962b1e17a2bb154370fce7"
+    },
+    {
+      "canonical_sha256": "43a0c1dabf39cb865394f3a6cc36d4da5c10ecfaaf55652043104806810903be",
+      "canonical_source": "/home/fed/codes/softdev2/artifacts/runtime/verified-assets/opengfx-8.0-all.zip",
+      "classification": "RUNTIME_COPY",
+      "derivation": "archive-member:opengfx-8.0/license.txt",
+      "path": "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v3/isolated/openttd-15.3-1vk9brsj/baseset/OpenGFX/license.txt",
+      "sha256": "8177f97513213526df2cf6184d8ff986c675afb514d4e68a404010521b880643"
+    },
+    {
+      "canonical_sha256": "43a0c1dabf39cb865394f3a6cc36d4da5c10ecfaaf55652043104806810903be",
+      "canonical_source": "/home/fed/codes/softdev2/artifacts/runtime/verified-assets/opengfx-8.0-all.zip",
+      "classification": "RUNTIME_COPY",
+      "derivation": "archive-member:opengfx-8.0/ogfx1_base.grf",
+      "path": "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v3/isolated/openttd-15.3-1vk9brsj/baseset/OpenGFX/ogfx1_base.grf",
+      "sha256": "f8201e87c7210493aaf525993013dc94dd4b7a801c4bb27df47544786bf8eaa9"
+    },
+    {
+      "canonical_sha256": "43a0c1dabf39cb865394f3a6cc36d4da5c10ecfaaf55652043104806810903be",
+      "canonical_source": "/home/fed/codes/softdev2/artifacts/runtime/verified-assets/opengfx-8.0-all.zip",
+      "classification": "RUNTIME_COPY",
+      "derivation": "archive-member:opengfx-8.0/ogfxc_arctic.grf",
+      "path": "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v3/isolated/openttd-15.3-1vk9brsj/baseset/OpenGFX/ogfxc_arctic.grf",
+      "sha256": "17cf3be5a9410d6807347a13b5655cf534f3b10f19d1bb7a43080f7c226817ce"
+    },
+    {
+      "canonical_sha256": "43a0c1dabf39cb865394f3a6cc36d4da5c10ecfaaf55652043104806810903be",
+      "canonical_source": "/home/fed/codes/softdev2/artifacts/runtime/verified-assets/opengfx-8.0-all.zip",
+      "classification": "RUNTIME_COPY",
+      "derivation": "archive-member:opengfx-8.0/ogfxe_extra.grf",
+      "path": "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v3/isolated/openttd-15.3-1vk9brsj/baseset/OpenGFX/ogfxe_extra.grf",
+      "sha256": "6472d934f15210dc4ad03acaad12d1e2717f4f5f836495cdd78bfc45fcbb0adb"
+    },
+    {
+      "canonical_sha256": "43a0c1dabf39cb865394f3a6cc36d4da5c10ecfaaf55652043104806810903be",
+      "canonical_source": "/home/fed/codes/softdev2/artifacts/runtime/verified-assets/opengfx-8.0-all.zip",
+      "classification": "RUNTIME_COPY",
+      "derivation": "archive-member:opengfx-8.0/ogfxh_tropical.grf",
+      "path": "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v3/isolated/openttd-15.3-1vk9brsj/baseset/OpenGFX/ogfxh_tropical.grf",
+      "sha256": "b9aa39877daccd417ee1b248010bc8891648accf1680d1443f58a8589189238c"
+    },
+    {
+      "canonical_sha256": "43a0c1dabf39cb865394f3a6cc36d4da5c10ecfaaf55652043104806810903be",
+      "canonical_source": "/home/fed/codes/softdev2/artifacts/runtime/verified-assets/opengfx-8.0-all.zip",
+      "classification": "RUNTIME_COPY",
+      "derivation": "archive-member:opengfx-8.0/ogfxi_logos.grf",
+      "path": "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v3/isolated/openttd-15.3-1vk9brsj/baseset/OpenGFX/ogfxi_logos.grf",
+      "sha256": "20644db32d97b2e1d7d7d9b73b0484b904a86f9e91752d9fc5f86bebb7706e5a"
+    },
+    {
+      "canonical_sha256": "43a0c1dabf39cb865394f3a6cc36d4da5c10ecfaaf55652043104806810903be",
+      "canonical_source": "/home/fed/codes/softdev2/artifacts/runtime/verified-assets/opengfx-8.0-all.zip",
+      "classification": "RUNTIME_COPY",
+      "derivation": "archive-member:opengfx-8.0/ogfxt_toyland.grf",
+      "path": "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v3/isolated/openttd-15.3-1vk9brsj/baseset/OpenGFX/ogfxt_toyland.grf",
+      "sha256": "d01320fdcfc94cf4ef637ec72e892314dc5dc682b949e6957c3fb72cb9385986"
+    },
+    {
+      "canonical_sha256": "43a0c1dabf39cb865394f3a6cc36d4da5c10ecfaaf55652043104806810903be",
+      "canonical_source": "/home/fed/codes/softdev2/artifacts/runtime/verified-assets/opengfx-8.0-all.zip",
+      "classification": "RUNTIME_COPY",
+      "derivation": "archive-member:opengfx-8.0/opengfx.obg",
+      "path": "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v3/isolated/openttd-15.3-1vk9brsj/baseset/OpenGFX/opengfx.obg",
+      "sha256": "e3ce8169ea9cf0fab624ad8b9b940684f3dfdf189f88bc79bbe62064fd3496d0"
+    },
+    {
+      "canonical_sha256": "43a0c1dabf39cb865394f3a6cc36d4da5c10ecfaaf55652043104806810903be",
+      "canonical_source": "/home/fed/codes/softdev2/artifacts/runtime/verified-assets/opengfx-8.0-all.zip",
+      "classification": "RUNTIME_COPY",
+      "derivation": "archive-member:opengfx-8.0/readme.txt",
+      "path": "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v3/isolated/openttd-15.3-1vk9brsj/baseset/OpenGFX/readme.txt",
+      "sha256": "c3021f3fb1c9c0f5de501772d5fe099d4c483651f60ab253b2cb291b367de3d2"
+    },
+    {
+      "canonical_sha256": "97932748663e3ee7c8cbd42412eeb3d2b132a2cd3440e58b988044ab25d2b76a",
+      "canonical_source": "/home/fed/codes/softdev2/app/simulation/openttd/gamescript_bridge_package/info.nut",
+      "classification": "RUNTIME_COPY",
+      "derivation": "byte-copy",
+      "path": "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v3/isolated/openttd-15.3-1vk9brsj/game/NoMutationBridge/info.nut",
+      "sha256": "97932748663e3ee7c8cbd42412eeb3d2b132a2cd3440e58b988044ab25d2b76a"
+    },
+    {
+      "canonical_sha256": "899fb90989ff598568837e18229d71dfec9125febcbb9382db90581ad4644b65",
+      "canonical_source": "/home/fed/codes/softdev2/app/simulation/openttd/gamescript_bridge_package/main.nut",
+      "classification": "RUNTIME_COPY",
+      "derivation": "byte-copy",
+      "path": "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v3/isolated/openttd-15.3-1vk9brsj/game/NoMutationBridge/main.nut",
+      "sha256": "899fb90989ff598568837e18229d71dfec9125febcbb9382db90581ad4644b65"
+    },
+    {
+      "canonical_sha256": "c5090c9d6169abc09ad8b9c4248b8e0d293bfccd654fa03e32c908d8ad88bcd9",
+      "canonical_source": "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v3/materialization-inputs/openttd.cfg",
+      "classification": "GENERATED_RUNTIME",
+      "derivation": "generated-template-copy",
+      "path": "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v3/isolated/openttd-15.3-1vk9brsj/openttd.cfg",
+      "sha256": "c5090c9d6169abc09ad8b9c4248b8e0d293bfccd654fa03e32c908d8ad88bcd9"
+    },
+    {
+      "canonical_sha256": "9f72f87446ee3e6f65f6895689cc4320aabd6a1529fd3ad607a583ccf70e5fb5",
+      "canonical_source": "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v3/materialization-inputs/private.cfg",
+      "classification": "GENERATED_RUNTIME",
+      "derivation": "generated-template-copy",
+      "path": "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v3/isolated/openttd-15.3-1vk9brsj/private.cfg",
+      "sha256": "9f72f87446ee3e6f65f6895689cc4320aabd6a1529fd3ad607a583ccf70e5fb5"
+    },
+    {
+      "canonical_sha256": "1c953edc9d1f72cd7897b03e5525e0bfaa3e3e7980e51eb0191c15399d0fdf3d",
+      "canonical_source": "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v3/materialization-inputs/secrets.cfg",
+      "classification": "GENERATED_RUNTIME",
+      "derivation": "generated-template-copy",
+      "path": "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v3/isolated/openttd-15.3-1vk9brsj/secrets.cfg",
+      "sha256": "1c953edc9d1f72cd7897b03e5525e0bfaa3e3e7980e51eb0191c15399d0fdf3d"
+    }
+  ],
+  "policy": "frozen-content-disposable-path-v1",
+  "workspace": "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v3/isolated/openttd-15.3-1vk9brsj"
+}

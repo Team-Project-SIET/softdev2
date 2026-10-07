@@ -364,6 +364,16 @@ async def execute_catalog_attempt(prepared, backend) -> dict:
         )
         if not redacted:
             result["error"] = result["error"] or "Credential redaction failure"
+        try:
+            from .ownership import finalize_cleanup
+
+            finalize_cleanup(prepared, frozen, cleanup)
+            integrity = True
+            result["source_integrity"] = True
+        except Exception as error:
+            integrity = False
+            result["source_integrity"] = False
+            result["error"] = result["error"] or str(error)
         success = (
             result["error"] is None
             and result["launches"] == result["connections"] == 1
@@ -456,8 +466,6 @@ async def execute_catalog_attempt(prepared, backend) -> dict:
             )
         )
         capture(lambda: (attempt / "artifact-manifest.sha256").write_text(manifest(attempt)))
-        if cleanup.get("reaped") and not cleanup.get("remaining_processes"):
-            capture(prepared.dispose)
         if result["error"] is not None:
             result["status"] = backend.kind + "_FAILED"
             if result["states"][-1] != "FAILED":

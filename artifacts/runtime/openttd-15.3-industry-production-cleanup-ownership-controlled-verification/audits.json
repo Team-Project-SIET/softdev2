@@ -1,0 +1,17 @@
+{
+  "known_unchanged_exceptions": [
+    "ther.md pre-existing whitespace",
+    "plan_setup.py/live_launch.py established planning adapter imports outside proof/runtime audit"
+  ],
+  "whitespace": "PASS",
+  "import_boundary": "PASS",
+  "historical_count": 1116,
+  "archived_credentials": 7,
+  "historical_manifest_digest": "140e5659b40e71cf296b6e366b47e4505528602776332ec0bef978739eb06eda",
+  "files_restored": false,
+  "runtime_activity": {
+    "launches": 0,
+    "connections": 0,
+    "real_requests": 0
+  }
+}

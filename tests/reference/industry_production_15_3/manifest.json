@@ -1,0 +1,45 @@
+{
+  "files": {
+    "tests/reference/industry_cargo_15_3/industry.h": {
+      "sha256": "f7a0c67c70daacf9ad1a80a85238fcd35201697081acea51f75e687f172cef8e",
+      "source_path": "src/industry.h",
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/industry.h"
+    },
+    "tests/reference/industry_cargo_15_3/industry_type.h": {
+      "sha256": "a96ba79538f96c6c27b2b3b9185a6e8a6a7a4ac75b152a447e7c90efc117578a",
+      "source_path": "src/industry_type.h",
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/industry_type.h"
+    },
+    "tests/reference/industry_page_15_3/script_industry.hpp": {
+      "sha256": "65beb5d22bd6c0cb683fc5843512ff0fdfa951fe4d9e85f0b067746f32c51d38",
+      "source_path": "src/script/api/script_industry.hpp",
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/script/api/script_industry.hpp"
+    },
+    "tests/reference/industry_page_bindings_15_3/CMakeLists.txt": {
+      "sha256": "a61d0fc3bd3482f502cbb1adefec91e11c1cb91c62e74d3bbf8c1524266135e5",
+      "source_path": "src/script/api/CMakeLists.txt",
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/script/api/CMakeLists.txt"
+    },
+    "tests/reference/industry_page_bindings_15_3/SquirrelExport.cmake": {
+      "sha256": "59a1372537c0895ee478543edaebccc961e7d62d7741599cdc1bf95e29f24a1b",
+      "source_path": "cmake/scripts/SquirrelExport.cmake",
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/cmake/scripts/SquirrelExport.cmake"
+    },
+    "tests/reference/industry_production_15_3/script_date.cpp": {
+      "sha256": "d316e7d59e28dee26c082b18f3f793e0676bce8fdb4fbbb33884b992a237df67",
+      "source_path": "src/script/api/script_date.cpp",
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/script/api/script_date.cpp"
+    },
+    "tests/reference/industry_production_15_3/script_date.hpp": {
+      "sha256": "6e9d13c7ce57f47a4cb9eed02f47ded74b2068f1f51d05225ba61573e9320deb",
+      "source_path": "src/script/api/script_date.hpp",
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/script/api/script_date.hpp"
+    },
+    "tests/reference/industry_production_15_3/script_industry.cpp": {
+      "sha256": "95d0a6794b4aeb13d2e2d42e33fe8eb1e6c82bbe6af4cec290eb607c4aad5df9",
+      "source_path": "src/script/api/script_industry.cpp",
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/script/api/script_industry.cpp"
+    }
+  },
+  "version": "15.3"
+}

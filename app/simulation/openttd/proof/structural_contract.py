@@ -47,6 +47,10 @@ class StructuralFrameBudget:
     with these counters, never added again.
     """
 
+    limits = FRAME_LIMITS
+    maximum_frames = MAX_TOTAL_POST_AUTH_FRAMES
+    query_phases = ("inventory", "capability", "catalog")
+
     _counts: dict[str, int] = field(
         default_factory=lambda: dict.fromkeys(FRAME_LIMITS, 0), init=False
     )
@@ -56,7 +60,7 @@ class StructuralFrameBudget:
     _frames: list[dict] = field(default_factory=list, init=False)
 
     def enter(self, phase: str) -> None:
-        order = list(FRAME_LIMITS)
+        order = list(self.limits)
         if self.failed or phase not in order or order.index(phase) != order.index(self.phase) + 1:
             raise ValueError("Invalid structural accounting phase; no reset/resume")
         self.phase = phase
@@ -81,7 +85,7 @@ class StructuralFrameBudget:
             self.failed = True
             raise
         finally:
-            if len(self._frames) < MAX_TOTAL_POST_AUTH_FRAMES + 1:
+            if len(self._frames) < self.maximum_frames + 1:
                 self._frames.append(record)
 
     def snapshot(self) -> dict:
@@ -95,18 +99,18 @@ class StructuralFrameBudget:
 
     @property
     def query_operations(self) -> int:
-        return sum(self._counts[p] for p in ("inventory", "capability", "catalog"))
+        return sum(self._counts[p] for p in self.query_phases)
 
     @property
     def total_frames(self) -> int:
         return sum(self._counts.values())
 
     def consume(self, category: str, count: int = 1) -> None:
-        if category not in FRAME_LIMITS or type(count) is not int or count <= 0:
+        if category not in self.limits or type(count) is not int or count <= 0:
             raise ValueError("invalid structural frame accounting")
         if (
-            self._counts[category] + count > FRAME_LIMITS[category]
-            or self.total_frames + count > MAX_TOTAL_POST_AUTH_FRAMES
+            self._counts[category] + count > self.limits[category]
+            or self.total_frames + count > self.maximum_frames
         ):
             raise StructuralFrameBudgetExceeded("structural post-auth frame budget exhausted")
         self._counts[category] += count

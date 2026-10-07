@@ -1,0 +1,23 @@
+{
+  "line_numbers": [
+    73,
+    74,
+    75,
+    76
+  ],
+  "ordered_sequence": [
+    "BRIDGE_REQUEST_RECEIVED",
+    "INDUSTRY_PRODUCTION_READ",
+    "BRIDGE_RESPONSE_SENT",
+    "BRIDGE_POST_RESPONSE_ALIVE"
+  ],
+  "raw_digest": "fdb090bb79f0b79a0cd78b65bdcc7a795f477b5a3bc92b69b427888b92f4e150",
+  "request_id": "openttd15-industry-production-001",
+  "response_digest": "5d96681fa83e0082ab17316d5751edaf00b3e21f2b7cd71d94e7b8ca50c18e51",
+  "suffixes": [
+    " type=industry_production protocol=1",
+    " industry_id=0 cargo_id=1 economy_date_before=712223 economy_date_after=712223 last_month_produced=168 last_month_transported=0 last_month_transported_pct=0",
+    " type=industry_production_result status=ok protocol=1",
+    ""
+  ]
+}

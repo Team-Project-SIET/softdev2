@@ -399,6 +399,16 @@ async def execute_structural_attempt(prepared, backend):
         )
         if backend.accounting.failed:
             result["error"] = result["error"] or "Native frame budget failed"
+        try:
+            from .ownership import finalize_cleanup
+
+            finalize_cleanup(prepared, frozen, cleanup)
+            integrity = True
+            result["source_integrity"] = True
+        except Exception as error:
+            integrity = False
+            result["source_integrity"] = False
+            result["error"] = result["error"] or str(error)
         successful = (
             result["error"] is None
             and result["launches"] == result["connections"] == 1

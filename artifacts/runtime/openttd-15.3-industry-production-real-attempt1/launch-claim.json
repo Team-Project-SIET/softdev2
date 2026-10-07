@@ -1,0 +1,15 @@
+{
+  "argv": [
+    "/home/fed/Downloads/openttd-15.3-linux-generic-amd64/openttd",
+    "-D127.0.0.1:36561",
+    "-c",
+    "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v2/isolated/openttd-15.3-ucdpwyrj/openttd.cfg",
+    "-x",
+    "-X",
+    "-g",
+    "-G",
+    "42",
+    "-dscript=4,grf=1,net=3"
+  ],
+  "no_retry": true
+}

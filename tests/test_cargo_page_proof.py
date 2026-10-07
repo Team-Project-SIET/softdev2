@@ -380,3 +380,7 @@ def test_proof_specific_serializer_bound():
     raw = CargoPageResponse(PAGE_REQUEST.request_id, records, None, False).to_bytes()
     assert len(raw) == page_contract()["response_bound"] == 299
     assert 512 - len(raw) == 213
+
+
+# These historical modes retain their pre-production bridge safety contract.
+pytestmark = pytest.mark.usefixtures("checkpoint_structural_bridge")

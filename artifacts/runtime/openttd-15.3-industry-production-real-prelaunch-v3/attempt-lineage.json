@@ -1,0 +1,39 @@
+{
+  "attempt_id": "industry-production-v3-native-attempt2",
+  "attempt_number": 2,
+  "continuation": "NEW_RUNTIME_ATTEMPT",
+  "evidence_directory": "openttd-15.3-industry-production-real-attempt2",
+  "freeze_revision": 3,
+  "fresh_explicit_authorization_required": true,
+  "lineage_digest": "e25039ba5307dfbb53c76d9ef3d99ae9d344df12be209647a14f26f8fe70c883",
+  "policy": "industry-production-attempt-lineage-v1",
+  "post_launch_predecessors": [
+    {
+      "attempt_id": "industry-production-v2-runtime-8ef0fd0237929ac5",
+      "authorized_attempt_id": "industry-production-v2-native-attempt1",
+      "classification": "POST_LAUNCH_FAILURE",
+      "connections": 1,
+      "evidence_digest": "e398b93c8f674757954262c937bf311b559b6297db2a83d8d692817c434c6498",
+      "evidence_directory": "openttd-15.3-industry-production-real-attempt1",
+      "evidence_manifest_digest": "85cad0c7e27084bb6dc1ffe5bea40a27c18a3d97f4feeae6d919678e2b1e9f23",
+      "freeze_revision": 2,
+      "launches": 1,
+      "native_terminal_status": "REAL_SUCCESS",
+      "parent_attempt_ids": [],
+      "postrun_evidence_directory": "openttd-15.3-industry-production-real-attempt1-postrun-verification",
+      "postrun_integrity_digest": "0fdaf62885e80dc1c69cc0b396483646ec44e80bbc8edb72e5f1b2b4bdd1af33",
+      "postrun_manifest_digest": "9ab055a78090d13025ba1005e5d237d49abe44f5471bf98e0aab81614ae545e1",
+      "postrun_report_digest": "6fba907f86fb2c213374e0960d9a2ed3999dd6f8c766148d19a64194f8d932dc",
+      "proof_kind": "industry-production",
+      "reconnects": 0,
+      "requests": 1,
+      "retries": 0,
+      "revision_authority_digest": "a494e98079457b3e43d5a2b261bd30711ef815350912bfb54bfb90fa18a869e5",
+      "terminal_failure_reason": "Final prepared.dispose()/RuntimeWorkspace.close removed isolated workspace containing 16 frozen inputs; no repair or retry",
+      "terminal_status": "FAILED_POSTRUN_INTEGRITY"
+    }
+  ],
+  "prelaunch_continuation_exception_used": false,
+  "proof_kind": "industry-production",
+  "supersedes_prelaunch_attempts": []
+}

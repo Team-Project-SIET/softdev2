@@ -229,7 +229,9 @@ def test_changed_source_after_ack_retains_failed_evidence(tmp_path):
     class ChangedBackend(ControlledBackend):
         async def ping(self, request):
             response = await super().ping(request)
-            prepared.spec.workspace.config.write_text("changed postlaunch")
+            (prepared.directory / "materialization-inputs/openttd.cfg").write_text(
+                "changed postlaunch"
+            )
             return response
 
     outcome = asyncio.run(execute_attempt(prepared, ChangedBackend()))
@@ -326,3 +328,7 @@ def test_preparation_rejects_global_profile_before_writes(tmp_path, monkeypatch)
             forbidden, binary=binary, binary_sha256=hashlib.sha256(binary.read_bytes()).hexdigest()
         )
     assert not forbidden.parent.exists()
+
+
+# These historical modes retain their pre-production bridge safety contract.
+pytestmark = pytest.mark.usefixtures("checkpoint_structural_bridge")

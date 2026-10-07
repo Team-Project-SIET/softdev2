@@ -31,3 +31,15 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         "--run-postgres", action="store_true", help="run isolated PostgreSQL integration tests"
     )
     parser.addoption("--run-openttd", action="store_true", help="run a real OpenTTDLab simulation")
+
+
+@pytest.fixture
+def checkpoint_structural_bridge(monkeypatch):
+    """Older frozen proof contracts use their exact pre-production checkpoint package."""
+    from pathlib import Path
+
+    import app.simulation.openttd.gamescript_bridge as bridge
+
+    monkeypatch.setattr(
+        bridge, "BRIDGE_DIRECTORY", Path(__file__).parent / "fixtures/structural_bridge_checkpoint"
+    )

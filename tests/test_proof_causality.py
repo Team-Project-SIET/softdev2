@@ -265,3 +265,7 @@ def test_recorded_session_second_send_rejected_before_delegate():
         assert session.snapshot().retries == 1
 
     asyncio.run(run())
+
+
+# These historical modes retain their pre-production bridge safety contract.
+pytestmark = pytest.mark.usefixtures("checkpoint_structural_bridge")

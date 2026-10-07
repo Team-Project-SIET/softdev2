@@ -410,6 +410,7 @@ def test_verified_15_3_game_api_names_and_read_only_implementation():
     }
     assert set(re.findall(r"\bGS[A-Za-z0-9_]+\b", source)) == {
         "GSMap",
+        "GSDate",
         "GSList",
         "GSIndustryList",
         "GSIndustry",

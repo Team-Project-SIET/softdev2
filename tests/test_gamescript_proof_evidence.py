@@ -354,3 +354,7 @@ def test_native_backend_refuses_second_ping_without_writing():
     backend._sent = True
     with pytest.raises(RuntimeError, match="Exactly one"):
         asyncio.run(backend.ping(PingRequest(REQUEST_ID)))
+
+
+# These historical modes retain their pre-production bridge safety contract.
+pytestmark = pytest.mark.usefixtures("checkpoint_structural_bridge")

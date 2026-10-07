@@ -104,6 +104,9 @@ async def execute_attempt(prepared: PreparedProof, backend: Backend) -> dict[str
             raise ValueError("Preparation manifest changed")
         frozen = json.loads((prepared.directory / "source-freeze.json").read_text())
         verify_freeze(frozen)
+        from .ownership import validate_ownership
+
+        validate_ownership(prepared, frozen)
         if backend.kind != "REAL":
             backend.preflight(prepared)
         reservation = EndpointReservation.allocate(*prepared.endpoints)
@@ -223,6 +226,13 @@ async def execute_attempt(prepared: PreparedProof, backend: Backend) -> dict[str
             except (ValueError, OSError) as error:
                 outcome["error_type"] = type(error).__name__
                 outcome["error_reason"] = str(error)
+        try:
+            from .ownership import finalize_cleanup
+
+            finalize_cleanup(prepared, frozen, lifecycle)
+        except Exception as error:
+            outcome["error_type"] = outcome["error_type"] or type(error).__name__
+            outcome["error_reason"] = outcome.get("error_reason") or str(error)
         if receipt is not None and outcome["error_type"] is None:
             if (
                 outcome["launches"] != 1
@@ -235,8 +245,6 @@ async def execute_attempt(prepared: PreparedProof, backend: Backend) -> dict[str
                 outcome["receipt"] = asdict(receipt)
                 outcome["status"] = backend.kind + "_SUCCESS"
                 write_json(attempt / "receipt.json", asdict(receipt))
-        if cleanup_ok:
-            prepared.dispose()
         outcome["gates"] = [g.name for g in gates.completed]
         evidence = attempt if attempt.exists() else prepared.directory
         write_json(

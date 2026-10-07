@@ -26,8 +26,9 @@ class NoMutationBridge extends GSController {
         if (typeof request != "table" || (request.len() != 3 && request.len() != 4 && request.len() != 5)) return false;
         if (!("protocol" in request) || !("type" in request) || !("request_id" in request)) return false;
         if (typeof request.protocol != "integer" || request.protocol != 1) return false;
-        if (typeof request.type != "string" || (request.type != "ping" && request.type != "world_info" && request.type != "industry_page" && request.type != "industry_cargo" && request.type != "cargo_page")) return false;
+        if (typeof request.type != "string" || (request.type != "ping" && request.type != "world_info" && request.type != "industry_page" && request.type != "industry_cargo" && request.type != "cargo_page" && request.type != "industry_production")) return false;
         if (!this.ValidRequestID(request.request_id)) return false;
+        if (request.type == "industry_production") return this.IndustryProduction(request);
         if (request.type == "cargo_page") return this.CargoPage(request);
         if (request.type == "industry_cargo") return this.IndustryCargo(request);
         if (request.type == "industry_page") return this.IndustryPage(request);
@@ -107,6 +108,37 @@ class NoMutationBridge extends GSController {
             result.append(id);
         }
         return result;
+    }
+
+    function IndustryProduction(request) {
+        if (request.len() != 5 || !("industry_id" in request) || !("cargo_id" in request) ||
+            typeof request.industry_id != "integer" || typeof request.cargo_id != "integer" ||
+            request.industry_id < 0 || request.industry_id >= 64000 || request.cargo_id < 0 || request.cargo_id >= 64 ||
+            !GSIndustry.IsValidIndustry(request.industry_id) || !GSCargo.IsValidCargo(request.cargo_id)) return false;
+        GSLog.Info("BRIDGE_REQUEST_RECEIVED request_id=" + request.request_id + " type=industry_production protocol=1");
+        local before = GSDate.GetCurrentDate();
+        local produced = GSIndustry.GetLastMonthProduction(request.industry_id, request.cargo_id);
+        local transported = GSIndustry.GetLastMonthTransported(request.industry_id, request.cargo_id);
+        local percentage = GSIndustry.GetLastMonthTransportedPercentage(request.industry_id, request.cargo_id);
+        local after = GSDate.GetCurrentDate();
+        /* -1 means invalid/non-produced relationship, not valid zero history. */
+        if (typeof produced != "integer" || produced < 0 || produced > 65535 ||
+            typeof transported != "integer" || transported < 0 || transported > 65535 ||
+            typeof percentage != "integer" || percentage < 0 || percentage > 100 ||
+            typeof before != "integer" || before < 0 || before > 2147483647 ||
+            typeof after != "integer" || after < before || after > 2147483647) return false;
+        local values = [request.industry_id, request.cargo_id, before, after, produced, transported, percentage];
+        local names = ["industry_id", "cargo_id", "economy_date_before", "economy_date_after", "last_month_produced", "last_month_transported", "last_month_transported_pct"];
+        local metadata = "";
+        for (local index = 0; index < names.len(); index++) metadata += " " + names[index] + "=" + this.EvidenceOptionalInt(values[index]);
+        GSLog.Info("INDUSTRY_PRODUCTION_READ request_id=" + request.request_id + metadata);
+        /* Worst-case335 bytes: <=512 application limit and <1450 native ceiling. */
+        local response = {protocol=1, type="industry_production_result", request_id=request.request_id, status="ok",
+            industry_id=request.industry_id, cargo_id=request.cargo_id, economy_date_before=before, economy_date_after=after,
+            last_month_produced=produced, last_month_transported=transported, last_month_transported_pct=percentage};
+        if (!GSAdmin.Send(response)) return false;
+        GSLog.Info("BRIDGE_RESPONSE_SENT request_id=" + request.request_id + " type=industry_production_result status=ok protocol=1");
+        return true;
     }
 
     function IndustryCargo(request) {

@@ -7,6 +7,8 @@ import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from .ownership import OwnershipGraph
+
 
 @dataclass(frozen=True)
 class AdminSettings:
@@ -112,12 +114,23 @@ class RuntimeWorkspace:
     def ai(self) -> Path:
         return self.root / "ai"
 
-    def close(self) -> None:
-        """Remove only this owned workspace; caller must first reap any owned process."""
-        if self._temporary is not None:
-            self._temporary.cleanup()
-        elif self.root.exists():
-            shutil.rmtree(self.root)
+    def close(self, *, ownership: OwnershipGraph | None = None) -> None:
+        """Reap first; reject aliases and persistent paths before recursive disposal."""
+        if not self.root.exists():
+            return
+        if self.root.absolute() != self.root.resolve() or self.root.is_symlink():
+            raise ValueError("Aliasing cleanup root")
+        if not (self.root / ".runtime-owned").is_file():
+            raise ValueError("Missing workspace ownership marker")
+        if any(p.is_symlink() for p in self.root.rglob("*")):
+            raise ValueError("Workspace symlink crosses cleanup ownership boundary")
+        if ownership is not None:
+            ownership.validate()
+            if ownership.cleanup_roots != (self.root,):
+                raise ValueError("Cleanup root differs from frozen ownership")
+        # Retain only controls preparation's temporary finalizer. Explicit close
+        # always disposes the owned tree, consistently after reopen or in-process.
+        shutil.rmtree(self.root)
 
     def write_config(self, admin: AdminSettings) -> None:
         files = {

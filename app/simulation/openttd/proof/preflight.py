@@ -53,6 +53,9 @@ from .inventory_contract import (
     inventory_contract,
     inventory_contract_digest,
 )
+from .production_contract import (
+    PRODUCTION_REQUEST,
+)
 from .structural_contract import (
     STRUCTURAL_ATTEMPT_DIRECTORY,
     STRUCTURAL_REVISION,
@@ -88,6 +91,9 @@ def validate_native_inputs(prepared: PreparedProof) -> dict:
         raise ValueError("Preparation manifest changed")
     frozen = json.loads((directory / "source-freeze.json").read_text())
     verify_freeze(frozen)
+    from .ownership import validate_ownership
+
+    validate_ownership(prepared, frozen)
     if any(frozen.get(path) != digest for path, digest in source_freeze().items()):
         raise ValueError("Runtime-critical source inventory changed")
     history = json.loads((directory / "historical-integrity.json").read_text())
@@ -99,6 +105,7 @@ def validate_native_inputs(prepared: PreparedProof) -> dict:
         "cargo-page",
         "cargo-catalog",
         "structural-world",
+        "industry-production",
     ):
         from .harness import PROJECT
         from .historical_protection import protection_base, validate_protection
@@ -148,6 +155,7 @@ def validate_native_inputs(prepared: PreparedProof) -> dict:
             "cargo-page": PAGE_REQUEST,
             "cargo-catalog": CATALOG_FIRST_REQUEST,
             "structural-world": structural_first_request(),
+            "industry-production": PRODUCTION_REQUEST,
         }.get(metadata.get("mode"), REQUEST).to_bytes()
         or (directory / "request.json").read_bytes() != request
         or hashlib.sha256(request).hexdigest() != metadata["request_sha256"]
@@ -361,6 +369,10 @@ def validate_native_inputs(prepared: PreparedProof) -> dict:
             raise ValueError(
                 "Structural frozen accounting/kind/config/destination/lineage mismatch"
             )
+    if metadata.get("mode") == "industry-production":
+        from .production_preparation import validate_production_preparation
+
+        lineage_count = validate_production_preparation(prepared, metadata, bridge)
     if Path(metadata["attempt_directory"]).exists():
         raise ValueError("Proof attempt already claimed")
     config = workspace.config.read_text()
@@ -389,6 +401,8 @@ def validate_native_inputs(prepared: PreparedProof) -> dict:
     return {
         "state": "READY_TO_LAUNCH",
         "source_freeze": True,
+        "ownership_validated": True,
+        "persistent_cleanup_overlap": False,
         "historical_integrity": True,
         "lineage_validated": lineage_count is not None,
         "lineage_predecessor_count": lineage_count,
@@ -415,6 +429,7 @@ def validate_native_inputs(prepared: PreparedProof) -> dict:
             "cargo-page",
             "cargo-catalog",
             "structural-world",
+            "industry-production",
         ),
         "enrichment_contract": enrichment_contract()
         if metadata.get("mode") == "industry-enrichment"
@@ -423,7 +438,7 @@ def validate_native_inputs(prepared: PreparedProof) -> dict:
         "capability_phase_loaded": metadata.get("mode") == "industry-enrichment",
         "same_run_digest_wiring_loaded": metadata.get("mode") == "industry-enrichment",
         "native_api_authority_loaded": metadata.get("mode")
-        in ("industry-cargo", "cargo-page", "cargo-catalog"),
+        in ("industry-cargo", "cargo-page", "cargo-catalog", "industry-production"),
         "catalog_session_loaded": metadata.get("mode") == "cargo-catalog",
         "catalog_digest_loaded": metadata.get("mode") == "cargo-catalog",
         "cargo_page_contract": page_contract() if metadata.get("mode") == "cargo-page" else None,
@@ -453,6 +468,25 @@ def preflight_prepared(prepared: PreparedProof, backend) -> dict:
             max_application_requests=96,
             max_response_bytes=49152,
             lifecycle_overhead_frames=6,
+        )
+    if result["proof_kind"] == "industry-production":
+        from .production_contract import production_contract
+
+        backend.validate_launch(prepared)
+        result.update(production_contract())
+        result.update(
+            target_loaded=True,
+            request_loaded=True,
+            accounting_wired=True,
+            historical_target_validated=True,
+            production_validator_loaded=True,
+            final_subprocess_boundary_validated=True,
+            subprocess_created=False,
+            admin_connected=False,
+            request_sent=False,
+            launches=0,
+            connections=0,
+            requests=0,
         )
     reservation = EndpointReservation.allocate(*prepared.endpoints)
     try:

@@ -1,0 +1,14 @@
+{
+  "attempt_id": "industry-production-v2-runtime-8ef0fd0237929ac5",
+  "classification": "RUNTIME",
+  "connections": 1,
+  "evidence_directory": "openttd-15.3-industry-production-real-attempt1",
+  "evidence_manifest_digest": "8ef0fd0237929ac5dc9578517ad62f28df9a549eedaa8c618ee997343d748b7c",
+  "freeze_revision": 2,
+  "launches": 1,
+  "parent_attempt_ids": [],
+  "payload_digest": "8ef0fd0237929ac5dc9578517ad62f28df9a549eedaa8c618ee997343d748b7c",
+  "proof_kind": "industry-production",
+  "requests": 1,
+  "terminal_status": "REAL_SUCCESS"
+}

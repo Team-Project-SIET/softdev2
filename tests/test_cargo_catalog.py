@@ -612,6 +612,8 @@ def test_no_planning_imports_no_dynamic_or_mutation_apis():
             elif isinstance(node, ast.Import):
                 assert all(not name.name.startswith("app.planning") for name in node.names)
     source = Path("app/simulation/openttd/gamescript_bridge_package/main.nut").read_text()
+    # Structural cargo handler remains free of production queries.
+    source = source.split("function CargoPage(", 1)[1].split("function ", 1)[0]
     for forbidden in (
         "GetCargoIncome",
         "GetLastMonthProduction",

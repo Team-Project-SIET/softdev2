@@ -24,6 +24,8 @@ from .inventory_contract import INVENTORY_PRELAUNCH_DIRECTORY
 from .inventory_native import InventoryNativeBackend
 from .native import NativeBackend, load_prepared
 from .preflight import preflight_prepared
+from .production_contract import PRODUCTION_PRELAUNCH_DIRECTORY
+from .production_native import ProductionNativeBackend
 from .structural_contract import STRUCTURAL_PRELAUNCH_DIRECTORY
 from .structural_native import StructuralNativeBackend
 from .world_native import WorldNativeBackend
@@ -49,6 +51,7 @@ def main() -> None:
             "cargo-page",
             "cargo-catalog",
             "structural-world",
+            "industry-production",
         ),
         default="ack",
     )
@@ -56,7 +59,9 @@ def main() -> None:
     args = parser.parse_args()
     if args.directory is None:
         name = (
-            STRUCTURAL_PRELAUNCH_DIRECTORY
+            PRODUCTION_PRELAUNCH_DIRECTORY
+            if args.mode == "industry-production"
+            else STRUCTURAL_PRELAUNCH_DIRECTORY
             if args.mode == "structural-world"
             else CATALOG_PRELAUNCH_DIRECTORY
             if args.mode == "cargo-catalog"
@@ -85,6 +90,7 @@ def main() -> None:
         "cargo-page": CargoPageNativeBackend,
         "cargo-catalog": CatalogNativeBackend,
         "structural-world": StructuralNativeBackend,
+        "industry-production": ProductionNativeBackend,
     }[args.mode]
     if args.command == "prepare":
         prepared = prepare_proof(args.directory, mode=args.mode)
@@ -112,6 +118,7 @@ def main() -> None:
                 "cargo-page",
                 "cargo-catalog",
                 "structural-world",
+                "industry-production",
             ):
                 from .world_attempt import record_prelaunch_failure
 
@@ -133,7 +140,21 @@ def main() -> None:
     else:
         if not args.authorize_one_launch:
             parser.error("Separate explicit one-launch authorization required")
-        if args.mode == "structural-world":
+        if args.mode == "industry-production":
+            from .production_attempt import execute_production_attempt
+            from .world_attempt import record_prelaunch_failure
+
+            try:
+                prepared = load_prepared(args.directory, mode=args.mode)
+            except Exception as error:
+                record_prelaunch_failure(args.directory, error)
+                raise SystemExit("PRELAUNCH_FAILED; no execution") from None
+            result = asyncio.run(
+                execute_production_attempt(
+                    prepared, ProductionNativeBackend(authorized_one_launch=True)
+                )
+            )
+        elif args.mode == "structural-world":
             from .structural_attempt import execute_structural_attempt
             from .world_attempt import record_prelaunch_failure
 

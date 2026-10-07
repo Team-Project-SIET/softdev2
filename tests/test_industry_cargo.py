@@ -245,7 +245,8 @@ def test_payload_and_source_limits():
 
 def test_no_dynamic_or_mutation_apis_in_new_handler():
     source = Path("app/simulation/openttd/gamescript_bridge_package/main.nut").read_text()
-    handler = source.split("function CargoIDs", 1)[1].split("function Start", 1)[0]
+    handler = source.split("function IndustryCargo(", 1)[1].split("function ", 1)[0]
+    handler += source.split("function CargoIDs(", 1)[1].split("function ", 1)[0]
     for token in (
         "LastMonth",
         "Transported",

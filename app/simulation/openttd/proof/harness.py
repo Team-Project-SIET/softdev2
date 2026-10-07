@@ -15,6 +15,7 @@ from app.simulation.openttd.gamescript_bridge import BRIDGE_DIRECTORY, PACKAGE_F
 from app.simulation.openttd.gamescript_protocol import PingRequest
 from app.simulation.openttd.industry_cargo import IndustryCargoRequest
 from app.simulation.openttd.industry_page import IndustryPageRequest
+from app.simulation.openttd.industry_production import IndustryProductionRequest
 from app.simulation.openttd.runtime.base import LaunchSpecification
 from app.simulation.openttd.runtime.config import AdminSettings, RuntimeWorkspace
 from app.simulation.openttd.runtime.identity import RuntimeIdentity
@@ -38,6 +39,10 @@ from .industry_contract import (
     industry_contract,
 )
 from .inventory_contract import INVENTORY_FIRST_REQUEST
+from .production_contract import (
+    PRODUCTION_ATTEMPT_DIRECTORY,
+    PRODUCTION_REQUEST,
+)
 from .structural_contract import (
     STRUCTURAL_ATTEMPT_DIRECTORY,
     structural_first_request,
@@ -140,11 +145,19 @@ class PreparedProof:
         | IndustryPageRequest
         | IndustryCargoRequest
         | CargoPageRequest
+        | IndustryProductionRequest
     ) = REQUEST
 
     def dispose(self) -> None:
-        self.key_path.unlink(missing_ok=True)
-        self.spec.close()
+        if self.spec.workspace.root.exists():
+            from app.simulation.openttd.runtime.ownership import OwnershipGraph
+
+            graph = OwnershipGraph.from_public(
+                json.loads((self.directory / "path-ownership.json").read_text())
+            )
+            self.spec.lifecycle.close()
+            self.key_path.unlink(missing_ok=True)
+            self.spec.workspace.close(ownership=graph)
 
 
 def launch_argv(binary: Path, config: Path, game_port: int) -> tuple[str, ...]:
@@ -181,6 +194,7 @@ def prepare_proof(
         "cargo-page",
         "cargo-catalog",
         "structural-world",
+        "industry-production",
     ):
         raise ValueError("Unsupported proof mode")
     request = {
@@ -193,6 +207,7 @@ def prepare_proof(
         "cargo-page": PAGE_REQUEST,
         "cargo-catalog": CATALOG_FIRST_REQUEST,
         "structural-world": structural_first_request(),
+        "industry-production": PRODUCTION_REQUEST,
     }[mode]
     binary = binary.resolve(strict=True)
     if not binary.is_file() or not os.access(binary, os.X_OK) or sha256(binary) != binary_sha256:
@@ -218,6 +233,10 @@ def prepare_proof(
         from .structural_preparation import check_structural_preparation
 
         check_structural_preparation(directory)
+    if mode == "industry-production":
+        from .production_preparation import check_production_preparation
+
+        check_production_preparation(directory)
     directory.mkdir(parents=True, exist_ok=False)
     workspace = RuntimeWorkspace.create(directory / "isolated", retain=True)
     reservation = None
@@ -278,7 +297,19 @@ def prepare_proof(
             'return "15"' not in info
             or any(symbol in main for symbol in forbidden)
             or not industry_symbols <= {"GSIndustry", "GSIndustryList"}
-            or not industry_methods <= {"IsValidIndustry", "GetLocation", "GetIndustryType"}
+            or not industry_methods
+            <= (
+                {"IsValidIndustry", "GetLocation", "GetIndustryType"}
+                | (
+                    {
+                        "GetLastMonthProduction",
+                        "GetLastMonthTransported",
+                        "GetLastMonthTransportedPercentage",
+                    }
+                    if mode == "industry-production"
+                    else set()
+                )
+            )
         ):
             raise ValueError("Bridge API/mutation surface changed")
         argv = launch_argv(binary, workspace.config, reservation.game_port)
@@ -295,7 +326,13 @@ def prepare_proof(
         ports = (reservation.game_port, reservation.admin_port)
         from .preflight import historical_snapshot
 
-        if mode in ("industry-enrichment", "cargo-page", "cargo-catalog", "structural-world"):
+        if mode in (
+            "industry-enrichment",
+            "cargo-page",
+            "cargo-catalog",
+            "structural-world",
+            "industry-production",
+        ):
             from .enrichment_contract import ENRICHMENT_ATTEMPT_DIRECTORY
             from .historical_protection import capture_protection, protection_base
 
@@ -304,7 +341,9 @@ def prepare_proof(
                 directory.parent,
                 directory,
                 directory.with_name(
-                    STRUCTURAL_ATTEMPT_DIRECTORY
+                    PRODUCTION_ATTEMPT_DIRECTORY
+                    if mode == "industry-production"
+                    else STRUCTURAL_ATTEMPT_DIRECTORY
                     if mode == "structural-world"
                     else CATALOG_ATTEMPT_DIRECTORY
                     if mode == "cargo-catalog"
@@ -319,10 +358,12 @@ def prepare_proof(
         frozen = source_freeze()
         frozen[str(binary)] = binary_sha256
         frozen[str(graphics.resolve())] = graphics_sha256
-        for path in workspace.root.rglob("*"):
-            if path.is_file() and path != key_path:
-                frozen[str(path)] = sha256(path)
-        write_json(directory / "source-freeze.json", dict(sorted(frozen.items())))
+        from .ownership import freeze_materializations
+
+        freeze_materializations(directory, workspace, key_path, graphics, frozen)
+        (directory / "source-freeze.json").write_text(
+            json.dumps(dict(sorted(frozen.items())), sort_keys=True, indent=2) + "\n"
+        )
         write_json(
             directory / "runtime-identity.json",
             {
@@ -347,7 +388,8 @@ def prepare_proof(
                 "api": "15",
                 "commands": ["ping", "world_info", "industry_page"]
                 + (["industry_cargo"] if "GSCargoList_IndustryProducing" in main else [])
-                + (["cargo_page"] if "function CargoPage(" in main else []),
+                + (["cargo_page"] if "function CargoPage(" in main else [])
+                + (["industry_production"] if "function IndustryProduction(" in main else []),
                 "sha256": bridge.sha256,
                 "files": {name: sha256(bridge.directory / name) for name in PACKAGE_FILES},
             },
@@ -409,7 +451,6 @@ def prepare_proof(
         )
         if mode == "world-info":
             metadata_path = directory / "PRELAUNCH.json"
-            import json
 
             metadata = json.loads(metadata_path.read_text())
             metadata.update(
@@ -517,8 +558,6 @@ def prepare_proof(
                 },
             )
         if mode == "industry-page":
-            import json
-
             metadata_path = directory / "PRELAUNCH.json"
             metadata = json.loads(metadata_path.read_text())
             metadata.update(
@@ -613,6 +652,39 @@ def prepare_proof(
             from .structural_preparation import freeze_structural_preparation
 
             freeze_structural_preparation(directory, frozen, bridge.sha256)
+        if mode == "industry-production":
+            from .production_preparation import freeze_production_preparation
+
+            freeze_production_preparation(directory, frozen, bridge.sha256)
+        from .ownership import build_ownership
+
+        # Every public launch input has persistent ownership, for every proof kind.
+        for path in directory.iterdir():
+            if path.is_file() and path.name not in (
+                "source-freeze.json",
+                "artifact-manifest.sha256",
+            ):
+                frozen[str(path)] = sha256(path)
+        metadata = json.loads((directory / "PRELAUNCH.json").read_text())
+        graph = build_ownership(
+            directory,
+            workspace.root,
+            key_path,
+            Path(metadata["attempt_directory"]),
+            frozen,
+            history,
+        )
+        write_json(directory / "path-ownership.json", graph.public())
+        frozen[str(directory / "path-ownership.json")] = sha256(directory / "path-ownership.json")
+        if "source_input_count" in metadata:
+            metadata["source_input_count"] = len(frozen)
+            (directory / "PRELAUNCH.json").write_text(
+                json.dumps(metadata, sort_keys=True, indent=2) + "\n"
+            )
+            frozen[str(directory / "PRELAUNCH.json")] = sha256(directory / "PRELAUNCH.json")
+        (directory / "source-freeze.json").write_text(
+            json.dumps(dict(sorted(frozen.items())), sort_keys=True, indent=2) + "\n"
+        )
         (directory / "artifact-manifest.sha256").write_text(manifest(directory))
         return PreparedProof(directory, spec, key_path, key.public_hex, ports, request)
     except BaseException as error:

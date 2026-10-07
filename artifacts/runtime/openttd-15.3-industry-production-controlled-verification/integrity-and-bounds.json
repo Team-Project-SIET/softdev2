@@ -1,0 +1,25 @@
+{
+  "additional_test_after_ordinary_collection": "whole-current-bridge readonly API surface",
+  "baseline_head": "b6f5cfaf65a4025edebf659cd4744b2534341ae1",
+  "commit": false,
+  "context_changed": false,
+  "controlled_max_operations": 4096,
+  "historical_changed": [],
+  "historical_snapshot_entries": 997,
+  "import_boundary_audit": "PASS",
+  "max_requests": 512,
+  "max_response_bytes": 183296,
+  "native_total_frames_defined": false,
+  "ordinary_passed": 2198,
+  "ordinary_skipped": 38,
+  "production_passed": 82,
+  "push": false,
+  "query_max_response_bytes": 358,
+  "runtime_activity": {
+    "connections": 0,
+    "launches": 0,
+    "real_requests": 0
+  },
+  "structural_models_changed": false,
+  "whitespace_audit": "PASS"
+}

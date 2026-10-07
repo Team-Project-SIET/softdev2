@@ -93,3 +93,7 @@ def test_public_preflight_resolves_contract_and_reserves_endpoints(
         if held:
             held.close()
         prepared.dispose()
+
+
+# These historical modes retain their pre-production bridge safety contract.
+pytestmark = pytest.mark.usefixtures("checkpoint_structural_bridge")

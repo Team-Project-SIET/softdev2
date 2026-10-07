@@ -520,3 +520,7 @@ def test_cleanup_failure_does_not_promote_semantic_success(tmp_path):
         tmp_path / "openttd-15.3-world-info-real-attempt1/world-info-verification.json"
     ).exists()
     prepared.dispose()
+
+
+# These historical modes retain their pre-production bridge safety contract.
+pytestmark = pytest.mark.usefixtures("checkpoint_structural_bridge")

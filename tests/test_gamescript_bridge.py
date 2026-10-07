@@ -97,6 +97,7 @@ def test_bridge_symbols_are_minimal_and_api_version_is_15() -> None:
         "GSAdmin",
         "GSLog",
         "GSMap",
+        "GSDate",
         "GSList",
         "GSIndustryList",
         "GSIndustry",

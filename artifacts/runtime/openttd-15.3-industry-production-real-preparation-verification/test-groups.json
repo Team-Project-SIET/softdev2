@@ -1,0 +1,21 @@
+{
+  "P03/P04": 73,
+  "P05": 37,
+  "P06": 51,
+  "P07": 22,
+  "P08": 78,
+  "bridge/protocol/transport": 345,
+  "capability": 159,
+  "catalog": 162,
+  "controlled production": 81,
+  "evidence/causality": 53,
+  "inventory": 218,
+  "lineage": 41,
+  "ordinary": "2255 passed, 38 skipped",
+  "preparation": 57,
+  "production CLI": 5,
+  "qualification": "16 passed (dedicated subset; also included in the 81 controlled tests)",
+  "runtime": 64,
+  "secure Admin": 62,
+  "structural": 117
+}

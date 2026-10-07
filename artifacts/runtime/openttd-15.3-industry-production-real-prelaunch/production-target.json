@@ -1,0 +1,17 @@
+{
+  "cargo_id": 1,
+  "eligibility": "historical proven structural evidence",
+  "industry_id": 0,
+  "rule": "lexicographically first industry_id,cargo_id in produces",
+  "same_run_structural_provenance": "NOT PROVEN BY THIS SLICE",
+  "structural_digest": "060fb6368d2f73deaf3081ec14c9081b4cad4c70541981fe9199131afbc7ac11",
+  "supporting_directory": "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-structural-world-real-attempt1",
+  "supporting_files": {
+    "artifact-manifest.sha256": "5cb6156cb0336e5fa2c1f3713af3d06e8f4bdf211144bb77f5181eb4213f192c",
+    "capability-observation.json": "29e4b858ca02aa7fb770d035af9971c2f6f5694e72aae1378e0ceddf0aa803ed",
+    "proof-evidence.json": "e48cdb64c2ff3f999eb49e5a09b5960edbbc20d275eeceb3509aa8763fec6714",
+    "structural-canonical.json": "060fb6368d2f73deaf3081ec14c9081b4cad4c70541981fe9199131afbc7ac11",
+    "structural-digest.json": "98642072f7c8a52e98989ee733612b1b17655265fd6fcbcd065746e2a439d772",
+    "structural-observation.json": "948f3d009111c5b3cf6d728b57d3bd697638608b4111d262a305c4d227d62c39"
+  }
+}

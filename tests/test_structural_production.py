@@ -673,3 +673,7 @@ def test_retainer_failure_normalizes_every_completion_artifact(tmp_path, monkeyp
     assert not json.loads((dest / "structural-session.json").read_text())["complete"]
     assert not json.loads((dest / "structural-observation.json").read_text())["complete"]
     assert not (dest / "structural-digest.json").exists()
+
+
+# These historical modes retain their pre-production bridge safety contract.
+pytestmark = pytest.mark.usefixtures("checkpoint_structural_bridge")
