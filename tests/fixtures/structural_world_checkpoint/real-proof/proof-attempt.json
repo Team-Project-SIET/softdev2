@@ -1,0 +1,14 @@
+{
+  "attempt_id": "structural-world-v1-runtime-d165dd05d77fa108",
+  "classification": "RUNTIME",
+  "connections": 1,
+  "evidence_directory": "openttd-15.3-structural-world-real-attempt1",
+  "evidence_manifest_digest": "d165dd05d77fa1081399b8a7e181551b67ded8c60bd2505d4172c3084bf33b97",
+  "freeze_revision": 1,
+  "launches": 1,
+  "parent_attempt_ids": [],
+  "payload_digest": "d165dd05d77fa1081399b8a7e181551b67ded8c60bd2505d4172c3084bf33b97",
+  "proof_kind": "structural-world",
+  "requests": 21,
+  "terminal_status": "REAL_SUCCESS"
+}

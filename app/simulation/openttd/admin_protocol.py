@@ -368,6 +368,11 @@ class AdminFrameDecoder:
             packets.append(frame)
         return packets
 
+    def require_empty(self) -> None:
+        """Check an ordered barrier without closing this continuous decoder."""
+        if self._buffer:
+            raise AdminProtocolError("incomplete buffered Admin frame at barrier")
+
     def finish(self) -> None:
         self._closed = True
         if self._buffer:

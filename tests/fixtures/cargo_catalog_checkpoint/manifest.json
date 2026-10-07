@@ -1,0 +1,13 @@
+{
+  "origin": "artifacts/runtime/openttd-15.3-cargo-catalog-real-attempt1",
+  "claim": "Historical complete native cargo catalog; separate process from V4 enrichment; not a same-run structural proof",
+  "catalog_digest": "2859ff3ddac519e712a8513d14605a32313bc2a2f487abf632238258a64dffaa",
+  "sha256": {
+    "page-requests.jsonl": "4d585ab5345f81c6df89c1b25167673f72db371f4ee54d67455d1ae0e2ddd871",
+    "page-responses.jsonl": "5c82a1e118e2db528fae742b6e86f12c85473c21183fdd80ac020ecd90a573d0",
+    "page-receipts.jsonl": "a2301027ab0b3bc415e6b83e903a5eb75fc4256a67fd615dcfe7cacca376966c",
+    "page-verifications.jsonl": "0af266f68b3ce423b96831936129e6dff2423dadaee76307bd8185ed578b8ca9",
+    "stderr.log": "b427c52f113cdab17d8b6c9d9fedd5fd586251574a88851d6a1cc5c8d516b5eb",
+    "runtime-identity.json": "f52aaac83eeb239ed77e609d5a29b4e934d692001f62a8bc40b882ed9123233b"
+  }
+}

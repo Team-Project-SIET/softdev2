@@ -24,6 +24,8 @@ from .inventory_contract import INVENTORY_PRELAUNCH_DIRECTORY
 from .inventory_native import InventoryNativeBackend
 from .native import NativeBackend, load_prepared
 from .preflight import preflight_prepared
+from .structural_contract import STRUCTURAL_PRELAUNCH_DIRECTORY
+from .structural_native import StructuralNativeBackend
 from .world_native import WorldNativeBackend
 
 
@@ -46,6 +48,7 @@ def main() -> None:
             "industry-enrichment",
             "cargo-page",
             "cargo-catalog",
+            "structural-world",
         ),
         default="ack",
     )
@@ -53,7 +56,9 @@ def main() -> None:
     args = parser.parse_args()
     if args.directory is None:
         name = (
-            CATALOG_PRELAUNCH_DIRECTORY
+            STRUCTURAL_PRELAUNCH_DIRECTORY
+            if args.mode == "structural-world"
+            else CATALOG_PRELAUNCH_DIRECTORY
             if args.mode == "cargo-catalog"
             else PAGE_PRELAUNCH_DIRECTORY
             if args.mode == "cargo-page"
@@ -79,6 +84,7 @@ def main() -> None:
         "industry-enrichment": EnrichmentNativeBackend,
         "cargo-page": CargoPageNativeBackend,
         "cargo-catalog": CatalogNativeBackend,
+        "structural-world": StructuralNativeBackend,
     }[args.mode]
     if args.command == "prepare":
         prepared = prepare_proof(args.directory, mode=args.mode)
@@ -105,6 +111,7 @@ def main() -> None:
                 "industry-enrichment",
                 "cargo-page",
                 "cargo-catalog",
+                "structural-world",
             ):
                 from .world_attempt import record_prelaunch_failure
 
@@ -126,7 +133,21 @@ def main() -> None:
     else:
         if not args.authorize_one_launch:
             parser.error("Separate explicit one-launch authorization required")
-        if args.mode == "cargo-catalog":
+        if args.mode == "structural-world":
+            from .structural_attempt import execute_structural_attempt
+            from .world_attempt import record_prelaunch_failure
+
+            try:
+                prepared = load_prepared(args.directory, mode=args.mode)
+            except Exception as error:
+                record_prelaunch_failure(args.directory, error)
+                raise SystemExit("PRELAUNCH_FAILED; no execution") from None
+            result = asyncio.run(
+                execute_structural_attempt(
+                    prepared, StructuralNativeBackend(authorized_one_launch=True)
+                )
+            )
+        elif args.mode == "cargo-catalog":
             from .catalog_attempt import execute_catalog_attempt
             from .world_attempt import record_prelaunch_failure
 

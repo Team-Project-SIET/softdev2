@@ -43,6 +43,11 @@ from .harness import (
 from .industry_contract import INDUSTRY_ATTEMPT, INDUSTRY_MODEL, INDUSTRY_REQUEST, INDUSTRY_REVISION
 from .inventory_contract import INVENTORY_FIRST_REQUEST, INVENTORY_MODEL
 from .network_evidence import RecordedProofSession
+from .structural_contract import (
+    STRUCTURAL_MODEL,
+    STRUCTURAL_REVISION,
+    structural_first_request,
+)
 
 
 def matching_processes(binary: Path) -> list[int]:
@@ -67,6 +72,7 @@ def load_prepared(directory: Path, *, mode: str = "ack") -> PreparedProof:
     enrichment = mode == "industry-enrichment"
     page = mode == "cargo-page"
     catalog = mode == "cargo-catalog"
+    structural = mode == "structural-world"
     if mode not in (
         "ack",
         "world-info",
@@ -76,6 +82,7 @@ def load_prepared(directory: Path, *, mode: str = "ack") -> PreparedProof:
         "industry-enrichment",
         "cargo-page",
         "cargo-catalog",
+        "structural-world",
     ):
         raise ValueError("Unsupported proof mode")
     request = {
@@ -87,6 +94,7 @@ def load_prepared(directory: Path, *, mode: str = "ack") -> PreparedProof:
         "industry-enrichment": ENRICHMENT_FIRST_REQUEST,
         "cargo-page": PAGE_REQUEST,
         "cargo-catalog": CATALOG_FIRST_REQUEST,
+        "structural-world": structural_first_request(),
     }[mode]
     if (
         data.get("attempt")
@@ -94,12 +102,14 @@ def load_prepared(directory: Path, *, mode: str = "ack") -> PreparedProof:
             INDUSTRY_ATTEMPT
             if industry
             else 1
-            if world or inventory or cargo or enrichment or page or catalog
+            if world or inventory or cargo or enrichment or page or catalog or structural
             else 2
         )
         or data.get("prelaunch_revision")
         != (
-            CATALOG_REVISION
+            STRUCTURAL_REVISION
+            if structural
+            else CATALOG_REVISION
             if catalog
             else PAGE_REVISION
             if page
@@ -113,7 +123,9 @@ def load_prepared(directory: Path, *, mode: str = "ack") -> PreparedProof:
         )
         or data.get("proof_model")
         != (
-            CATALOG_MODEL
+            STRUCTURAL_MODEL
+            if structural
+            else CATALOG_MODEL
             if catalog
             else PAGE_MODEL
             if page
@@ -193,10 +205,8 @@ class NativeBackend:
         if sha256(BINARY) != BINARY_SHA256 or matching_processes(BINARY):
             raise ValueError("Pinned executable/process ownership mismatch")
 
-    async def launch(self, prepared: PreparedProof) -> None:
-        if self._launched:
-            raise RuntimeError("No launch retry")
-        self._prepared = prepared
+    def validate_launch(self, prepared: PreparedProof) -> None:
+        """Last read-only launch boundary, shared with guarded production preflight."""
         expected = launch_argv(
             BINARY.resolve(), prepared.spec.workspace.config, prepared.endpoints[0]
         )
@@ -206,6 +216,12 @@ class NativeBackend:
             or matching_processes(BINARY)
         ):
             raise ValueError("Native launch identity/ownership mismatch")
+
+    async def launch(self, prepared: PreparedProof) -> None:
+        if self._launched:
+            raise RuntimeError("No launch retry")
+        self.validate_launch(prepared)
+        self._prepared = prepared
         self._launched = True
         stdout = prepared.spec.stdout_path.open("xb")
         self._logs.append(stdout)

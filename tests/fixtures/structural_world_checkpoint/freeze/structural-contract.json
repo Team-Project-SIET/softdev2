@@ -1,0 +1,55 @@
+{
+  "additional_command_types": 0,
+  "application_limit": 512,
+  "cargo_page_size": 2,
+  "connections": 1,
+  "frame_budget_derivation": {
+    "encrypted_protocol_and_welcome": 2,
+    "graceful_quit": 1,
+    "query_operations": 1024,
+    "subscription_outbound": 2,
+    "subscription_pong": 1
+  },
+  "independent_capability_source": null,
+  "independent_catalog_source": null,
+  "independent_inventory_source": null,
+  "industry_page_size": 2,
+  "launches": 1,
+  "max_application_requests": 96,
+  "max_query_operations": 1024,
+  "max_response_bytes": 49152,
+  "max_total_post_auth_frames": 1030,
+  "native_ceiling": 1450,
+  "p08_completion": false,
+  "phase_limits": {
+    "capability": {
+      "query_operations": 256,
+      "records": 32,
+      "requests": 32,
+      "response_bytes": 16384
+    },
+    "catalog": {
+      "query_operations": 512,
+      "records": 64,
+      "requests": 32,
+      "response_bytes": 16384
+    },
+    "inventory": {
+      "query_operations": 256,
+      "records": 32,
+      "requests": 32,
+      "response_bytes": 16384
+    }
+  },
+  "phase_order": [
+    "inventory",
+    "capability",
+    "catalog",
+    "assembly"
+  ],
+  "production_history": "NOT INCLUDED",
+  "proof_kind": "structural-world",
+  "reconnects": 0,
+  "retries": 0,
+  "session_id": "openttd15-structural-world-001"
+}

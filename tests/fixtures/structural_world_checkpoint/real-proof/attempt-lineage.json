@@ -1,0 +1,10 @@
+{
+  "attempt_id": "structural-world-v1-native-attempt1",
+  "evidence_directory": "openttd-15.3-structural-world-real-attempt1",
+  "freeze_revision": 1,
+  "fresh_explicit_authorization_required": true,
+  "lineage_digest": "9330ff721b352e60a4a1154c44b7c3ce9cb164f99e1425c6476013662b2f7fe1",
+  "policy": "structural-world-attempt-lineage-v1",
+  "proof_kind": "structural-world",
+  "supersedes_prelaunch_attempts": []
+}

@@ -1,0 +1,23 @@
+{
+  "historical_snapshot_file_count": 898,
+  "all_historical_hashes_exact": true,
+  "CONTEXT_unchanged": true,
+  "earlier_proofs_unchanged": true,
+  "preparation_failure_lineage_unchanged": true,
+  "bridge_source_unchanged": true,
+  "HEAD_unchanged": true,
+  "index_empty": true,
+  "import_boundary_audit": "PASS",
+  "whitespace_audit": "PASS",
+  "dynamic_mutation_api_audit": "PASS",
+  "gameplay_launches": 0,
+  "live_Admin_connections": 0,
+  "real_application_requests": 0,
+  "post_suite_historical_hashes_exact": true,
+  "remaining_native_OpenTTD_processes": 0,
+  "new_source_sha256": {
+    "app/simulation/openttd/structural_world.py": "9090382c965293b0764763b0a673af4ed0d6c03063972e32bb70a3641172865d",
+    "app/simulation/openttd/structural_world_session.py": "b8fb6af14a565f3d13ca25670c140647bfcd9565f2cd380cba78b17cc91925af",
+    "tests/test_structural_world.py": "e071aab0729d3358e81bc0fd96710a4d4b41d40cfa65911cef0acc01e263acd2"
+  }
+}

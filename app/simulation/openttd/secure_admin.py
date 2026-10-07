@@ -109,15 +109,22 @@ class SecureAdminSession(GameScriptSession):
     """
 
     def __init__(
-        self, reader: asyncio.StreamReader, writer: AdminWriter, *, key: AuthorizedKey
+        self,
+        reader: asyncio.StreamReader,
+        writer: AdminWriter,
+        *,
+        key: AuthorizedKey,
+        frame_observer: Callable[[str, bytes], None] | None = None,
     ) -> None:
         super().__init__(reader, writer)
+        self._frame_observer = frame_observer
         self._state = AuthState.CONNECTED
         self._key: AuthorizedKey | None = key
         self._keys: DerivedKeys | None = None
         self._out_cipher: PacketCipher | None = None
         self._in_cipher: PacketCipher | None = None
         self._frames: deque[bytes] = deque()
+        self._plain_frames: deque[bytes] = deque()
         self._framer = AdminFrameDecoder()
         self.protocol: ServerProtocol | None = None
         self.welcome: ServerWelcome | None = None
@@ -128,7 +135,13 @@ class SecureAdminSession(GameScriptSession):
 
     @classmethod
     async def connect_secure(
-        cls, host: str, port: int, timeout: float, *, key: AuthorizedKey
+        cls,
+        host: str,
+        port: int,
+        timeout: float,
+        *,
+        key: AuthorizedKey,
+        frame_observer: Callable[[str, bytes], None] | None = None,
     ) -> Self:
         if not math.isfinite(timeout) or timeout <= 0:
             raise ValueError("connection timeout must be positive and finite")
@@ -138,7 +151,7 @@ class SecureAdminSession(GameScriptSession):
             raise AuthTimeout("Admin connection deadline expired") from None
         except OSError:
             raise AuthDisconnected("Admin connection failed") from None
-        return cls(reader, writer, key=key)
+        return cls(reader, writer, key=key, frame_observer=frame_observer)
 
     def validate_outbound(self, frame: bytes) -> None:
         if self.state is not AuthState.ACTIVE:
@@ -159,17 +172,50 @@ class SecureAdminSession(GameScriptSession):
     def encode_outbound(self, frame: bytes) -> bytes:
         if self._out_cipher is None:
             raise AuthProtocolError("encrypted stream is not enabled")
+        if self._frame_observer is not None:
+            self._frame_observer("outbound", frame)
         return self._out_cipher.encrypt(frame)
 
+    def _decrypt_pending(self) -> None:
+        assert self._in_cipher is not None
+        while self._frames:
+            frame = self._in_cipher.decrypt(self._frames.popleft())
+            if self._frame_observer is not None:
+                self._frame_observer("inbound", frame)
+            self._plain_frames.append(frame)
+
     async def _next_frame(self) -> bytes:
+        if self._in_cipher is not None:
+            self._decrypt_pending()
+            if self._plain_frames:
+                return self._plain_frames.popleft()
         while not self._frames:
             chunk = await self.reader.read(4096)
             if not chunk:
                 self._framer.finish()
                 raise AuthDisconnected("Admin disconnected")
             self._frames.extend(self._framer.feed_wire_frames(chunk))
-        frame = self._frames.popleft()
-        return self._in_cipher.decrypt(frame) if self._in_cipher else frame
+        if self._in_cipher is not None:
+            self._decrypt_pending()
+            return self._plain_frames.popleft()
+        return self._frames.popleft()
+
+    async def require_quiescent(self) -> None:
+        """No already-received surplus traffic may be hidden by an ordered barrier.
+
+        The exclusively owned asyncio reader's buffered bytes can be drained without
+        waiting for future traffic. Every complete encrypted frame is observed once.
+        This is a barrier check, not a snapshot or a guarantee about future packets.
+        """
+        if self.state is not AuthState.ACTIVE:
+            raise AuthProtocolError("Active secure connection required at barrier")
+        buffered = len(getattr(self.reader, "_buffer"))
+        if buffered:
+            self._frames.extend(self._framer.feed_wire_frames(await self.reader.read(buffered)))
+        self._decrypt_pending()
+        self._framer.require_empty()
+        if self._plain_frames:
+            raise ValueError("Unexpected buffered Admin traffic after completion barrier")
 
     async def receive(self, size: int = 4096) -> bytes:
         if self.state is not AuthState.ACTIVE:
@@ -268,3 +314,4 @@ class SecureAdminSession(GameScriptSession):
                     cipher.close()
             self._out_cipher = self._in_cipher = None
             self._frames.clear()
+            self._plain_frames.clear()

@@ -53,6 +53,11 @@ from .inventory_contract import (
     inventory_contract,
     inventory_contract_digest,
 )
+from .structural_contract import (
+    STRUCTURAL_ATTEMPT_DIRECTORY,
+    STRUCTURAL_REVISION,
+    structural_first_request,
+)
 
 
 def historical_snapshot(parent: Path, exclude: Path) -> dict:
@@ -89,7 +94,12 @@ def validate_native_inputs(prepared: PreparedProof) -> dict:
     metadata = json.loads((directory / "PRELAUNCH.json").read_text())
     protected_count = None
     lineage_count = None
-    if metadata.get("mode") in ("industry-enrichment", "cargo-page", "cargo-catalog"):
+    if metadata.get("mode") in (
+        "industry-enrichment",
+        "cargo-page",
+        "cargo-catalog",
+        "structural-world",
+    ):
         from .harness import PROJECT
         from .historical_protection import protection_base, validate_protection
 
@@ -137,6 +147,7 @@ def validate_native_inputs(prepared: PreparedProof) -> dict:
             "industry-enrichment": ENRICHMENT_FIRST_REQUEST,
             "cargo-page": PAGE_REQUEST,
             "cargo-catalog": CATALOG_FIRST_REQUEST,
+            "structural-world": structural_first_request(),
         }.get(metadata.get("mode"), REQUEST).to_bytes()
         or (directory / "request.json").read_bytes() != request
         or hashlib.sha256(request).hexdigest() != metadata["request_sha256"]
@@ -314,6 +325,42 @@ def validate_native_inputs(prepared: PreparedProof) -> dict:
         CatalogLifecycle()
         if not callable(CargoCatalogSession):
             raise ValueError("Catalog assembly unavailable")
+    if metadata.get("mode") == "structural-world":
+        from .enrichment_preparation import checkpoint_head
+        from .structural_contract import structural_contract, structural_contract_digest
+        from .structural_lineage import validate_lineage
+        from .structural_preparation import accounting_identity, configuration_identity
+
+        lineage = json.loads((directory / "attempt-lineage.json").read_text())
+        lineage_count = validate_lineage(
+            directory,
+            lineage,
+            STRUCTURAL_REVISION,
+            directory.with_name(STRUCTURAL_ATTEMPT_DIRECTORY),
+        )
+        if (
+            json.loads((directory / "structural-contract.json").read_text())
+            != structural_contract()
+            or json.loads((directory / "structural-context.json").read_text())
+            != configuration_identity(directory)
+            or json.loads((directory / "frame-accounting-identity.json").read_text())
+            != accounting_identity()
+            or metadata.get("proof_config_sha256") != structural_contract_digest()
+            or metadata.get("structural_session_config_sha256") != structural_contract_digest()
+            or metadata.get("frame_accounting_identity") != accounting_identity()["sha256"]
+            or metadata.get("attempt_directory")
+            != str(directory.with_name(STRUCTURAL_ATTEMPT_DIRECTORY))
+            or metadata.get("proof_kind") != "structural-world"
+            or metadata.get("checkpoint_head") != checkpoint_head()
+            or metadata.get("attempt_id") != lineage["attempt_id"]
+            or metadata.get("lineage_digest") != lineage["lineage_digest"]
+            or metadata.get("predecessor_attempt_ids")
+            != [r["attempt_id"] for r in lineage["supersedes_prelaunch_attempts"]]
+            or bridge["sha256"] != PAGE_BRIDGE_DIGEST
+        ):
+            raise ValueError(
+                "Structural frozen accounting/kind/config/destination/lineage mismatch"
+            )
     if Path(metadata["attempt_directory"]).exists():
         raise ValueError("Proof attempt already claimed")
     config = workspace.config.read_text()
@@ -367,6 +414,7 @@ def validate_native_inputs(prepared: PreparedProof) -> dict:
             "industry-enrichment",
             "cargo-page",
             "cargo-catalog",
+            "structural-world",
         ),
         "enrichment_contract": enrichment_contract()
         if metadata.get("mode") == "industry-enrichment"
@@ -393,6 +441,19 @@ def validate_native_inputs(prepared: PreparedProof) -> dict:
 def preflight_prepared(prepared: PreparedProof, backend) -> dict:
     result = validate_native_inputs(prepared)
     backend.preflight(prepared)
+    if result["proof_kind"] == "structural-world":
+        from .structural_attempt import StructuralProductionRunner
+
+        result.update(StructuralProductionRunner(prepared, backend).launch_boundary())
+        result.update(
+            structural_session_loaded=True,
+            phase_barriers_loaded=True,
+            referential_validation_loaded=True,
+            structural_digest_loaded=True,
+            max_application_requests=96,
+            max_response_bytes=49152,
+            lifecycle_overhead_frames=6,
+        )
     reservation = EndpointReservation.allocate(*prepared.endpoints)
     try:
         result["endpoints_reserved"] = [reservation.game_port, reservation.admin_port]

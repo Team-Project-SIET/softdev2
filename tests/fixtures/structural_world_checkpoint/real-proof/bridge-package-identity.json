@@ -1,0 +1,17 @@
+{
+  "api": "15",
+  "commands": [
+    "ping",
+    "world_info",
+    "industry_page",
+    "industry_cargo",
+    "cargo_page"
+  ],
+  "files": {
+    "info.nut": "97932748663e3ee7c8cbd42412eeb3d2b132a2cd3440e58b988044ab25d2b76a",
+    "main.nut": "feedf08841cccac01744a0c8ceb1c663bcb62e5af32584e89f68ea1d5a2b22dd"
+  },
+  "name": "NoMutationBridge",
+  "sha256": "7b45783b37ed93a481a58a2d768b4c490c8fad35a55db459a82cb0ddeaa84981",
+  "version": 2
+}

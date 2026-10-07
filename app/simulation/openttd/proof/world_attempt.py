@@ -132,6 +132,15 @@ def record_prelaunch_failure(directory: Path, error: Exception) -> None:
     metadata_path = directory / "PRELAUNCH.json"
     if metadata_path.exists():
         metadata = json.loads(metadata_path.read_text())
+        if metadata.get("mode") == "structural-world":
+            from .structural_lineage import retain_attempt_identity as retain_structural_identity
+
+            record = json.loads((failure / "PRELAUNCH-FAILURE.json").read_text())
+            record["preparation"] = str(directory)
+            (failure / "PRELAUNCH-FAILURE.json").write_text(
+                json.dumps(record, sort_keys=True, indent=2) + "\n"
+            )
+            retain_structural_identity(failure, metadata, record)
         if metadata.get("mode") == "cargo-catalog":
             from .catalog_lineage import retain_attempt_identity
 

@@ -38,6 +38,10 @@ from .industry_contract import (
     industry_contract,
 )
 from .inventory_contract import INVENTORY_FIRST_REQUEST
+from .structural_contract import (
+    STRUCTURAL_ATTEMPT_DIRECTORY,
+    structural_first_request,
+)
 
 BINARY = Path("/home/fed/Downloads/openttd-15.3-linux-generic-amd64/openttd")
 BINARY_SHA256 = "276d5b698a6b706154f3af588f6f885b3aebe518f4ecc8f869abf71383b1904c"
@@ -176,6 +180,7 @@ def prepare_proof(
         "industry-enrichment",
         "cargo-page",
         "cargo-catalog",
+        "structural-world",
     ):
         raise ValueError("Unsupported proof mode")
     request = {
@@ -187,6 +192,7 @@ def prepare_proof(
         "industry-enrichment": ENRICHMENT_FIRST_REQUEST,
         "cargo-page": PAGE_REQUEST,
         "cargo-catalog": CATALOG_FIRST_REQUEST,
+        "structural-world": structural_first_request(),
     }[mode]
     binary = binary.resolve(strict=True)
     if not binary.is_file() or not os.access(binary, os.X_OK) or sha256(binary) != binary_sha256:
@@ -208,11 +214,19 @@ def prepare_proof(
     for profile in (Path.home() / ".config/openttd", Path.home() / ".local/share/openttd"):
         if directory.is_relative_to(profile.resolve()):
             raise ValueError("Proof preparation must not modify normal profiles")
+    if mode == "structural-world":
+        from .structural_preparation import check_structural_preparation
+
+        check_structural_preparation(directory)
     directory.mkdir(parents=True, exist_ok=False)
     workspace = RuntimeWorkspace.create(directory / "isolated", retain=True)
     reservation = None
     try:
         reservation = EndpointReservation.allocate()
+        if mode == "structural-world":
+            graphics_identity = stage_opengfx(
+                graphics, workspace.root / "baseset/OpenGFX", expected_sha256=graphics_sha256
+            )
         key = AuthorizedKey.generate()
         key_path = workspace.root / ".admin-secret"
         # A restricted credential, never part of any evidence/manifest/source hash.
@@ -236,9 +250,10 @@ def prepare_proof(
             "[difficulty]\nmax_no_competitors = 0\n[misc]\ngraphicsset = OpenGFX\n"
         )
         workspace.config.write_text(config)
-        graphics_identity = stage_opengfx(
-            graphics, workspace.root / "baseset/OpenGFX", expected_sha256=graphics_sha256
-        )
+        if mode != "structural-world":
+            graphics_identity = stage_opengfx(
+                graphics, workspace.root / "baseset/OpenGFX", expected_sha256=graphics_sha256
+            )
         bridge = stage_bridge(workspace)
         # API and narrow symbols are frozen, and a forbidden API cannot be staged.
         info = (bridge.directory / "info.nut").read_text()
@@ -280,7 +295,7 @@ def prepare_proof(
         ports = (reservation.game_port, reservation.admin_port)
         from .preflight import historical_snapshot
 
-        if mode in ("industry-enrichment", "cargo-page", "cargo-catalog"):
+        if mode in ("industry-enrichment", "cargo-page", "cargo-catalog", "structural-world"):
             from .enrichment_contract import ENRICHMENT_ATTEMPT_DIRECTORY
             from .historical_protection import capture_protection, protection_base
 
@@ -289,7 +304,9 @@ def prepare_proof(
                 directory.parent,
                 directory,
                 directory.with_name(
-                    CATALOG_ATTEMPT_DIRECTORY
+                    STRUCTURAL_ATTEMPT_DIRECTORY
+                    if mode == "structural-world"
+                    else CATALOG_ATTEMPT_DIRECTORY
                     if mode == "cargo-catalog"
                     else PAGE_ATTEMPT_DIRECTORY
                     if mode == "cargo-page"
@@ -592,6 +609,10 @@ def prepare_proof(
             from .catalog_preparation import freeze_catalog_preparation
 
             freeze_catalog_preparation(directory, frozen, bridge.sha256)
+        if mode == "structural-world":
+            from .structural_preparation import freeze_structural_preparation
+
+            freeze_structural_preparation(directory, frozen, bridge.sha256)
         (directory / "artifact-manifest.sha256").write_text(manifest(directory))
         return PreparedProof(directory, spec, key_path, key.public_hex, ports, request)
     except BaseException as error:

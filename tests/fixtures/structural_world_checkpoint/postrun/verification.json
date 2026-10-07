@@ -1,0 +1,22 @@
+{
+  "all_transactions_valid": true,
+  "archived_credentials": 6,
+  "capability_count": 10,
+  "cargo_count": 11,
+  "cleanup_valid": true,
+  "commands": {
+    "cargo_page": 6,
+    "industry_cargo": 10,
+    "industry_page": 5
+  },
+  "credential_retained": false,
+  "industry_count": 10,
+  "protected_public_files": 914,
+  "query_operations": 84,
+  "referential_integrity": true,
+  "response_bytes": 4611,
+  "source_hashes": 158,
+  "status": "PASS",
+  "structural_digest": "060fb6368d2f73deaf3081ec14c9081b4cad4c70541981fe9199131afbc7ac11",
+  "total_post_auth_frames": 90
+}
