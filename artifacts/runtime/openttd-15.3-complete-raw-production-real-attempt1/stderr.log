@@ -1,0 +1,200 @@
+[2026-10-07 22:38:50] dbg: [net:3] Starting dedicated server, version 15.3
+[2026-10-07 22:38:50] dbg: [grf:1] Adding OpenGFX ([9499]) as base graphics set
+[2026-10-07 22:38:50] dbg: [grf:1] Adding original_dos_de ([0]) as base graphics set
+[2026-10-07 22:38:50] dbg: [grf:1] Adding original_windows ([0]) as base graphics set
+[2026-10-07 22:38:50] dbg: [net:3] Starting network
+[2026-10-07 22:38:50] dbg: [net:3] Initializing UDP listeners
+[2026-10-07 22:38:50] dbg: [net:3] Network online, multiplayer available
+[2026-10-07 22:38:50] dbg: [net:3] Detected broadcast addresses:
+[2026-10-07 22:38:50] dbg: [net:3]   0) 10.150.5.255
+[2026-10-07 22:38:50] dbg: [net:3]   1) 172.16.7.255
+[2026-10-07 22:38:50] dbg: [net:3]   2) 172.18.255.255
+[2026-10-07 22:38:50] dbg: [net:3]   3) 172.17.255.255
+[2026-10-07 22:38:50] dbg: [net:3] Using certificate file: /etc/ssl/certs/ca-certificates.crt
+[2026-10-07 22:38:50] dbg: [net:3] Using certificate path: none
+[2026-10-07 22:38:50] dbg: [grf:1] Adding original_windows ([0]) as base sounds set
+[2026-10-07 22:38:50] dbg: [grf:1] Adding NoSound ([2]) as base sounds set
+[2026-10-07 22:38:50] dbg: [grf:1] Using the OpenGFX base graphics set
+[2026-10-07 22:38:50] dbg: [grf:1] Adding original_tto ([1]) as base music set
+[2026-10-07 22:38:50] dbg: [grf:1] Adding original_dos ([1]) as base music set
+[2026-10-07 22:38:50] dbg: [grf:1] Adding original_windows ([1]) as base music set
+[2026-10-07 22:38:50] dbg: [grf:1] Adding NoMusic ([0]) as base music set
+[2026-10-07 22:38:50] dbg: [grf:1] Using the OpenGFX base graphics set
+[2026-10-07 22:38:50] dbg: [grf:1] GRFInfo: Loaded GRFv8 set FFFFFFFE - OpenTTD's default and fallback extra graphics (palette: DOS, version: 0)
+[2026-10-07 22:38:50] dbg: [grf:1] GRFInfo: Loaded GRFv8 set FF4F5401 - OpenGFX 8.0 (palette: DOS, version: 9499)
+[2026-10-07 22:38:50] dbg: [grf:1] GRFInfo: Loaded GRFv8 set FFFFFFFE - OpenTTD's default and fallback extra graphics (palette: DOS, version: 0)
+[2026-10-07 22:38:50] dbg: [grf:1] GRFInfo: Loaded GRFv8 set FF4F5401 - OpenGFX 8.0 (palette: DOS, version: 9499)
+[2026-10-07 22:38:50] dbg: [grf:1] GRFInfo: Loaded GRFv8 set FFFFFFFE - OpenTTD's default and fallback extra graphics (palette: DOS, version: 0)
+[2026-10-07 22:38:50] dbg: [grf:1] GRFInfo: Loaded GRFv8 set FF4F5401 - OpenGFX 8.0 (palette: DOS, version: 9499)
+[2026-10-07 22:38:50] dbg: [grf:1] GRFInfo: Loaded GRFv8 set FFFFFFFE - OpenTTD's default and fallback extra graphics (palette: DOS, version: 0)
+[2026-10-07 22:38:50] dbg: [grf:1] GRFInfo: Loaded GRFv8 set FF4F5401 - OpenGFX 8.0 (palette: DOS, version: 9499)
+[2026-10-07 22:38:50] dbg: [grf:1] GRFInfo: Loaded GRFv8 set FFFFFFFE - OpenTTD's default and fallback extra graphics (palette: DOS, version: 0)
+[2026-10-07 22:38:50] dbg: [grf:1] GRFInfo: Loaded GRFv8 set FF4F5401 - OpenGFX 8.0 (palette: DOS, version: 9499)
+[2026-10-07 22:38:50] dbg: [grf:1] GRFInfo: Loaded GRFv8 set FFFFFFFE - OpenTTD's default and fallback extra graphics (palette: DOS, version: 0)
+[2026-10-07 22:38:50] dbg: [grf:1] GRFInfo: Loaded GRFv8 set FF4F5401 - OpenGFX 8.0 (palette: DOS, version: 9499)
+[2026-10-07 22:38:50] dbg: [grf:1] Scanning for NewGRFs
+[2026-10-07 22:38:50] dbg: [grf:1] Scan complete, found 0 files
+[2026-10-07 22:38:50] dbg: [net:1] No "client_name" has been set, using "Unnamed Client" instead. Please set this now using the "name <new name>" command
+[2026-10-07 22:38:50] dbg: [net:1] No "server_name" has been set, using "Unnamed Server" instead. Please set this now using the "server_name <new name>" command
+[2026-10-07 22:38:50] dbg: [net:3] Initializing UDP listeners
+[2026-10-07 22:38:50] dbg: [net:3] Initializing UDP listeners
+[2026-10-07 22:38:50] dbg: [net:3] Listening on 127.0.0.1:58135 (IPv4)
+[2026-10-07 22:38:50] dbg: [net:3] Listening on 127.0.0.1:54885 (IPv4)
+[2026-10-07 22:38:50] dbg: [net:3] Listening on 127.0.0.1:58135 (IPv4)
+[2026-10-07 22:38:50] dbg: [net:3] Network revision name: 15.3
+[2026-10-07 22:38:50] dbg: [net:3] [crypto] Creating a new random key
+[2026-10-07 22:38:50] dbg: [grf:1] GRFInfo: Loaded GRFv8 set FFFFFFFE - OpenTTD's default and fallback extra graphics (palette: DOS, version: 0)
+[2026-10-07 22:38:50] dbg: [grf:1] GRFInfo: Loaded GRFv8 set FF4F5401 - OpenGFX 8.0 (palette: DOS, version: 9499)
+[2026-10-07 22:38:50] dbg: [grf:1] GRFInfo: Loaded GRFv8 set FFFFFFFE - OpenTTD's default and fallback extra graphics (palette: DOS, version: 0)
+[2026-10-07 22:38:50] dbg: [grf:1] GRFInfo: Loaded GRFv8 set FF4F5401 - OpenGFX 8.0 (palette: DOS, version: 9499)
+[2026-10-07 22:38:50] dbg: [grf:1] GRFInfo: Loaded GRFv8 set FFFFFFFE - OpenTTD's default and fallback extra graphics (palette: DOS, version: 0)
+[2026-10-07 22:38:50] dbg: [grf:1] GRFInfo: Loaded GRFv8 set FF4F5401 - OpenGFX 8.0 (palette: DOS, version: 9499)
+[2026-10-07 22:38:50] dbg: [net:3] Generating map, please wait...
+[2026-10-07 22:38:50] dbg: [net:3] Map generation percentage complete: 5
+[2026-10-07 22:38:50] dbg: [net:3] Map generation percentage complete: 11
+[2026-10-07 22:38:50] dbg: [net:3] Map generation percentage complete: 15
+[2026-10-07 22:38:50] dbg: [net:3] Map generation percentage complete: 20
+[2026-10-07 22:38:50] dbg: [net:3] Map generation percentage complete: 30
+[2026-10-07 22:38:50] dbg: [net:3] Map generation percentage complete: 40
+[2026-10-07 22:38:50] dbg: [net:3] Map generation percentage complete: 46
+[2026-10-07 22:38:50] dbg: [net:3] Map generation percentage complete: 50
+[2026-10-07 22:38:50] dbg: [net:3] Map generation percentage complete: 60
+[2026-10-07 22:38:50] dbg: [net:3] Map generation percentage complete: 65
+[2026-10-07 22:38:50] dbg: [net:3] Map generation percentage complete: 70
+[2026-10-07 22:38:50] dbg: [net:3] Map generation percentage complete: 75
+[2026-10-07 22:38:50] dbg: [net:3] Map generation percentage complete: 80
+[2026-10-07 22:38:50] dbg: [net:3] Map generation percentage complete: 85
+[2026-10-07 22:38:50] dbg: [net:3] Map generation percentage complete: 90
+[2026-10-07 22:38:50] dbg: [net:3] Map generation percentage complete: 95
+[2026-10-07 22:38:50] dbg: [script:4] [18] [I] BRIDGE_STARTED protocol=1 api=15
+[2026-10-07 22:38:50] dbg: [net:3] Map generated, starting game
+[2026-10-07 22:38:50] dbg: [net:3] [admin] Client connected from 127.0.0.1 on frame 0
+[2026-10-07 22:38:50] dbg: [net:3] [admin] 'ACK-proof' (1) has connected
+[2026-10-07 22:38:50] dbg: [net:3] [admin] 'ACK-proof' (1) authenticated
+[2026-10-07 22:38:50] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-complete-raw-production-001-inv-p001 type=industry_page protocol=1
+[2026-10-07 22:38:50] dbg: [script:4] [18] [I] INDUSTRY_PAGE_READ request_id=openttd15-complete-raw-production-001-inv-p001 after_id=null limit=2 returned_count=2 first_id=0 last_id=1 next_after_id=1 has_more=true
+[2026-10-07 22:38:50] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-complete-raw-production-001-inv-p001 type=industry_page_result status=ok protocol=1
+[2026-10-07 22:38:50] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-complete-raw-production-001-inv-p001
+[2026-10-07 22:38:50] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-complete-raw-production-001-inv-p002 type=industry_page protocol=1
+[2026-10-07 22:38:50] dbg: [script:4] [18] [I] INDUSTRY_PAGE_READ request_id=openttd15-complete-raw-production-001-inv-p002 after_id=1 limit=2 returned_count=2 first_id=2 last_id=3 next_after_id=3 has_more=true
+[2026-10-07 22:38:50] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-complete-raw-production-001-inv-p002 type=industry_page_result status=ok protocol=1
+[2026-10-07 22:38:50] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-complete-raw-production-001-inv-p002
+[2026-10-07 22:38:50] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-complete-raw-production-001-inv-p003 type=industry_page protocol=1
+[2026-10-07 22:38:50] dbg: [script:4] [18] [I] INDUSTRY_PAGE_READ request_id=openttd15-complete-raw-production-001-inv-p003 after_id=3 limit=2 returned_count=2 first_id=4 last_id=5 next_after_id=5 has_more=true
+[2026-10-07 22:38:50] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-complete-raw-production-001-inv-p003 type=industry_page_result status=ok protocol=1
+[2026-10-07 22:38:50] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-complete-raw-production-001-inv-p003
+[2026-10-07 22:38:50] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-complete-raw-production-001-inv-p004 type=industry_page protocol=1
+[2026-10-07 22:38:50] dbg: [script:4] [18] [I] INDUSTRY_PAGE_READ request_id=openttd15-complete-raw-production-001-inv-p004 after_id=5 limit=2 returned_count=2 first_id=6 last_id=7 next_after_id=7 has_more=true
+[2026-10-07 22:38:50] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-complete-raw-production-001-inv-p004 type=industry_page_result status=ok protocol=1
+[2026-10-07 22:38:50] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-complete-raw-production-001-inv-p004
+[2026-10-07 22:38:50] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-complete-raw-production-001-inv-p005 type=industry_page protocol=1
+[2026-10-07 22:38:50] dbg: [script:4] [18] [I] INDUSTRY_PAGE_READ request_id=openttd15-complete-raw-production-001-inv-p005 after_id=7 limit=2 returned_count=2 first_id=8 last_id=9 next_after_id=null has_more=false
+[2026-10-07 22:38:50] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-complete-raw-production-001-inv-p005 type=industry_page_result status=ok protocol=1
+[2026-10-07 22:38:50] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-complete-raw-production-001-inv-p005
+[2026-10-07 22:38:50] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-complete-raw-production-001-cap-i00000 type=industry_cargo protocol=1
+[2026-10-07 22:38:50] dbg: [script:4] [18] [I] INDUSTRY_CARGO_READ request_id=openttd15-complete-raw-production-001-cap-i00000 industry_id=0 produced_count=1 accepted_count=0 first_produced=1 last_produced=1 first_accepted=null last_accepted=null
+[2026-10-07 22:38:50] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-complete-raw-production-001-cap-i00000 type=industry_cargo_result status=ok protocol=1
+[2026-10-07 22:38:50] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-complete-raw-production-001-cap-i00000
+[2026-10-07 22:38:50] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-complete-raw-production-001-cap-i00001 type=industry_cargo protocol=1
+[2026-10-07 22:38:50] dbg: [script:4] [18] [I] INDUSTRY_CARGO_READ request_id=openttd15-complete-raw-production-001-cap-i00001 industry_id=1 produced_count=0 accepted_count=1 first_produced=null last_produced=null first_accepted=1 last_accepted=1
+[2026-10-07 22:38:50] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-complete-raw-production-001-cap-i00001 type=industry_cargo_result status=ok protocol=1
+[2026-10-07 22:38:50] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-complete-raw-production-001-cap-i00001
+[2026-10-07 22:38:50] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-complete-raw-production-001-cap-i00002 type=industry_cargo protocol=1
+[2026-10-07 22:38:50] dbg: [script:4] [18] [I] INDUSTRY_CARGO_READ request_id=openttd15-complete-raw-production-001-cap-i00002 industry_id=2 produced_count=1 accepted_count=1 first_produced=5 last_produced=5 first_accepted=7 last_accepted=7
+[2026-10-07 22:38:50] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-complete-raw-production-001-cap-i00002 type=industry_cargo_result status=ok protocol=1
+[2026-10-07 22:38:50] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-complete-raw-production-001-cap-i00002
+[2026-10-07 22:38:50] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-complete-raw-production-001-cap-i00003 type=industry_cargo protocol=1
+[2026-10-07 22:38:50] dbg: [script:4] [18] [I] INDUSTRY_CARGO_READ request_id=openttd15-complete-raw-production-001-cap-i00003 industry_id=3 produced_count=1 accepted_count=0 first_produced=7 last_produced=7 first_accepted=null last_accepted=null
+[2026-10-07 22:38:50] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-complete-raw-production-001-cap-i00003 type=industry_cargo_result status=ok protocol=1
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-complete-raw-production-001-cap-i00003
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-complete-raw-production-001-cap-i00004 type=industry_cargo protocol=1
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] INDUSTRY_CARGO_READ request_id=openttd15-complete-raw-production-001-cap-i00004 industry_id=4 produced_count=1 accepted_count=1 first_produced=5 last_produced=5 first_accepted=3 last_accepted=3
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-complete-raw-production-001-cap-i00004 type=industry_cargo_result status=ok protocol=1
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-complete-raw-production-001-cap-i00004
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-complete-raw-production-001-cap-i00005 type=industry_cargo protocol=1
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] INDUSTRY_CARGO_READ request_id=openttd15-complete-raw-production-001-cap-i00005 industry_id=5 produced_count=1 accepted_count=3 first_produced=5 last_produced=5 first_accepted=4 last_accepted=9
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-complete-raw-production-001-cap-i00005 type=industry_cargo_result status=ok protocol=1
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-complete-raw-production-001-cap-i00005
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-complete-raw-production-001-cap-i00006 type=industry_cargo protocol=1
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] INDUSTRY_CARGO_READ request_id=openttd15-complete-raw-production-001-cap-i00006 industry_id=6 produced_count=1 accepted_count=1 first_produced=9 last_produced=9 first_accepted=8 last_accepted=8
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-complete-raw-production-001-cap-i00006 type=industry_cargo_result status=ok protocol=1
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-complete-raw-production-001-cap-i00006
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-complete-raw-production-001-cap-i00007 type=industry_cargo protocol=1
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] INDUSTRY_CARGO_READ request_id=openttd15-complete-raw-production-001-cap-i00007 industry_id=7 produced_count=2 accepted_count=0 first_produced=4 last_produced=6 first_accepted=null last_accepted=null
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-complete-raw-production-001-cap-i00007 type=industry_cargo_result status=ok protocol=1
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-complete-raw-production-001-cap-i00007
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-complete-raw-production-001-cap-i00008 type=industry_cargo protocol=1
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] INDUSTRY_CARGO_READ request_id=openttd15-complete-raw-production-001-cap-i00008 industry_id=8 produced_count=1 accepted_count=0 first_produced=3 last_produced=3 first_accepted=null last_accepted=null
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-complete-raw-production-001-cap-i00008 type=industry_cargo_result status=ok protocol=1
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-complete-raw-production-001-cap-i00008
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-complete-raw-production-001-cap-i00009 type=industry_cargo protocol=1
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] INDUSTRY_CARGO_READ request_id=openttd15-complete-raw-production-001-cap-i00009 industry_id=9 produced_count=1 accepted_count=0 first_produced=8 last_produced=8 first_accepted=null last_accepted=null
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-complete-raw-production-001-cap-i00009 type=industry_cargo_result status=ok protocol=1
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-complete-raw-production-001-cap-i00009
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-complete-raw-production-001-cat-p001 type=cargo_page protocol=1
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] CARGO_PAGE_READ request_id=openttd15-complete-raw-production-001-cat-p001 after_id=null limit=2 returned_count=2 first_id=0 last_id=1 next_after_id=1 has_more=true
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-complete-raw-production-001-cat-p001 type=cargo_page_result status=ok protocol=1
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-complete-raw-production-001-cat-p001
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-complete-raw-production-001-cat-p002 type=cargo_page protocol=1
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] CARGO_PAGE_READ request_id=openttd15-complete-raw-production-001-cat-p002 after_id=1 limit=2 returned_count=2 first_id=2 last_id=3 next_after_id=3 has_more=true
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-complete-raw-production-001-cat-p002 type=cargo_page_result status=ok protocol=1
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-complete-raw-production-001-cat-p002
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-complete-raw-production-001-cat-p003 type=cargo_page protocol=1
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] CARGO_PAGE_READ request_id=openttd15-complete-raw-production-001-cat-p003 after_id=3 limit=2 returned_count=2 first_id=4 last_id=5 next_after_id=5 has_more=true
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-complete-raw-production-001-cat-p003 type=cargo_page_result status=ok protocol=1
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-complete-raw-production-001-cat-p003
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-complete-raw-production-001-cat-p004 type=cargo_page protocol=1
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] CARGO_PAGE_READ request_id=openttd15-complete-raw-production-001-cat-p004 after_id=5 limit=2 returned_count=2 first_id=6 last_id=7 next_after_id=7 has_more=true
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-complete-raw-production-001-cat-p004 type=cargo_page_result status=ok protocol=1
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-complete-raw-production-001-cat-p004
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-complete-raw-production-001-cat-p005 type=cargo_page protocol=1
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] CARGO_PAGE_READ request_id=openttd15-complete-raw-production-001-cat-p005 after_id=7 limit=2 returned_count=2 first_id=8 last_id=9 next_after_id=9 has_more=true
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-complete-raw-production-001-cat-p005 type=cargo_page_result status=ok protocol=1
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-complete-raw-production-001-cat-p005
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-complete-raw-production-001-cat-p006 type=cargo_page protocol=1
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] CARGO_PAGE_READ request_id=openttd15-complete-raw-production-001-cat-p006 after_id=9 limit=2 returned_count=1 first_id=10 last_id=10 next_after_id=null has_more=false
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-complete-raw-production-001-cat-p006 type=cargo_page_result status=ok protocol=1
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-complete-raw-production-001-cat-p006
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-complete-raw-production-001-prod-p001 type=industry_production protocol=1
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] INDUSTRY_PRODUCTION_READ request_id=openttd15-complete-raw-production-001-prod-p001 industry_id=0 cargo_id=1 economy_date_before=712223 economy_date_after=712223 last_month_produced=168 last_month_transported=0 last_month_transported_pct=0
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-complete-raw-production-001-prod-p001 type=industry_production_result status=ok protocol=1
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-complete-raw-production-001-prod-p001
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-complete-raw-production-001-prod-p002 type=industry_production protocol=1
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] INDUSTRY_PRODUCTION_READ request_id=openttd15-complete-raw-production-001-prod-p002 industry_id=2 cargo_id=5 economy_date_before=712223 economy_date_after=712223 last_month_produced=0 last_month_transported=0 last_month_transported_pct=0
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-complete-raw-production-001-prod-p002 type=industry_production_result status=ok protocol=1
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-complete-raw-production-001-prod-p002
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-complete-raw-production-001-prod-p003 type=industry_production protocol=1
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] INDUSTRY_PRODUCTION_READ request_id=openttd15-complete-raw-production-001-prod-p003 industry_id=3 cargo_id=7 economy_date_before=712223 economy_date_after=712223 last_month_produced=80 last_month_transported=0 last_month_transported_pct=0
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-complete-raw-production-001-prod-p003 type=industry_production_result status=ok protocol=1
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-complete-raw-production-001-prod-p003
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-complete-raw-production-001-prod-p004 type=industry_production protocol=1
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] INDUSTRY_PRODUCTION_READ request_id=openttd15-complete-raw-production-001-prod-p004 industry_id=4 cargo_id=5 economy_date_before=712223 economy_date_after=712223 last_month_produced=0 last_month_transported=0 last_month_transported_pct=0
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-complete-raw-production-001-prod-p004 type=industry_production_result status=ok protocol=1
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-complete-raw-production-001-prod-p004
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-complete-raw-production-001-prod-p005 type=industry_production protocol=1
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] INDUSTRY_PRODUCTION_READ request_id=openttd15-complete-raw-production-001-prod-p005 industry_id=5 cargo_id=5 economy_date_before=712223 economy_date_after=712223 last_month_produced=0 last_month_transported=0 last_month_transported_pct=0
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-complete-raw-production-001-prod-p005 type=industry_production_result status=ok protocol=1
+[2026-10-07 22:38:51] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-complete-raw-production-001-prod-p005
+[2026-10-07 22:38:52] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-complete-raw-production-001-prod-p006 type=industry_production protocol=1
+[2026-10-07 22:38:52] dbg: [script:4] [18] [I] INDUSTRY_PRODUCTION_READ request_id=openttd15-complete-raw-production-001-prod-p006 industry_id=6 cargo_id=9 economy_date_before=712223 economy_date_after=712223 last_month_produced=0 last_month_transported=0 last_month_transported_pct=0
+[2026-10-07 22:38:52] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-complete-raw-production-001-prod-p006 type=industry_production_result status=ok protocol=1
+[2026-10-07 22:38:52] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-complete-raw-production-001-prod-p006
+[2026-10-07 22:38:52] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-complete-raw-production-001-prod-p007 type=industry_production protocol=1
+[2026-10-07 22:38:52] dbg: [script:4] [18] [I] INDUSTRY_PRODUCTION_READ request_id=openttd15-complete-raw-production-001-prod-p007 industry_id=7 cargo_id=4 economy_date_before=712223 economy_date_after=712223 last_month_produced=56 last_month_transported=0 last_month_transported_pct=0
+[2026-10-07 22:38:52] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-complete-raw-production-001-prod-p007 type=industry_production_result status=ok protocol=1
+[2026-10-07 22:38:52] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-complete-raw-production-001-prod-p007
+[2026-10-07 22:38:52] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-complete-raw-production-001-prod-p008 type=industry_production protocol=1
+[2026-10-07 22:38:52] dbg: [script:4] [18] [I] INDUSTRY_PRODUCTION_READ request_id=openttd15-complete-raw-production-001-prod-p008 industry_id=7 cargo_id=6 economy_date_before=712223 economy_date_after=712223 last_month_produced=88 last_month_transported=0 last_month_transported_pct=0
+[2026-10-07 22:38:52] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-complete-raw-production-001-prod-p008 type=industry_production_result status=ok protocol=1
+[2026-10-07 22:38:52] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-complete-raw-production-001-prod-p008
+[2026-10-07 22:38:52] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-complete-raw-production-001-prod-p009 type=industry_production protocol=1
+[2026-10-07 22:38:52] dbg: [script:4] [18] [I] INDUSTRY_PRODUCTION_READ request_id=openttd15-complete-raw-production-001-prod-p009 industry_id=8 cargo_id=3 economy_date_before=712223 economy_date_after=712223 last_month_produced=96 last_month_transported=0 last_month_transported_pct=0
+[2026-10-07 22:38:52] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-complete-raw-production-001-prod-p009 type=industry_production_result status=ok protocol=1
+[2026-10-07 22:38:52] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-complete-raw-production-001-prod-p009
+[2026-10-07 22:38:52] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-complete-raw-production-001-prod-p010 type=industry_production protocol=1
+[2026-10-07 22:38:52] dbg: [script:4] [18] [I] INDUSTRY_PRODUCTION_READ request_id=openttd15-complete-raw-production-001-prod-p010 industry_id=9 cargo_id=8 economy_date_before=712223 economy_date_after=712223 last_month_produced=88 last_month_transported=0 last_month_transported_pct=0
+[2026-10-07 22:38:52] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-complete-raw-production-001-prod-p010 type=industry_production_result status=ok protocol=1
+[2026-10-07 22:38:52] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-complete-raw-production-001-prod-p010
+[2026-10-07 22:38:52] dbg: [net:3] [admin] 'ACK-proof' (1) has disconnected
+[2026-10-07 22:38:52] dbg: [net:3] Initializing UDP listeners
+[2026-10-07 22:38:52] dbg: [net:3] Shutting down network

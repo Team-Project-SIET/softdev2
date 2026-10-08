@@ -1,0 +1,17 @@
+{
+  "app/simulation/openttd/gamescript_transport.py": "2466bef697f7160ee3fb5fe491745b48dc04ccd0ff9ab5a302c13e291f10b650",
+  "app/simulation/openttd/proof/qualification_accounting.py": "04628d98ab88dcf123556b074d9b37ba5c9ffc79b336cdd8550e53c96659d492",
+  "app/simulation/openttd/qualification_bridge.nut": "71167d00cd84a333edecdfdc6048a678d2fe46e761d0421042d33de37ff123e6",
+  "app/simulation/openttd/qualification_bridge.py": "ebe87c9d19779faac21004ec0fef23755612fcab7527c4b3860cf46d653a2a0f",
+  "app/simulation/openttd/qualification_clock.py": "1b52dddea328fc811d90ea75210388b2c98b09ca8a2d4128879a0485dbb84e16",
+  "app/simulation/openttd/qualification_evidence.py": "3e911c4700aed14192bd30a603e22e117c37ffe4cb093c218f1ab891c74e3e6b",
+  "app/simulation/openttd/qualification_policy.py": "6ac123bd75d53239be3cd67be2695798e15b7245ac51bea9a65abae37f4be40f",
+  "app/simulation/openttd/qualification_session.py": "c5054bb828483cfdeeb87764d3a50112eba5ff7454364a89248174f3089c4745",
+  "app/simulation/openttd/qualification_stability.py": "4b526ca744c263dc9286065d33bb8ad4b07796bfa4f1b5e48c2f060679a61358",
+  "app/simulation/openttd/qualification_state.py": "8ac4893ebd65f6b976bf0c586ea6fc2e0cbf85f9591b95e15a5effbf1edf939c",
+  "docs/industry-production-two-rollover-qualification.md": "ab5d798326055387b726ec5af9f7e3a2526bcd30f28923783b06e23d981bdfdd",
+  "tests/test_qualification_accounting.py": "a77e50cd74683f22418dbf303afb93cee0502bde4539dc102fbcfa2aa3ffcaca",
+  "tests/test_qualification_coordinator.py": "e3e1b66c5e9811dd51ed4eb046e82bbc708bf71ba0818a58bc46cdafd138ec72",
+  "tests/test_qualification_native.py": "9b6db01f1495b38d65dabf83f48e7a15500bfa5ca5fce0a9e872523f19c3f14e",
+  "tests/test_two_rollover_qualification.py": "74642f81c977f1908fb69ad9ff90d54710b33aa588292c216fbaf997f1d6e8f3"
+}

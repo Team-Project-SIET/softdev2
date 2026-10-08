@@ -1,0 +1,15 @@
+{
+  "source_review": "PASS",
+  "test_adequacy_review": "PASS",
+  "dimensions": [
+    "phase/coverage correctness",
+    "negative provenance/evidence/transport failures",
+    "empty and maximum/budget boundaries",
+    "digest/ordering/accounting determinism",
+    "integration at real DTO/transport/evidence seams and historical fixtures"
+  ],
+  "source_changes_during_recovery": false,
+  "timeout_changes": false,
+  "native_total_frames": "DEFERRED TO REAL-PROOF PREPARATION",
+  "scope": "CONTROLLED ONLY"
+}

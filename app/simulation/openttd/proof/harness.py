@@ -43,6 +43,7 @@ from .production_contract import (
     PRODUCTION_ATTEMPT_DIRECTORY,
     PRODUCTION_REQUEST,
 )
+from .raw_production_contract import RAW_PRODUCTION_ATTEMPT_DIRECTORY, raw_production_first_request
 from .structural_contract import (
     STRUCTURAL_ATTEMPT_DIRECTORY,
     structural_first_request,
@@ -195,6 +196,7 @@ def prepare_proof(
         "cargo-catalog",
         "structural-world",
         "industry-production",
+        "complete-raw-production",
     ):
         raise ValueError("Unsupported proof mode")
     request = {
@@ -208,6 +210,7 @@ def prepare_proof(
         "cargo-catalog": CATALOG_FIRST_REQUEST,
         "structural-world": structural_first_request(),
         "industry-production": PRODUCTION_REQUEST,
+        "complete-raw-production": raw_production_first_request(),
     }[mode]
     binary = binary.resolve(strict=True)
     if not binary.is_file() or not os.access(binary, os.X_OK) or sha256(binary) != binary_sha256:
@@ -237,27 +240,32 @@ def prepare_proof(
         from .production_preparation import check_production_preparation
 
         check_production_preparation(directory)
+    if mode == "complete-raw-production":
+        from .raw_production_preparation import check_raw_production_preparation
+
+        check_raw_production_preparation(directory, official=binary_sha256 == BINARY_SHA256)
     directory.mkdir(parents=True, exist_ok=False)
     workspace = RuntimeWorkspace.create(directory / "isolated", retain=True)
     reservation = None
     try:
         reservation = EndpointReservation.allocate()
-        if mode == "structural-world":
+        if mode in ("structural-world", "complete-raw-production"):
             graphics_identity = stage_opengfx(
                 graphics, workspace.root / "baseset/OpenGFX", expected_sha256=graphics_sha256
             )
-        key = AuthorizedKey.generate()
+        key = None if mode == "complete-raw-production" else AuthorizedKey.generate()
         key_path = workspace.root / ".admin-secret"
         # A restricted credential, never part of any evidence/manifest/source hash.
-        descriptor = os.open(key_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
-        with os.fdopen(descriptor, "wb") as stream:
-            stream.write(key._secret)
+        if key is not None:
+            descriptor = os.open(key_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            with os.fdopen(descriptor, "wb") as stream:
+                stream.write(key._secret)
         workspace.write_config(
             AdminSettings(
                 password="",
                 port=reservation.admin_port,
                 game_port=reservation.game_port,
-                authorized_public_key_hex=key.public_hex,
+                authorized_public_key_hex=key.public_hex if key is not None else "0" * 64,
             )
         )
         config = workspace.config.read_text().replace(
@@ -268,8 +276,10 @@ def prepare_proof(
             "starting_year = 1950\nland_generator = 1\ngeneration_seed = 42\n"
             "[difficulty]\nmax_no_competitors = 0\n[misc]\ngraphicsset = OpenGFX\n"
         )
+        if mode == "complete-raw-production":
+            config += "[economy]\ntimekeeping_units = 0\n"
         workspace.config.write_text(config)
-        if mode != "structural-world":
+        if mode not in ("structural-world", "complete-raw-production"):
             graphics_identity = stage_opengfx(
                 graphics, workspace.root / "baseset/OpenGFX", expected_sha256=graphics_sha256
             )
@@ -306,12 +316,17 @@ def prepare_proof(
                         "GetLastMonthTransported",
                         "GetLastMonthTransportedPercentage",
                     }
-                    if mode == "industry-production"
+                    if mode in ("industry-production", "complete-raw-production")
                     else set()
                 )
             )
         ):
             raise ValueError("Bridge API/mutation surface changed")
+        if mode == "complete-raw-production":
+            from .raw_production_preparation import PROVEN_BRIDGE_DIGEST
+
+            if bridge.sha256 != PROVEN_BRIDGE_DIGEST:
+                raise ValueError("Proven production bridge unchanged identity required")
         argv = launch_argv(binary, workspace.config, reservation.game_port)
         identity = RuntimeIdentity(binary, "15.3", binary_sha256)
         spec = LaunchSpecification(
@@ -332,6 +347,7 @@ def prepare_proof(
             "cargo-catalog",
             "structural-world",
             "industry-production",
+            "complete-raw-production",
         ):
             from .enrichment_contract import ENRICHMENT_ATTEMPT_DIRECTORY
             from .historical_protection import capture_protection, protection_base
@@ -341,7 +357,9 @@ def prepare_proof(
                 directory.parent,
                 directory,
                 directory.with_name(
-                    PRODUCTION_ATTEMPT_DIRECTORY
+                    RAW_PRODUCTION_ATTEMPT_DIRECTORY
+                    if mode == "complete-raw-production"
+                    else PRODUCTION_ATTEMPT_DIRECTORY
                     if mode == "industry-production"
                     else STRUCTURAL_ATTEMPT_DIRECTORY
                     if mode == "structural-world"
@@ -358,6 +376,25 @@ def prepare_proof(
         frozen = source_freeze()
         frozen[str(binary)] = binary_sha256
         frozen[str(graphics.resolve())] = graphics_sha256
+        if key is None:
+            # All non-credential inputs, lineage, clock, bridge, graphics and
+            # cleanup-root disjointness are valid before generating the one key.
+            from .ownership import build_ownership
+
+            build_ownership(
+                directory,
+                workspace.root,
+                key_path,
+                directory.with_name(RAW_PRODUCTION_ATTEMPT_DIRECTORY),
+                frozen,
+                history,
+            ).validate()
+            key = AuthorizedKey.generate()
+            descriptor = os.open(key_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+            with os.fdopen(descriptor, "wb") as stream:
+                stream.write(key._secret)
+            private_path = workspace.root / "private.cfg"
+            private_path.write_text(private_path.read_text().replace("0" * 64, key.public_hex))
         from .ownership import freeze_materializations
 
         freeze_materializations(directory, workspace, key_path, graphics, frozen)
@@ -656,6 +693,10 @@ def prepare_proof(
             from .production_preparation import freeze_production_preparation
 
             freeze_production_preparation(directory, frozen, bridge.sha256)
+        if mode == "complete-raw-production":
+            from .raw_production_preparation import freeze_raw_production_preparation
+
+            freeze_raw_production_preparation(directory, frozen, bridge.sha256)
         from .ownership import build_ownership
 
         # Every public launch input has persistent ownership, for every proof kind.
@@ -688,14 +729,22 @@ def prepare_proof(
         (directory / "artifact-manifest.sha256").write_text(manifest(directory))
         return PreparedProof(directory, spec, key_path, key.public_hex, ports, request)
     except BaseException as error:
+        combined = mode == "complete-raw-production"
         write_json(
             directory / "PRELAUNCH-FAILURE.json",
             {
                 "state": "PRELAUNCH_FAILED",
                 "error_type": type(error).__name__,
-                "attempt": 2,
-                "prelaunch_revision": 3,
-                "proof_model": PROOF_MODEL,
+                "attempt": 1 if combined else 2,
+                "prelaunch_revision": 1 if combined else 3,
+                "proof_model": "complete-raw-production-correlated-channels-v1"
+                if combined
+                else PROOF_MODEL,
+                **(
+                    {"proof_kind": "complete-raw-production", "connections": 0, "requests": 0}
+                    if combined
+                    else {}
+                ),
                 "gameplay_launches": 0,
             },
         )

@@ -1,0 +1,54 @@
+{
+  "contract": {
+    "additional_application_requests": 0,
+    "additional_gamescript_calls": 0,
+    "cpp_api": "ScriptDate::GetCurrentDate",
+    "equal_brackets_valid": true,
+    "fields": [
+      "economy_date_before",
+      "economy_date_after"
+    ],
+    "gamescript_binding": "GSDate.GetCurrentDate",
+    "initial_month_authority": "native WELCOME start_day + pinned new-world calendar conversion",
+    "load_save_authorized": false,
+    "native_storage": "TimerGameEconomy::Date, signed int32_t",
+    "ordering": "before <= after; both inside the initial economy month",
+    "qualified_for_planning": false,
+    "role": "current-state read bracket around last-month metrics, not historical boundaries",
+    "rollovers_observed": 0,
+    "script_return": "ScriptDate::Date enum, exported as GameScript integer",
+    "seeded_history_allowed": true,
+    "source_version": "15.3",
+    "starting_year": 1950,
+    "timekeeping_authority": "TKU_CALENDAR; economy/calendar identical Gregorian conversion",
+    "timekeeping_units": 0,
+    "unit": "economy days, zero-based ordinal from year 0",
+    "valid_v1_range": [
+      0,
+      2147483647
+    ],
+    "welcome_is_current_date": false
+  },
+  "files": {
+    "/home/fed/codes/softdev2/tests/reference/economy_clock_15_3/CMakeLists.txt": "a61d0fc3bd3482f502cbb1adefec91e11c1cb91c62e74d3bbf8c1524266135e5",
+    "/home/fed/codes/softdev2/tests/reference/economy_clock_15_3/SquirrelExport.cmake": "59a1372537c0895ee478543edaebccc961e7d62d7741599cdc1bf95e29f24a1b",
+    "/home/fed/codes/softdev2/tests/reference/economy_clock_15_3/economy_settings.ini": "3cb0e3f57f27a3df5683ad2df25cad03aee38d6c0ee54d469e1decc8cadc4155",
+    "/home/fed/codes/softdev2/tests/reference/economy_clock_15_3/genworld.cpp": "6d659b1857eb474f80ad4bac452a4c04f8d525aab59cb39f7cf170bec73d11de",
+    "/home/fed/codes/softdev2/tests/reference/economy_clock_15_3/manifest.json": "146ccf5e0f2dc284a045353ab0a4f73c5011b0c9f48918b4ae7cb97d5532fb87",
+    "/home/fed/codes/softdev2/tests/reference/economy_clock_15_3/misc.cpp": "50f648b85bf61118bd9f86f6399614067b9b51a34aa9a8f964b05f293e8f11f0",
+    "/home/fed/codes/softdev2/tests/reference/economy_clock_15_3/misc_sl.cpp": "a6fb1411e684e7e5e0faa17253d5813fa85b648a4fcd69dfcc0dc3c37deb1340",
+    "/home/fed/codes/softdev2/tests/reference/economy_clock_15_3/network_admin.cpp": "6c59f996f54ff9e3df740987fbb7adaa212af6eeca491adb1d29b7c70619dbb2",
+    "/home/fed/codes/softdev2/tests/reference/economy_clock_15_3/openttd.cpp": "319a27a31f1f241ab1e83853d0ec61cd0fa60adfaf5d4e3666a1dd74c57acba0",
+    "/home/fed/codes/softdev2/tests/reference/economy_clock_15_3/script_date.cpp": "d316e7d59e28dee26c082b18f3f793e0676bce8fdb4fbbb33884b992a237df67",
+    "/home/fed/codes/softdev2/tests/reference/economy_clock_15_3/script_date.hpp": "6e9d13c7ce57f47a4cb9eed02f47ded74b2068f1f51d05225ba61573e9320deb",
+    "/home/fed/codes/softdev2/tests/reference/economy_clock_15_3/script_industry.cpp": "95d0a6794b4aeb13d2e2d42e33fe8eb1e6c82bbe6af4cec290eb607c4aad5df9",
+    "/home/fed/codes/softdev2/tests/reference/economy_clock_15_3/script_industry.hpp": "65beb5d22bd6c0cb683fc5843512ff0fdfa951fe4d9e85f0b067746f32c51d38",
+    "/home/fed/codes/softdev2/tests/reference/economy_clock_15_3/settings_type.h": "0421fe99fa858c83ed84682cb72f8e385d24f5b03cb1ef8e464be9c9f5c96635",
+    "/home/fed/codes/softdev2/tests/reference/economy_clock_15_3/timer_game_calendar.cpp": "f8accac73640d4b9409e5c3d57a21db5e0fd6a01ab10669110b658f3f4a09261",
+    "/home/fed/codes/softdev2/tests/reference/economy_clock_15_3/timer_game_common.cpp": "28932f0cbdea9b0880fbcbf0cbfe0a3c9b225a33d2667603eedbcf12c0c1a555",
+    "/home/fed/codes/softdev2/tests/reference/economy_clock_15_3/timer_game_common.h": "d222301b3670650caba23932a6fe1eed430b1ea5814863568c1b6d269ad5a498",
+    "/home/fed/codes/softdev2/tests/reference/economy_clock_15_3/timer_game_economy.cpp": "10d68164d9e4a348d4457f7c2b8bbdd524c620edeb325d10dc74824680b69b57",
+    "/home/fed/codes/softdev2/tests/reference/economy_clock_15_3/timer_game_economy.h": "5a5eaabbdfce6eb7290240e053cc765c79e9a6076424f0e7e3a648ae97cec68a"
+  },
+  "sha256": "ef04ff341ee6a87fcbdc8f703a88fd3273f1f00017af484f44468a10b54159dc"
+}

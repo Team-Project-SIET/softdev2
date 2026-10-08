@@ -1,0 +1,77 @@
+{
+  "files": {
+    "tests/reference/economy_clock_15_3/CMakeLists.txt": {
+      "sha256": "a61d0fc3bd3482f502cbb1adefec91e11c1cb91c62e74d3bbf8c1524266135e5",
+      "source_url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/script/api/CMakeLists.txt"
+    },
+    "tests/reference/economy_clock_15_3/SquirrelExport.cmake": {
+      "sha256": "59a1372537c0895ee478543edaebccc961e7d62d7741599cdc1bf95e29f24a1b",
+      "source_url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/cmake/scripts/SquirrelExport.cmake"
+    },
+    "tests/reference/economy_clock_15_3/economy_settings.ini": {
+      "sha256": "3cb0e3f57f27a3df5683ad2df25cad03aee38d6c0ee54d469e1decc8cadc4155",
+      "source_url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/table/settings/economy_settings.ini"
+    },
+    "tests/reference/economy_clock_15_3/genworld.cpp": {
+      "sha256": "6d659b1857eb474f80ad4bac452a4c04f8d525aab59cb39f7cf170bec73d11de",
+      "source_url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/genworld.cpp"
+    },
+    "tests/reference/economy_clock_15_3/misc.cpp": {
+      "sha256": "50f648b85bf61118bd9f86f6399614067b9b51a34aa9a8f964b05f293e8f11f0",
+      "source_url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/misc.cpp"
+    },
+    "tests/reference/economy_clock_15_3/misc_sl.cpp": {
+      "sha256": "a6fb1411e684e7e5e0faa17253d5813fa85b648a4fcd69dfcc0dc3c37deb1340",
+      "source_url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/saveload/misc_sl.cpp"
+    },
+    "tests/reference/economy_clock_15_3/network_admin.cpp": {
+      "sha256": "6c59f996f54ff9e3df740987fbb7adaa212af6eeca491adb1d29b7c70619dbb2",
+      "source_url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/network/network_admin.cpp"
+    },
+    "tests/reference/economy_clock_15_3/openttd.cpp": {
+      "sha256": "319a27a31f1f241ab1e83853d0ec61cd0fa60adfaf5d4e3666a1dd74c57acba0",
+      "source_url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/openttd.cpp"
+    },
+    "tests/reference/economy_clock_15_3/script_date.cpp": {
+      "sha256": "d316e7d59e28dee26c082b18f3f793e0676bce8fdb4fbbb33884b992a237df67",
+      "source_url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/script/api/script_date.cpp"
+    },
+    "tests/reference/economy_clock_15_3/script_date.hpp": {
+      "sha256": "6e9d13c7ce57f47a4cb9eed02f47ded74b2068f1f51d05225ba61573e9320deb",
+      "source_url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/script/api/script_date.hpp"
+    },
+    "tests/reference/economy_clock_15_3/script_industry.cpp": {
+      "sha256": "95d0a6794b4aeb13d2e2d42e33fe8eb1e6c82bbe6af4cec290eb607c4aad5df9",
+      "source_url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/script/api/script_industry.cpp"
+    },
+    "tests/reference/economy_clock_15_3/script_industry.hpp": {
+      "sha256": "65beb5d22bd6c0cb683fc5843512ff0fdfa951fe4d9e85f0b067746f32c51d38",
+      "source_url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/script/api/script_industry.hpp"
+    },
+    "tests/reference/economy_clock_15_3/settings_type.h": {
+      "sha256": "0421fe99fa858c83ed84682cb72f8e385d24f5b03cb1ef8e464be9c9f5c96635",
+      "source_url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/settings_type.h"
+    },
+    "tests/reference/economy_clock_15_3/timer_game_calendar.cpp": {
+      "sha256": "f8accac73640d4b9409e5c3d57a21db5e0fd6a01ab10669110b658f3f4a09261",
+      "source_url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/timer/timer_game_calendar.cpp"
+    },
+    "tests/reference/economy_clock_15_3/timer_game_common.cpp": {
+      "sha256": "28932f0cbdea9b0880fbcbf0cbfe0a3c9b225a33d2667603eedbcf12c0c1a555",
+      "source_url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/timer/timer_game_common.cpp"
+    },
+    "tests/reference/economy_clock_15_3/timer_game_common.h": {
+      "sha256": "d222301b3670650caba23932a6fe1eed430b1ea5814863568c1b6d269ad5a498",
+      "source_url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/timer/timer_game_common.h"
+    },
+    "tests/reference/economy_clock_15_3/timer_game_economy.cpp": {
+      "sha256": "10d68164d9e4a348d4457f7c2b8bbdd524c620edeb325d10dc74824680b69b57",
+      "source_url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/timer/timer_game_economy.cpp"
+    },
+    "tests/reference/economy_clock_15_3/timer_game_economy.h": {
+      "sha256": "5a5eaabbdfce6eb7290240e053cc765c79e9a6076424f0e7e3a648ae97cec68a",
+      "source_url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/timer/timer_game_economy.h"
+    }
+  },
+  "version": "15.3"
+}

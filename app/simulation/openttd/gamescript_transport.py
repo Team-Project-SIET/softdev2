@@ -49,6 +49,12 @@ from app.simulation.openttd.industry_production import (
     IndustryProductionReceipt,
     IndustryProductionRequest,
 )
+from app.simulation.openttd.qualification_clock import (
+    EconomyClockRequest,
+    IndustryLifetimeRequest,
+    NativeReadExchange,
+    NativeReadReceipt,
+)
 from app.simulation.openttd.world_info import (
     NETWORK_SEQUENCE,
     WorldInfoExchange,
@@ -133,7 +139,13 @@ class GameScriptSession(AdminStream):
                             try:
                                 CargoPageRequest.parse(payload)
                             except BridgeProtocolError:
-                                IndustryProductionRequest.parse(payload)
+                                try:
+                                    IndustryProductionRequest.parse(payload)
+                                except BridgeProtocolError:
+                                    try:
+                                        EconomyClockRequest.parse(payload)
+                                    except BridgeProtocolError:
+                                        IndustryLifetimeRequest.parse(payload)
         elif kind == AdminClientPacketType.PING and len(frame) == 7:
             pass  # Read-only ordering barrier after GameScript subscription.
         elif frame not in (gamescript_subscription(), encode_admin_quit()):
@@ -171,6 +183,7 @@ class GameScriptTransport:
     """
 
     MAX_REQUESTS = 256
+    MAX_PRODUCTION_SESSION_REQUESTS = 96 + 32 * MAX_INDUSTRY_CARGOES
 
     def __init__(self, session: GameScriptSession, protocol: ServerProtocol) -> None:
         if protocol.version != 3 or not protocol.frequencies.get(GAMESCRIPT_UPDATE, 0) & int(
@@ -365,13 +378,37 @@ class GameScriptTransport:
         assert isinstance(result, IndustryProductionExchange)
         return result
 
+    async def economy_clock(
+        self,
+        request: EconomyClockRequest,
+        *,
+        timeout: float = 5.0,
+        operation_budget: int | None = None,
+    ) -> NativeReadExchange:
+        result = await self._read_query(request, timeout=timeout, operation_budget=operation_budget)
+        assert isinstance(result, NativeReadExchange)
+        return result
+
+    async def industry_lifetime(
+        self,
+        request: IndustryLifetimeRequest,
+        *,
+        timeout: float = 5.0,
+        operation_budget: int | None = None,
+    ) -> NativeReadExchange:
+        result = await self._read_query(request, timeout=timeout, operation_budget=operation_budget)
+        assert isinstance(result, NativeReadExchange)
+        return result
+
     async def _read_query(
         self,
         request: WorldInfoRequest
         | IndustryPageRequest
         | IndustryCargoRequest
         | CargoPageRequest
-        | IndustryProductionRequest,
+        | IndustryProductionRequest
+        | EconomyClockRequest
+        | IndustryLifetimeRequest,
         *,
         world: WorldInfoResponse | None = None,
         timeout: float = 5.0,
@@ -382,6 +419,7 @@ class GameScriptTransport:
         | IndustryCargoExchange
         | CargoPageExchange
         | IndustryProductionExchange
+        | NativeReadExchange
     ):
         """One bounded read-only query, with duplicate-response completion barrier.
 
@@ -394,7 +432,7 @@ class GameScriptTransport:
             raise TransportProtocolError("transport unavailable or already pending")
         production = isinstance(request, IndustryProductionRequest)
         # Structural96 + production512; each phase coordinator retains its own ceilings.
-        capacity = 96 + 32 * MAX_INDUSTRY_CARGOES if production else self.MAX_REQUESTS
+        capacity = self.MAX_PRODUCTION_SESSION_REQUESTS if production else self.MAX_REQUESTS
         if (
             request.request_id in self._used_ids
             or len(self._used_ids) >= capacity
@@ -434,7 +472,11 @@ class GameScriptTransport:
                             response = decode_gamescript(body)
                             self.response_payload = response
                             receipt = (
-                                IndustryProductionReceipt.correlate(payload, response)
+                                NativeReadReceipt.correlate(payload, response)
+                                if isinstance(
+                                    request, (EconomyClockRequest, IndustryLifetimeRequest)
+                                )
+                                else IndustryProductionReceipt.correlate(payload, response)
                                 if isinstance(request, IndustryProductionRequest)
                                 else CargoPageReceipt.correlate(payload, response)
                                 if isinstance(request, CargoPageRequest)
@@ -474,7 +516,23 @@ class GameScriptTransport:
                             raise TransportDisconnected("server shutdown after query response")
                         elif kind in ServerLifecyclePacket:
                             raise TransportProtocolError("query runtime changed/error")
-                if isinstance(receipt, IndustryProductionReceipt):
+                if isinstance(receipt, NativeReadReceipt):
+                    assert isinstance(request, (EconomyClockRequest, IndustryLifetimeRequest))
+                    command = request.command.upper()
+                    result = NativeReadExchange(
+                        payload,
+                        response,
+                        receipt,
+                        (
+                            command + "_REQUEST_SENT",
+                            command + "_RESPONSE_RECEIVED",
+                            "TRANSPORT_RECEIPT_CREATED",
+                            command + "_VALIDATED",
+                        ),
+                        operations.used,
+                    )
+                    result.validate()
+                elif isinstance(receipt, IndustryProductionReceipt):
                     result = IndustryProductionExchange(
                         payload,
                         response,

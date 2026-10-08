@@ -1,0 +1,70 @@
+{
+  "complete": true,
+  "events": [
+    "INDUSTRY_PRODUCTION_SESSION_STARTED",
+    "INDUSTRY_PRODUCTION_PHASE_STARTED",
+    "TARGET_SET_FINALIZED",
+    "PRODUCTION_RECORD_VALIDATED",
+    "PRODUCTION_RECORD_VALIDATED",
+    "PRODUCTION_RECORD_VALIDATED",
+    "PRODUCTION_RECORD_VALIDATED",
+    "PRODUCTION_RECORD_VALIDATED",
+    "PRODUCTION_RECORD_VALIDATED",
+    "PRODUCTION_RECORD_VALIDATED",
+    "PRODUCTION_RECORD_VALIDATED",
+    "PRODUCTION_RECORD_VALIDATED",
+    "PRODUCTION_RECORD_VALIDATED",
+    "COMPLETE_PRODUCTION_COVERAGE_VALIDATED",
+    "PRODUCTION_OBSERVATION_ASSEMBLED",
+    "INDUSTRY_PRODUCTION_OBSERVATION_ASSEMBLED",
+    "PRODUCTION_QUALIFICATION_EVALUATED",
+    "INDUSTRY_PRODUCTION_SESSION_COMPLETED"
+  ],
+  "failure": null,
+  "qualified_for_planning": false,
+  "request_attempts": 10,
+  "rollovers_observed": 0,
+  "targets": [
+    [
+      0,
+      1
+    ],
+    [
+      2,
+      5
+    ],
+    [
+      3,
+      7
+    ],
+    [
+      4,
+      5
+    ],
+    [
+      5,
+      5
+    ],
+    [
+      6,
+      9
+    ],
+    [
+      7,
+      4
+    ],
+    [
+      7,
+      6
+    ],
+    [
+      8,
+      3
+    ],
+    [
+      9,
+      8
+    ]
+  ],
+  "validated_records": 10
+}

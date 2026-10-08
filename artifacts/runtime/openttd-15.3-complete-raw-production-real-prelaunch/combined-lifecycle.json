@@ -1,0 +1,24 @@
+{
+  "cleanup_authority": "app.simulation.openttd.proof.ownership.finalize_cleanup",
+  "states": [
+    "PREPARED",
+    "LAUNCHED",
+    "ADMIN_ACTIVE",
+    "COMBINED_SESSION_STARTED",
+    "STRUCTURAL_COLLECTION_STARTED",
+    "STRUCTURAL_WORLD_COMPLETED",
+    "PRODUCTION_TARGETS_FINALIZED",
+    "RAW_PRODUCTION_STARTED",
+    "RAW_PRODUCTION_COMPLETED",
+    "COMBINED_OBSERVATION_VERIFIED",
+    "CLEANUP_STARTED",
+    "PROCESS_REAPED",
+    "ENDPOINTS_CLOSED",
+    "CREDENTIAL_REMOVED",
+    "WORKSPACE_DISPOSED",
+    "POSTRUN_INTEGRITY_VERIFIED",
+    "COMPLETED",
+    "FAILED"
+  ],
+  "terminal_success": "only after disposal + postrun integrity + COMPLETED"
+}

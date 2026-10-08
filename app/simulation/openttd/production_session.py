@@ -107,7 +107,7 @@ class IndustryProductionSession:
             qualification,
         )
         self._connection = transport.session
-        self.targets = production_pairs(source)
+        self._targets = production_pairs(source)
         self.session_id, self.budget, self.timeout = session_id, budget, timeout
         self.decision = decision if decision is not None else ProductionDecisionBoundary()
         self.context_provider = context_provider or (lambda: context)
@@ -120,6 +120,10 @@ class IndustryProductionSession:
         self._cleanup_failure: str | None = None
         self.observation: IndustryProductionObservation | None = None
         self._require_context()
+
+    @property
+    def targets(self):
+        return self._targets
 
     def _require_context(self) -> None:
         self.decision.require_pre_decision()
@@ -152,7 +156,13 @@ class IndustryProductionSession:
         if self._started:
             raise BridgeProtocolError("production session cannot retry/resume")
         self._started = True
-        self._events.append("INDUSTRY_PRODUCTION_SESSION_STARTED")
+        self._events.extend(
+            (
+                "INDUSTRY_PRODUCTION_SESSION_STARTED",
+                "INDUSTRY_PRODUCTION_PHASE_STARTED",
+                "TARGET_SET_FINALIZED",
+            )
+        )
         try:
             for number, (industry_id, cargo_id) in enumerate(self.targets, 1):
                 self._require_context()
@@ -199,7 +209,9 @@ class IndustryProductionSession:
             )
             self._events.extend(
                 (
+                    "COMPLETE_PRODUCTION_COVERAGE_VALIDATED",
                     "PRODUCTION_OBSERVATION_ASSEMBLED",
+                    "INDUSTRY_PRODUCTION_OBSERVATION_ASSEMBLED",
                     "PRODUCTION_QUALIFICATION_EVALUATED",
                     "INDUSTRY_PRODUCTION_SESSION_COMPLETED",
                 )

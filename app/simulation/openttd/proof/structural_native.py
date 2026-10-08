@@ -21,6 +21,11 @@ from app.simulation.openttd.industry_cargo_evidence import parse_industry_cargo_
 from app.simulation.openttd.industry_inventory import IndustryInventoryWorld, inventory_request_id
 from app.simulation.openttd.industry_page import IndustryPageReceipt, IndustryPageRequest
 from app.simulation.openttd.industry_page_evidence import parse_industry_page_evidence
+from app.simulation.openttd.industry_production import (
+    IndustryProductionReceipt,
+    IndustryProductionRequest,
+)
+from app.simulation.openttd.industry_production_evidence import parse_industry_production_evidence
 from app.simulation.openttd.secure_admin import SecureAdminSession
 from app.simulation.openttd.structural_world import StructuralWorldContext
 from app.simulation.openttd.structural_world_session import STRUCTURAL_WORLD_SESSION_ID
@@ -60,6 +65,8 @@ class StructuralRecordedSession(GameScriptSession):
                     if isinstance(q, IndustryPageRequest)
                     else "INDUSTRY_CARGO"
                     if isinstance(q, IndustryCargoRequest)
+                    else "INDUSTRY_PRODUCTION"
+                    if isinstance(q, IndustryProductionRequest)
                     else "CARGO_PAGE"
                 )
                 self.transactions.append(
@@ -105,6 +112,10 @@ class StructuralRecordedSession(GameScriptSession):
                     row["receipt"] = IndustryCargoReceipt.correlate_transport(
                         row["request_payload"], decode_gamescript(body)
                     )
+                elif isinstance(row["request"], IndustryProductionRequest):
+                    row["receipt"] = IndustryProductionReceipt.correlate(
+                        row["request_payload"], decode_gamescript(body)
+                    )
                 else:
                     row["receipt"] = CargoPageReceipt.correlate_transport(
                         row["request_payload"], decode_gamescript(body)
@@ -125,6 +136,8 @@ class StructuralRecordedSession(GameScriptSession):
             if row["kind"] == "INDUSTRY_PAGE"
             else "CAPABILITY_VALIDATED"
             if row["kind"] == "INDUSTRY_CARGO"
+            else "PRODUCTION_RECORD_VALIDATED"
+            if row["kind"] == "INDUSTRY_PRODUCTION"
             else "CARGO_PAGE_VALIDATED"
         )
         row["validated"] = True
@@ -153,7 +166,7 @@ class StructuralNativeTransport(GameScriptTransport):
         ):
             raise ValueError("Structural process/connection replaced; no resume")
         rows = [r for r in self.recorded.transactions if isinstance(r["request"], type(request))]
-        session_id = STRUCTURAL_WORLD_SESSION_ID
+        session_id = owner.session_id
         if phase == "CAPABILITY":
             if (
                 owner.inventory is None
@@ -283,6 +296,8 @@ class StructuralNativeBackend(CargoPageNativeBackend):
             if isinstance(request, IndustryPageRequest)
             else parse_industry_cargo_evidence
             if isinstance(request, IndustryCargoRequest)
+            else parse_industry_production_evidence
+            if isinstance(request, IndustryProductionRequest)
             else parse_cargo_page_evidence
         )
         assert self.secure_connection is not None
@@ -295,6 +310,11 @@ class StructuralNativeBackend(CargoPageNativeBackend):
             if len(evidence.ordered_sequence) == 4:
                 await self.secure_connection.require_quiescent()
                 evidence.require_complete(request, exchange.response)
+                if (
+                    isinstance(request, IndustryProductionRequest)
+                    and len(exchange.response_payload) > 335
+                ):
+                    raise ValueError("Audited production response bound exceeded")
                 assert self.structural_session is not None
                 self.structural_session.validated(exchange)
                 self.structural_session.transactions[-1]["exchange"] = exchange

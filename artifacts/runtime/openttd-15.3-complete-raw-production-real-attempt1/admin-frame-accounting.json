@@ -1,0 +1,926 @@
+{
+  "categories": {
+    "capability": 40,
+    "catalog": 24,
+    "cleanup": 1,
+    "establishment": 2,
+    "inventory": 20,
+    "production": 40,
+    "setup": 3
+  },
+  "failed": false,
+  "frames": [
+    {
+      "admitted": true,
+      "category": "establishment",
+      "direction": "inbound",
+      "packet_type": 103,
+      "sha256": "28b584bb6974cc85d94836ff775299ded03cc5444baa0029d2a70ea2c486167f"
+    },
+    {
+      "admitted": true,
+      "category": "establishment",
+      "direction": "inbound",
+      "packet_type": 104,
+      "sha256": "ebcc083bda68273f0d242d69c0cc2b67bdf48445eb33d6480492836cefa57c8b"
+    },
+    {
+      "admitted": true,
+      "category": "setup",
+      "direction": "outbound",
+      "packet_type": 2,
+      "sha256": "a19f3b6f885f84b32c95065cbeecbf9ea733a1fd142430c8bd3f8064bfacd970"
+    },
+    {
+      "admitted": true,
+      "category": "setup",
+      "direction": "outbound",
+      "packet_type": 7,
+      "sha256": "7ecb7d841dd31a9ebf066035b88aa0b2e45c1bf12105aa120e25001133253d51"
+    },
+    {
+      "admitted": true,
+      "category": "setup",
+      "direction": "inbound",
+      "packet_type": 126,
+      "sha256": "663f54b27fa1634790b335830071beca73a2a4fe42a0fdec389929a9980d6a70"
+    },
+    {
+      "admitted": true,
+      "category": "inventory",
+      "direction": "outbound",
+      "packet_type": 6,
+      "sha256": "5ff587651b7b6bec458bfaa64dcebc76ee8727b21c43c65d1f6c3f82717e19ec"
+    },
+    {
+      "admitted": true,
+      "category": "inventory",
+      "direction": "inbound",
+      "packet_type": 124,
+      "sha256": "4f4f9643c69541747ece4ead58b43477e2c3097facddea784b3451f969cddbc8"
+    },
+    {
+      "admitted": true,
+      "category": "inventory",
+      "direction": "outbound",
+      "packet_type": 7,
+      "sha256": "3ae87122bdd438bd8ee6d97ee85d8e6e66767f70893b9e73df4240e304a61d5a"
+    },
+    {
+      "admitted": true,
+      "category": "inventory",
+      "direction": "inbound",
+      "packet_type": 126,
+      "sha256": "b53c1aae51d65c445e1a4511b1e8dda55280158d27ffd62b46fafd0d77ddda2a"
+    },
+    {
+      "admitted": true,
+      "category": "inventory",
+      "direction": "outbound",
+      "packet_type": 6,
+      "sha256": "cb4d986f74ce320641c6c82fbf10d0dda7f6c761ca70909b5b09b8aa7972128d"
+    },
+    {
+      "admitted": true,
+      "category": "inventory",
+      "direction": "inbound",
+      "packet_type": 124,
+      "sha256": "70efd24b8e4d9db2491389685da3607f403b106cf774ea812e682af38fea95a6"
+    },
+    {
+      "admitted": true,
+      "category": "inventory",
+      "direction": "outbound",
+      "packet_type": 7,
+      "sha256": "3ae87122bdd438bd8ee6d97ee85d8e6e66767f70893b9e73df4240e304a61d5a"
+    },
+    {
+      "admitted": true,
+      "category": "inventory",
+      "direction": "inbound",
+      "packet_type": 126,
+      "sha256": "b53c1aae51d65c445e1a4511b1e8dda55280158d27ffd62b46fafd0d77ddda2a"
+    },
+    {
+      "admitted": true,
+      "category": "inventory",
+      "direction": "outbound",
+      "packet_type": 6,
+      "sha256": "a2ed71709d460583611d90ee87426d4f4c86e8d789cca0aaf7f3aac3b7e885c5"
+    },
+    {
+      "admitted": true,
+      "category": "inventory",
+      "direction": "inbound",
+      "packet_type": 124,
+      "sha256": "081fd72f703c653f9ae690a225bb492e98bfffb27e354abf13055d0b1e1981ba"
+    },
+    {
+      "admitted": true,
+      "category": "inventory",
+      "direction": "outbound",
+      "packet_type": 7,
+      "sha256": "3ae87122bdd438bd8ee6d97ee85d8e6e66767f70893b9e73df4240e304a61d5a"
+    },
+    {
+      "admitted": true,
+      "category": "inventory",
+      "direction": "inbound",
+      "packet_type": 126,
+      "sha256": "b53c1aae51d65c445e1a4511b1e8dda55280158d27ffd62b46fafd0d77ddda2a"
+    },
+    {
+      "admitted": true,
+      "category": "inventory",
+      "direction": "outbound",
+      "packet_type": 6,
+      "sha256": "b2e299de71ba940cb5a7f78297153f298add59f2434487a63b470fe72f75c5a8"
+    },
+    {
+      "admitted": true,
+      "category": "inventory",
+      "direction": "inbound",
+      "packet_type": 124,
+      "sha256": "43d0c8610b9d58c4b21df7b2597a2e1bb31682ca9e0f9449834c26a26d3a58f2"
+    },
+    {
+      "admitted": true,
+      "category": "inventory",
+      "direction": "outbound",
+      "packet_type": 7,
+      "sha256": "3ae87122bdd438bd8ee6d97ee85d8e6e66767f70893b9e73df4240e304a61d5a"
+    },
+    {
+      "admitted": true,
+      "category": "inventory",
+      "direction": "inbound",
+      "packet_type": 126,
+      "sha256": "b53c1aae51d65c445e1a4511b1e8dda55280158d27ffd62b46fafd0d77ddda2a"
+    },
+    {
+      "admitted": true,
+      "category": "inventory",
+      "direction": "outbound",
+      "packet_type": 6,
+      "sha256": "427b214e8f60b22e959c2cbc4a40f87d308b1f514b177307ebcf3a424721d34d"
+    },
+    {
+      "admitted": true,
+      "category": "inventory",
+      "direction": "inbound",
+      "packet_type": 124,
+      "sha256": "8f2923940621189d7c99fc94dfb8304d055e4da8cabd1a7640ed71ba4472f3f8"
+    },
+    {
+      "admitted": true,
+      "category": "inventory",
+      "direction": "outbound",
+      "packet_type": 7,
+      "sha256": "3ae87122bdd438bd8ee6d97ee85d8e6e66767f70893b9e73df4240e304a61d5a"
+    },
+    {
+      "admitted": true,
+      "category": "inventory",
+      "direction": "inbound",
+      "packet_type": 126,
+      "sha256": "b53c1aae51d65c445e1a4511b1e8dda55280158d27ffd62b46fafd0d77ddda2a"
+    },
+    {
+      "admitted": true,
+      "category": "capability",
+      "direction": "outbound",
+      "packet_type": 6,
+      "sha256": "4b46f60d7e4ed98514b836339acb8f3b3659d3607dc566fc4175e77eb33ee78d"
+    },
+    {
+      "admitted": true,
+      "category": "capability",
+      "direction": "inbound",
+      "packet_type": 124,
+      "sha256": "9d689f66f11ef81ea8901e3890099743b956943fac85e26a19e2ce26f251366f"
+    },
+    {
+      "admitted": true,
+      "category": "capability",
+      "direction": "outbound",
+      "packet_type": 7,
+      "sha256": "3ae87122bdd438bd8ee6d97ee85d8e6e66767f70893b9e73df4240e304a61d5a"
+    },
+    {
+      "admitted": true,
+      "category": "capability",
+      "direction": "inbound",
+      "packet_type": 126,
+      "sha256": "b53c1aae51d65c445e1a4511b1e8dda55280158d27ffd62b46fafd0d77ddda2a"
+    },
+    {
+      "admitted": true,
+      "category": "capability",
+      "direction": "outbound",
+      "packet_type": 6,
+      "sha256": "f0b5d2d4b3750b7270e8efa038ce2aec71345b3c1d616a5b9f8ae93d5f564628"
+    },
+    {
+      "admitted": true,
+      "category": "capability",
+      "direction": "inbound",
+      "packet_type": 124,
+      "sha256": "cb7cc983629da1d119b798fba912e07f3e711e564d99b6bd32d9f05b8a9d3e28"
+    },
+    {
+      "admitted": true,
+      "category": "capability",
+      "direction": "outbound",
+      "packet_type": 7,
+      "sha256": "3ae87122bdd438bd8ee6d97ee85d8e6e66767f70893b9e73df4240e304a61d5a"
+    },
+    {
+      "admitted": true,
+      "category": "capability",
+      "direction": "inbound",
+      "packet_type": 126,
+      "sha256": "b53c1aae51d65c445e1a4511b1e8dda55280158d27ffd62b46fafd0d77ddda2a"
+    },
+    {
+      "admitted": true,
+      "category": "capability",
+      "direction": "outbound",
+      "packet_type": 6,
+      "sha256": "13b93128b5e33fc5e00375d9f4c6536379809ff8aa5f36cffa96af18eaba36e1"
+    },
+    {
+      "admitted": true,
+      "category": "capability",
+      "direction": "inbound",
+      "packet_type": 124,
+      "sha256": "3fe3c632a5ed7ab65dfae87e52d0d36f2a0be28900449e1673962392d95cc7f3"
+    },
+    {
+      "admitted": true,
+      "category": "capability",
+      "direction": "outbound",
+      "packet_type": 7,
+      "sha256": "3ae87122bdd438bd8ee6d97ee85d8e6e66767f70893b9e73df4240e304a61d5a"
+    },
+    {
+      "admitted": true,
+      "category": "capability",
+      "direction": "inbound",
+      "packet_type": 126,
+      "sha256": "b53c1aae51d65c445e1a4511b1e8dda55280158d27ffd62b46fafd0d77ddda2a"
+    },
+    {
+      "admitted": true,
+      "category": "capability",
+      "direction": "outbound",
+      "packet_type": 6,
+      "sha256": "fae8ef076ddf3489cfc282a4b1eb7858f85ff24577c248478f081e61fec061a1"
+    },
+    {
+      "admitted": true,
+      "category": "capability",
+      "direction": "inbound",
+      "packet_type": 124,
+      "sha256": "33ac3fdd9f104f6054b97c1d4535fd56e59ba37da333e5f68341056b1789035a"
+    },
+    {
+      "admitted": true,
+      "category": "capability",
+      "direction": "outbound",
+      "packet_type": 7,
+      "sha256": "3ae87122bdd438bd8ee6d97ee85d8e6e66767f70893b9e73df4240e304a61d5a"
+    },
+    {
+      "admitted": true,
+      "category": "capability",
+      "direction": "inbound",
+      "packet_type": 126,
+      "sha256": "b53c1aae51d65c445e1a4511b1e8dda55280158d27ffd62b46fafd0d77ddda2a"
+    },
+    {
+      "admitted": true,
+      "category": "capability",
+      "direction": "outbound",
+      "packet_type": 6,
+      "sha256": "ff23e7f97551c22077969066047aea7657932c73f11f15d5832daccc23473aaa"
+    },
+    {
+      "admitted": true,
+      "category": "capability",
+      "direction": "inbound",
+      "packet_type": 124,
+      "sha256": "d4bf5527124e01d3a37fa98ff8629f2eaa7e6ffd9ce0f964717bad12f043c3b2"
+    },
+    {
+      "admitted": true,
+      "category": "capability",
+      "direction": "outbound",
+      "packet_type": 7,
+      "sha256": "3ae87122bdd438bd8ee6d97ee85d8e6e66767f70893b9e73df4240e304a61d5a"
+    },
+    {
+      "admitted": true,
+      "category": "capability",
+      "direction": "inbound",
+      "packet_type": 126,
+      "sha256": "b53c1aae51d65c445e1a4511b1e8dda55280158d27ffd62b46fafd0d77ddda2a"
+    },
+    {
+      "admitted": true,
+      "category": "capability",
+      "direction": "outbound",
+      "packet_type": 6,
+      "sha256": "99c9a8a6a0eee4c3d3a0b5f27346266ef5f94e37ddc8f244caff9d5fa0cfbdfa"
+    },
+    {
+      "admitted": true,
+      "category": "capability",
+      "direction": "inbound",
+      "packet_type": 124,
+      "sha256": "15a8243c4a192be406b86a5a3012b09809deaf61df0bd7f57c2a67bd99832807"
+    },
+    {
+      "admitted": true,
+      "category": "capability",
+      "direction": "outbound",
+      "packet_type": 7,
+      "sha256": "3ae87122bdd438bd8ee6d97ee85d8e6e66767f70893b9e73df4240e304a61d5a"
+    },
+    {
+      "admitted": true,
+      "category": "capability",
+      "direction": "inbound",
+      "packet_type": 126,
+      "sha256": "b53c1aae51d65c445e1a4511b1e8dda55280158d27ffd62b46fafd0d77ddda2a"
+    },
+    {
+      "admitted": true,
+      "category": "capability",
+      "direction": "outbound",
+      "packet_type": 6,
+      "sha256": "86d6a9682d1db91aa9120593be49590e29771d1cb25de537b29014206c4ff210"
+    },
+    {
+      "admitted": true,
+      "category": "capability",
+      "direction": "inbound",
+      "packet_type": 124,
+      "sha256": "dd29ce1ad623a98213f9381af69ccb9b3eec998cce981bac1cf445fa6ba8de84"
+    },
+    {
+      "admitted": true,
+      "category": "capability",
+      "direction": "outbound",
+      "packet_type": 7,
+      "sha256": "3ae87122bdd438bd8ee6d97ee85d8e6e66767f70893b9e73df4240e304a61d5a"
+    },
+    {
+      "admitted": true,
+      "category": "capability",
+      "direction": "inbound",
+      "packet_type": 126,
+      "sha256": "b53c1aae51d65c445e1a4511b1e8dda55280158d27ffd62b46fafd0d77ddda2a"
+    },
+    {
+      "admitted": true,
+      "category": "capability",
+      "direction": "outbound",
+      "packet_type": 6,
+      "sha256": "6d6f62cd55d042e2c358276d33b8257bc4c4d419e04b61a32aec4121f0b3ea6a"
+    },
+    {
+      "admitted": true,
+      "category": "capability",
+      "direction": "inbound",
+      "packet_type": 124,
+      "sha256": "59df25355aa02d4749e2cd07bd11ce5ffa671dd8f75d0f5f9838598ac636536e"
+    },
+    {
+      "admitted": true,
+      "category": "capability",
+      "direction": "outbound",
+      "packet_type": 7,
+      "sha256": "3ae87122bdd438bd8ee6d97ee85d8e6e66767f70893b9e73df4240e304a61d5a"
+    },
+    {
+      "admitted": true,
+      "category": "capability",
+      "direction": "inbound",
+      "packet_type": 126,
+      "sha256": "b53c1aae51d65c445e1a4511b1e8dda55280158d27ffd62b46fafd0d77ddda2a"
+    },
+    {
+      "admitted": true,
+      "category": "capability",
+      "direction": "outbound",
+      "packet_type": 6,
+      "sha256": "817f778234fd755cc4867fb89174845bc4c2867bd17afd3fed6f09405e765aff"
+    },
+    {
+      "admitted": true,
+      "category": "capability",
+      "direction": "inbound",
+      "packet_type": 124,
+      "sha256": "639f5ade29f439a7695251c7fb95fed368ef1a292f175ae20bc4033e74eebafc"
+    },
+    {
+      "admitted": true,
+      "category": "capability",
+      "direction": "outbound",
+      "packet_type": 7,
+      "sha256": "3ae87122bdd438bd8ee6d97ee85d8e6e66767f70893b9e73df4240e304a61d5a"
+    },
+    {
+      "admitted": true,
+      "category": "capability",
+      "direction": "inbound",
+      "packet_type": 126,
+      "sha256": "b53c1aae51d65c445e1a4511b1e8dda55280158d27ffd62b46fafd0d77ddda2a"
+    },
+    {
+      "admitted": true,
+      "category": "capability",
+      "direction": "outbound",
+      "packet_type": 6,
+      "sha256": "155640b0ec18620f9717020d98778bf8e8e2bc39035a54e3b4e7bbd268d728da"
+    },
+    {
+      "admitted": true,
+      "category": "capability",
+      "direction": "inbound",
+      "packet_type": 124,
+      "sha256": "01d01e7a634a548563efba743c2d430564ada0b9853575e3631ad3adc61d5459"
+    },
+    {
+      "admitted": true,
+      "category": "capability",
+      "direction": "outbound",
+      "packet_type": 7,
+      "sha256": "3ae87122bdd438bd8ee6d97ee85d8e6e66767f70893b9e73df4240e304a61d5a"
+    },
+    {
+      "admitted": true,
+      "category": "capability",
+      "direction": "inbound",
+      "packet_type": 126,
+      "sha256": "b53c1aae51d65c445e1a4511b1e8dda55280158d27ffd62b46fafd0d77ddda2a"
+    },
+    {
+      "admitted": true,
+      "category": "catalog",
+      "direction": "outbound",
+      "packet_type": 6,
+      "sha256": "d0e8235ac28394ece832cd56f449d4f26245e4e3bb80bbb3f4c3932475ec3fbe"
+    },
+    {
+      "admitted": true,
+      "category": "catalog",
+      "direction": "inbound",
+      "packet_type": 124,
+      "sha256": "7c68e15b13832f6e58bbf293a22d65f4dbe440408e04a1a73f4dc75e8f361ee4"
+    },
+    {
+      "admitted": true,
+      "category": "catalog",
+      "direction": "outbound",
+      "packet_type": 7,
+      "sha256": "3ae87122bdd438bd8ee6d97ee85d8e6e66767f70893b9e73df4240e304a61d5a"
+    },
+    {
+      "admitted": true,
+      "category": "catalog",
+      "direction": "inbound",
+      "packet_type": 126,
+      "sha256": "b53c1aae51d65c445e1a4511b1e8dda55280158d27ffd62b46fafd0d77ddda2a"
+    },
+    {
+      "admitted": true,
+      "category": "catalog",
+      "direction": "outbound",
+      "packet_type": 6,
+      "sha256": "9ead045a0cc4342a34b06435f761bd54c0e2bde1096b2f8a2ed7b67c68b74a44"
+    },
+    {
+      "admitted": true,
+      "category": "catalog",
+      "direction": "inbound",
+      "packet_type": 124,
+      "sha256": "b1d1de219c40b3312778af9340d6ee0eec9540c363fe06a609806eb510570f59"
+    },
+    {
+      "admitted": true,
+      "category": "catalog",
+      "direction": "outbound",
+      "packet_type": 7,
+      "sha256": "3ae87122bdd438bd8ee6d97ee85d8e6e66767f70893b9e73df4240e304a61d5a"
+    },
+    {
+      "admitted": true,
+      "category": "catalog",
+      "direction": "inbound",
+      "packet_type": 126,
+      "sha256": "b53c1aae51d65c445e1a4511b1e8dda55280158d27ffd62b46fafd0d77ddda2a"
+    },
+    {
+      "admitted": true,
+      "category": "catalog",
+      "direction": "outbound",
+      "packet_type": 6,
+      "sha256": "4ac103e6bc8e6e439f0dc2f0f7078e2f37962faf6c799b114067b6a7c7f29e0c"
+    },
+    {
+      "admitted": true,
+      "category": "catalog",
+      "direction": "inbound",
+      "packet_type": 124,
+      "sha256": "96d6ff600c52ab3fa9ad3ec7d6de1df15d2f841794de1ad5ed998635de3e07cf"
+    },
+    {
+      "admitted": true,
+      "category": "catalog",
+      "direction": "outbound",
+      "packet_type": 7,
+      "sha256": "3ae87122bdd438bd8ee6d97ee85d8e6e66767f70893b9e73df4240e304a61d5a"
+    },
+    {
+      "admitted": true,
+      "category": "catalog",
+      "direction": "inbound",
+      "packet_type": 126,
+      "sha256": "b53c1aae51d65c445e1a4511b1e8dda55280158d27ffd62b46fafd0d77ddda2a"
+    },
+    {
+      "admitted": true,
+      "category": "catalog",
+      "direction": "outbound",
+      "packet_type": 6,
+      "sha256": "1fd34f79739c70e171309f5b3510dc19e1c996eedf9650fd8d71bd73ac648851"
+    },
+    {
+      "admitted": true,
+      "category": "catalog",
+      "direction": "inbound",
+      "packet_type": 124,
+      "sha256": "fc4ba895c80b8b1cdf98460297e02341e140a4e5f81897b4fd97b55d42cdbbdc"
+    },
+    {
+      "admitted": true,
+      "category": "catalog",
+      "direction": "outbound",
+      "packet_type": 7,
+      "sha256": "3ae87122bdd438bd8ee6d97ee85d8e6e66767f70893b9e73df4240e304a61d5a"
+    },
+    {
+      "admitted": true,
+      "category": "catalog",
+      "direction": "inbound",
+      "packet_type": 126,
+      "sha256": "b53c1aae51d65c445e1a4511b1e8dda55280158d27ffd62b46fafd0d77ddda2a"
+    },
+    {
+      "admitted": true,
+      "category": "catalog",
+      "direction": "outbound",
+      "packet_type": 6,
+      "sha256": "f5cbdc139cdfeca441d21c0c6035be508347f1a821cedd1070fe9b1f213f5c9e"
+    },
+    {
+      "admitted": true,
+      "category": "catalog",
+      "direction": "inbound",
+      "packet_type": 124,
+      "sha256": "f9626a9ccf60c4a5f9fa756d134ba138a6abd8628e13805a8df686bef0228ac2"
+    },
+    {
+      "admitted": true,
+      "category": "catalog",
+      "direction": "outbound",
+      "packet_type": 7,
+      "sha256": "3ae87122bdd438bd8ee6d97ee85d8e6e66767f70893b9e73df4240e304a61d5a"
+    },
+    {
+      "admitted": true,
+      "category": "catalog",
+      "direction": "inbound",
+      "packet_type": 126,
+      "sha256": "b53c1aae51d65c445e1a4511b1e8dda55280158d27ffd62b46fafd0d77ddda2a"
+    },
+    {
+      "admitted": true,
+      "category": "catalog",
+      "direction": "outbound",
+      "packet_type": 6,
+      "sha256": "c39919611c718b2a677b8ef1339ae1589206c8be472f686d996e7185551e575e"
+    },
+    {
+      "admitted": true,
+      "category": "catalog",
+      "direction": "inbound",
+      "packet_type": 124,
+      "sha256": "39b91a9c6e973d275dda62e7d2d6560a6e49c9bd1933757a46a28e2cca3451ec"
+    },
+    {
+      "admitted": true,
+      "category": "catalog",
+      "direction": "outbound",
+      "packet_type": 7,
+      "sha256": "3ae87122bdd438bd8ee6d97ee85d8e6e66767f70893b9e73df4240e304a61d5a"
+    },
+    {
+      "admitted": true,
+      "category": "catalog",
+      "direction": "inbound",
+      "packet_type": 126,
+      "sha256": "b53c1aae51d65c445e1a4511b1e8dda55280158d27ffd62b46fafd0d77ddda2a"
+    },
+    {
+      "admitted": true,
+      "category": "production",
+      "direction": "outbound",
+      "packet_type": 6,
+      "sha256": "9f723da8a09d2fe19823d57516fc4ef8b764e880a52053ba066cd439442f2853"
+    },
+    {
+      "admitted": true,
+      "category": "production",
+      "direction": "inbound",
+      "packet_type": 124,
+      "sha256": "dfa9c1da608af58fd064bf685320216764f7d693ff1cce2fca86a5289d5d670f"
+    },
+    {
+      "admitted": true,
+      "category": "production",
+      "direction": "outbound",
+      "packet_type": 7,
+      "sha256": "3ae87122bdd438bd8ee6d97ee85d8e6e66767f70893b9e73df4240e304a61d5a"
+    },
+    {
+      "admitted": true,
+      "category": "production",
+      "direction": "inbound",
+      "packet_type": 126,
+      "sha256": "b53c1aae51d65c445e1a4511b1e8dda55280158d27ffd62b46fafd0d77ddda2a"
+    },
+    {
+      "admitted": true,
+      "category": "production",
+      "direction": "outbound",
+      "packet_type": 6,
+      "sha256": "23a3720516d077c72342d35306715e9de7f2a6b91f0e414d9376a3718985bb8a"
+    },
+    {
+      "admitted": true,
+      "category": "production",
+      "direction": "inbound",
+      "packet_type": 124,
+      "sha256": "c8a2110e24a11c92d7ad180750c1715b93d1abca9bbedc260435f9e3d1c2a4f1"
+    },
+    {
+      "admitted": true,
+      "category": "production",
+      "direction": "outbound",
+      "packet_type": 7,
+      "sha256": "3ae87122bdd438bd8ee6d97ee85d8e6e66767f70893b9e73df4240e304a61d5a"
+    },
+    {
+      "admitted": true,
+      "category": "production",
+      "direction": "inbound",
+      "packet_type": 126,
+      "sha256": "b53c1aae51d65c445e1a4511b1e8dda55280158d27ffd62b46fafd0d77ddda2a"
+    },
+    {
+      "admitted": true,
+      "category": "production",
+      "direction": "outbound",
+      "packet_type": 6,
+      "sha256": "82358afebf48dad2ee99599d3d75f90c5100e9e42d6f974cef7e46d71d0a8d6f"
+    },
+    {
+      "admitted": true,
+      "category": "production",
+      "direction": "inbound",
+      "packet_type": 124,
+      "sha256": "536d67a6bf6390f52b9767ea46ee0aa4f2de908d69c31fd74104cf7c5557e8a9"
+    },
+    {
+      "admitted": true,
+      "category": "production",
+      "direction": "outbound",
+      "packet_type": 7,
+      "sha256": "3ae87122bdd438bd8ee6d97ee85d8e6e66767f70893b9e73df4240e304a61d5a"
+    },
+    {
+      "admitted": true,
+      "category": "production",
+      "direction": "inbound",
+      "packet_type": 126,
+      "sha256": "b53c1aae51d65c445e1a4511b1e8dda55280158d27ffd62b46fafd0d77ddda2a"
+    },
+    {
+      "admitted": true,
+      "category": "production",
+      "direction": "outbound",
+      "packet_type": 6,
+      "sha256": "98f2a7947c5c1fa919f8516f67e71e45f26aa02d28c0b0f92a979b9fdcf30ad5"
+    },
+    {
+      "admitted": true,
+      "category": "production",
+      "direction": "inbound",
+      "packet_type": 124,
+      "sha256": "a37a4ce04da3469326554185e71bcc271a4f2c0d9ee12726c9d716a0314adae6"
+    },
+    {
+      "admitted": true,
+      "category": "production",
+      "direction": "outbound",
+      "packet_type": 7,
+      "sha256": "3ae87122bdd438bd8ee6d97ee85d8e6e66767f70893b9e73df4240e304a61d5a"
+    },
+    {
+      "admitted": true,
+      "category": "production",
+      "direction": "inbound",
+      "packet_type": 126,
+      "sha256": "b53c1aae51d65c445e1a4511b1e8dda55280158d27ffd62b46fafd0d77ddda2a"
+    },
+    {
+      "admitted": true,
+      "category": "production",
+      "direction": "outbound",
+      "packet_type": 6,
+      "sha256": "2e615a5e786f18e7f7841bfb0f9538d0f2137f9291306d8747b74969be38badc"
+    },
+    {
+      "admitted": true,
+      "category": "production",
+      "direction": "inbound",
+      "packet_type": 124,
+      "sha256": "19f5866dfc53e25ea77901cc13add4c426472daa4ca61ab7710c4effb9a21d1c"
+    },
+    {
+      "admitted": true,
+      "category": "production",
+      "direction": "outbound",
+      "packet_type": 7,
+      "sha256": "3ae87122bdd438bd8ee6d97ee85d8e6e66767f70893b9e73df4240e304a61d5a"
+    },
+    {
+      "admitted": true,
+      "category": "production",
+      "direction": "inbound",
+      "packet_type": 126,
+      "sha256": "b53c1aae51d65c445e1a4511b1e8dda55280158d27ffd62b46fafd0d77ddda2a"
+    },
+    {
+      "admitted": true,
+      "category": "production",
+      "direction": "outbound",
+      "packet_type": 6,
+      "sha256": "c0993582d6d0779e0d9698a11191afd934be92093ac230c9e8a934301f5a6411"
+    },
+    {
+      "admitted": true,
+      "category": "production",
+      "direction": "inbound",
+      "packet_type": 124,
+      "sha256": "af8492659d617ef08b413c1ac865e5c99c56bbac0e7c41f3f046b4212d008604"
+    },
+    {
+      "admitted": true,
+      "category": "production",
+      "direction": "outbound",
+      "packet_type": 7,
+      "sha256": "3ae87122bdd438bd8ee6d97ee85d8e6e66767f70893b9e73df4240e304a61d5a"
+    },
+    {
+      "admitted": true,
+      "category": "production",
+      "direction": "inbound",
+      "packet_type": 126,
+      "sha256": "b53c1aae51d65c445e1a4511b1e8dda55280158d27ffd62b46fafd0d77ddda2a"
+    },
+    {
+      "admitted": true,
+      "category": "production",
+      "direction": "outbound",
+      "packet_type": 6,
+      "sha256": "50d2abfa5d3259606e4ddc3f95eb9645ec95c35ff07feb024848e3610c43b84d"
+    },
+    {
+      "admitted": true,
+      "category": "production",
+      "direction": "inbound",
+      "packet_type": 124,
+      "sha256": "40906697b897d90175b2c2e245689aa22f412ba085f82bdf5908f5c4f24aa109"
+    },
+    {
+      "admitted": true,
+      "category": "production",
+      "direction": "outbound",
+      "packet_type": 7,
+      "sha256": "3ae87122bdd438bd8ee6d97ee85d8e6e66767f70893b9e73df4240e304a61d5a"
+    },
+    {
+      "admitted": true,
+      "category": "production",
+      "direction": "inbound",
+      "packet_type": 126,
+      "sha256": "b53c1aae51d65c445e1a4511b1e8dda55280158d27ffd62b46fafd0d77ddda2a"
+    },
+    {
+      "admitted": true,
+      "category": "production",
+      "direction": "outbound",
+      "packet_type": 6,
+      "sha256": "3ddd2a70f576282165c116d1e83da0985e3785614a781bf3c2618e7c43994c92"
+    },
+    {
+      "admitted": true,
+      "category": "production",
+      "direction": "inbound",
+      "packet_type": 124,
+      "sha256": "05a9519d9e1ddc545fa629403766a640f89fe0c17bb1870d6910200398575e4b"
+    },
+    {
+      "admitted": true,
+      "category": "production",
+      "direction": "outbound",
+      "packet_type": 7,
+      "sha256": "3ae87122bdd438bd8ee6d97ee85d8e6e66767f70893b9e73df4240e304a61d5a"
+    },
+    {
+      "admitted": true,
+      "category": "production",
+      "direction": "inbound",
+      "packet_type": 126,
+      "sha256": "b53c1aae51d65c445e1a4511b1e8dda55280158d27ffd62b46fafd0d77ddda2a"
+    },
+    {
+      "admitted": true,
+      "category": "production",
+      "direction": "outbound",
+      "packet_type": 6,
+      "sha256": "0cdb7073785a46e4603de1e2a22c00f9187a3ada227e0b5c114c86eab684281f"
+    },
+    {
+      "admitted": true,
+      "category": "production",
+      "direction": "inbound",
+      "packet_type": 124,
+      "sha256": "751d43ea5070c7d7ed297c26423e26a75ea5b4df885d03e321f83bbd62ec1226"
+    },
+    {
+      "admitted": true,
+      "category": "production",
+      "direction": "outbound",
+      "packet_type": 7,
+      "sha256": "3ae87122bdd438bd8ee6d97ee85d8e6e66767f70893b9e73df4240e304a61d5a"
+    },
+    {
+      "admitted": true,
+      "category": "production",
+      "direction": "inbound",
+      "packet_type": 126,
+      "sha256": "b53c1aae51d65c445e1a4511b1e8dda55280158d27ffd62b46fafd0d77ddda2a"
+    },
+    {
+      "admitted": true,
+      "category": "production",
+      "direction": "outbound",
+      "packet_type": 6,
+      "sha256": "6bdb011892c0e0e9395bbb92cf6dc195eeec1c45e65a6a70fa7cc59bbcacfaf5"
+    },
+    {
+      "admitted": true,
+      "category": "production",
+      "direction": "inbound",
+      "packet_type": 124,
+      "sha256": "d9f54f60dd613414bb8887d0864bdcd04ffc6cd3e9b8af42d0807ceb3877edaa"
+    },
+    {
+      "admitted": true,
+      "category": "production",
+      "direction": "outbound",
+      "packet_type": 7,
+      "sha256": "3ae87122bdd438bd8ee6d97ee85d8e6e66767f70893b9e73df4240e304a61d5a"
+    },
+    {
+      "admitted": true,
+      "category": "production",
+      "direction": "inbound",
+      "packet_type": 126,
+      "sha256": "b53c1aae51d65c445e1a4511b1e8dda55280158d27ffd62b46fafd0d77ddda2a"
+    },
+    {
+      "admitted": true,
+      "category": "cleanup",
+      "direction": "outbound",
+      "packet_type": 1,
+      "sha256": "0f868d5011ab91a7f352a06a03be083abca12213ca27ab79cd4792a6a8ea0518"
+    }
+  ],
+  "query_operations": 124,
+  "total_post_auth_frames": 130
+}

@@ -56,6 +56,7 @@ from .inventory_contract import (
 from .production_contract import (
     PRODUCTION_REQUEST,
 )
+from .raw_production_contract import raw_production_first_request
 from .structural_contract import (
     STRUCTURAL_ATTEMPT_DIRECTORY,
     STRUCTURAL_REVISION,
@@ -106,6 +107,7 @@ def validate_native_inputs(prepared: PreparedProof) -> dict:
         "cargo-catalog",
         "structural-world",
         "industry-production",
+        "complete-raw-production",
     ):
         from .harness import PROJECT
         from .historical_protection import protection_base, validate_protection
@@ -156,6 +158,7 @@ def validate_native_inputs(prepared: PreparedProof) -> dict:
             "cargo-catalog": CATALOG_FIRST_REQUEST,
             "structural-world": structural_first_request(),
             "industry-production": PRODUCTION_REQUEST,
+            "complete-raw-production": raw_production_first_request(),
         }.get(metadata.get("mode"), REQUEST).to_bytes()
         or (directory / "request.json").read_bytes() != request
         or hashlib.sha256(request).hexdigest() != metadata["request_sha256"]
@@ -373,6 +376,10 @@ def validate_native_inputs(prepared: PreparedProof) -> dict:
         from .production_preparation import validate_production_preparation
 
         lineage_count = validate_production_preparation(prepared, metadata, bridge)
+    if metadata.get("mode") == "complete-raw-production":
+        from .raw_production_preparation import validate_raw_production_preparation
+
+        lineage_count = validate_raw_production_preparation(prepared, metadata, bridge)
     if Path(metadata["attempt_directory"]).exists():
         raise ValueError("Proof attempt already claimed")
     config = workspace.config.read_text()
@@ -430,6 +437,7 @@ def validate_native_inputs(prepared: PreparedProof) -> dict:
             "cargo-catalog",
             "structural-world",
             "industry-production",
+            "complete-raw-production",
         ),
         "enrichment_contract": enrichment_contract()
         if metadata.get("mode") == "industry-enrichment"
@@ -480,6 +488,31 @@ def preflight_prepared(prepared: PreparedProof, backend) -> dict:
             accounting_wired=True,
             historical_target_validated=True,
             production_validator_loaded=True,
+            final_subprocess_boundary_validated=True,
+            subprocess_created=False,
+            admin_connected=False,
+            request_sent=False,
+            launches=0,
+            connections=0,
+            requests=0,
+        )
+    if result["proof_kind"] == "complete-raw-production":
+        from .raw_production_attempt import RawProductionRunner
+        from .raw_production_contract import raw_production_contract
+
+        result.update(raw_production_contract())
+        result.update(RawProductionRunner(prepared, backend).launch_boundary())
+        result.update(
+            economy_authority_loaded=True,
+            combined_lifecycle_loaded=True,
+            ownership_wired=True,
+            phase_barriers_loaded=True,
+            target_derivation_loaded=True,
+            structural_bounds_loaded=True,
+            production_bounds_loaded=True,
+            combined_bounds_loaded=True,
+            continuous_accounting=True,
+            lifecycle_overhead_frames=6,
             final_subprocess_boundary_validated=True,
             subprocess_created=False,
             admin_connected=False,

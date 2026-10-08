@@ -1,0 +1,25 @@
+{
+  "version": "15.3",
+  "files": {
+    "tests/reference/qualification_15_3/timer_game_tick.h": {
+      "sha256": "b1997dc7b24a35e09a72a16f2197fab7bfaf773b95025328b89c1e6eae70e602",
+      "source_url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/timer/timer_game_tick.h"
+    },
+    "tests/reference/qualification_15_3/timer_game_tick.cpp": {
+      "sha256": "917e7aea2420df38c679f4660d19cbca3d578b4e23ae19e3567d18d657503ebf",
+      "source_url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/timer/timer_game_tick.cpp"
+    },
+    "tests/reference/qualification_15_3/timer_game_realtime.h": {
+      "sha256": "efbbaa5ff7ba0abc1c1793ba8070e6b2f01a007f946d78c363a420c9cc983945",
+      "source_url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/timer/timer_game_realtime.h"
+    },
+    "tests/reference/qualification_15_3/industry_cmd.cpp": {
+      "sha256": "313c5a7a7104ed4cf89aa59f161d649f35f2784cd82ca2b889be077be79eeac7",
+      "source_url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/industry_cmd.cpp"
+    },
+    "tests/reference/qualification_15_3/industry.h": {
+      "sha256": "f7a0c67c70daacf9ad1a80a85238fcd35201697081acea51f75e687f172cef8e",
+      "source_url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/industry.h"
+    }
+  }
+}

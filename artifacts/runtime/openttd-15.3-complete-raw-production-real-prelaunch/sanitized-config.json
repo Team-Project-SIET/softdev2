@@ -1,0 +1,5 @@
+{
+  "openttd.cfg": "[version]\nversion_string = 15.3\nini_version = 7\n[network]\nserver_port = 58135\nserver_admin_port = 54885\nserver_game_type = local\nmin_active_clients = 0\nreload_cfg = false\nallow_insecure_admin_login = false\n[gui]\nautosave_interval = 0\nautosave_on_exit = false\nthreaded_saves = false\npause_on_newgame = false\n\n[game_creation]\nmap_x = 6\nmap_y = 6\nlandscape = temperate\nstarting_year = 1950\nland_generator = 1\ngeneration_seed = 42\n[difficulty]\nmax_no_competitors = 0\n[misc]\ngraphicsset = OpenGFX\n[economy]\ntimekeeping_units = 0\n\n[game_scripts]\nNoMutationBridge = \n",
+  "private.cfg": "[version]\nini_version = 7\n[server_bind_addresses]\n127.0.0.1\n[admin_authorized_keys]\n98f8bc370c4df2d8eef344754e50f99999edcd2a916a6cd0469bac0aa813a80e\n",
+  "secrets.cfg": "[version]\nini_version = 7\n[network]\nadmin_password = \n"
+}

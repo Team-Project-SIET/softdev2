@@ -132,6 +132,15 @@ def record_prelaunch_failure(directory: Path, error: Exception) -> None:
     metadata_path = directory / "PRELAUNCH.json"
     if metadata_path.exists():
         metadata = json.loads(metadata_path.read_text())
+        if metadata.get("mode") == "complete-raw-production":
+            from .raw_production_lineage import retain_attempt_identity as retain_combined_identity
+
+            record = json.loads((failure / "PRELAUNCH-FAILURE.json").read_text())
+            record["preparation"] = str(directory)
+            (failure / "PRELAUNCH-FAILURE.json").write_text(
+                json.dumps(record, sort_keys=True, indent=2) + "\n"
+            )
+            retain_combined_identity(failure, metadata, record)
         if metadata.get("mode") == "industry-production":
             from .production_lineage import retain_attempt_identity as retain_production_identity
 

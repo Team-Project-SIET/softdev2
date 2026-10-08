@@ -1,0 +1,350 @@
+{
+  "runs": {
+    "focused": {
+      "passed": 1204,
+      "skipped": 0,
+      "failed": 0,
+      "errors": 0,
+      "duration_seconds": 92.676
+    },
+    "qualification": {
+      "passed": 11,
+      "skipped": 0,
+      "failed": 0,
+      "errors": 0,
+      "duration_seconds": 0.366
+    },
+    "live-runner-isolated": {
+      "passed": 105,
+      "skipped": 0,
+      "failed": 0,
+      "errors": 0,
+      "duration_seconds": 26.692
+    },
+    "ordinary-final": {
+      "passed": 2352,
+      "skipped": 38,
+      "failed": 0,
+      "errors": 0,
+      "duration_seconds": 137.078
+    }
+  },
+  "modules": {
+    "tests.test_admin_observer": {
+      "passed": 34,
+      "skipped": 0
+    },
+    "tests.test_admin_protocol": {
+      "passed": 275,
+      "skipped": 0
+    },
+    "tests.test_admin_session": {
+      "passed": 13,
+      "skipped": 0
+    },
+    "tests.test_cargo_catalog": {
+      "passed": 79,
+      "skipped": 0
+    },
+    "tests.test_cargo_catalog_proof": {
+      "passed": 52,
+      "skipped": 0
+    },
+    "tests.test_cargo_page_proof": {
+      "passed": 31,
+      "skipped": 0
+    },
+    "tests.test_comparison": {
+      "passed": 11,
+      "skipped": 0
+    },
+    "tests.test_complete_raw_production": {
+      "passed": 62,
+      "skipped": 0
+    },
+    "tests.test_database_core": {
+      "passed": 3,
+      "skipped": 0
+    },
+    "tests.test_driver_migration": {
+      "passed": 3,
+      "skipped": 0
+    },
+    "tests.test_enrichment_lineage": {
+      "passed": 41,
+      "skipped": 0
+    },
+    "tests.test_execution_domain": {
+      "passed": 20,
+      "skipped": 0
+    },
+    "tests.test_experiment_cli": {
+      "passed": 25,
+      "skipped": 0
+    },
+    "tests.test_experiment_migration": {
+      "passed": 1,
+      "skipped": 0
+    },
+    "tests.test_experiments": {
+      "passed": 19,
+      "skipped": 0
+    },
+    "tests.test_external_runtime": {
+      "passed": 28,
+      "skipped": 0
+    },
+    "tests.test_final_result": {
+      "passed": 13,
+      "skipped": 0
+    },
+    "tests.test_gamescript_bridge": {
+      "passed": 18,
+      "skipped": 0
+    },
+    "tests.test_gamescript_proof_evidence": {
+      "passed": 25,
+      "skipped": 0
+    },
+    "tests.test_gamescript_protocol": {
+      "passed": 29,
+      "skipped": 0
+    },
+    "tests.test_gamescript_transport": {
+      "passed": 23,
+      "skipped": 0
+    },
+    "tests.test_historical_protection": {
+      "passed": 15,
+      "skipped": 0
+    },
+    "tests.test_industry_cargo": {
+      "passed": 62,
+      "skipped": 0
+    },
+    "tests.test_industry_cargo_proof": {
+      "passed": 46,
+      "skipped": 0
+    },
+    "tests.test_industry_enrichment": {
+      "passed": 51,
+      "skipped": 0
+    },
+    "tests.test_industry_evidence_null": {
+      "passed": 29,
+      "skipped": 0
+    },
+    "tests.test_industry_inventory": {
+      "passed": 57,
+      "skipped": 0
+    },
+    "tests.test_industry_inventory_proof": {
+      "passed": 50,
+      "skipped": 0
+    },
+    "tests.test_industry_page": {
+      "passed": 63,
+      "skipped": 0
+    },
+    "tests.test_industry_page_proof": {
+      "passed": 48,
+      "skipped": 0
+    },
+    "tests.test_industry_production": {
+      "passed": 81,
+      "skipped": 0
+    },
+    "tests.test_industry_production_proof": {
+      "passed": 59,
+      "skipped": 0
+    },
+    "tests.test_legacy_retirement": {
+      "passed": 2,
+      "skipped": 0
+    },
+    "tests.test_live_isolation": {
+      "passed": 2,
+      "skipped": 2
+    },
+    "tests.test_live_launch_preparation": {
+      "passed": 35,
+      "skipped": 0
+    },
+    "tests.test_live_production_smoke": {
+      "passed": 0,
+      "skipped": 1
+    },
+    "tests.test_live_runner": {
+      "passed": 105,
+      "skipped": 0
+    },
+    "tests.test_live_service": {
+      "passed": 30,
+      "skipped": 9
+    },
+    "tests.test_loading_migration": {
+      "passed": 2,
+      "skipped": 0
+    },
+    "tests.test_openttd_integration": {
+      "passed": 0,
+      "skipped": 1
+    },
+    "tests.test_outcome_manifest": {
+      "passed": 18,
+      "skipped": 0
+    },
+    "tests.test_outcome_recovery": {
+      "passed": 28,
+      "skipped": 3
+    },
+    "tests.test_p07_proof_harness": {
+      "passed": 17,
+      "skipped": 0
+    },
+    "tests.test_parent_death_exec": {
+      "passed": 1,
+      "skipped": 0
+    },
+    "tests.test_plan_evaluation": {
+      "passed": 21,
+      "skipped": 0
+    },
+    "tests.test_plan_evaluation_migration": {
+      "passed": 3,
+      "skipped": 3
+    },
+    "tests.test_plan_live_runner": {
+      "passed": 1,
+      "skipped": 0
+    },
+    "tests.test_plan_setup": {
+      "passed": 7,
+      "skipped": 0
+    },
+    "tests.test_planning": {
+      "passed": 24,
+      "skipped": 0
+    },
+    "tests.test_planning_execution": {
+      "passed": 51,
+      "skipped": 0
+    },
+    "tests.test_planning_optimizer": {
+      "passed": 37,
+      "skipped": 0
+    },
+    "tests.test_planning_preparation": {
+      "passed": 54,
+      "skipped": 0
+    },
+    "tests.test_planning_realized": {
+      "passed": 5,
+      "skipped": 0
+    },
+    "tests.test_planning_transport": {
+      "passed": 19,
+      "skipped": 0
+    },
+    "tests.test_planning_transport_live": {
+      "passed": 32,
+      "skipped": 1
+    },
+    "tests.test_planning_world_evidence": {
+      "passed": 22,
+      "skipped": 0
+    },
+    "tests.test_port_release_probe": {
+      "passed": 10,
+      "skipped": 0
+    },
+    "tests.test_postgres_integration": {
+      "passed": 0,
+      "skipped": 3
+    },
+    "tests.test_preparation_lifecycle": {
+      "passed": 7,
+      "skipped": 0
+    },
+    "tests.test_preparation_probe": {
+      "passed": 17,
+      "skipped": 0
+    },
+    "tests.test_proof_causality": {
+      "passed": 28,
+      "skipped": 0
+    },
+    "tests.test_proof_cleanup_ownership": {
+      "passed": 33,
+      "skipped": 0
+    },
+    "tests.test_proof_cli": {
+      "passed": 5,
+      "skipped": 0
+    },
+    "tests.test_prototype_retirement": {
+      "passed": 2,
+      "skipped": 0
+    },
+    "tests.test_real_ack_graphics": {
+      "passed": 4,
+      "skipped": 0
+    },
+    "tests.test_real_ack_harness": {
+      "passed": 21,
+      "skipped": 0
+    },
+    "tests.test_real_ack_native": {
+      "passed": 8,
+      "skipped": 0
+    },
+    "tests.test_runtime_assets": {
+      "passed": 36,
+      "skipped": 0
+    },
+    "tests.test_secure_admin": {
+      "passed": 36,
+      "skipped": 0
+    },
+    "tests.test_secure_admin_crypto": {
+      "passed": 26,
+      "skipped": 0
+    },
+    "tests.test_structural_production": {
+      "passed": 36,
+      "skipped": 0
+    },
+    "tests.test_structural_world": {
+      "passed": 65,
+      "skipped": 0
+    },
+    "tests.test_structural_world_proof": {
+      "passed": 16,
+      "skipped": 0
+    },
+    "tests.test_telemetry_domain": {
+      "passed": 15,
+      "skipped": 0
+    },
+    "tests.test_telemetry_processor": {
+      "passed": 11,
+      "skipped": 0
+    },
+    "tests.test_telemetry_repository": {
+      "passed": 12,
+      "skipped": 15
+    },
+    "tests.test_workspace_recovery": {
+      "passed": 7,
+      "skipped": 0
+    },
+    "tests.test_world_info": {
+      "passed": 45,
+      "skipped": 0
+    },
+    "tests.test_world_info_proof": {
+      "passed": 30,
+      "skipped": 0
+    }
+  }
+}

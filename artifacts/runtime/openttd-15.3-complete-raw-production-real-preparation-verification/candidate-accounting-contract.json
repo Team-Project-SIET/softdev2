@@ -1,0 +1,99 @@
+{
+  "additional_command_types": 0,
+  "application_limit": 512,
+  "connections": 1,
+  "continuous_accounting": true,
+  "continuous_connection": true,
+  "frame_budget_derivation": {
+    "encrypted_protocol_and_welcome": 2,
+    "file_liveness_frames": 0,
+    "graceful_quit": 1,
+    "phase_transition_frames": 0,
+    "production_query_allowance": 4096,
+    "structural_query_allowance": 1024,
+    "subscription_update_frequency_ping_pong": 3
+  },
+  "frame_limits": {
+    "capability": 256,
+    "catalog": 512,
+    "cleanup": 1,
+    "establishment": 2,
+    "inventory": 256,
+    "production": 4096,
+    "setup": 3
+  },
+  "independent_production_source": null,
+  "launches": 1,
+  "max_application_requests": 608,
+  "max_production_records": 512,
+  "max_query_operations": 5120,
+  "max_response_bytes": 220672,
+  "max_total_post_auth_frames": 5126,
+  "native_ceiling": 1450,
+  "non_atomic": true,
+  "p08_completion": false,
+  "phase_limits": {
+    "capability": {
+      "query_operations": 256,
+      "records": 32,
+      "requests": 32,
+      "response_bytes": 16384
+    },
+    "catalog": {
+      "query_operations": 512,
+      "records": 64,
+      "requests": 32,
+      "response_bytes": 16384
+    },
+    "inventory": {
+      "query_operations": 256,
+      "records": 32,
+      "requests": 32,
+      "response_bytes": 16384
+    },
+    "production": {
+      "per_query_operations": 8,
+      "query_operations": 4096,
+      "records": 512,
+      "requests": 512,
+      "response_bytes": 171520
+    }
+  },
+  "phase_order": [
+    "inventory",
+    "capability",
+    "catalog",
+    "assembly",
+    "production"
+  ],
+  "pre_decision": true,
+  "production_level": "DEFERRED / NOT INCLUDED",
+  "production_response_fields": [
+    "protocol",
+    "type",
+    "request_id",
+    "status",
+    "industry_id",
+    "cargo_id",
+    "economy_date_before",
+    "economy_date_after",
+    "last_month_produced",
+    "last_month_transported",
+    "last_month_transported_pct"
+  ],
+  "proof_kind": "complete-raw-production",
+  "qualified_for_planning": false,
+  "reconnects": 0,
+  "resume": false,
+  "retries": 0,
+  "rollovers_observed": 0,
+  "source_structural_digest_exact": true,
+  "target_order": [
+    "industry_id",
+    "cargo_id"
+  ],
+  "target_source": "same-run complete structural capability.produces",
+  "transported": "OpenTTD station-allocation metric",
+  "worst_case_production_response_bytes": 335,
+  "zero_targets_allowed": true
+}
