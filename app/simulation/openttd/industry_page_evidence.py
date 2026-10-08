@@ -4,8 +4,8 @@ import hashlib
 import re
 from dataclasses import dataclass
 
-from app.simulation.openttd.gamescript_protocol import validate_request_id
 from app.simulation.openttd.industry_page import IndustryPageRequest, IndustryPageResponse
+from app.simulation.openttd.observation_protocol import validate_request_id
 
 INDUSTRY_SEQUENCE = (
     "BRIDGE_REQUEST_RECEIVED",

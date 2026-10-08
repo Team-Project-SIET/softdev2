@@ -1,13 +1,14 @@
 """Protocol-one read-only map dimensions and independent Admin verification."""
 
+from __future__ import annotations
+
 import hashlib
 import json
 from dataclasses import asdict, dataclass
 from typing import TYPE_CHECKING
 
-from app.simulation.openttd.admin_protocol import ServerWelcome
-from app.simulation.openttd.gamescript_bridge import BridgePackage
-from app.simulation.openttd.gamescript_protocol import (
+from app.simulation.openttd.observation_identity import BridgePackage, RuntimeIdentity
+from app.simulation.openttd.observation_protocol import (
     PROTOCOL_VERSION,
     BridgeProtocolError,
     MalformedMessage,
@@ -15,9 +16,9 @@ from app.simulation.openttd.gamescript_protocol import (
     _serialize,
     validate_request_id,
 )
-from app.simulation.openttd.runtime.identity import RuntimeIdentity
 
 if TYPE_CHECKING:
+    from app.simulation.openttd.admin_protocol import ServerWelcome
     from app.simulation.openttd.world_info_evidence import WorldInfoEvidence
 
 

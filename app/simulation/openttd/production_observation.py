@@ -6,13 +6,13 @@ import re
 from dataclasses import asdict, dataclass, replace
 from enum import Enum
 
-from app.simulation.openttd.gamescript_protocol import BridgeProtocolError
 from app.simulation.openttd.industry_cargo import MAX_INDUSTRY_CARGOES
 from app.simulation.openttd.industry_production import (
     MAX_PRODUCTION_RESPONSE_BYTES,
     IndustryProductionRecord,
 )
 from app.simulation.openttd.industry_production_evidence import ProductionTransaction
+from app.simulation.openttd.observation_protocol import BridgeProtocolError
 from app.simulation.openttd.structural_world import (
     StructuralWorldContext,
     StructuralWorldObservation,

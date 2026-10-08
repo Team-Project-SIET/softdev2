@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, replace
 
-from app.simulation.openttd.gamescript_protocol import BridgeProtocolError
+from app.simulation.openttd.observation_protocol import BridgeProtocolError
 from app.simulation.openttd.production_observation import (
     IndustryProductionObservation,
     production_pairs,

@@ -1,15 +1,12 @@
 """Immutable bounded world observations, separate from planning/preparation models."""
 
+from __future__ import annotations
+
 import hashlib
 import json
 from dataclasses import asdict, dataclass
+from typing import TYPE_CHECKING
 
-from app.simulation.openttd.admin_protocol import ServerWelcome
-from app.simulation.openttd.gamescript_protocol import (
-    MAX_PAYLOAD_BYTES,
-    BridgeProtocolError,
-    validate_request_id,
-)
 from app.simulation.openttd.industry_page import (
     IndustryPageExchange,
     IndustryPageReceipt,
@@ -17,8 +14,17 @@ from app.simulation.openttd.industry_page import (
     IndustryRecord,
 )
 from app.simulation.openttd.industry_page_evidence import IndustryPageEvidence
-from app.simulation.openttd.runtime.identity import RuntimeIdentity
+from app.simulation.openttd.observation_identity import RuntimeIdentity
+from app.simulation.openttd.observation_protocol import (
+    MAX_PAYLOAD_BYTES,
+    BridgeProtocolError,
+    validate_request_id,
+)
 from app.simulation.openttd.world_info import WorldInfoResponse
+
+if TYPE_CHECKING:
+    from app.simulation.openttd.admin_protocol import ServerWelcome
+
 
 DEFAULT_INDUSTRY_PAGE_SIZE = 3
 MAX_INDUSTRY_RECORDS = 32  # P08 v1 profile authority; no domain import.

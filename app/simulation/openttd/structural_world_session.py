@@ -2,7 +2,6 @@
 
 import math
 from collections.abc import Awaitable, Callable
-from dataclasses import dataclass
 from typing import Literal, Protocol
 
 from app.simulation.openttd.cargo_catalog import (
@@ -32,6 +31,9 @@ from app.simulation.openttd.industry_inventory import (
 from app.simulation.openttd.industry_page import IndustryPageExchange, IndustryPageRequest
 from app.simulation.openttd.industry_page_evidence import IndustryPageEvidence
 from app.simulation.openttd.industry_query import IndustryInventorySession, IndustryPageTransport
+from app.simulation.openttd.observation_session_evidence import (
+    StructuralWorldSessionEvidence as StructuralWorldSessionEvidence,
+)
 from app.simulation.openttd.structural_world import (
     ScopedObservation,
     StructuralWorldBudget,
@@ -64,21 +66,6 @@ class StructuralWorldTransport(IndustryPageTransport, CargoTransport, CatalogTra
 
     @property
     def context(self) -> StructuralWorldContext: ...
-
-
-@dataclass(frozen=True)
-class StructuralWorldSessionEvidence:
-    session_id: str
-    events: tuple[str, ...]
-    exchanges: tuple[QueryExchange, ...]
-    request_attempts: int
-    total_response_bytes: int
-    protocol_operations: int
-    complete: bool
-    structural_world_digest: str | None
-    failure: str | None
-    retries: Literal[0] = 0
-    reconnects: Literal[0] = 0
 
 
 class _BoundedStructuralTransport:

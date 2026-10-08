@@ -5,18 +5,17 @@ import json
 import re
 from dataclasses import dataclass, field, replace
 
-from app.simulation.openttd.cargo_catalog import (
+from app.simulation.openttd.capability_observation import IndustryCapabilityObservation
+from app.simulation.openttd.catalog_observation import (
     CargoCatalogObservation,
     validate_capability_catalog,
 )
-from app.simulation.openttd.gamescript_bridge import BridgePackage
-from app.simulation.openttd.gamescript_protocol import BridgeProtocolError
-from app.simulation.openttd.industry_capability import IndustryCapabilityObservation
 from app.simulation.openttd.industry_inventory import (
     IndustryInventoryObservation,
     IndustryInventoryWorld,
 )
-from app.simulation.openttd.runtime.identity import RuntimeIdentity
+from app.simulation.openttd.observation_identity import BridgePackage, RuntimeIdentity
+from app.simulation.openttd.observation_protocol import BridgeProtocolError
 
 
 @dataclass(frozen=True)

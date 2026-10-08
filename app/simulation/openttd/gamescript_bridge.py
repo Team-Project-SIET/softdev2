@@ -1,19 +1,15 @@
 """The version-15 no-mutation GameScript package; staging never launches a game."""
 
 import hashlib
-from dataclasses import dataclass
 from pathlib import Path
 
+from app.simulation.openttd.observation_identity import (
+    BridgePackage as BridgePackage,
+)
 from app.simulation.openttd.runtime.config import RuntimeWorkspace
 
 BRIDGE_DIRECTORY = Path(__file__).with_name("gamescript_bridge_package")
 PACKAGE_FILES = ("info.nut", "main.nut")
-
-
-@dataclass(frozen=True)
-class BridgePackage:
-    directory: Path
-    sha256: str
 
 
 def stage_bridge(workspace: RuntimeWorkspace) -> BridgePackage:

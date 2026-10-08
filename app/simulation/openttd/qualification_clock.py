@@ -4,13 +4,13 @@ import hashlib
 import json
 from dataclasses import asdict, dataclass
 
-from app.simulation.openttd.gamescript_protocol import (
+from app.simulation.openttd.industry_page import MAX_INDUSTRY_ID, _integer
+from app.simulation.openttd.observation_protocol import (
     BridgeProtocolError,
     _object,
     _serialize,
     validate_request_id,
 )
-from app.simulation.openttd.industry_page import MAX_INDUSTRY_ID, _integer
 
 
 def year_start(year):

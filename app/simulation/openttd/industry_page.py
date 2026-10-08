@@ -3,7 +3,7 @@
 import hashlib
 from dataclasses import asdict, dataclass
 
-from app.simulation.openttd.gamescript_protocol import (
+from app.simulation.openttd.observation_protocol import (
     BridgeProtocolError,
     MalformedMessage,
     _object,

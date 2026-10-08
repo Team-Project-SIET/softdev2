@@ -2,8 +2,8 @@
 
 from dataclasses import asdict, dataclass
 
-from app.simulation.openttd.gamescript_protocol import _object, _serialize, validate_request_id
 from app.simulation.openttd.industry_page import _integer
+from app.simulation.openttd.observation_protocol import _object, _serialize, validate_request_id
 
 MAX_CARGO_ID = 63
 DEFAULT_CARGO_PAGE_SIZE = 2

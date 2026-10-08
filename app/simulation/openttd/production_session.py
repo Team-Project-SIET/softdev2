@@ -16,6 +16,9 @@ from app.simulation.openttd.industry_production_evidence import (
     IndustryProductionEvidence,
     ProductionTransaction,
 )
+from app.simulation.openttd.observation_session_evidence import (
+    ProductionSessionEvidence as ProductionSessionEvidence,
+)
 from app.simulation.openttd.production_observation import (
     IndustryProductionObservation,
     ProductionBudget,
@@ -62,21 +65,6 @@ class ProductionDecisionBoundary:
     def require_pre_decision(self) -> None:
         if self.stage is not DecisionStage.PRE_DECISION:
             raise BridgeProtocolError("post-decision telemetry cannot enter production input")
-
-
-@dataclass(frozen=True)
-class ProductionSessionEvidence:
-    events: tuple[str, ...]
-    transactions: tuple[ProductionTransaction, ...]
-    exchanges: tuple[IndustryProductionExchange, ...]
-    request_attempts: int
-    total_response_bytes: int
-    protocol_operations: int
-    failure: str | None
-    cleanup_failure: str | None
-    complete: bool
-    retries: int = 0
-    reconnects: int = 0
 
 
 class IndustryProductionSession:

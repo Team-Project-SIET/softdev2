@@ -3,7 +3,7 @@
 from dataclasses import dataclass, replace
 from enum import Enum
 
-from app.simulation.openttd.gamescript_protocol import BridgeProtocolError
+from app.simulation.openttd.observation_protocol import BridgeProtocolError
 from app.simulation.openttd.qualification_clock import EconomyClockReading
 from app.simulation.openttd.qualification_policy import MAX_CLOCK_REQUESTS
 from app.simulation.openttd.structural_world import StructuralWorldContext
