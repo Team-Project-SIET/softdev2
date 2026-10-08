@@ -1,0 +1,186 @@
+[
+  {
+    "host": "127.0.0.1",
+    "old_reuse": false,
+    "active_close": "never_accepted",
+    "kernel_states": [],
+    "new_loopback_no_reuse": "PASS",
+    "new_loopback_reuse": "PASS",
+    "new_wildcard_no_reuse": "PASS",
+    "new_wildcard_reuse": "PASS"
+  },
+  {
+    "host": "127.0.0.1",
+    "old_reuse": false,
+    "active_close": "server",
+    "kernel_states": [
+      "06"
+    ],
+    "new_loopback_no_reuse": "EADDRINUSE",
+    "new_loopback_reuse": "EADDRINUSE",
+    "new_wildcard_no_reuse": "EADDRINUSE",
+    "new_wildcard_reuse": "EADDRINUSE"
+  },
+  {
+    "host": "127.0.0.1",
+    "old_reuse": false,
+    "active_close": "client",
+    "kernel_states": [],
+    "new_loopback_no_reuse": "PASS",
+    "new_loopback_reuse": "PASS",
+    "new_wildcard_no_reuse": "PASS",
+    "new_wildcard_reuse": "PASS"
+  },
+  {
+    "host": "127.0.0.1",
+    "old_reuse": false,
+    "active_close": "accepted_survives",
+    "kernel_states": [
+      "01"
+    ],
+    "new_loopback_no_reuse": "EADDRINUSE",
+    "new_loopback_reuse": "EADDRINUSE",
+    "new_wildcard_no_reuse": "EADDRINUSE",
+    "new_wildcard_reuse": "EADDRINUSE"
+  },
+  {
+    "host": "127.0.0.1",
+    "old_reuse": true,
+    "active_close": "never_accepted",
+    "kernel_states": [],
+    "new_loopback_no_reuse": "PASS",
+    "new_loopback_reuse": "PASS",
+    "new_wildcard_no_reuse": "PASS",
+    "new_wildcard_reuse": "PASS"
+  },
+  {
+    "host": "127.0.0.1",
+    "old_reuse": true,
+    "active_close": "server",
+    "kernel_states": [
+      "06"
+    ],
+    "new_loopback_no_reuse": "EADDRINUSE",
+    "new_loopback_reuse": "PASS",
+    "new_wildcard_no_reuse": "EADDRINUSE",
+    "new_wildcard_reuse": "PASS"
+  },
+  {
+    "host": "127.0.0.1",
+    "old_reuse": true,
+    "active_close": "client",
+    "kernel_states": [],
+    "new_loopback_no_reuse": "PASS",
+    "new_loopback_reuse": "PASS",
+    "new_wildcard_no_reuse": "PASS",
+    "new_wildcard_reuse": "PASS"
+  },
+  {
+    "host": "127.0.0.1",
+    "old_reuse": true,
+    "active_close": "accepted_survives",
+    "kernel_states": [
+      "01"
+    ],
+    "new_loopback_no_reuse": "EADDRINUSE",
+    "new_loopback_reuse": "PASS",
+    "new_wildcard_no_reuse": "EADDRINUSE",
+    "new_wildcard_reuse": "PASS"
+  },
+  {
+    "host": "0.0.0.0",
+    "old_reuse": false,
+    "active_close": "never_accepted",
+    "kernel_states": [],
+    "new_loopback_no_reuse": "PASS",
+    "new_loopback_reuse": "PASS",
+    "new_wildcard_no_reuse": "PASS",
+    "new_wildcard_reuse": "PASS"
+  },
+  {
+    "host": "0.0.0.0",
+    "old_reuse": false,
+    "active_close": "server",
+    "kernel_states": [
+      "06"
+    ],
+    "new_loopback_no_reuse": "EADDRINUSE",
+    "new_loopback_reuse": "EADDRINUSE",
+    "new_wildcard_no_reuse": "EADDRINUSE",
+    "new_wildcard_reuse": "EADDRINUSE"
+  },
+  {
+    "host": "0.0.0.0",
+    "old_reuse": false,
+    "active_close": "client",
+    "kernel_states": [],
+    "new_loopback_no_reuse": "PASS",
+    "new_loopback_reuse": "PASS",
+    "new_wildcard_no_reuse": "PASS",
+    "new_wildcard_reuse": "PASS"
+  },
+  {
+    "host": "0.0.0.0",
+    "old_reuse": false,
+    "active_close": "accepted_survives",
+    "kernel_states": [
+      "01"
+    ],
+    "new_loopback_no_reuse": "EADDRINUSE",
+    "new_loopback_reuse": "EADDRINUSE",
+    "new_wildcard_no_reuse": "EADDRINUSE",
+    "new_wildcard_reuse": "EADDRINUSE"
+  },
+  {
+    "host": "0.0.0.0",
+    "old_reuse": true,
+    "active_close": "never_accepted",
+    "kernel_states": [],
+    "new_loopback_no_reuse": "PASS",
+    "new_loopback_reuse": "PASS",
+    "new_wildcard_no_reuse": "PASS",
+    "new_wildcard_reuse": "PASS"
+  },
+  {
+    "host": "0.0.0.0",
+    "old_reuse": true,
+    "active_close": "server",
+    "kernel_states": [
+      "06"
+    ],
+    "new_loopback_no_reuse": "EADDRINUSE",
+    "new_loopback_reuse": "PASS",
+    "new_wildcard_no_reuse": "EADDRINUSE",
+    "new_wildcard_reuse": "PASS"
+  },
+  {
+    "host": "0.0.0.0",
+    "old_reuse": true,
+    "active_close": "client",
+    "kernel_states": [],
+    "new_loopback_no_reuse": "PASS",
+    "new_loopback_reuse": "PASS",
+    "new_wildcard_no_reuse": "PASS",
+    "new_wildcard_reuse": "PASS"
+  },
+  {
+    "host": "0.0.0.0",
+    "old_reuse": true,
+    "active_close": "accepted_survives",
+    "kernel_states": [
+      "01"
+    ],
+    "new_loopback_no_reuse": "EADDRINUSE",
+    "new_loopback_reuse": "PASS",
+    "new_wildcard_no_reuse": "EADDRINUSE",
+    "new_wildcard_reuse": "PASS"
+  },
+  {
+    "ipv6_wildcard_v6only": 0,
+    "ipv4_loopback_rebind": "EADDRINUSE"
+  },
+  {
+    "ipv6_wildcard_v6only": 1,
+    "ipv4_loopback_rebind": "PASS"
+  }
+]

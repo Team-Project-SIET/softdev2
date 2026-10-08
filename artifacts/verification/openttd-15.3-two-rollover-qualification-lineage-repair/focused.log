@@ -1,0 +1,124 @@
+........................................................................ [  3%]
+........................................................................ [  7%]
+........................................................................ [ 11%]
+........................................................................ [ 15%]
+........................................................................ [ 18%]
+........................................................................ [ 22%]
+........................................................................ [ 26%]
+........................................................................ [ 30%]
+........................................................................ [ 33%]
+........................................................................ [ 37%]
+........................................................................ [ 41%]
+........................................................................ [ 45%]
+........................................................................ [ 48%]
+........................................................................ [ 52%]
+.......................................................s................ [ 56%]
+........................................................................ [ 60%]
+........................................................................ [ 63%]
+........................................................................ [ 67%]
+s....................................................................... [ 71%]
+.................................F...................................... [ 75%]
+................................................s....................... [ 78%]
+........................................................................ [ 82%]
+........................................................................ [ 86%]
+........................................................................ [ 90%]
+........................................................................ [ 94%]
+........................................................................ [ 97%]
+..........................................                               [100%]
+=================================== FAILURES ===================================
+_____________ test_v3_lineage_new_attempt2_not_prelaunch_exception _____________
+
+tmp_path = PosixPath('/tmp/pytest-of-fed/pytest-7/test_v3_lineage_new_attempt2_n0')
+
+    def test_v3_lineage_new_attempt2_not_prelaunch_exception(tmp_path):
+        from app.simulation.openttd.proof.production_lineage import capture_lineage
+    
+        parent = historical_lineage_fixture(tmp_path)
+        directory = parent / "openttd-15.3-industry-production-real-prelaunch-v3"
+        value = capture_lineage(directory, 3, parent / "openttd-15.3-industry-production-real-attempt2")
+        assert value["attempt_number"] == 2
+        assert value["post_launch_predecessors"][0]["classification"] == "POST_LAUNCH_FAILURE"
+        assert value["supersedes_prelaunch_attempts"] == []
+        assert value["prelaunch_continuation_exception_used"] is False
+        assert value["fresh_explicit_authorization_required"] is True
+>       with pytest.raises(ValueError, match="new attempt destination"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'new attempt destination'
+E         Actual message: 'Attempt destination already consumed'
+
+tests/test_proof_cleanup_ownership.py:263: AssertionError
+=========================== short test summary info ============================
+SKIPPED [1] tests/test_live_production_smoke.py:41: pass --run-postgres to exercise an isolated PostgreSQL schema
+SKIPPED [1] tests/test_planning_transport_live.py:913: pass --run-openttd for the single P03 transport proof
+SKIPPED [1] tests/test_qualification_dispatch_repair.py:56: Set SQUIRREL_15_3_PROBE to the standalone tagged-source interpreter
+FAILED tests/test_proof_cleanup_ownership.py::test_v3_lineage_new_attempt2_not_prelaunch_exception
+1 failed, 1910 passed, 3 skipped in 174.91s (0:02:54)
+ference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]

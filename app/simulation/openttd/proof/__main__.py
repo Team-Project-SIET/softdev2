@@ -26,6 +26,8 @@ from .native import NativeBackend, load_prepared
 from .preflight import preflight_prepared
 from .production_contract import PRODUCTION_PRELAUNCH_DIRECTORY
 from .production_native import ProductionNativeBackend
+from .qualification_contract import PRELAUNCH_DIRECTORY as QUALIFICATION_PRELAUNCH_DIRECTORY
+from .qualification_native import QualificationNativeBackend
 from .raw_production_contract import RAW_PRODUCTION_PRELAUNCH_DIRECTORY
 from .raw_production_native import RawProductionNativeBackend
 from .structural_contract import STRUCTURAL_PRELAUNCH_DIRECTORY
@@ -55,6 +57,7 @@ def main() -> None:
             "structural-world",
             "industry-production",
             "complete-raw-production",
+            "two-rollover-qualification",
         ),
         default="ack",
     )
@@ -62,7 +65,9 @@ def main() -> None:
     args = parser.parse_args()
     if args.directory is None:
         name = (
-            RAW_PRODUCTION_PRELAUNCH_DIRECTORY
+            QUALIFICATION_PRELAUNCH_DIRECTORY
+            if args.mode == "two-rollover-qualification"
+            else RAW_PRODUCTION_PRELAUNCH_DIRECTORY
             if args.mode == "complete-raw-production"
             else PRODUCTION_PRELAUNCH_DIRECTORY
             if args.mode == "industry-production"
@@ -97,6 +102,7 @@ def main() -> None:
         "structural-world": StructuralNativeBackend,
         "industry-production": ProductionNativeBackend,
         "complete-raw-production": RawProductionNativeBackend,
+        "two-rollover-qualification": QualificationNativeBackend,
     }[args.mode]
     if args.command == "prepare":
         prepared = prepare_proof(args.directory, mode=args.mode)
@@ -126,6 +132,7 @@ def main() -> None:
                 "structural-world",
                 "industry-production",
                 "complete-raw-production",
+                "two-rollover-qualification",
             ):
                 from .world_attempt import record_prelaunch_failure
 
@@ -147,7 +154,21 @@ def main() -> None:
     else:
         if not args.authorize_one_launch:
             parser.error("Separate explicit one-launch authorization required")
-        if args.mode == "complete-raw-production":
+        if args.mode == "two-rollover-qualification":
+            from .qualification_attempt import execute_qualification_attempt
+            from .world_attempt import record_prelaunch_failure
+
+            try:
+                prepared = load_prepared(args.directory, mode=args.mode)
+            except Exception as error:
+                record_prelaunch_failure(args.directory, error)
+                raise SystemExit("PRELAUNCH_FAILED; no execution") from None
+            result = asyncio.run(
+                execute_qualification_attempt(
+                    prepared, QualificationNativeBackend(authorized_one_launch=True)
+                )
+            )
+        elif args.mode == "complete-raw-production":
             from .raw_production_attempt import execute_raw_production_attempt
             from .world_attempt import record_prelaunch_failure
 

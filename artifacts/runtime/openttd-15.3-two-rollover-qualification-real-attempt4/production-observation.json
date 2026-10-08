@@ -1,0 +1,98 @@
+{
+  "complete": true,
+  "production_digest": "f873858c6aba09802d22b07898412731dc66d376609447576ac47fbce4fded72",
+  "qualified_for_planning": true,
+  "records": [
+    {
+      "cargo_id": 1,
+      "economy_date_after": 712283,
+      "economy_date_before": 712283,
+      "industry_id": 0,
+      "last_month_produced": 168,
+      "last_month_transported": 0,
+      "last_month_transported_pct": 0
+    },
+    {
+      "cargo_id": 5,
+      "economy_date_after": 712283,
+      "economy_date_before": 712283,
+      "industry_id": 2,
+      "last_month_produced": 0,
+      "last_month_transported": 0,
+      "last_month_transported_pct": 0
+    },
+    {
+      "cargo_id": 7,
+      "economy_date_after": 712283,
+      "economy_date_before": 712283,
+      "industry_id": 3,
+      "last_month_produced": 80,
+      "last_month_transported": 0,
+      "last_month_transported_pct": 0
+    },
+    {
+      "cargo_id": 5,
+      "economy_date_after": 712283,
+      "economy_date_before": 712283,
+      "industry_id": 4,
+      "last_month_produced": 0,
+      "last_month_transported": 0,
+      "last_month_transported_pct": 0
+    },
+    {
+      "cargo_id": 5,
+      "economy_date_after": 712283,
+      "economy_date_before": 712283,
+      "industry_id": 5,
+      "last_month_produced": 0,
+      "last_month_transported": 0,
+      "last_month_transported_pct": 0
+    },
+    {
+      "cargo_id": 9,
+      "economy_date_after": 712283,
+      "economy_date_before": 712283,
+      "industry_id": 6,
+      "last_month_produced": 0,
+      "last_month_transported": 0,
+      "last_month_transported_pct": 0
+    },
+    {
+      "cargo_id": 4,
+      "economy_date_after": 712283,
+      "economy_date_before": 712283,
+      "industry_id": 7,
+      "last_month_produced": 56,
+      "last_month_transported": 0,
+      "last_month_transported_pct": 0
+    },
+    {
+      "cargo_id": 6,
+      "economy_date_after": 712283,
+      "economy_date_before": 712283,
+      "industry_id": 7,
+      "last_month_produced": 88,
+      "last_month_transported": 0,
+      "last_month_transported_pct": 0
+    },
+    {
+      "cargo_id": 3,
+      "economy_date_after": 712283,
+      "economy_date_before": 712283,
+      "industry_id": 8,
+      "last_month_produced": 96,
+      "last_month_transported": 0,
+      "last_month_transported_pct": 0
+    },
+    {
+      "cargo_id": 8,
+      "economy_date_after": 712283,
+      "economy_date_before": 712283,
+      "industry_id": 9,
+      "last_month_produced": 88,
+      "last_month_transported": 0,
+      "last_month_transported_pct": 0
+    }
+  ],
+  "source_structural_world_digest": "cb3986f04767359b76d6cefd8181b4830335665a2560316e014b9204ee7e7207"
+}

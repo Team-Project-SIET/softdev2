@@ -1,0 +1,10 @@
+{
+  "attempt_executed": false,
+  "connections": 0,
+  "error": "PRELAUNCH acceptance-readiness validation failed: V3-frozen test_current_next_attempt_preserves_frozen_identity and test_next_attempt_requires_new_freeze fail after controlled Attempt 3 consumption; tests still request the consumed Attempt 3 execution destination. 2 deterministic failures. Native execution not started; no retry performed.",
+  "launches": 0,
+  "preparation": "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-two-rollover-qualification-real-prelaunch-v3",
+  "requests": 0,
+  "retries": 0,
+  "state": "PRELAUNCH_FAILED"
+}

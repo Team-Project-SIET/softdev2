@@ -1,0 +1,6 @@
+{
+  "complete": false,
+  "events": [],
+  "failure": "TransportTimeout: structural-world phase deadline expired",
+  "qualified_for_planning": false
+}

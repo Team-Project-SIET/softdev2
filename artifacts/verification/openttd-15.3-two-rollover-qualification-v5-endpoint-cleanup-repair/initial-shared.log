@@ -1,0 +1,478 @@
+..................................FFFFFFFFFFF..........................F [ 53%]
+...FF...................F......F...............................          [100%]
+=================================== FAILURES ===================================
+_ test_complete_owned_encrypted_combined_session[industries0-produces0-cargoes0] _
+
+tmp_path = PosixPath('/tmp/pytest-of-fed/pytest-27/test_complete_owned_encrypted_0')
+industries = (), produces = (), cargoes = (1,)
+
+    @pytest.mark.parametrize(
+        "industries,produces,cargoes",
+        [
+            ((), (), (1,)),
+            ((17,), (), (1,)),
+            ((0,), (1,), (1, 9)),
+            ((2, 17), (1, 63), (1, 9, 63)),
+            (tuple(range(32)), tuple(range(16)), tuple(range(64))),
+        ],
+    )
+    def test_complete_owned_encrypted_combined_session(tmp_path, industries, produces, cargoes):
+        p, b, result = run_proof(tmp_path, industries=industries, produces=produces, cargoes=cargoes)
+>       assert result["status"] == "MOCK_SUCCESS", result["error"]
+E       AssertionError: Endpoint closure requires unambiguous owned process reap
+E       assert 'MOCK_FAILED' == 'MOCK_SUCCESS'
+E         
+E         - MOCK_SUCCESS
+E         + MOCK_FAILED
+
+tests/test_raw_production_proof.py:168: AssertionError
+_ test_complete_owned_encrypted_combined_session[industries1-produces1-cargoes1] _
+
+tmp_path = PosixPath('/tmp/pytest-of-fed/pytest-27/test_complete_owned_encrypted_1')
+industries = (17,), produces = (), cargoes = (1,)
+
+    @pytest.mark.parametrize(
+        "industries,produces,cargoes",
+        [
+            ((), (), (1,)),
+            ((17,), (), (1,)),
+            ((0,), (1,), (1, 9)),
+            ((2, 17), (1, 63), (1, 9, 63)),
+            (tuple(range(32)), tuple(range(16)), tuple(range(64))),
+        ],
+    )
+    def test_complete_owned_encrypted_combined_session(tmp_path, industries, produces, cargoes):
+        p, b, result = run_proof(tmp_path, industries=industries, produces=produces, cargoes=cargoes)
+>       assert result["status"] == "MOCK_SUCCESS", result["error"]
+E       AssertionError: Endpoint closure requires unambiguous owned process reap
+E       assert 'MOCK_FAILED' == 'MOCK_SUCCESS'
+E         
+E         - MOCK_SUCCESS
+E         + MOCK_FAILED
+
+tests/test_raw_production_proof.py:168: AssertionError
+_ test_complete_owned_encrypted_combined_session[industries2-produces2-cargoes2] _
+
+tmp_path = PosixPath('/tmp/pytest-of-fed/pytest-27/test_complete_owned_encrypted_2')
+industries = (0,), produces = (1,), cargoes = (1, 9)
+
+    @pytest.mark.parametrize(
+        "industries,produces,cargoes",
+        [
+            ((), (), (1,)),
+            ((17,), (), (1,)),
+            ((0,), (1,), (1, 9)),
+            ((2, 17), (1, 63), (1, 9, 63)),
+            (tuple(range(32)), tuple(range(16)), tuple(range(64))),
+        ],
+    )
+    def test_complete_owned_encrypted_combined_session(tmp_path, industries, produces, cargoes):
+        p, b, result = run_proof(tmp_path, industries=industries, produces=produces, cargoes=cargoes)
+>       assert result["status"] == "MOCK_SUCCESS", result["error"]
+E       AssertionError: Endpoint closure requires unambiguous owned process reap
+E       assert 'MOCK_FAILED' == 'MOCK_SUCCESS'
+E         
+E         - MOCK_SUCCESS
+E         + MOCK_FAILED
+
+tests/test_raw_production_proof.py:168: AssertionError
+_ test_complete_owned_encrypted_combined_session[industries3-produces3-cargoes3] _
+
+tmp_path = PosixPath('/tmp/pytest-of-fed/pytest-27/test_complete_owned_encrypted_3')
+industries = (2, 17), produces = (1, 63), cargoes = (1, 9, 63)
+
+    @pytest.mark.parametrize(
+        "industries,produces,cargoes",
+        [
+            ((), (), (1,)),
+            ((17,), (), (1,)),
+            ((0,), (1,), (1, 9)),
+            ((2, 17), (1, 63), (1, 9, 63)),
+            (tuple(range(32)), tuple(range(16)), tuple(range(64))),
+        ],
+    )
+    def test_complete_owned_encrypted_combined_session(tmp_path, industries, produces, cargoes):
+        p, b, result = run_proof(tmp_path, industries=industries, produces=produces, cargoes=cargoes)
+>       assert result["status"] == "MOCK_SUCCESS", result["error"]
+E       AssertionError: Endpoint closure requires unambiguous owned process reap
+E       assert 'MOCK_FAILED' == 'MOCK_SUCCESS'
+E         
+E         - MOCK_SUCCESS
+E         + MOCK_FAILED
+
+tests/test_raw_production_proof.py:168: AssertionError
+_ test_complete_owned_encrypted_combined_session[industries4-produces4-cargoes4] _
+
+tmp_path = PosixPath('/tmp/pytest-of-fed/pytest-27/test_complete_owned_encrypted_4')
+industries = (0, 1, 2, 3, 4, 5, ...), produces = (0, 1, 2, 3, 4, 5, ...)
+cargoes = (0, 1, 2, 3, 4, 5, ...)
+
+    @pytest.mark.parametrize(
+        "industries,produces,cargoes",
+        [
+            ((), (), (1,)),
+            ((17,), (), (1,)),
+            ((0,), (1,), (1, 9)),
+            ((2, 17), (1, 63), (1, 9, 63)),
+            (tuple(range(32)), tuple(range(16)), tuple(range(64))),
+        ],
+    )
+    def test_complete_owned_encrypted_combined_session(tmp_path, industries, produces, cargoes):
+        p, b, result = run_proof(tmp_path, industries=industries, produces=produces, cargoes=cargoes)
+>       assert result["status"] == "MOCK_SUCCESS", result["error"]
+E       AssertionError: Endpoint closure requires unambiguous owned process reap
+E       assert 'MOCK_FAILED' == 'MOCK_SUCCESS'
+E         
+E         - MOCK_SUCCESS
+E         + MOCK_FAILED
+
+tests/test_raw_production_proof.py:168: AssertionError
+_____ test_failed_production_never_retries_or_publishes_complete[timeout] ______
+
+tmp_path = PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r0')
+failure = 'timeout'
+
+    @pytest.mark.parametrize(
+        "failure", ["timeout", "disconnect", "duplicate", "evidence", "replacement", "process"]
+    )
+    def test_failed_production_never_retries_or_publishes_complete(tmp_path, failure):
+        p, b, result = run_proof(tmp_path, failure=failure)
+        assert result["status"] == "MOCK_FAILED"
+        assert result["states"][-1] == "FAILED"
+        assert len(b.peer.production_requests) == 1
+        assert b.combined_coordinator.structural.complete
+        assert b.combined_coordinator.production is None
+        assert result["retries"] == result["reconnects"] == 0
+        dest = p.directory.with_name(RAW_PRODUCTION_ATTEMPT_DIRECTORY)
+        assert not json.loads((dest / "production-observation.json").read_text())["complete"]
+        assert not json.loads((dest / "combined-session.json").read_text())["complete"]
+>       assert not p.key_path.exists() and not p.spec.workspace.root.exists()
+E       AssertionError: assert (not False and not True)
+E        +  where False = exists()
+E        +    where exists = PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r0/prelaunch/isolated/openttd-15.3-u7yc_8ri/.admin-secret').exists
+E        +      where PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r0/prelaunch/isolated/openttd-15.3-u7yc_8ri/.admin-secret') = PreparedProof(directory=PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r0/prelaunch'), public_ke...283), request=IndustryPageRequest(request_id='openttd15-complete-raw-production-001-inv-p001', after_id=None, limit=2)).key_path
+E        +  and   True = exists()
+E        +    where exists = PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r0/prelaunch/isolated/openttd-15.3-u7yc_8ri').exists
+E        +      where PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r0/prelaunch/isolated/openttd-15.3-u7yc_8ri') = RuntimeWorkspace(root=PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r0/prelaunch/isolated/openttd-15.3-u7yc_8ri')).root
+E        +        where RuntimeWorkspace(root=PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r0/prelaunch/isolated/openttd-15.3-u7yc_8ri')) = LaunchSpecification(identity=RuntimeIdentity(executable=PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production... timeout_seconds=5.0, events=[]), mode='dedicated', stdin_pipe=True, start_new_session=True, gamescript_api_major='15').workspace
+E        +          where LaunchSpecification(identity=RuntimeIdentity(executable=PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production... timeout_seconds=5.0, events=[]), mode='dedicated', stdin_pipe=True, start_new_session=True, gamescript_api_major='15') = PreparedProof(directory=PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r0/prelaunch'), public_ke...283), request=IndustryPageRequest(request_id='openttd15-complete-raw-production-001-inv-p001', after_id=None, limit=2)).spec
+
+tests/test_raw_production_proof.py:215: AssertionError
+____ test_failed_production_never_retries_or_publishes_complete[disconnect] ____
+
+tmp_path = PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r1')
+failure = 'disconnect'
+
+    @pytest.mark.parametrize(
+        "failure", ["timeout", "disconnect", "duplicate", "evidence", "replacement", "process"]
+    )
+    def test_failed_production_never_retries_or_publishes_complete(tmp_path, failure):
+        p, b, result = run_proof(tmp_path, failure=failure)
+        assert result["status"] == "MOCK_FAILED"
+        assert result["states"][-1] == "FAILED"
+        assert len(b.peer.production_requests) == 1
+        assert b.combined_coordinator.structural.complete
+        assert b.combined_coordinator.production is None
+        assert result["retries"] == result["reconnects"] == 0
+        dest = p.directory.with_name(RAW_PRODUCTION_ATTEMPT_DIRECTORY)
+        assert not json.loads((dest / "production-observation.json").read_text())["complete"]
+        assert not json.loads((dest / "combined-session.json").read_text())["complete"]
+>       assert not p.key_path.exists() and not p.spec.workspace.root.exists()
+E       AssertionError: assert (not False and not True)
+E        +  where False = exists()
+E        +    where exists = PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r1/prelaunch/isolated/openttd-15.3-kg8rnakd/.admin-secret').exists
+E        +      where PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r1/prelaunch/isolated/openttd-15.3-kg8rnakd/.admin-secret') = PreparedProof(directory=PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r1/prelaunch'), public_ke...771), request=IndustryPageRequest(request_id='openttd15-complete-raw-production-001-inv-p001', after_id=None, limit=2)).key_path
+E        +  and   True = exists()
+E        +    where exists = PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r1/prelaunch/isolated/openttd-15.3-kg8rnakd').exists
+E        +      where PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r1/prelaunch/isolated/openttd-15.3-kg8rnakd') = RuntimeWorkspace(root=PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r1/prelaunch/isolated/openttd-15.3-kg8rnakd')).root
+E        +        where RuntimeWorkspace(root=PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r1/prelaunch/isolated/openttd-15.3-kg8rnakd')) = LaunchSpecification(identity=RuntimeIdentity(executable=PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production... timeout_seconds=5.0, events=[]), mode='dedicated', stdin_pipe=True, start_new_session=True, gamescript_api_major='15').workspace
+E        +          where LaunchSpecification(identity=RuntimeIdentity(executable=PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production... timeout_seconds=5.0, events=[]), mode='dedicated', stdin_pipe=True, start_new_session=True, gamescript_api_major='15') = PreparedProof(directory=PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r1/prelaunch'), public_ke...771), request=IndustryPageRequest(request_id='openttd15-complete-raw-production-001-inv-p001', after_id=None, limit=2)).spec
+
+tests/test_raw_production_proof.py:215: AssertionError
+____ test_failed_production_never_retries_or_publishes_complete[duplicate] _____
+
+tmp_path = PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r2')
+failure = 'duplicate'
+
+    @pytest.mark.parametrize(
+        "failure", ["timeout", "disconnect", "duplicate", "evidence", "replacement", "process"]
+    )
+    def test_failed_production_never_retries_or_publishes_complete(tmp_path, failure):
+        p, b, result = run_proof(tmp_path, failure=failure)
+        assert result["status"] == "MOCK_FAILED"
+        assert result["states"][-1] == "FAILED"
+        assert len(b.peer.production_requests) == 1
+        assert b.combined_coordinator.structural.complete
+        assert b.combined_coordinator.production is None
+        assert result["retries"] == result["reconnects"] == 0
+        dest = p.directory.with_name(RAW_PRODUCTION_ATTEMPT_DIRECTORY)
+        assert not json.loads((dest / "production-observation.json").read_text())["complete"]
+        assert not json.loads((dest / "combined-session.json").read_text())["complete"]
+>       assert not p.key_path.exists() and not p.spec.workspace.root.exists()
+E       AssertionError: assert (not False and not True)
+E        +  where False = exists()
+E        +    where exists = PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r2/prelaunch/isolated/openttd-15.3-07g6xea5/.admin-secret').exists
+E        +      where PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r2/prelaunch/isolated/openttd-15.3-07g6xea5/.admin-secret') = PreparedProof(directory=PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r2/prelaunch'), public_ke...875), request=IndustryPageRequest(request_id='openttd15-complete-raw-production-001-inv-p001', after_id=None, limit=2)).key_path
+E        +  and   True = exists()
+E        +    where exists = PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r2/prelaunch/isolated/openttd-15.3-07g6xea5').exists
+E        +      where PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r2/prelaunch/isolated/openttd-15.3-07g6xea5') = RuntimeWorkspace(root=PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r2/prelaunch/isolated/openttd-15.3-07g6xea5')).root
+E        +        where RuntimeWorkspace(root=PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r2/prelaunch/isolated/openttd-15.3-07g6xea5')) = LaunchSpecification(identity=RuntimeIdentity(executable=PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production... timeout_seconds=5.0, events=[]), mode='dedicated', stdin_pipe=True, start_new_session=True, gamescript_api_major='15').workspace
+E        +          where LaunchSpecification(identity=RuntimeIdentity(executable=PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production... timeout_seconds=5.0, events=[]), mode='dedicated', stdin_pipe=True, start_new_session=True, gamescript_api_major='15') = PreparedProof(directory=PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r2/prelaunch'), public_ke...875), request=IndustryPageRequest(request_id='openttd15-complete-raw-production-001-inv-p001', after_id=None, limit=2)).spec
+
+tests/test_raw_production_proof.py:215: AssertionError
+_____ test_failed_production_never_retries_or_publishes_complete[evidence] _____
+
+tmp_path = PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r3')
+failure = 'evidence'
+
+    @pytest.mark.parametrize(
+        "failure", ["timeout", "disconnect", "duplicate", "evidence", "replacement", "process"]
+    )
+    def test_failed_production_never_retries_or_publishes_complete(tmp_path, failure):
+        p, b, result = run_proof(tmp_path, failure=failure)
+        assert result["status"] == "MOCK_FAILED"
+        assert result["states"][-1] == "FAILED"
+        assert len(b.peer.production_requests) == 1
+        assert b.combined_coordinator.structural.complete
+        assert b.combined_coordinator.production is None
+        assert result["retries"] == result["reconnects"] == 0
+        dest = p.directory.with_name(RAW_PRODUCTION_ATTEMPT_DIRECTORY)
+        assert not json.loads((dest / "production-observation.json").read_text())["complete"]
+        assert not json.loads((dest / "combined-session.json").read_text())["complete"]
+>       assert not p.key_path.exists() and not p.spec.workspace.root.exists()
+E       AssertionError: assert (not False and not True)
+E        +  where False = exists()
+E        +    where exists = PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r3/prelaunch/isolated/openttd-15.3-16_om93l/.admin-secret').exists
+E        +      where PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r3/prelaunch/isolated/openttd-15.3-16_om93l/.admin-secret') = PreparedProof(directory=PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r3/prelaunch'), public_ke...951), request=IndustryPageRequest(request_id='openttd15-complete-raw-production-001-inv-p001', after_id=None, limit=2)).key_path
+E        +  and   True = exists()
+E        +    where exists = PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r3/prelaunch/isolated/openttd-15.3-16_om93l').exists
+E        +      where PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r3/prelaunch/isolated/openttd-15.3-16_om93l') = RuntimeWorkspace(root=PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r3/prelaunch/isolated/openttd-15.3-16_om93l')).root
+E        +        where RuntimeWorkspace(root=PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r3/prelaunch/isolated/openttd-15.3-16_om93l')) = LaunchSpecification(identity=RuntimeIdentity(executable=PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production... timeout_seconds=5.0, events=[]), mode='dedicated', stdin_pipe=True, start_new_session=True, gamescript_api_major='15').workspace
+E        +          where LaunchSpecification(identity=RuntimeIdentity(executable=PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production... timeout_seconds=5.0, events=[]), mode='dedicated', stdin_pipe=True, start_new_session=True, gamescript_api_major='15') = PreparedProof(directory=PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r3/prelaunch'), public_ke...951), request=IndustryPageRequest(request_id='openttd15-complete-raw-production-001-inv-p001', after_id=None, limit=2)).spec
+
+tests/test_raw_production_proof.py:215: AssertionError
+___ test_failed_production_never_retries_or_publishes_complete[replacement] ____
+
+tmp_path = PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r4')
+failure = 'replacement'
+
+    @pytest.mark.parametrize(
+        "failure", ["timeout", "disconnect", "duplicate", "evidence", "replacement", "process"]
+    )
+    def test_failed_production_never_retries_or_publishes_complete(tmp_path, failure):
+        p, b, result = run_proof(tmp_path, failure=failure)
+        assert result["status"] == "MOCK_FAILED"
+        assert result["states"][-1] == "FAILED"
+        assert len(b.peer.production_requests) == 1
+        assert b.combined_coordinator.structural.complete
+        assert b.combined_coordinator.production is None
+        assert result["retries"] == result["reconnects"] == 0
+        dest = p.directory.with_name(RAW_PRODUCTION_ATTEMPT_DIRECTORY)
+        assert not json.loads((dest / "production-observation.json").read_text())["complete"]
+        assert not json.loads((dest / "combined-session.json").read_text())["complete"]
+>       assert not p.key_path.exists() and not p.spec.workspace.root.exists()
+E       AssertionError: assert (not False and not True)
+E        +  where False = exists()
+E        +    where exists = PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r4/prelaunch/isolated/openttd-15.3-0g402gl5/.admin-secret').exists
+E        +      where PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r4/prelaunch/isolated/openttd-15.3-0g402gl5/.admin-secret') = PreparedProof(directory=PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r4/prelaunch'), public_ke...145), request=IndustryPageRequest(request_id='openttd15-complete-raw-production-001-inv-p001', after_id=None, limit=2)).key_path
+E        +  and   True = exists()
+E        +    where exists = PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r4/prelaunch/isolated/openttd-15.3-0g402gl5').exists
+E        +      where PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r4/prelaunch/isolated/openttd-15.3-0g402gl5') = RuntimeWorkspace(root=PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r4/prelaunch/isolated/openttd-15.3-0g402gl5')).root
+E        +        where RuntimeWorkspace(root=PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r4/prelaunch/isolated/openttd-15.3-0g402gl5')) = LaunchSpecification(identity=RuntimeIdentity(executable=PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production... timeout_seconds=5.0, events=[]), mode='dedicated', stdin_pipe=True, start_new_session=True, gamescript_api_major='15').workspace
+E        +          where LaunchSpecification(identity=RuntimeIdentity(executable=PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production... timeout_seconds=5.0, events=[]), mode='dedicated', stdin_pipe=True, start_new_session=True, gamescript_api_major='15') = PreparedProof(directory=PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r4/prelaunch'), public_ke...145), request=IndustryPageRequest(request_id='openttd15-complete-raw-production-001-inv-p001', after_id=None, limit=2)).spec
+
+tests/test_raw_production_proof.py:215: AssertionError
+_____ test_failed_production_never_retries_or_publishes_complete[process] ______
+
+tmp_path = PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r5')
+failure = 'process'
+
+    @pytest.mark.parametrize(
+        "failure", ["timeout", "disconnect", "duplicate", "evidence", "replacement", "process"]
+    )
+    def test_failed_production_never_retries_or_publishes_complete(tmp_path, failure):
+        p, b, result = run_proof(tmp_path, failure=failure)
+        assert result["status"] == "MOCK_FAILED"
+        assert result["states"][-1] == "FAILED"
+        assert len(b.peer.production_requests) == 1
+        assert b.combined_coordinator.structural.complete
+        assert b.combined_coordinator.production is None
+        assert result["retries"] == result["reconnects"] == 0
+        dest = p.directory.with_name(RAW_PRODUCTION_ATTEMPT_DIRECTORY)
+        assert not json.loads((dest / "production-observation.json").read_text())["complete"]
+        assert not json.loads((dest / "combined-session.json").read_text())["complete"]
+>       assert not p.key_path.exists() and not p.spec.workspace.root.exists()
+E       AssertionError: assert (not False and not True)
+E        +  where False = exists()
+E        +    where exists = PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r5/prelaunch/isolated/openttd-15.3-u4_0b1tn/.admin-secret').exists
+E        +      where PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r5/prelaunch/isolated/openttd-15.3-u4_0b1tn/.admin-secret') = PreparedProof(directory=PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r5/prelaunch'), public_ke...801), request=IndustryPageRequest(request_id='openttd15-complete-raw-production-001-inv-p001', after_id=None, limit=2)).key_path
+E        +  and   True = exists()
+E        +    where exists = PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r5/prelaunch/isolated/openttd-15.3-u4_0b1tn').exists
+E        +      where PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r5/prelaunch/isolated/openttd-15.3-u4_0b1tn') = RuntimeWorkspace(root=PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r5/prelaunch/isolated/openttd-15.3-u4_0b1tn')).root
+E        +        where RuntimeWorkspace(root=PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r5/prelaunch/isolated/openttd-15.3-u4_0b1tn')) = LaunchSpecification(identity=RuntimeIdentity(executable=PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production... timeout_seconds=5.0, events=[]), mode='dedicated', stdin_pipe=True, start_new_session=True, gamescript_api_major='15').workspace
+E        +          where LaunchSpecification(identity=RuntimeIdentity(executable=PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production... timeout_seconds=5.0, events=[]), mode='dedicated', stdin_pipe=True, start_new_session=True, gamescript_api_major='15') = PreparedProof(directory=PosixPath('/tmp/pytest-of-fed/pytest-27/test_failed_production_never_r5/prelaunch'), public_ke...801), request=IndustryPageRequest(request_id='openttd15-complete-raw-production-001-inv-p001', after_id=None, limit=2)).spec
+
+tests/test_raw_production_proof.py:215: AssertionError
+____ test_post_disposal_integrity_failure_after_semantic_success_is_failed _____
+
+tmp_path = PosixPath('/tmp/pytest-of-fed/pytest-27/test_post_disposal_integrity_f0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7ff165705d90>
+
+    def test_post_disposal_integrity_failure_after_semantic_success_is_failed(tmp_path, monkeypatch):
+        import app.simulation.openttd.proof.raw_production_attempt as owner
+    
+        original = owner.finalize_cleanup
+    
+        def failed(p, frozen, cleanup):
+            original(p, frozen, cleanup)
+            raise ValueError("controlled post-disposal integrity failure")
+    
+        monkeypatch.setattr(owner, "finalize_cleanup", failed)
+        p, b, result = run_proof(tmp_path)
+        assert b.combined_coordinator.production.complete
+        assert result["status"] == "MOCK_FAILED"
+        assert result["states"][-1] == "FAILED"
+        assert "COMPLETED" not in result["states"]
+>       assert not p.key_path.exists() and not p.spec.workspace.root.exists()
+E       AssertionError: assert (not False and not True)
+E        +  where False = exists()
+E        +    where exists = PosixPath('/tmp/pytest-of-fed/pytest-27/test_post_disposal_integrity_f0/prelaunch/isolated/openttd-15.3-r967w3fl/.admin-secret').exists
+E        +      where PosixPath('/tmp/pytest-of-fed/pytest-27/test_post_disposal_integrity_f0/prelaunch/isolated/openttd-15.3-r967w3fl/.admin-secret') = PreparedProof(directory=PosixPath('/tmp/pytest-of-fed/pytest-27/test_post_disposal_integrity_f0/prelaunch'), public_ke...197), request=IndustryPageRequest(request_id='openttd15-complete-raw-production-001-inv-p001', after_id=None, limit=2)).key_path
+E        +  and   True = exists()
+E        +    where exists = PosixPath('/tmp/pytest-of-fed/pytest-27/test_post_disposal_integrity_f0/prelaunch/isolated/openttd-15.3-r967w3fl').exists
+E        +      where PosixPath('/tmp/pytest-of-fed/pytest-27/test_post_disposal_integrity_f0/prelaunch/isolated/openttd-15.3-r967w3fl') = RuntimeWorkspace(root=PosixPath('/tmp/pytest-of-fed/pytest-27/test_post_disposal_integrity_f0/prelaunch/isolated/openttd-15.3-r967w3fl')).root
+E        +        where RuntimeWorkspace(root=PosixPath('/tmp/pytest-of-fed/pytest-27/test_post_disposal_integrity_f0/prelaunch/isolated/openttd-15.3-r967w3fl')) = LaunchSpecification(identity=RuntimeIdentity(executable=PosixPath('/tmp/pytest-of-fed/pytest-27/test_post_disposal_int... timeout_seconds=5.0, events=[]), mode='dedicated', stdin_pipe=True, start_new_session=True, gamescript_api_major='15').workspace
+E        +          where LaunchSpecification(identity=RuntimeIdentity(executable=PosixPath('/tmp/pytest-of-fed/pytest-27/test_post_disposal_int... timeout_seconds=5.0, events=[]), mode='dedicated', stdin_pipe=True, start_new_session=True, gamescript_api_major='15') = PreparedProof(directory=PosixPath('/tmp/pytest-of-fed/pytest-27/test_post_disposal_integrity_f0/prelaunch'), public_ke...197), request=IndustryPageRequest(request_id='openttd15-complete-raw-production-001-inv-p001', after_id=None, limit=2)).spec
+
+tests/test_raw_production_proof.py:394: AssertionError
+________ test_terminal_persistence_failure_cannot_retain_final_success _________
+
+tmp_path = PosixPath('/tmp/pytest-of-fed/pytest-27/test_terminal_persistence_fail0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x7ff16670d1d0>
+
+    def test_terminal_persistence_failure_cannot_retain_final_success(tmp_path, monkeypatch):
+        import app.simulation.openttd.proof.raw_production_attempt as owner
+        from app.simulation.openttd.proof.raw_production_lineage import read_attempt
+    
+        original = owner.write_json
+        failed = False
+    
+        def write(path, value):
+            nonlocal failed
+            if path.name == "proof-evidence.json" and not failed:
+                failed = True
+                raise OSError("controlled terminal persistence failure")
+            original(path, value)
+    
+        monkeypatch.setattr(owner, "write_json", write)
+        p, b, result = run_proof(tmp_path)
+        dest = p.directory.with_name(RAW_PRODUCTION_ATTEMPT_DIRECTORY)
+        assert b.combined_coordinator.production.complete
+        assert result["status"] == "MOCK_FAILED"
+        assert result["states"][-1] == "FAILED" and "COMPLETED" not in result["states"]
+>       assert result["source_integrity"]
+E       assert False
+
+tests/test_raw_production_proof.py:462: AssertionError
+_______ test_native_brackets_crossing_initial_month_fail_without_waiting _______
+
+tmp_path = PosixPath('/tmp/pytest-of-fed/pytest-27/test_native_brackets_crossing_0')
+
+    def test_native_brackets_crossing_initial_month_fail_without_waiting(tmp_path):
+        p = prepared(tmp_path)
+        b = ControlledCombinedBackend()
+    
+        async def run():
+            b.peer.date = calendar_economy_month(712223).end_date
+            return await execute_raw_production_attempt(p, b)
+    
+        result = asyncio.run(run())
+        assert result["status"] == "MOCK_FAILED"
+        assert b.combined_coordinator is not None
+        assert b.combined_coordinator.structural.complete
+        assert len(b.peer.production_requests) == 1
+        assert result["retries"] == result["reconnects"] == 0
+>       assert not p.spec.workspace.root.exists() and not p.key_path.exists()
+E       AssertionError: assert (not True)
+E        +  where True = exists()
+E        +    where exists = PosixPath('/tmp/pytest-of-fed/pytest-27/test_native_brackets_crossing_0/prelaunch/isolated/openttd-15.3-qlqntb36').exists
+E        +      where PosixPath('/tmp/pytest-of-fed/pytest-27/test_native_brackets_crossing_0/prelaunch/isolated/openttd-15.3-qlqntb36') = RuntimeWorkspace(root=PosixPath('/tmp/pytest-of-fed/pytest-27/test_native_brackets_crossing_0/prelaunch/isolated/openttd-15.3-qlqntb36')).root
+E        +        where RuntimeWorkspace(root=PosixPath('/tmp/pytest-of-fed/pytest-27/test_native_brackets_crossing_0/prelaunch/isolated/openttd-15.3-qlqntb36')) = LaunchSpecification(identity=RuntimeIdentity(executable=PosixPath('/tmp/pytest-of-fed/pytest-27/test_native_brackets_c... timeout_seconds=5.0, events=[]), mode='dedicated', stdin_pipe=True, start_new_session=True, gamescript_api_major='15').workspace
+E        +          where LaunchSpecification(identity=RuntimeIdentity(executable=PosixPath('/tmp/pytest-of-fed/pytest-27/test_native_brackets_c... timeout_seconds=5.0, events=[]), mode='dedicated', stdin_pipe=True, start_new_session=True, gamescript_api_major='15') = PreparedProof(directory=PosixPath('/tmp/pytest-of-fed/pytest-27/test_native_brackets_crossing_0/prelaunch'), public_ke...429), request=IndustryPageRequest(request_id='openttd15-complete-raw-production-001-inv-p001', after_id=None, limit=2)).spec
+
+tests/test_raw_production_proof.py:485: AssertionError
+_______ test_observed_log_retained_before_shutdown_and_workspace_cleanup _______
+
+tmp_path = PosixPath('/tmp/pytest-of-fed/pytest-27/test_observed_log_retained_bef0')
+
+    def test_observed_log_retained_before_shutdown_and_workspace_cleanup(tmp_path):
+        import asyncio
+    
+        from test_real_ack_harness import ControlledBackend, make_prepared
+    
+        from app.simulation.openttd.proof.attempt import execute_attempt
+    
+        class CheckRetention(ControlledBackend):
+            async def cleanup(self, prepared):
+                attempt = tmp_path / "openttd-15.3-real-ack-attempt2"
+                assert (attempt / "gamescript-evidence.json").is_file()
+                raw = (attempt / "gamescript-observed.log").read_bytes()
+                parse_gamescript_evidence(raw, REQUEST_ID).require_complete()
+                assert prepared.spec.workspace.root.exists()
+                return await super().cleanup(prepared)
+    
+        backend = CheckRetention()
+        result = asyncio.run(execute_attempt(make_prepared(tmp_path), backend))
+>       assert result["status"] == "CONTROLLED_SUCCESS"
+E       AssertionError: assert 'CONTROLLED_FAILED' == 'CONTROLLED_SUCCESS'
+E         
+E         - CONTROLLED_SUCCESS
+E         + CONTROLLED_FAILED
+
+tests/test_gamescript_proof_evidence.py:164: AssertionError
+_______________ test_proof_records_and_raw_snapshot_digest_agree _______________
+
+tmp_path = PosixPath('/tmp/pytest-of-fed/pytest-27/test_proof_records_and_raw_sna0')
+
+    def test_proof_records_and_raw_snapshot_digest_agree(tmp_path):
+        import asyncio
+        import hashlib
+        import json
+    
+        from test_real_ack_harness import ControlledBackend, make_prepared
+    
+        from app.simulation.openttd.proof.attempt import execute_attempt
+    
+        result = asyncio.run(execute_attempt(make_prepared(tmp_path), ControlledBackend()))
+>       assert result["status"] == "CONTROLLED_SUCCESS"
+E       AssertionError: assert 'CONTROLLED_FAILED' == 'CONTROLLED_SUCCESS'
+E         
+E         - CONTROLLED_SUCCESS
+E         + CONTROLLED_FAILED
+
+tests/test_gamescript_proof_evidence.py:339: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_raw_production_proof.py::test_complete_owned_encrypted_combined_session[industries0-produces0-cargoes0]
+FAILED tests/test_raw_production_proof.py::test_complete_owned_encrypted_combined_session[industries1-produces1-cargoes1]
+FAILED tests/test_raw_production_proof.py::test_complete_owned_encrypted_combined_session[industries2-produces2-cargoes2]
+FAILED tests/test_raw_production_proof.py::test_complete_owned_encrypted_combined_session[industries3-produces3-cargoes3]
+FAILED tests/test_raw_production_proof.py::test_complete_owned_encrypted_combined_session[industries4-produces4-cargoes4]
+FAILED tests/test_raw_production_proof.py::test_failed_production_never_retries_or_publishes_complete[timeout]
+FAILED tests/test_raw_production_proof.py::test_failed_production_never_retries_or_publishes_complete[disconnect]
+FAILED tests/test_raw_production_proof.py::test_failed_production_never_retries_or_publishes_complete[duplicate]
+FAILED tests/test_raw_production_proof.py::test_failed_production_never_retries_or_publishes_complete[evidence]
+FAILED tests/test_raw_production_proof.py::test_failed_production_never_retries_or_publishes_complete[replacement]
+FAILED tests/test_raw_production_proof.py::test_failed_production_never_retries_or_publishes_complete[process]
+FAILED tests/test_raw_production_proof.py::test_post_disposal_integrity_failure_after_semantic_success_is_failed
+FAILED tests/test_raw_production_proof.py::test_terminal_persistence_failure_cannot_retain_final_success
+FAILED tests/test_raw_production_proof.py::test_native_brackets_crossing_initial_month_fail_without_waiting
+FAILED tests/test_gamescript_proof_evidence.py::test_observed_log_retained_before_shutdown_and_workspace_cleanup
+FAILED tests/test_gamescript_proof_evidence.py::test_proof_records_and_raw_snapshot_digest_agree
+16 failed, 119 passed in 120.47s (0:02:00)
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]

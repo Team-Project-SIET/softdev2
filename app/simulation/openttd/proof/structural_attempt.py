@@ -8,6 +8,7 @@ from enum import Enum, auto
 from app.simulation.openttd.structural_world_session import StructuralWorldSession
 
 from .attempt import Gate, Gates
+from .endpoints import verify_cleanup_endpoints
 from .harness import PROJECT, EndpointReservation, manifest, verify_freeze, write_json
 from .historical_protection import protection_base, validate_protection
 from .structural_contract import (
@@ -345,8 +346,7 @@ async def execute_structural_attempt(prepared, backend):
             capture(lambda: prepared.key_path.unlink(missing_ok=True))
 
         def endpoints_closed():
-            held = EndpointReservation.allocate(*prepared.endpoints)
-            held.close()
+            cleanup.update(verify_cleanup_endpoints(prepared, cleanup, reservation))
             return True
 
         cleanup["sockets_closed"] = bool(capture(endpoints_closed))

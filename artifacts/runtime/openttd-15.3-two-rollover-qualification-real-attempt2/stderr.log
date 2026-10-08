@@ -1,0 +1,816 @@
+[2026-10-08 09:13:40] dbg: [net:3] Starting dedicated server, version 15.3
+[2026-10-08 09:13:40] dbg: [grf:1] Adding OpenGFX ([9499]) as base graphics set
+[2026-10-08 09:13:40] dbg: [grf:1] Adding original_dos_de ([0]) as base graphics set
+[2026-10-08 09:13:40] dbg: [grf:1] Adding original_windows ([0]) as base graphics set
+[2026-10-08 09:13:40] dbg: [net:3] Starting network
+[2026-10-08 09:13:40] dbg: [net:3] Initializing UDP listeners
+[2026-10-08 09:13:40] dbg: [net:3] Network online, multiplayer available
+[2026-10-08 09:13:40] dbg: [net:3] Detected broadcast addresses:
+[2026-10-08 09:13:40] dbg: [net:3]   0) 10.150.5.255
+[2026-10-08 09:13:40] dbg: [net:3]   1) 172.16.7.255
+[2026-10-08 09:13:40] dbg: [net:3]   2) 172.18.255.255
+[2026-10-08 09:13:40] dbg: [net:3]   3) 172.17.255.255
+[2026-10-08 09:13:40] dbg: [net:3] Using certificate file: /etc/ssl/certs/ca-certificates.crt
+[2026-10-08 09:13:40] dbg: [net:3] Using certificate path: none
+[2026-10-08 09:13:40] dbg: [grf:1] Adding original_windows ([0]) as base sounds set
+[2026-10-08 09:13:40] dbg: [grf:1] Adding NoSound ([2]) as base sounds set
+[2026-10-08 09:13:40] dbg: [grf:1] Using the OpenGFX base graphics set
+[2026-10-08 09:13:40] dbg: [grf:1] Adding original_tto ([1]) as base music set
+[2026-10-08 09:13:40] dbg: [grf:1] Adding original_dos ([1]) as base music set
+[2026-10-08 09:13:40] dbg: [grf:1] Adding original_windows ([1]) as base music set
+[2026-10-08 09:13:40] dbg: [grf:1] Adding NoMusic ([0]) as base music set
+[2026-10-08 09:13:40] dbg: [grf:1] Using the OpenGFX base graphics set
+[2026-10-08 09:13:40] dbg: [grf:1] GRFInfo: Loaded GRFv8 set FFFFFFFE - OpenTTD's default and fallback extra graphics (palette: DOS, version: 0)
+[2026-10-08 09:13:40] dbg: [grf:1] GRFInfo: Loaded GRFv8 set FF4F5401 - OpenGFX 8.0 (palette: DOS, version: 9499)
+[2026-10-08 09:13:40] dbg: [grf:1] GRFInfo: Loaded GRFv8 set FFFFFFFE - OpenTTD's default and fallback extra graphics (palette: DOS, version: 0)
+[2026-10-08 09:13:40] dbg: [grf:1] GRFInfo: Loaded GRFv8 set FF4F5401 - OpenGFX 8.0 (palette: DOS, version: 9499)
+[2026-10-08 09:13:40] dbg: [grf:1] GRFInfo: Loaded GRFv8 set FFFFFFFE - OpenTTD's default and fallback extra graphics (palette: DOS, version: 0)
+[2026-10-08 09:13:40] dbg: [grf:1] GRFInfo: Loaded GRFv8 set FF4F5401 - OpenGFX 8.0 (palette: DOS, version: 9499)
+[2026-10-08 09:13:40] dbg: [grf:1] GRFInfo: Loaded GRFv8 set FFFFFFFE - OpenTTD's default and fallback extra graphics (palette: DOS, version: 0)
+[2026-10-08 09:13:40] dbg: [grf:1] GRFInfo: Loaded GRFv8 set FF4F5401 - OpenGFX 8.0 (palette: DOS, version: 9499)
+[2026-10-08 09:13:40] dbg: [grf:1] GRFInfo: Loaded GRFv8 set FFFFFFFE - OpenTTD's default and fallback extra graphics (palette: DOS, version: 0)
+[2026-10-08 09:13:40] dbg: [grf:1] GRFInfo: Loaded GRFv8 set FF4F5401 - OpenGFX 8.0 (palette: DOS, version: 9499)
+[2026-10-08 09:13:40] dbg: [grf:1] GRFInfo: Loaded GRFv8 set FFFFFFFE - OpenTTD's default and fallback extra graphics (palette: DOS, version: 0)
+[2026-10-08 09:13:40] dbg: [grf:1] GRFInfo: Loaded GRFv8 set FF4F5401 - OpenGFX 8.0 (palette: DOS, version: 9499)
+[2026-10-08 09:13:40] dbg: [grf:1] Scanning for NewGRFs
+[2026-10-08 09:13:40] dbg: [grf:1] Scan complete, found 0 files
+[2026-10-08 09:13:40] dbg: [net:1] No "client_name" has been set, using "Unnamed Client" instead. Please set this now using the "name <new name>" command
+[2026-10-08 09:13:40] dbg: [net:1] No "server_name" has been set, using "Unnamed Server" instead. Please set this now using the "server_name <new name>" command
+[2026-10-08 09:13:40] dbg: [net:3] Initializing UDP listeners
+[2026-10-08 09:13:40] dbg: [net:3] Initializing UDP listeners
+[2026-10-08 09:13:40] dbg: [net:3] Listening on 127.0.0.1:57965 (IPv4)
+[2026-10-08 09:13:40] dbg: [net:3] Listening on 127.0.0.1:49253 (IPv4)
+[2026-10-08 09:13:40] dbg: [net:3] Listening on 127.0.0.1:57965 (IPv4)
+[2026-10-08 09:13:40] dbg: [net:3] Network revision name: 15.3
+[2026-10-08 09:13:40] dbg: [net:3] [crypto] Creating a new random key
+[2026-10-08 09:13:40] dbg: [grf:1] GRFInfo: Loaded GRFv8 set FFFFFFFE - OpenTTD's default and fallback extra graphics (palette: DOS, version: 0)
+[2026-10-08 09:13:40] dbg: [grf:1] GRFInfo: Loaded GRFv8 set FF4F5401 - OpenGFX 8.0 (palette: DOS, version: 9499)
+[2026-10-08 09:13:40] dbg: [grf:1] GRFInfo: Loaded GRFv8 set FFFFFFFE - OpenTTD's default and fallback extra graphics (palette: DOS, version: 0)
+[2026-10-08 09:13:40] dbg: [grf:1] GRFInfo: Loaded GRFv8 set FF4F5401 - OpenGFX 8.0 (palette: DOS, version: 9499)
+[2026-10-08 09:13:40] dbg: [grf:1] GRFInfo: Loaded GRFv8 set FFFFFFFE - OpenTTD's default and fallback extra graphics (palette: DOS, version: 0)
+[2026-10-08 09:13:40] dbg: [grf:1] GRFInfo: Loaded GRFv8 set FF4F5401 - OpenGFX 8.0 (palette: DOS, version: 9499)
+[2026-10-08 09:13:40] dbg: [net:3] Generating map, please wait...
+[2026-10-08 09:13:40] dbg: [net:3] Map generation percentage complete: 5
+[2026-10-08 09:13:40] dbg: [net:3] Map generation percentage complete: 11
+[2026-10-08 09:13:40] dbg: [net:3] Map generation percentage complete: 15
+[2026-10-08 09:13:40] dbg: [net:3] Map generation percentage complete: 20
+[2026-10-08 09:13:40] dbg: [net:3] Map generation percentage complete: 30
+[2026-10-08 09:13:40] dbg: [net:3] Map generation percentage complete: 40
+[2026-10-08 09:13:40] dbg: [net:3] Map generation percentage complete: 46
+[2026-10-08 09:13:40] dbg: [net:3] Map generation percentage complete: 50
+[2026-10-08 09:13:40] dbg: [net:3] Map generation percentage complete: 60
+[2026-10-08 09:13:40] dbg: [net:3] Map generation percentage complete: 65
+[2026-10-08 09:13:40] dbg: [net:3] Map generation percentage complete: 70
+[2026-10-08 09:13:40] dbg: [net:3] Map generation percentage complete: 75
+[2026-10-08 09:13:40] dbg: [net:3] Map generation percentage complete: 80
+[2026-10-08 09:13:40] dbg: [net:3] Map generation percentage complete: 85
+[2026-10-08 09:13:40] dbg: [net:3] Map generation percentage complete: 90
+[2026-10-08 09:13:40] dbg: [net:3] Map generation percentage complete: 95
+[2026-10-08 09:13:40] dbg: [script:4] [18] [I] BRIDGE_STARTED protocol=1 api=15
+[2026-10-08 09:13:40] dbg: [net:3] Map generated, starting game
+[2026-10-08 09:13:40] dbg: [net:3] [admin] Client connected from 127.0.0.1 on frame 0
+[2026-10-08 09:13:40] dbg: [net:3] [admin] 'ACK-proof' (1) has connected
+[2026-10-08 09:13:40] dbg: [net:3] [admin] 'ACK-proof' (1) authenticated
+[2026-10-08 09:13:40] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-1 type=economy_clock protocol=1
+[2026-10-08 09:13:40] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-1 economy_date=712223 economy_year=1950 economy_month=1 economy_day=1 month_start=712223 month_end=712254
+[2026-10-08 09:13:40] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-1 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:13:40] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-1
+[2026-10-08 09:13:42] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-2 type=economy_clock protocol=1
+[2026-10-08 09:13:42] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-2 economy_date=712223 economy_year=1950 economy_month=1 economy_day=1 month_start=712223 month_end=712254
+[2026-10-08 09:13:42] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-2 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:13:42] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-2
+[2026-10-08 09:13:43] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-3 type=economy_clock protocol=1
+[2026-10-08 09:13:43] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-3 economy_date=712224 economy_year=1950 economy_month=1 economy_day=2 month_start=712223 month_end=712254
+[2026-10-08 09:13:43] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-3 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:13:43] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-3
+[2026-10-08 09:13:44] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-4 type=economy_clock protocol=1
+[2026-10-08 09:13:44] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-4 economy_date=712224 economy_year=1950 economy_month=1 economy_day=2 month_start=712223 month_end=712254
+[2026-10-08 09:13:44] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-4 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:13:44] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-4
+[2026-10-08 09:13:45] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-5 type=economy_clock protocol=1
+[2026-10-08 09:13:45] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-5 economy_date=712225 economy_year=1950 economy_month=1 economy_day=3 month_start=712223 month_end=712254
+[2026-10-08 09:13:45] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-5 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:13:45] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-5
+[2026-10-08 09:13:46] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-6 type=economy_clock protocol=1
+[2026-10-08 09:13:46] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-6 economy_date=712225 economy_year=1950 economy_month=1 economy_day=3 month_start=712223 month_end=712254
+[2026-10-08 09:13:46] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-6 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:13:46] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-6
+[2026-10-08 09:13:47] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-7 type=economy_clock protocol=1
+[2026-10-08 09:13:47] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-7 economy_date=712226 economy_year=1950 economy_month=1 economy_day=4 month_start=712223 month_end=712254
+[2026-10-08 09:13:47] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-7 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:13:47] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-7
+[2026-10-08 09:13:48] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-8 type=economy_clock protocol=1
+[2026-10-08 09:13:48] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-8 economy_date=712226 economy_year=1950 economy_month=1 economy_day=4 month_start=712223 month_end=712254
+[2026-10-08 09:13:48] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-8 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:13:48] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-8
+[2026-10-08 09:13:49] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-9 type=economy_clock protocol=1
+[2026-10-08 09:13:49] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-9 economy_date=712227 economy_year=1950 economy_month=1 economy_day=5 month_start=712223 month_end=712254
+[2026-10-08 09:13:49] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-9 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:13:49] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-9
+[2026-10-08 09:13:50] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-10 type=economy_clock protocol=1
+[2026-10-08 09:13:50] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-10 economy_date=712227 economy_year=1950 economy_month=1 economy_day=5 month_start=712223 month_end=712254
+[2026-10-08 09:13:50] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-10 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:13:50] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-10
+[2026-10-08 09:13:51] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-11 type=economy_clock protocol=1
+[2026-10-08 09:13:51] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-11 economy_date=712228 economy_year=1950 economy_month=1 economy_day=6 month_start=712223 month_end=712254
+[2026-10-08 09:13:51] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-11 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:13:51] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-11
+[2026-10-08 09:13:52] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-12 type=economy_clock protocol=1
+[2026-10-08 09:13:52] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-12 economy_date=712228 economy_year=1950 economy_month=1 economy_day=6 month_start=712223 month_end=712254
+[2026-10-08 09:13:52] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-12 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:13:52] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-12
+[2026-10-08 09:13:53] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-13 type=economy_clock protocol=1
+[2026-10-08 09:13:53] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-13 economy_date=712229 economy_year=1950 economy_month=1 economy_day=7 month_start=712223 month_end=712254
+[2026-10-08 09:13:53] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-13 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:13:53] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-13
+[2026-10-08 09:13:54] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-14 type=economy_clock protocol=1
+[2026-10-08 09:13:54] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-14 economy_date=712229 economy_year=1950 economy_month=1 economy_day=7 month_start=712223 month_end=712254
+[2026-10-08 09:13:54] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-14 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:13:54] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-14
+[2026-10-08 09:13:55] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-15 type=economy_clock protocol=1
+[2026-10-08 09:13:55] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-15 economy_date=712230 economy_year=1950 economy_month=1 economy_day=8 month_start=712223 month_end=712254
+[2026-10-08 09:13:55] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-15 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:13:55] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-15
+[2026-10-08 09:13:56] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-16 type=economy_clock protocol=1
+[2026-10-08 09:13:56] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-16 economy_date=712231 economy_year=1950 economy_month=1 economy_day=9 month_start=712223 month_end=712254
+[2026-10-08 09:13:56] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-16 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:13:56] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-16
+[2026-10-08 09:13:57] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-17 type=economy_clock protocol=1
+[2026-10-08 09:13:57] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-17 economy_date=712231 economy_year=1950 economy_month=1 economy_day=9 month_start=712223 month_end=712254
+[2026-10-08 09:13:57] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-17 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:13:57] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-17
+[2026-10-08 09:13:58] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-18 type=economy_clock protocol=1
+[2026-10-08 09:13:58] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-18 economy_date=712232 economy_year=1950 economy_month=1 economy_day=10 month_start=712223 month_end=712254
+[2026-10-08 09:13:58] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-18 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:13:58] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-18
+[2026-10-08 09:13:59] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-19 type=economy_clock protocol=1
+[2026-10-08 09:13:59] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-19 economy_date=712232 economy_year=1950 economy_month=1 economy_day=10 month_start=712223 month_end=712254
+[2026-10-08 09:13:59] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-19 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:13:59] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-19
+[2026-10-08 09:14:00] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-20 type=economy_clock protocol=1
+[2026-10-08 09:14:00] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-20 economy_date=712233 economy_year=1950 economy_month=1 economy_day=11 month_start=712223 month_end=712254
+[2026-10-08 09:14:00] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-20 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:00] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-20
+[2026-10-08 09:14:02] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-21 type=economy_clock protocol=1
+[2026-10-08 09:14:02] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-21 economy_date=712233 economy_year=1950 economy_month=1 economy_day=11 month_start=712223 month_end=712254
+[2026-10-08 09:14:02] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-21 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:02] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-21
+[2026-10-08 09:14:03] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-22 type=economy_clock protocol=1
+[2026-10-08 09:14:03] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-22 economy_date=712234 economy_year=1950 economy_month=1 economy_day=12 month_start=712223 month_end=712254
+[2026-10-08 09:14:03] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-22 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:03] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-22
+[2026-10-08 09:14:04] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-23 type=economy_clock protocol=1
+[2026-10-08 09:14:04] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-23 economy_date=712234 economy_year=1950 economy_month=1 economy_day=12 month_start=712223 month_end=712254
+[2026-10-08 09:14:04] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-23 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:04] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-23
+[2026-10-08 09:14:05] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-24 type=economy_clock protocol=1
+[2026-10-08 09:14:05] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-24 economy_date=712235 economy_year=1950 economy_month=1 economy_day=13 month_start=712223 month_end=712254
+[2026-10-08 09:14:05] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-24 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:05] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-24
+[2026-10-08 09:14:06] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-25 type=economy_clock protocol=1
+[2026-10-08 09:14:06] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-25 economy_date=712235 economy_year=1950 economy_month=1 economy_day=13 month_start=712223 month_end=712254
+[2026-10-08 09:14:06] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-25 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:06] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-25
+[2026-10-08 09:14:07] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-26 type=economy_clock protocol=1
+[2026-10-08 09:14:07] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-26 economy_date=712236 economy_year=1950 economy_month=1 economy_day=14 month_start=712223 month_end=712254
+[2026-10-08 09:14:07] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-26 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:07] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-26
+[2026-10-08 09:14:08] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-27 type=economy_clock protocol=1
+[2026-10-08 09:14:08] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-27 economy_date=712236 economy_year=1950 economy_month=1 economy_day=14 month_start=712223 month_end=712254
+[2026-10-08 09:14:08] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-27 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:08] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-27
+[2026-10-08 09:14:09] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-28 type=economy_clock protocol=1
+[2026-10-08 09:14:09] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-28 economy_date=712237 economy_year=1950 economy_month=1 economy_day=15 month_start=712223 month_end=712254
+[2026-10-08 09:14:09] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-28 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:09] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-28
+[2026-10-08 09:14:10] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-29 type=economy_clock protocol=1
+[2026-10-08 09:14:10] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-29 economy_date=712237 economy_year=1950 economy_month=1 economy_day=15 month_start=712223 month_end=712254
+[2026-10-08 09:14:10] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-29 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:10] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-29
+[2026-10-08 09:14:11] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-30 type=economy_clock protocol=1
+[2026-10-08 09:14:11] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-30 economy_date=712238 economy_year=1950 economy_month=1 economy_day=16 month_start=712223 month_end=712254
+[2026-10-08 09:14:11] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-30 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:11] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-30
+[2026-10-08 09:14:12] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-31 type=economy_clock protocol=1
+[2026-10-08 09:14:12] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-31 economy_date=712238 economy_year=1950 economy_month=1 economy_day=16 month_start=712223 month_end=712254
+[2026-10-08 09:14:12] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-31 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:12] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-31
+[2026-10-08 09:14:13] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-32 type=economy_clock protocol=1
+[2026-10-08 09:14:13] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-32 economy_date=712239 economy_year=1950 economy_month=1 economy_day=17 month_start=712223 month_end=712254
+[2026-10-08 09:14:13] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-32 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:13] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-32
+[2026-10-08 09:14:14] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-33 type=economy_clock protocol=1
+[2026-10-08 09:14:14] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-33 economy_date=712239 economy_year=1950 economy_month=1 economy_day=17 month_start=712223 month_end=712254
+[2026-10-08 09:14:14] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-33 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:14] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-33
+[2026-10-08 09:14:15] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-34 type=economy_clock protocol=1
+[2026-10-08 09:14:15] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-34 economy_date=712240 economy_year=1950 economy_month=1 economy_day=18 month_start=712223 month_end=712254
+[2026-10-08 09:14:15] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-34 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:15] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-34
+[2026-10-08 09:14:16] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-35 type=economy_clock protocol=1
+[2026-10-08 09:14:16] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-35 economy_date=712241 economy_year=1950 economy_month=1 economy_day=19 month_start=712223 month_end=712254
+[2026-10-08 09:14:16] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-35 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:16] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-35
+[2026-10-08 09:14:17] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-36 type=economy_clock protocol=1
+[2026-10-08 09:14:17] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-36 economy_date=712241 economy_year=1950 economy_month=1 economy_day=19 month_start=712223 month_end=712254
+[2026-10-08 09:14:17] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-36 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:17] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-36
+[2026-10-08 09:14:18] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-37 type=economy_clock protocol=1
+[2026-10-08 09:14:18] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-37 economy_date=712242 economy_year=1950 economy_month=1 economy_day=20 month_start=712223 month_end=712254
+[2026-10-08 09:14:18] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-37 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:18] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-37
+[2026-10-08 09:14:19] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-38 type=economy_clock protocol=1
+[2026-10-08 09:14:19] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-38 economy_date=712242 economy_year=1950 economy_month=1 economy_day=20 month_start=712223 month_end=712254
+[2026-10-08 09:14:19] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-38 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:19] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-38
+[2026-10-08 09:14:20] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-39 type=economy_clock protocol=1
+[2026-10-08 09:14:20] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-39 economy_date=712243 economy_year=1950 economy_month=1 economy_day=21 month_start=712223 month_end=712254
+[2026-10-08 09:14:20] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-39 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:20] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-39
+[2026-10-08 09:14:22] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-40 type=economy_clock protocol=1
+[2026-10-08 09:14:22] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-40 economy_date=712243 economy_year=1950 economy_month=1 economy_day=21 month_start=712223 month_end=712254
+[2026-10-08 09:14:22] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-40 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:22] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-40
+[2026-10-08 09:14:23] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-41 type=economy_clock protocol=1
+[2026-10-08 09:14:23] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-41 economy_date=712244 economy_year=1950 economy_month=1 economy_day=22 month_start=712223 month_end=712254
+[2026-10-08 09:14:23] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-41 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:23] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-41
+[2026-10-08 09:14:24] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-42 type=economy_clock protocol=1
+[2026-10-08 09:14:24] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-42 economy_date=712244 economy_year=1950 economy_month=1 economy_day=22 month_start=712223 month_end=712254
+[2026-10-08 09:14:24] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-42 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:24] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-42
+[2026-10-08 09:14:25] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-43 type=economy_clock protocol=1
+[2026-10-08 09:14:25] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-43 economy_date=712245 economy_year=1950 economy_month=1 economy_day=23 month_start=712223 month_end=712254
+[2026-10-08 09:14:25] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-43 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:25] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-43
+[2026-10-08 09:14:26] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-44 type=economy_clock protocol=1
+[2026-10-08 09:14:26] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-44 economy_date=712245 economy_year=1950 economy_month=1 economy_day=23 month_start=712223 month_end=712254
+[2026-10-08 09:14:26] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-44 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:26] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-44
+[2026-10-08 09:14:27] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-45 type=economy_clock protocol=1
+[2026-10-08 09:14:27] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-45 economy_date=712246 economy_year=1950 economy_month=1 economy_day=24 month_start=712223 month_end=712254
+[2026-10-08 09:14:27] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-45 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:27] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-45
+[2026-10-08 09:14:28] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-46 type=economy_clock protocol=1
+[2026-10-08 09:14:28] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-46 economy_date=712246 economy_year=1950 economy_month=1 economy_day=24 month_start=712223 month_end=712254
+[2026-10-08 09:14:28] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-46 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:28] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-46
+[2026-10-08 09:14:29] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-47 type=economy_clock protocol=1
+[2026-10-08 09:14:29] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-47 economy_date=712247 economy_year=1950 economy_month=1 economy_day=25 month_start=712223 month_end=712254
+[2026-10-08 09:14:29] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-47 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:29] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-47
+[2026-10-08 09:14:30] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-48 type=economy_clock protocol=1
+[2026-10-08 09:14:30] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-48 economy_date=712247 economy_year=1950 economy_month=1 economy_day=25 month_start=712223 month_end=712254
+[2026-10-08 09:14:30] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-48 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:30] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-48
+[2026-10-08 09:14:31] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-49 type=economy_clock protocol=1
+[2026-10-08 09:14:31] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-49 economy_date=712248 economy_year=1950 economy_month=1 economy_day=26 month_start=712223 month_end=712254
+[2026-10-08 09:14:31] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-49 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:31] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-49
+[2026-10-08 09:14:32] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-50 type=economy_clock protocol=1
+[2026-10-08 09:14:32] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-50 economy_date=712248 economy_year=1950 economy_month=1 economy_day=26 month_start=712223 month_end=712254
+[2026-10-08 09:14:32] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-50 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:32] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-50
+[2026-10-08 09:14:33] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-51 type=economy_clock protocol=1
+[2026-10-08 09:14:33] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-51 economy_date=712249 economy_year=1950 economy_month=1 economy_day=27 month_start=712223 month_end=712254
+[2026-10-08 09:14:33] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-51 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:33] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-51
+[2026-10-08 09:14:34] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-52 type=economy_clock protocol=1
+[2026-10-08 09:14:34] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-52 economy_date=712249 economy_year=1950 economy_month=1 economy_day=27 month_start=712223 month_end=712254
+[2026-10-08 09:14:34] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-52 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:34] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-52
+[2026-10-08 09:14:35] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-53 type=economy_clock protocol=1
+[2026-10-08 09:14:35] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-53 economy_date=712250 economy_year=1950 economy_month=1 economy_day=28 month_start=712223 month_end=712254
+[2026-10-08 09:14:35] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-53 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:35] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-53
+[2026-10-08 09:14:36] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-54 type=economy_clock protocol=1
+[2026-10-08 09:14:36] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-54 economy_date=712251 economy_year=1950 economy_month=1 economy_day=29 month_start=712223 month_end=712254
+[2026-10-08 09:14:36] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-54 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:36] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-54
+[2026-10-08 09:14:37] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-55 type=economy_clock protocol=1
+[2026-10-08 09:14:37] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-55 economy_date=712251 economy_year=1950 economy_month=1 economy_day=29 month_start=712223 month_end=712254
+[2026-10-08 09:14:37] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-55 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:37] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-55
+[2026-10-08 09:14:38] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-56 type=economy_clock protocol=1
+[2026-10-08 09:14:38] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-56 economy_date=712252 economy_year=1950 economy_month=1 economy_day=30 month_start=712223 month_end=712254
+[2026-10-08 09:14:38] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-56 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:38] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-56
+[2026-10-08 09:14:39] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-57 type=economy_clock protocol=1
+[2026-10-08 09:14:39] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-57 economy_date=712252 economy_year=1950 economy_month=1 economy_day=30 month_start=712223 month_end=712254
+[2026-10-08 09:14:39] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-57 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:39] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-57
+[2026-10-08 09:14:40] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-58 type=economy_clock protocol=1
+[2026-10-08 09:14:40] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-58 economy_date=712253 economy_year=1950 economy_month=1 economy_day=31 month_start=712223 month_end=712254
+[2026-10-08 09:14:40] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-58 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:41] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-58
+[2026-10-08 09:14:42] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-59 type=economy_clock protocol=1
+[2026-10-08 09:14:42] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-59 economy_date=712253 economy_year=1950 economy_month=1 economy_day=31 month_start=712223 month_end=712254
+[2026-10-08 09:14:42] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-59 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:42] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-59
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-60 type=economy_clock protocol=1
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-60 economy_date=712254 economy_year=1950 economy_month=2 economy_day=1 month_start=712254 month_end=712282
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-60 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-60
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-61 type=economy_clock protocol=1
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-61 economy_date=712254 economy_year=1950 economy_month=2 economy_day=1 month_start=712254 month_end=712282
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-61 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-61
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-anchor-inv-p001 type=industry_page protocol=1
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] INDUSTRY_PAGE_READ request_id=openttd15-qualification-001-anchor-inv-p001 after_id=null limit=2 returned_count=2 first_id=0 last_id=1 next_after_id=1 has_more=true
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-anchor-inv-p001 type=industry_page_result status=ok protocol=1
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-anchor-inv-p001
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-anchor-inv-p002 type=industry_page protocol=1
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] INDUSTRY_PAGE_READ request_id=openttd15-qualification-001-anchor-inv-p002 after_id=1 limit=2 returned_count=2 first_id=2 last_id=3 next_after_id=3 has_more=true
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-anchor-inv-p002 type=industry_page_result status=ok protocol=1
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-anchor-inv-p002
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-anchor-inv-p003 type=industry_page protocol=1
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] INDUSTRY_PAGE_READ request_id=openttd15-qualification-001-anchor-inv-p003 after_id=3 limit=2 returned_count=2 first_id=4 last_id=5 next_after_id=5 has_more=true
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-anchor-inv-p003 type=industry_page_result status=ok protocol=1
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-anchor-inv-p003
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-anchor-inv-p004 type=industry_page protocol=1
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] INDUSTRY_PAGE_READ request_id=openttd15-qualification-001-anchor-inv-p004 after_id=5 limit=2 returned_count=2 first_id=6 last_id=7 next_after_id=7 has_more=true
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-anchor-inv-p004 type=industry_page_result status=ok protocol=1
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-anchor-inv-p004
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-anchor-inv-p005 type=industry_page protocol=1
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] INDUSTRY_PAGE_READ request_id=openttd15-qualification-001-anchor-inv-p005 after_id=7 limit=2 returned_count=2 first_id=8 last_id=9 next_after_id=null has_more=false
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-anchor-inv-p005 type=industry_page_result status=ok protocol=1
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-anchor-inv-p005
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-anchor-cap-i00000 type=industry_cargo protocol=1
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] INDUSTRY_CARGO_READ request_id=openttd15-qualification-001-anchor-cap-i00000 industry_id=0 produced_count=1 accepted_count=0 first_produced=1 last_produced=1 first_accepted=null last_accepted=null
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-anchor-cap-i00000 type=industry_cargo_result status=ok protocol=1
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-anchor-cap-i00000
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-anchor-cap-i00001 type=industry_cargo protocol=1
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] INDUSTRY_CARGO_READ request_id=openttd15-qualification-001-anchor-cap-i00001 industry_id=1 produced_count=0 accepted_count=1 first_produced=null last_produced=null first_accepted=1 last_accepted=1
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-anchor-cap-i00001 type=industry_cargo_result status=ok protocol=1
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-anchor-cap-i00001
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-anchor-cap-i00002 type=industry_cargo protocol=1
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] INDUSTRY_CARGO_READ request_id=openttd15-qualification-001-anchor-cap-i00002 industry_id=2 produced_count=1 accepted_count=1 first_produced=5 last_produced=5 first_accepted=7 last_accepted=7
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-anchor-cap-i00002 type=industry_cargo_result status=ok protocol=1
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-anchor-cap-i00002
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-anchor-cap-i00003 type=industry_cargo protocol=1
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] INDUSTRY_CARGO_READ request_id=openttd15-qualification-001-anchor-cap-i00003 industry_id=3 produced_count=1 accepted_count=0 first_produced=7 last_produced=7 first_accepted=null last_accepted=null
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-anchor-cap-i00003 type=industry_cargo_result status=ok protocol=1
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-anchor-cap-i00003
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-anchor-cap-i00004 type=industry_cargo protocol=1
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] INDUSTRY_CARGO_READ request_id=openttd15-qualification-001-anchor-cap-i00004 industry_id=4 produced_count=1 accepted_count=1 first_produced=5 last_produced=5 first_accepted=3 last_accepted=3
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-anchor-cap-i00004 type=industry_cargo_result status=ok protocol=1
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-anchor-cap-i00004
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-anchor-cap-i00005 type=industry_cargo protocol=1
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] INDUSTRY_CARGO_READ request_id=openttd15-qualification-001-anchor-cap-i00005 industry_id=5 produced_count=1 accepted_count=3 first_produced=5 last_produced=5 first_accepted=4 last_accepted=9
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-anchor-cap-i00005 type=industry_cargo_result status=ok protocol=1
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-anchor-cap-i00005
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-anchor-cap-i00006 type=industry_cargo protocol=1
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] INDUSTRY_CARGO_READ request_id=openttd15-qualification-001-anchor-cap-i00006 industry_id=6 produced_count=1 accepted_count=1 first_produced=9 last_produced=9 first_accepted=8 last_accepted=8
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-anchor-cap-i00006 type=industry_cargo_result status=ok protocol=1
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-anchor-cap-i00006
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-anchor-cap-i00007 type=industry_cargo protocol=1
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] INDUSTRY_CARGO_READ request_id=openttd15-qualification-001-anchor-cap-i00007 industry_id=7 produced_count=2 accepted_count=0 first_produced=4 last_produced=6 first_accepted=null last_accepted=null
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-anchor-cap-i00007 type=industry_cargo_result status=ok protocol=1
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-anchor-cap-i00007
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-anchor-cap-i00008 type=industry_cargo protocol=1
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] INDUSTRY_CARGO_READ request_id=openttd15-qualification-001-anchor-cap-i00008 industry_id=8 produced_count=1 accepted_count=0 first_produced=3 last_produced=3 first_accepted=null last_accepted=null
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-anchor-cap-i00008 type=industry_cargo_result status=ok protocol=1
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-anchor-cap-i00008
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-anchor-cap-i00009 type=industry_cargo protocol=1
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] INDUSTRY_CARGO_READ request_id=openttd15-qualification-001-anchor-cap-i00009 industry_id=9 produced_count=1 accepted_count=0 first_produced=8 last_produced=8 first_accepted=null last_accepted=null
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-anchor-cap-i00009 type=industry_cargo_result status=ok protocol=1
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-anchor-cap-i00009
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-anchor-cat-p001 type=cargo_page protocol=1
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] CARGO_PAGE_READ request_id=openttd15-qualification-001-anchor-cat-p001 after_id=null limit=2 returned_count=2 first_id=0 last_id=1 next_after_id=1 has_more=true
+[2026-10-08 09:14:43] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-anchor-cat-p001 type=cargo_page_result status=ok protocol=1
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-anchor-cat-p001
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-anchor-cat-p002 type=cargo_page protocol=1
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] CARGO_PAGE_READ request_id=openttd15-qualification-001-anchor-cat-p002 after_id=1 limit=2 returned_count=2 first_id=2 last_id=3 next_after_id=3 has_more=true
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-anchor-cat-p002 type=cargo_page_result status=ok protocol=1
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-anchor-cat-p002
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-anchor-cat-p003 type=cargo_page protocol=1
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] CARGO_PAGE_READ request_id=openttd15-qualification-001-anchor-cat-p003 after_id=3 limit=2 returned_count=2 first_id=4 last_id=5 next_after_id=5 has_more=true
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-anchor-cat-p003 type=cargo_page_result status=ok protocol=1
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-anchor-cat-p003
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-anchor-cat-p004 type=cargo_page protocol=1
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] CARGO_PAGE_READ request_id=openttd15-qualification-001-anchor-cat-p004 after_id=5 limit=2 returned_count=2 first_id=6 last_id=7 next_after_id=7 has_more=true
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-anchor-cat-p004 type=cargo_page_result status=ok protocol=1
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-anchor-cat-p004
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-anchor-cat-p005 type=cargo_page protocol=1
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] CARGO_PAGE_READ request_id=openttd15-qualification-001-anchor-cat-p005 after_id=7 limit=2 returned_count=2 first_id=8 last_id=9 next_after_id=9 has_more=true
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-anchor-cat-p005 type=cargo_page_result status=ok protocol=1
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-anchor-cat-p005
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-anchor-cat-p006 type=cargo_page protocol=1
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] CARGO_PAGE_READ request_id=openttd15-qualification-001-anchor-cat-p006 after_id=9 limit=2 returned_count=1 first_id=10 last_id=10 next_after_id=null has_more=false
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-anchor-cat-p006 type=cargo_page_result status=ok protocol=1
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-anchor-cat-p006
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-anchor-life-0 type=industry_lifetime protocol=1
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] INDUSTRY_LIFETIME_READ request_id=openttd15-qualification-001-anchor-life-0 industry_id=0 construction_date=712223 economy_before=712254 economy_after=712254
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-anchor-life-0 type=industry_lifetime_result status=ok protocol=1
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-anchor-life-0
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-anchor-life-2 type=industry_lifetime protocol=1
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] INDUSTRY_LIFETIME_READ request_id=openttd15-qualification-001-anchor-life-2 industry_id=2 construction_date=712223 economy_before=712254 economy_after=712254
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-anchor-life-2 type=industry_lifetime_result status=ok protocol=1
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-anchor-life-2
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-anchor-life-3 type=industry_lifetime protocol=1
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] INDUSTRY_LIFETIME_READ request_id=openttd15-qualification-001-anchor-life-3 industry_id=3 construction_date=712223 economy_before=712254 economy_after=712254
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-anchor-life-3 type=industry_lifetime_result status=ok protocol=1
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-anchor-life-3
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-anchor-life-4 type=industry_lifetime protocol=1
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] INDUSTRY_LIFETIME_READ request_id=openttd15-qualification-001-anchor-life-4 industry_id=4 construction_date=712223 economy_before=712254 economy_after=712254
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-anchor-life-4 type=industry_lifetime_result status=ok protocol=1
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-anchor-life-4
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-anchor-life-5 type=industry_lifetime protocol=1
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] INDUSTRY_LIFETIME_READ request_id=openttd15-qualification-001-anchor-life-5 industry_id=5 construction_date=712223 economy_before=712255 economy_after=712255
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-anchor-life-5 type=industry_lifetime_result status=ok protocol=1
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-anchor-life-5
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-anchor-life-6 type=industry_lifetime protocol=1
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] INDUSTRY_LIFETIME_READ request_id=openttd15-qualification-001-anchor-life-6 industry_id=6 construction_date=712223 economy_before=712255 economy_after=712255
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-anchor-life-6 type=industry_lifetime_result status=ok protocol=1
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-anchor-life-6
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-anchor-life-7 type=industry_lifetime protocol=1
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] INDUSTRY_LIFETIME_READ request_id=openttd15-qualification-001-anchor-life-7 industry_id=7 construction_date=712223 economy_before=712255 economy_after=712255
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-anchor-life-7 type=industry_lifetime_result status=ok protocol=1
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-anchor-life-7
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-anchor-life-8 type=industry_lifetime protocol=1
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] INDUSTRY_LIFETIME_READ request_id=openttd15-qualification-001-anchor-life-8 industry_id=8 construction_date=712223 economy_before=712255 economy_after=712255
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-anchor-life-8 type=industry_lifetime_result status=ok protocol=1
+[2026-10-08 09:14:44] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-anchor-life-8
+[2026-10-08 09:14:45] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-anchor-life-9 type=industry_lifetime protocol=1
+[2026-10-08 09:14:45] dbg: [script:4] [18] [I] INDUSTRY_LIFETIME_READ request_id=openttd15-qualification-001-anchor-life-9 industry_id=9 construction_date=712223 economy_before=712255 economy_after=712255
+[2026-10-08 09:14:45] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-anchor-life-9 type=industry_lifetime_result status=ok protocol=1
+[2026-10-08 09:14:45] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-anchor-life-9
+[2026-10-08 09:14:45] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-62 type=economy_clock protocol=1
+[2026-10-08 09:14:45] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-62 economy_date=712255 economy_year=1950 economy_month=2 economy_day=2 month_start=712254 month_end=712282
+[2026-10-08 09:14:45] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-62 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:45] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-62
+[2026-10-08 09:14:46] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-63 type=economy_clock protocol=1
+[2026-10-08 09:14:46] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-63 economy_date=712255 economy_year=1950 economy_month=2 economy_day=2 month_start=712254 month_end=712282
+[2026-10-08 09:14:46] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-63 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:46] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-63
+[2026-10-08 09:14:47] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-64 type=economy_clock protocol=1
+[2026-10-08 09:14:47] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-64 economy_date=712256 economy_year=1950 economy_month=2 economy_day=3 month_start=712254 month_end=712282
+[2026-10-08 09:14:47] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-64 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:47] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-64
+[2026-10-08 09:14:48] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-65 type=economy_clock protocol=1
+[2026-10-08 09:14:48] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-65 economy_date=712256 economy_year=1950 economy_month=2 economy_day=3 month_start=712254 month_end=712282
+[2026-10-08 09:14:48] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-65 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:48] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-65
+[2026-10-08 09:14:49] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-66 type=economy_clock protocol=1
+[2026-10-08 09:14:49] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-66 economy_date=712257 economy_year=1950 economy_month=2 economy_day=4 month_start=712254 month_end=712282
+[2026-10-08 09:14:49] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-66 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:49] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-66
+[2026-10-08 09:14:50] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-67 type=economy_clock protocol=1
+[2026-10-08 09:14:50] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-67 economy_date=712257 economy_year=1950 economy_month=2 economy_day=4 month_start=712254 month_end=712282
+[2026-10-08 09:14:50] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-67 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:50] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-67
+[2026-10-08 09:14:51] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-68 type=economy_clock protocol=1
+[2026-10-08 09:14:51] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-68 economy_date=712258 economy_year=1950 economy_month=2 economy_day=5 month_start=712254 month_end=712282
+[2026-10-08 09:14:51] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-68 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:51] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-68
+[2026-10-08 09:14:52] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-69 type=economy_clock protocol=1
+[2026-10-08 09:14:52] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-69 economy_date=712258 economy_year=1950 economy_month=2 economy_day=5 month_start=712254 month_end=712282
+[2026-10-08 09:14:52] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-69 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:52] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-69
+[2026-10-08 09:14:53] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-70 type=economy_clock protocol=1
+[2026-10-08 09:14:53] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-70 economy_date=712259 economy_year=1950 economy_month=2 economy_day=6 month_start=712254 month_end=712282
+[2026-10-08 09:14:53] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-70 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:53] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-70
+[2026-10-08 09:14:54] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-71 type=economy_clock protocol=1
+[2026-10-08 09:14:54] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-71 economy_date=712259 economy_year=1950 economy_month=2 economy_day=6 month_start=712254 month_end=712282
+[2026-10-08 09:14:54] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-71 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:54] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-71
+[2026-10-08 09:14:55] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-72 type=economy_clock protocol=1
+[2026-10-08 09:14:55] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-72 economy_date=712260 economy_year=1950 economy_month=2 economy_day=7 month_start=712254 month_end=712282
+[2026-10-08 09:14:55] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-72 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:55] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-72
+[2026-10-08 09:14:56] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-73 type=economy_clock protocol=1
+[2026-10-08 09:14:56] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-73 economy_date=712261 economy_year=1950 economy_month=2 economy_day=8 month_start=712254 month_end=712282
+[2026-10-08 09:14:56] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-73 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:56] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-73
+[2026-10-08 09:14:57] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-74 type=economy_clock protocol=1
+[2026-10-08 09:14:57] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-74 economy_date=712261 economy_year=1950 economy_month=2 economy_day=8 month_start=712254 month_end=712282
+[2026-10-08 09:14:57] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-74 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:57] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-74
+[2026-10-08 09:14:58] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-75 type=economy_clock protocol=1
+[2026-10-08 09:14:58] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-75 economy_date=712262 economy_year=1950 economy_month=2 economy_day=9 month_start=712254 month_end=712282
+[2026-10-08 09:14:58] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-75 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:58] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-75
+[2026-10-08 09:14:59] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-76 type=economy_clock protocol=1
+[2026-10-08 09:14:59] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-76 economy_date=712262 economy_year=1950 economy_month=2 economy_day=9 month_start=712254 month_end=712282
+[2026-10-08 09:14:59] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-76 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:14:59] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-76
+[2026-10-08 09:15:00] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-77 type=economy_clock protocol=1
+[2026-10-08 09:15:00] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-77 economy_date=712263 economy_year=1950 economy_month=2 economy_day=10 month_start=712254 month_end=712282
+[2026-10-08 09:15:00] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-77 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:15:00] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-77
+[2026-10-08 09:15:01] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-78 type=economy_clock protocol=1
+[2026-10-08 09:15:01] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-78 economy_date=712263 economy_year=1950 economy_month=2 economy_day=10 month_start=712254 month_end=712282
+[2026-10-08 09:15:01] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-78 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:15:02] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-78
+[2026-10-08 09:15:03] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-79 type=economy_clock protocol=1
+[2026-10-08 09:15:03] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-79 economy_date=712264 economy_year=1950 economy_month=2 economy_day=11 month_start=712254 month_end=712282
+[2026-10-08 09:15:03] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-79 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:15:03] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-79
+[2026-10-08 09:15:04] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-80 type=economy_clock protocol=1
+[2026-10-08 09:15:04] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-80 economy_date=712264 economy_year=1950 economy_month=2 economy_day=11 month_start=712254 month_end=712282
+[2026-10-08 09:15:04] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-80 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:15:04] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-80
+[2026-10-08 09:15:05] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-81 type=economy_clock protocol=1
+[2026-10-08 09:15:05] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-81 economy_date=712265 economy_year=1950 economy_month=2 economy_day=12 month_start=712254 month_end=712282
+[2026-10-08 09:15:05] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-81 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:15:05] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-81
+[2026-10-08 09:15:06] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-82 type=economy_clock protocol=1
+[2026-10-08 09:15:06] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-82 economy_date=712265 economy_year=1950 economy_month=2 economy_day=12 month_start=712254 month_end=712282
+[2026-10-08 09:15:06] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-82 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:15:06] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-82
+[2026-10-08 09:15:07] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-83 type=economy_clock protocol=1
+[2026-10-08 09:15:07] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-83 economy_date=712266 economy_year=1950 economy_month=2 economy_day=13 month_start=712254 month_end=712282
+[2026-10-08 09:15:07] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-83 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:15:07] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-83
+[2026-10-08 09:15:08] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-84 type=economy_clock protocol=1
+[2026-10-08 09:15:08] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-84 economy_date=712266 economy_year=1950 economy_month=2 economy_day=13 month_start=712254 month_end=712282
+[2026-10-08 09:15:08] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-84 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:15:08] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-84
+[2026-10-08 09:15:09] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-85 type=economy_clock protocol=1
+[2026-10-08 09:15:09] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-85 economy_date=712267 economy_year=1950 economy_month=2 economy_day=14 month_start=712254 month_end=712282
+[2026-10-08 09:15:09] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-85 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:15:09] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-85
+[2026-10-08 09:15:10] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-86 type=economy_clock protocol=1
+[2026-10-08 09:15:10] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-86 economy_date=712267 economy_year=1950 economy_month=2 economy_day=14 month_start=712254 month_end=712282
+[2026-10-08 09:15:10] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-86 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:15:10] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-86
+[2026-10-08 09:15:11] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-87 type=economy_clock protocol=1
+[2026-10-08 09:15:11] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-87 economy_date=712268 economy_year=1950 economy_month=2 economy_day=15 month_start=712254 month_end=712282
+[2026-10-08 09:15:11] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-87 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:15:11] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-87
+[2026-10-08 09:15:12] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-88 type=economy_clock protocol=1
+[2026-10-08 09:15:12] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-88 economy_date=712268 economy_year=1950 economy_month=2 economy_day=15 month_start=712254 month_end=712282
+[2026-10-08 09:15:12] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-88 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:15:12] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-88
+[2026-10-08 09:15:13] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-89 type=economy_clock protocol=1
+[2026-10-08 09:15:13] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-89 economy_date=712269 economy_year=1950 economy_month=2 economy_day=16 month_start=712254 month_end=712282
+[2026-10-08 09:15:13] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-89 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:15:13] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-89
+[2026-10-08 09:15:14] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-90 type=economy_clock protocol=1
+[2026-10-08 09:15:14] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-90 economy_date=712269 economy_year=1950 economy_month=2 economy_day=16 month_start=712254 month_end=712282
+[2026-10-08 09:15:14] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-90 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:15:14] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-90
+[2026-10-08 09:15:15] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-91 type=economy_clock protocol=1
+[2026-10-08 09:15:15] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-91 economy_date=712270 economy_year=1950 economy_month=2 economy_day=17 month_start=712254 month_end=712282
+[2026-10-08 09:15:15] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-91 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:15:15] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-91
+[2026-10-08 09:15:16] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-92 type=economy_clock protocol=1
+[2026-10-08 09:15:16] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-92 economy_date=712271 economy_year=1950 economy_month=2 economy_day=18 month_start=712254 month_end=712282
+[2026-10-08 09:15:16] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-92 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:15:16] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-92
+[2026-10-08 09:15:17] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-93 type=economy_clock protocol=1
+[2026-10-08 09:15:17] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-93 economy_date=712271 economy_year=1950 economy_month=2 economy_day=18 month_start=712254 month_end=712282
+[2026-10-08 09:15:17] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-93 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:15:17] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-93
+[2026-10-08 09:15:18] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-94 type=economy_clock protocol=1
+[2026-10-08 09:15:18] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-94 economy_date=712272 economy_year=1950 economy_month=2 economy_day=19 month_start=712254 month_end=712282
+[2026-10-08 09:15:18] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-94 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:15:18] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-94
+[2026-10-08 09:15:19] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-95 type=economy_clock protocol=1
+[2026-10-08 09:15:19] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-95 economy_date=712272 economy_year=1950 economy_month=2 economy_day=19 month_start=712254 month_end=712282
+[2026-10-08 09:15:19] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-95 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:15:19] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-95
+[2026-10-08 09:15:20] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-96 type=economy_clock protocol=1
+[2026-10-08 09:15:20] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-96 economy_date=712273 economy_year=1950 economy_month=2 economy_day=20 month_start=712254 month_end=712282
+[2026-10-08 09:15:20] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-96 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:15:20] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-96
+[2026-10-08 09:15:21] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-97 type=economy_clock protocol=1
+[2026-10-08 09:15:21] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-97 economy_date=712273 economy_year=1950 economy_month=2 economy_day=20 month_start=712254 month_end=712282
+[2026-10-08 09:15:21] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-97 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:15:22] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-97
+[2026-10-08 09:15:23] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-98 type=economy_clock protocol=1
+[2026-10-08 09:15:23] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-98 economy_date=712274 economy_year=1950 economy_month=2 economy_day=21 month_start=712254 month_end=712282
+[2026-10-08 09:15:23] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-98 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:15:23] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-98
+[2026-10-08 09:15:24] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-99 type=economy_clock protocol=1
+[2026-10-08 09:15:24] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-99 economy_date=712274 economy_year=1950 economy_month=2 economy_day=21 month_start=712254 month_end=712282
+[2026-10-08 09:15:24] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-99 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:15:24] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-99
+[2026-10-08 09:15:25] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-100 type=economy_clock protocol=1
+[2026-10-08 09:15:25] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-100 economy_date=712275 economy_year=1950 economy_month=2 economy_day=22 month_start=712254 month_end=712282
+[2026-10-08 09:15:25] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-100 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:15:25] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-100
+[2026-10-08 09:15:26] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-101 type=economy_clock protocol=1
+[2026-10-08 09:15:26] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-101 economy_date=712275 economy_year=1950 economy_month=2 economy_day=22 month_start=712254 month_end=712282
+[2026-10-08 09:15:26] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-101 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:15:26] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-101
+[2026-10-08 09:15:27] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-102 type=economy_clock protocol=1
+[2026-10-08 09:15:27] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-102 economy_date=712276 economy_year=1950 economy_month=2 economy_day=23 month_start=712254 month_end=712282
+[2026-10-08 09:15:27] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-102 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:15:27] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-102
+[2026-10-08 09:15:28] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-103 type=economy_clock protocol=1
+[2026-10-08 09:15:28] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-103 economy_date=712276 economy_year=1950 economy_month=2 economy_day=23 month_start=712254 month_end=712282
+[2026-10-08 09:15:28] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-103 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:15:28] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-103
+[2026-10-08 09:15:29] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-104 type=economy_clock protocol=1
+[2026-10-08 09:15:29] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-104 economy_date=712277 economy_year=1950 economy_month=2 economy_day=24 month_start=712254 month_end=712282
+[2026-10-08 09:15:29] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-104 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:15:29] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-104
+[2026-10-08 09:15:30] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-105 type=economy_clock protocol=1
+[2026-10-08 09:15:30] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-105 economy_date=712277 economy_year=1950 economy_month=2 economy_day=24 month_start=712254 month_end=712282
+[2026-10-08 09:15:30] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-105 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:15:30] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-105
+[2026-10-08 09:15:31] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-106 type=economy_clock protocol=1
+[2026-10-08 09:15:31] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-106 economy_date=712278 economy_year=1950 economy_month=2 economy_day=25 month_start=712254 month_end=712282
+[2026-10-08 09:15:31] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-106 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:15:31] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-106
+[2026-10-08 09:15:32] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-107 type=economy_clock protocol=1
+[2026-10-08 09:15:32] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-107 economy_date=712278 economy_year=1950 economy_month=2 economy_day=25 month_start=712254 month_end=712282
+[2026-10-08 09:15:32] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-107 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:15:32] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-107
+[2026-10-08 09:15:33] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-108 type=economy_clock protocol=1
+[2026-10-08 09:15:33] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-108 economy_date=712279 economy_year=1950 economy_month=2 economy_day=26 month_start=712254 month_end=712282
+[2026-10-08 09:15:33] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-108 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:15:33] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-108
+[2026-10-08 09:15:34] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-109 type=economy_clock protocol=1
+[2026-10-08 09:15:34] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-109 economy_date=712279 economy_year=1950 economy_month=2 economy_day=26 month_start=712254 month_end=712282
+[2026-10-08 09:15:34] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-109 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:15:34] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-109
+[2026-10-08 09:15:35] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-110 type=economy_clock protocol=1
+[2026-10-08 09:15:35] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-110 economy_date=712280 economy_year=1950 economy_month=2 economy_day=27 month_start=712254 month_end=712282
+[2026-10-08 09:15:35] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-110 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:15:35] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-110
+[2026-10-08 09:15:36] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-111 type=economy_clock protocol=1
+[2026-10-08 09:15:36] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-111 economy_date=712281 economy_year=1950 economy_month=2 economy_day=28 month_start=712254 month_end=712282
+[2026-10-08 09:15:36] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-111 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:15:36] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-111
+[2026-10-08 09:15:37] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-112 type=economy_clock protocol=1
+[2026-10-08 09:15:37] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-112 economy_date=712281 economy_year=1950 economy_month=2 economy_day=28 month_start=712254 month_end=712282
+[2026-10-08 09:15:37] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-112 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:15:37] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-112
+[2026-10-08 09:15:38] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-113 type=economy_clock protocol=1
+[2026-10-08 09:15:38] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-113 economy_date=712282 economy_year=1950 economy_month=3 economy_day=1 month_start=712282 month_end=712313
+[2026-10-08 09:15:38] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-113 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:15:38] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-113
+[2026-10-08 09:15:38] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-114 type=economy_clock protocol=1
+[2026-10-08 09:15:38] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-114 economy_date=712282 economy_year=1950 economy_month=3 economy_day=1 month_start=712282 month_end=712313
+[2026-10-08 09:15:38] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-114 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:15:38] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-114
+[2026-10-08 09:15:38] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-final-inv-p001 type=industry_page protocol=1
+[2026-10-08 09:15:38] dbg: [script:4] [18] [I] INDUSTRY_PAGE_READ request_id=openttd15-qualification-001-final-inv-p001 after_id=null limit=2 returned_count=2 first_id=0 last_id=1 next_after_id=1 has_more=true
+[2026-10-08 09:15:38] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-final-inv-p001 type=industry_page_result status=ok protocol=1
+[2026-10-08 09:15:38] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-final-inv-p001
+[2026-10-08 09:15:38] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-final-inv-p002 type=industry_page protocol=1
+[2026-10-08 09:15:38] dbg: [script:4] [18] [I] INDUSTRY_PAGE_READ request_id=openttd15-qualification-001-final-inv-p002 after_id=1 limit=2 returned_count=2 first_id=2 last_id=3 next_after_id=3 has_more=true
+[2026-10-08 09:15:38] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-final-inv-p002 type=industry_page_result status=ok protocol=1
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-final-inv-p002
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-final-inv-p003 type=industry_page protocol=1
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] INDUSTRY_PAGE_READ request_id=openttd15-qualification-001-final-inv-p003 after_id=3 limit=2 returned_count=2 first_id=4 last_id=5 next_after_id=5 has_more=true
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-final-inv-p003 type=industry_page_result status=ok protocol=1
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-final-inv-p003
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-final-inv-p004 type=industry_page protocol=1
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] INDUSTRY_PAGE_READ request_id=openttd15-qualification-001-final-inv-p004 after_id=5 limit=2 returned_count=2 first_id=6 last_id=7 next_after_id=7 has_more=true
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-final-inv-p004 type=industry_page_result status=ok protocol=1
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-final-inv-p004
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-final-inv-p005 type=industry_page protocol=1
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] INDUSTRY_PAGE_READ request_id=openttd15-qualification-001-final-inv-p005 after_id=7 limit=2 returned_count=2 first_id=8 last_id=9 next_after_id=null has_more=false
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-final-inv-p005 type=industry_page_result status=ok protocol=1
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-final-inv-p005
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-final-cap-i00000 type=industry_cargo protocol=1
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] INDUSTRY_CARGO_READ request_id=openttd15-qualification-001-final-cap-i00000 industry_id=0 produced_count=1 accepted_count=0 first_produced=1 last_produced=1 first_accepted=null last_accepted=null
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-final-cap-i00000 type=industry_cargo_result status=ok protocol=1
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-final-cap-i00000
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-final-cap-i00001 type=industry_cargo protocol=1
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] INDUSTRY_CARGO_READ request_id=openttd15-qualification-001-final-cap-i00001 industry_id=1 produced_count=0 accepted_count=1 first_produced=null last_produced=null first_accepted=1 last_accepted=1
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-final-cap-i00001 type=industry_cargo_result status=ok protocol=1
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-final-cap-i00001
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-final-cap-i00002 type=industry_cargo protocol=1
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] INDUSTRY_CARGO_READ request_id=openttd15-qualification-001-final-cap-i00002 industry_id=2 produced_count=1 accepted_count=1 first_produced=5 last_produced=5 first_accepted=7 last_accepted=7
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-final-cap-i00002 type=industry_cargo_result status=ok protocol=1
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-final-cap-i00002
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-final-cap-i00003 type=industry_cargo protocol=1
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] INDUSTRY_CARGO_READ request_id=openttd15-qualification-001-final-cap-i00003 industry_id=3 produced_count=1 accepted_count=0 first_produced=7 last_produced=7 first_accepted=null last_accepted=null
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-final-cap-i00003 type=industry_cargo_result status=ok protocol=1
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-final-cap-i00003
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-final-cap-i00004 type=industry_cargo protocol=1
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] INDUSTRY_CARGO_READ request_id=openttd15-qualification-001-final-cap-i00004 industry_id=4 produced_count=1 accepted_count=1 first_produced=5 last_produced=5 first_accepted=3 last_accepted=3
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-final-cap-i00004 type=industry_cargo_result status=ok protocol=1
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-final-cap-i00004
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-final-cap-i00005 type=industry_cargo protocol=1
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] INDUSTRY_CARGO_READ request_id=openttd15-qualification-001-final-cap-i00005 industry_id=5 produced_count=1 accepted_count=3 first_produced=5 last_produced=5 first_accepted=4 last_accepted=9
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-final-cap-i00005 type=industry_cargo_result status=ok protocol=1
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-final-cap-i00005
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-final-cap-i00006 type=industry_cargo protocol=1
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] INDUSTRY_CARGO_READ request_id=openttd15-qualification-001-final-cap-i00006 industry_id=6 produced_count=1 accepted_count=1 first_produced=9 last_produced=9 first_accepted=8 last_accepted=8
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-final-cap-i00006 type=industry_cargo_result status=ok protocol=1
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-final-cap-i00006
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-final-cap-i00007 type=industry_cargo protocol=1
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] INDUSTRY_CARGO_READ request_id=openttd15-qualification-001-final-cap-i00007 industry_id=7 produced_count=2 accepted_count=0 first_produced=4 last_produced=6 first_accepted=null last_accepted=null
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-final-cap-i00007 type=industry_cargo_result status=ok protocol=1
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-final-cap-i00007
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-final-cap-i00008 type=industry_cargo protocol=1
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] INDUSTRY_CARGO_READ request_id=openttd15-qualification-001-final-cap-i00008 industry_id=8 produced_count=1 accepted_count=0 first_produced=3 last_produced=3 first_accepted=null last_accepted=null
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-final-cap-i00008 type=industry_cargo_result status=ok protocol=1
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-final-cap-i00008
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-final-cap-i00009 type=industry_cargo protocol=1
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] INDUSTRY_CARGO_READ request_id=openttd15-qualification-001-final-cap-i00009 industry_id=9 produced_count=1 accepted_count=0 first_produced=8 last_produced=8 first_accepted=null last_accepted=null
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-final-cap-i00009 type=industry_cargo_result status=ok protocol=1
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-final-cap-i00009
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-final-cat-p001 type=cargo_page protocol=1
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] CARGO_PAGE_READ request_id=openttd15-qualification-001-final-cat-p001 after_id=null limit=2 returned_count=2 first_id=0 last_id=1 next_after_id=1 has_more=true
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-final-cat-p001 type=cargo_page_result status=ok protocol=1
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-final-cat-p001
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-final-cat-p002 type=cargo_page protocol=1
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] CARGO_PAGE_READ request_id=openttd15-qualification-001-final-cat-p002 after_id=1 limit=2 returned_count=2 first_id=2 last_id=3 next_after_id=3 has_more=true
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-final-cat-p002 type=cargo_page_result status=ok protocol=1
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-final-cat-p002
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-final-cat-p003 type=cargo_page protocol=1
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] CARGO_PAGE_READ request_id=openttd15-qualification-001-final-cat-p003 after_id=3 limit=2 returned_count=2 first_id=4 last_id=5 next_after_id=5 has_more=true
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-final-cat-p003 type=cargo_page_result status=ok protocol=1
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-final-cat-p003
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-final-cat-p004 type=cargo_page protocol=1
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] CARGO_PAGE_READ request_id=openttd15-qualification-001-final-cat-p004 after_id=5 limit=2 returned_count=2 first_id=6 last_id=7 next_after_id=7 has_more=true
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-final-cat-p004 type=cargo_page_result status=ok protocol=1
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-final-cat-p004
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-final-cat-p005 type=cargo_page protocol=1
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] CARGO_PAGE_READ request_id=openttd15-qualification-001-final-cat-p005 after_id=7 limit=2 returned_count=2 first_id=8 last_id=9 next_after_id=9 has_more=true
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-final-cat-p005 type=cargo_page_result status=ok protocol=1
+[2026-10-08 09:15:39] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-final-cat-p005
+[2026-10-08 09:15:40] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-final-cat-p006 type=cargo_page protocol=1
+[2026-10-08 09:15:40] dbg: [script:4] [18] [I] CARGO_PAGE_READ request_id=openttd15-qualification-001-final-cat-p006 after_id=9 limit=2 returned_count=1 first_id=10 last_id=10 next_after_id=null has_more=false
+[2026-10-08 09:15:40] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-final-cat-p006 type=cargo_page_result status=ok protocol=1
+[2026-10-08 09:15:40] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-final-cat-p006
+[2026-10-08 09:15:40] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-final-life-0 type=industry_lifetime protocol=1
+[2026-10-08 09:15:40] dbg: [script:4] [18] [I] INDUSTRY_LIFETIME_READ request_id=openttd15-qualification-001-final-life-0 industry_id=0 construction_date=712223 economy_before=712282 economy_after=712282
+[2026-10-08 09:15:40] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-final-life-0 type=industry_lifetime_result status=ok protocol=1
+[2026-10-08 09:15:40] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-final-life-0
+[2026-10-08 09:15:40] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-final-life-2 type=industry_lifetime protocol=1
+[2026-10-08 09:15:40] dbg: [script:4] [18] [I] INDUSTRY_LIFETIME_READ request_id=openttd15-qualification-001-final-life-2 industry_id=2 construction_date=712223 economy_before=712282 economy_after=712282
+[2026-10-08 09:15:40] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-final-life-2 type=industry_lifetime_result status=ok protocol=1
+[2026-10-08 09:15:40] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-final-life-2
+[2026-10-08 09:15:40] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-final-life-3 type=industry_lifetime protocol=1
+[2026-10-08 09:15:40] dbg: [script:4] [18] [I] INDUSTRY_LIFETIME_READ request_id=openttd15-qualification-001-final-life-3 industry_id=3 construction_date=712223 economy_before=712282 economy_after=712282
+[2026-10-08 09:15:40] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-final-life-3 type=industry_lifetime_result status=ok protocol=1
+[2026-10-08 09:15:40] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-final-life-3
+[2026-10-08 09:15:40] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-final-life-4 type=industry_lifetime protocol=1
+[2026-10-08 09:15:40] dbg: [script:4] [18] [I] INDUSTRY_LIFETIME_READ request_id=openttd15-qualification-001-final-life-4 industry_id=4 construction_date=712223 economy_before=712282 economy_after=712282
+[2026-10-08 09:15:40] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-final-life-4 type=industry_lifetime_result status=ok protocol=1
+[2026-10-08 09:15:40] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-final-life-4
+[2026-10-08 09:15:40] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-final-life-5 type=industry_lifetime protocol=1
+[2026-10-08 09:15:40] dbg: [script:4] [18] [I] INDUSTRY_LIFETIME_READ request_id=openttd15-qualification-001-final-life-5 industry_id=5 construction_date=712223 economy_before=712282 economy_after=712282
+[2026-10-08 09:15:40] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-final-life-5 type=industry_lifetime_result status=ok protocol=1
+[2026-10-08 09:15:40] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-final-life-5
+[2026-10-08 09:15:40] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-final-life-6 type=industry_lifetime protocol=1
+[2026-10-08 09:15:40] dbg: [script:4] [18] [I] INDUSTRY_LIFETIME_READ request_id=openttd15-qualification-001-final-life-6 industry_id=6 construction_date=712223 economy_before=712283 economy_after=712283
+[2026-10-08 09:15:40] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-final-life-6 type=industry_lifetime_result status=ok protocol=1
+[2026-10-08 09:15:40] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-final-life-6
+[2026-10-08 09:15:40] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-final-life-7 type=industry_lifetime protocol=1
+[2026-10-08 09:15:40] dbg: [script:4] [18] [I] INDUSTRY_LIFETIME_READ request_id=openttd15-qualification-001-final-life-7 industry_id=7 construction_date=712223 economy_before=712283 economy_after=712283
+[2026-10-08 09:15:40] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-final-life-7 type=industry_lifetime_result status=ok protocol=1
+[2026-10-08 09:15:40] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-final-life-7
+[2026-10-08 09:15:40] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-final-life-8 type=industry_lifetime protocol=1
+[2026-10-08 09:15:40] dbg: [script:4] [18] [I] INDUSTRY_LIFETIME_READ request_id=openttd15-qualification-001-final-life-8 industry_id=8 construction_date=712223 economy_before=712283 economy_after=712283
+[2026-10-08 09:15:40] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-final-life-8 type=industry_lifetime_result status=ok protocol=1
+[2026-10-08 09:15:40] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-final-life-8
+[2026-10-08 09:15:40] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-final-life-9 type=industry_lifetime protocol=1
+[2026-10-08 09:15:40] dbg: [script:4] [18] [I] INDUSTRY_LIFETIME_READ request_id=openttd15-qualification-001-final-life-9 industry_id=9 construction_date=712223 economy_before=712283 economy_after=712283
+[2026-10-08 09:15:40] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-final-life-9 type=industry_lifetime_result status=ok protocol=1
+[2026-10-08 09:15:40] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-final-life-9
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-prod-p001 type=industry_production protocol=1
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] INDUSTRY_PRODUCTION_READ request_id=openttd15-qualification-001-prod-p001 industry_id=0 cargo_id=1 economy_date_before=712283 economy_date_after=712283 last_month_produced=168 last_month_transported=0 last_month_transported_pct=0
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-prod-p001 type=industry_production_result status=ok protocol=1
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-prod-p001
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-prod-p002 type=industry_production protocol=1
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] INDUSTRY_PRODUCTION_READ request_id=openttd15-qualification-001-prod-p002 industry_id=2 cargo_id=5 economy_date_before=712283 economy_date_after=712283 last_month_produced=0 last_month_transported=0 last_month_transported_pct=0
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-prod-p002 type=industry_production_result status=ok protocol=1
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-prod-p002
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-prod-p003 type=industry_production protocol=1
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] INDUSTRY_PRODUCTION_READ request_id=openttd15-qualification-001-prod-p003 industry_id=3 cargo_id=7 economy_date_before=712283 economy_date_after=712283 last_month_produced=80 last_month_transported=0 last_month_transported_pct=0
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-prod-p003 type=industry_production_result status=ok protocol=1
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-prod-p003
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-prod-p004 type=industry_production protocol=1
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] INDUSTRY_PRODUCTION_READ request_id=openttd15-qualification-001-prod-p004 industry_id=4 cargo_id=5 economy_date_before=712283 economy_date_after=712283 last_month_produced=0 last_month_transported=0 last_month_transported_pct=0
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-prod-p004 type=industry_production_result status=ok protocol=1
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-prod-p004
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-prod-p005 type=industry_production protocol=1
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] INDUSTRY_PRODUCTION_READ request_id=openttd15-qualification-001-prod-p005 industry_id=5 cargo_id=5 economy_date_before=712283 economy_date_after=712283 last_month_produced=0 last_month_transported=0 last_month_transported_pct=0
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-prod-p005 type=industry_production_result status=ok protocol=1
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-prod-p005
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-prod-p006 type=industry_production protocol=1
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] INDUSTRY_PRODUCTION_READ request_id=openttd15-qualification-001-prod-p006 industry_id=6 cargo_id=9 economy_date_before=712283 economy_date_after=712283 last_month_produced=0 last_month_transported=0 last_month_transported_pct=0
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-prod-p006 type=industry_production_result status=ok protocol=1
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-prod-p006
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-prod-p007 type=industry_production protocol=1
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] INDUSTRY_PRODUCTION_READ request_id=openttd15-qualification-001-prod-p007 industry_id=7 cargo_id=4 economy_date_before=712283 economy_date_after=712283 last_month_produced=56 last_month_transported=0 last_month_transported_pct=0
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-prod-p007 type=industry_production_result status=ok protocol=1
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-prod-p007
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-prod-p008 type=industry_production protocol=1
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] INDUSTRY_PRODUCTION_READ request_id=openttd15-qualification-001-prod-p008 industry_id=7 cargo_id=6 economy_date_before=712283 economy_date_after=712283 last_month_produced=88 last_month_transported=0 last_month_transported_pct=0
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-prod-p008 type=industry_production_result status=ok protocol=1
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-prod-p008
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-prod-p009 type=industry_production protocol=1
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] INDUSTRY_PRODUCTION_READ request_id=openttd15-qualification-001-prod-p009 industry_id=8 cargo_id=3 economy_date_before=712283 economy_date_after=712283 last_month_produced=96 last_month_transported=0 last_month_transported_pct=0
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-prod-p009 type=industry_production_result status=ok protocol=1
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-prod-p009
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-prod-p010 type=industry_production protocol=1
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] INDUSTRY_PRODUCTION_READ request_id=openttd15-qualification-001-prod-p010 industry_id=9 cargo_id=8 economy_date_before=712283 economy_date_after=712283 last_month_produced=88 last_month_transported=0 last_month_transported_pct=0
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-prod-p010 type=industry_production_result status=ok protocol=1
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-prod-p010
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] BRIDGE_REQUEST_RECEIVED request_id=openttd15-qualification-001-clock-115 type=economy_clock protocol=1
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] ECONOMY_CLOCK_READ request_id=openttd15-qualification-001-clock-115 economy_date=712283 economy_year=1950 economy_month=3 economy_day=2 month_start=712282 month_end=712313
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] BRIDGE_RESPONSE_SENT request_id=openttd15-qualification-001-clock-115 type=economy_clock_result status=ok protocol=1
+[2026-10-08 09:15:41] dbg: [script:4] [18] [I] BRIDGE_POST_RESPONSE_ALIVE request_id=openttd15-qualification-001-clock-115
+[2026-10-08 09:15:42] dbg: [net:3] [admin] 'ACK-proof' (1) has disconnected
+[2026-10-08 09:15:42] dbg: [net:3] Initializing UDP listeners
+[2026-10-08 09:15:42] dbg: [net:3] Shutting down network

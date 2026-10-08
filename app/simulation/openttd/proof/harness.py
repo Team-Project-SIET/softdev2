@@ -16,6 +16,7 @@ from app.simulation.openttd.gamescript_protocol import PingRequest
 from app.simulation.openttd.industry_cargo import IndustryCargoRequest
 from app.simulation.openttd.industry_page import IndustryPageRequest
 from app.simulation.openttd.industry_production import IndustryProductionRequest
+from app.simulation.openttd.qualification_clock import EconomyClockRequest
 from app.simulation.openttd.runtime.base import LaunchSpecification
 from app.simulation.openttd.runtime.config import AdminSettings, RuntimeWorkspace
 from app.simulation.openttd.runtime.identity import RuntimeIdentity
@@ -43,6 +44,10 @@ from .production_contract import (
     PRODUCTION_ATTEMPT_DIRECTORY,
     PRODUCTION_REQUEST,
 )
+from .qualification_contract import ATTEMPT_DIRECTORY as QUALIFICATION_ATTEMPT_DIRECTORY
+from .qualification_contract import MODEL as QUALIFICATION_MODEL
+from .qualification_contract import REVISION as QUALIFICATION_REVISION
+from .qualification_contract import first_request as qualification_first_request
 from .raw_production_contract import RAW_PRODUCTION_ATTEMPT_DIRECTORY, raw_production_first_request
 from .structural_contract import (
     STRUCTURAL_ATTEMPT_DIRECTORY,
@@ -147,6 +152,7 @@ class PreparedProof:
         | IndustryCargoRequest
         | CargoPageRequest
         | IndustryProductionRequest
+        | EconomyClockRequest
     ) = REQUEST
 
     def dispose(self) -> None:
@@ -197,6 +203,7 @@ def prepare_proof(
         "structural-world",
         "industry-production",
         "complete-raw-production",
+        "two-rollover-qualification",
     ):
         raise ValueError("Unsupported proof mode")
     request = {
@@ -211,6 +218,7 @@ def prepare_proof(
         "structural-world": structural_first_request(),
         "industry-production": PRODUCTION_REQUEST,
         "complete-raw-production": raw_production_first_request(),
+        "two-rollover-qualification": qualification_first_request(),
     }[mode]
     binary = binary.resolve(strict=True)
     if not binary.is_file() or not os.access(binary, os.X_OK) or sha256(binary) != binary_sha256:
@@ -244,16 +252,24 @@ def prepare_proof(
         from .raw_production_preparation import check_raw_production_preparation
 
         check_raw_production_preparation(directory, official=binary_sha256 == BINARY_SHA256)
+    if mode == "two-rollover-qualification":
+        from .qualification_preparation import check_qualification_preparation
+
+        check_qualification_preparation(directory, official=binary_sha256 == BINARY_SHA256)
     directory.mkdir(parents=True, exist_ok=False)
     workspace = RuntimeWorkspace.create(directory / "isolated", retain=True)
     reservation = None
     try:
         reservation = EndpointReservation.allocate()
-        if mode in ("structural-world", "complete-raw-production"):
+        if mode in ("structural-world", "complete-raw-production", "two-rollover-qualification"):
             graphics_identity = stage_opengfx(
                 graphics, workspace.root / "baseset/OpenGFX", expected_sha256=graphics_sha256
             )
-        key = None if mode == "complete-raw-production" else AuthorizedKey.generate()
+        key = (
+            None
+            if mode in ("complete-raw-production", "two-rollover-qualification")
+            else AuthorizedKey.generate()
+        )
         key_path = workspace.root / ".admin-secret"
         # A restricted credential, never part of any evidence/manifest/source hash.
         if key is not None:
@@ -276,14 +292,23 @@ def prepare_proof(
             "starting_year = 1950\nland_generator = 1\ngeneration_seed = 42\n"
             "[difficulty]\nmax_no_competitors = 0\n[misc]\ngraphicsset = OpenGFX\n"
         )
-        if mode == "complete-raw-production":
+        if mode in ("complete-raw-production", "two-rollover-qualification"):
             config += "[economy]\ntimekeeping_units = 0\n"
         workspace.config.write_text(config)
-        if mode not in ("structural-world", "complete-raw-production"):
+        if mode not in (
+            "structural-world",
+            "complete-raw-production",
+            "two-rollover-qualification",
+        ):
             graphics_identity = stage_opengfx(
                 graphics, workspace.root / "baseset/OpenGFX", expected_sha256=graphics_sha256
             )
-        bridge = stage_bridge(workspace)
+        if mode == "two-rollover-qualification":
+            from app.simulation.openttd.qualification_bridge import stage_qualification_bridge
+
+            bridge = stage_qualification_bridge(workspace)
+        else:
+            bridge = stage_bridge(workspace)
         # API and narrow symbols are frozen, and a forbidden API cannot be staged.
         info = (bridge.directory / "info.nut").read_text()
         main = (bridge.directory / "main.nut").read_text()
@@ -310,13 +335,19 @@ def prepare_proof(
             or not industry_methods
             <= (
                 {"IsValidIndustry", "GetLocation", "GetIndustryType"}
+                | ({"GetConstructionDate"} if mode == "two-rollover-qualification" else set())
                 | (
                     {
                         "GetLastMonthProduction",
                         "GetLastMonthTransported",
                         "GetLastMonthTransportedPercentage",
                     }
-                    if mode in ("industry-production", "complete-raw-production")
+                    if mode
+                    in (
+                        "industry-production",
+                        "complete-raw-production",
+                        "two-rollover-qualification",
+                    )
                     else set()
                 )
             )
@@ -348,6 +379,7 @@ def prepare_proof(
             "structural-world",
             "industry-production",
             "complete-raw-production",
+            "two-rollover-qualification",
         ):
             from .enrichment_contract import ENRICHMENT_ATTEMPT_DIRECTORY
             from .historical_protection import capture_protection, protection_base
@@ -357,7 +389,9 @@ def prepare_proof(
                 directory.parent,
                 directory,
                 directory.with_name(
-                    RAW_PRODUCTION_ATTEMPT_DIRECTORY
+                    QUALIFICATION_ATTEMPT_DIRECTORY
+                    if mode == "two-rollover-qualification"
+                    else RAW_PRODUCTION_ATTEMPT_DIRECTORY
                     if mode == "complete-raw-production"
                     else PRODUCTION_ATTEMPT_DIRECTORY
                     if mode == "industry-production"
@@ -376,6 +410,14 @@ def prepare_proof(
         frozen = source_freeze()
         frozen[str(binary)] = binary_sha256
         frozen[str(graphics.resolve())] = graphics_sha256
+        bridge_sources = None
+        if mode == "two-rollover-qualification":
+            canonical_bridge = directory / "bridge-inputs"
+            canonical_bridge.mkdir()
+            canonical_main = canonical_bridge / "main.nut"
+            canonical_main.write_bytes((bridge.directory / "main.nut").read_bytes())
+            frozen[str(canonical_main)] = sha256(canonical_main)
+            bridge_sources = {"main.nut": canonical_main}
         if key is None:
             # All non-credential inputs, lineage, clock, bridge, graphics and
             # cleanup-root disjointness are valid before generating the one key.
@@ -385,7 +427,11 @@ def prepare_proof(
                 directory,
                 workspace.root,
                 key_path,
-                directory.with_name(RAW_PRODUCTION_ATTEMPT_DIRECTORY),
+                directory.with_name(
+                    QUALIFICATION_ATTEMPT_DIRECTORY
+                    if mode == "two-rollover-qualification"
+                    else RAW_PRODUCTION_ATTEMPT_DIRECTORY
+                ),
                 frozen,
                 history,
             ).validate()
@@ -397,7 +443,9 @@ def prepare_proof(
             private_path.write_text(private_path.read_text().replace("0" * 64, key.public_hex))
         from .ownership import freeze_materializations
 
-        freeze_materializations(directory, workspace, key_path, graphics, frozen)
+        freeze_materializations(
+            directory, workspace, key_path, graphics, frozen, bridge_sources=bridge_sources
+        )
         (directory / "source-freeze.json").write_text(
             json.dumps(dict(sorted(frozen.items())), sort_keys=True, indent=2) + "\n"
         )
@@ -426,7 +474,12 @@ def prepare_proof(
                 "commands": ["ping", "world_info", "industry_page"]
                 + (["industry_cargo"] if "GSCargoList_IndustryProducing" in main else [])
                 + (["cargo_page"] if "function CargoPage(" in main else [])
-                + (["industry_production"] if "function IndustryProduction(" in main else []),
+                + (["industry_production"] if "function IndustryProduction(" in main else [])
+                + (
+                    ["economy_clock", "industry_lifetime"]
+                    if mode == "two-rollover-qualification"
+                    else []
+                ),
                 "sha256": bridge.sha256,
                 "files": {name: sha256(bridge.directory / name) for name in PACKAGE_FILES},
             },
@@ -697,6 +750,10 @@ def prepare_proof(
             from .raw_production_preparation import freeze_raw_production_preparation
 
             freeze_raw_production_preparation(directory, frozen, bridge.sha256)
+        if mode == "two-rollover-qualification":
+            from .qualification_preparation import freeze_qualification_preparation
+
+            freeze_qualification_preparation(directory, frozen, bridge.sha256)
         from .ownership import build_ownership
 
         # Every public launch input has persistent ownership, for every proof kind.
@@ -729,19 +786,33 @@ def prepare_proof(
         (directory / "artifact-manifest.sha256").write_text(manifest(directory))
         return PreparedProof(directory, spec, key_path, key.public_hex, ports, request)
     except BaseException as error:
-        combined = mode == "complete-raw-production"
+        qualification = mode == "two-rollover-qualification"
+        combined = mode == "complete-raw-production" or qualification
         write_json(
             directory / "PRELAUNCH-FAILURE.json",
             {
                 "state": "PRELAUNCH_FAILED",
                 "error_type": type(error).__name__,
-                "attempt": 1 if combined else 2,
-                "prelaunch_revision": 1 if combined else 3,
-                "proof_model": "complete-raw-production-correlated-channels-v1"
+                "attempt": 2 if qualification else 1 if combined else 2,
+                "prelaunch_revision": QUALIFICATION_REVISION
+                if qualification
+                else 1
+                if combined
+                else 3,
+                "proof_model": QUALIFICATION_MODEL
+                if qualification
+                else "complete-raw-production-correlated-channels-v1"
                 if combined
                 else PROOF_MODEL,
                 **(
-                    {"proof_kind": "complete-raw-production", "connections": 0, "requests": 0}
+                    {
+                        "proof_kind": "two-rollover-qualification"
+                        if qualification
+                        else "complete-raw-production",
+                        "launches": 0,
+                        "connections": 0,
+                        "requests": 0,
+                    }
                     if combined
                     else {}
                 ),

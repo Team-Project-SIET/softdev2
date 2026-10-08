@@ -12,6 +12,7 @@ from app.simulation.openttd.industry_page_evidence import parse_industry_page_ev
 from app.simulation.openttd.industry_query import IndustryInventorySession
 
 from .attempt import Gate, Gates
+from .endpoints import verify_cleanup_endpoints
 from .harness import EndpointReservation, manifest, sha256, verify_freeze, write_json
 from .industry_contract import INDUSTRY_NETWORK_CHAIN
 from .industry_evidence import parse_industry_proof_evidence
@@ -317,8 +318,7 @@ async def execute_inventory_attempt(prepared, backend) -> dict:
             capture(lambda: prepared.key_path.unlink(missing_ok=True))
 
         def closed_endpoints():
-            endpoints = EndpointReservation.allocate(*prepared.endpoints)
-            endpoints.close()
+            cleanup.update(verify_cleanup_endpoints(prepared, cleanup, reservation))
             return True
 
         cleanup["sockets_closed"] = bool(capture(closed_endpoints))

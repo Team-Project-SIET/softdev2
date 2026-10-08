@@ -1,0 +1,23 @@
+{
+  "boundary_end": {
+    "economy_date": 712282,
+    "economy_day": 1,
+    "economy_month": 3,
+    "economy_year": 1950,
+    "month_end": 712313,
+    "month_start": 712282
+  },
+  "boundary_start": {
+    "economy_date": 712254,
+    "economy_day": 1,
+    "economy_month": 2,
+    "economy_year": 1950,
+    "month_end": 712282,
+    "month_start": 712254
+  },
+  "bridge_digest": "d8b263ec580fe4f0f4bd96007da168ddc4d96a2b1b5d502b912f335026d711b3",
+  "configuration_digest": "64b64c536b4d28e2099b889f93581a9b1441e337cb0bc7909fbed8d39a090f13",
+  "economy_month": 2,
+  "economy_year": 1950,
+  "runtime": "RuntimeIdentity(executable=PosixPath('/home/fed/Downloads/openttd-15.3-linux-generic-amd64/openttd'), version='15.3', sha256='276d5b698a6b706154f3af588f6f885b3aebe518f4ecc8f869abf71383b1904c', backend='external')"
+}

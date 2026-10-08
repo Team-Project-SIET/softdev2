@@ -17,6 +17,7 @@ from app.simulation.openttd.industry_page import IndustryPageExchange, IndustryP
 from app.simulation.openttd.industry_page_evidence import parse_industry_page_evidence
 
 from .attempt import Gate, Gates
+from .endpoints import verify_cleanup_endpoints
 from .enrichment_contract import (
     ENRICHMENT_ATTEMPT_DIRECTORY,
     ENRICHMENT_FIRST_REQUEST,
@@ -344,8 +345,7 @@ async def execute_enrichment_attempt(prepared, backend):
         capture(lambda: prepared.key_path.unlink(missing_ok=True))
 
         def close_endpoints():
-            ports = EndpointReservation.allocate(*prepared.endpoints)
-            ports.close()
+            cleanup.update(verify_cleanup_endpoints(prepared, cleanup, reservation))
             return True
 
         cleanup["sockets_closed"] = bool(capture(close_endpoints))

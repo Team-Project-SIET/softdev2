@@ -10,6 +10,7 @@ from app.simulation.openttd.production_observation import production_pairs
 from app.simulation.openttd.raw_production_session import CompleteRawProductionSession
 
 from .attempt import Gate, Gates
+from .endpoints import verify_cleanup_endpoints
 from .harness import EndpointReservation, manifest, verify_freeze, write_json
 from .ownership import finalize_cleanup
 from .raw_production_contract import (
@@ -86,6 +87,9 @@ class RawProductionRunner:
     @property
     def targets(self):
         return self._targets
+
+    def semantic_complete(self):
+        return self.coordinator is not None and self.coordinator.evidence.complete
 
     def launch_boundary(self):
         self.backend.validate_launch(self.prepared)
@@ -269,16 +273,41 @@ def retain_combined(attempt, runner, backend, successful):
     )
 
 
-async def execute_raw_production_attempt(prepared, backend):
+async def execute_raw_production_attempt(prepared, backend, *, qualification=False):
     from .preflight import preflight_prepared
 
-    attempt = prepared.directory.with_name(RAW_PRODUCTION_ATTEMPT_DIRECTORY)
+    if qualification:
+        from .qualification_attempt import (
+            QualificationProofState,
+            QualificationRunner,
+            retain_qualification,
+        )
+        from .qualification_contract import ATTEMPT_DIRECTORY, KIND, MODEL
+        from .qualification_lineage import retain_attempt_identity as retain_identity
+
+        runner_type, state_type, retain = (
+            QualificationRunner,
+            QualificationProofState,
+            retain_qualification,
+        )
+        maximum_requests = 1072
+    else:
+        ATTEMPT_DIRECTORY, KIND, MODEL = (
+            RAW_PRODUCTION_ATTEMPT_DIRECTORY,
+            "complete-raw-production",
+            RAW_PRODUCTION_MODEL,
+        )
+        runner_type, state_type, retain = (
+            RawProductionRunner,
+            RawProductionProofState,
+            retain_combined,
+        )
+        retain_identity = retain_attempt_identity
+        maximum_requests = 608
+    attempt = prepared.directory.with_name(ATTEMPT_DIRECTORY)
     try:
         metadata = json.loads((prepared.directory / "PRELAUNCH.json").read_text())
-        if (
-            metadata.get("mode") != "complete-raw-production"
-            or metadata.get("proof_model") != RAW_PRODUCTION_MODEL
-        ):
+        if metadata.get("mode") != KIND or metadata.get("proof_model") != MODEL:
             raise ValueError("Dedicated combined immutable preparation required")
         preflight_prepared(prepared, backend)
         frozen = json.loads((prepared.directory / "source-freeze.json").read_text())
@@ -292,7 +321,7 @@ async def execute_raw_production_attempt(prepared, backend):
     except BaseException:
         reservation.close()
         raise
-    runner = RawProductionRunner(prepared, backend)
+    runner = runner_type(prepared, backend)
     result: dict = dict(
         status=backend.kind + "_FAILED",
         launches=0,
@@ -301,7 +330,7 @@ async def execute_raw_production_attempt(prepared, backend):
         retries=0,
         reconnects=0,
         error=None,
-        proof_kind="complete-raw-production",
+        proof_kind=KIND,
         freeze_revision=metadata["prelaunch_revision"],
         attempt_id=metadata["attempt_id"],
         preparation=str(prepared.directory),
@@ -324,7 +353,7 @@ async def execute_raw_production_attempt(prepared, backend):
         runner.launch_boundary()
         reservation.close()
         await backend.launch(prepared)
-        runner.lifecycle.advance(RawProductionProofState.LAUNCHED)
+        runner.lifecycle.advance(state_type.LAUNCHED)
         gates = Gates()
         gates.advance(Gate.PROCESS)
         auth = await backend.authenticate(prepared, gates)
@@ -341,7 +370,7 @@ async def execute_raw_production_attempt(prepared, backend):
             ("welcome-evidence.json", "welcome"),
         ):
             write_json(attempt / name, auth[key])
-        runner.lifecycle.advance(RawProductionProofState.ADMIN_ACTIVE)
+        runner.lifecycle.advance(state_type.ADMIN_ACTIVE)
         await backend.setup(prepared)
         await runner.collect()
         await backend.secure_connection.require_quiescent()
@@ -350,7 +379,7 @@ async def execute_raw_production_attempt(prepared, backend):
         result["error"] = f"{type(error).__name__}: {error}"
     finally:
         reservation.close()
-        runner.lifecycle.advance(RawProductionProofState.CLEANUP_STARTED)
+        runner.lifecycle.advance(state_type.CLEANUP_STARTED)
         try:
             cleanup = await backend.cleanup(prepared)
             if (
@@ -363,17 +392,16 @@ async def execute_raw_production_attempt(prepared, backend):
                 )
             ):
                 raise ValueError("Clean shutdown/process reap not proved")
-            runner.lifecycle.advance(RawProductionProofState.PROCESS_REAPED)
+            runner.lifecycle.advance(state_type.PROCESS_REAPED)
 
             def endpoints_closed():
-                held = EndpointReservation.allocate(*prepared.endpoints)
-                held.close()
+                cleanup.update(verify_cleanup_endpoints(prepared, cleanup, reservation))
                 return True
 
             cleanup["sockets_closed"] = endpoints_closed()
-            runner.lifecycle.advance(RawProductionProofState.ENDPOINTS_CLOSED)
+            runner.lifecycle.advance(state_type.ENDPOINTS_CLOSED)
             prepared.key_path.unlink(missing_ok=True)
-            runner.lifecycle.advance(RawProductionProofState.CREDENTIAL_REMOVED)
+            runner.lifecycle.advance(state_type.CREDENTIAL_REMOVED)
         except BaseException as error:
             result["error"] = result["error"] or str(error)
         finally:
@@ -398,8 +426,8 @@ async def execute_raw_production_attempt(prepared, backend):
             if not cleanup.get("sockets_closed"):
                 raise ValueError("Closed endpoints not proved")
             finalize_cleanup(prepared, frozen, cleanup)
-            runner.lifecycle.advance(RawProductionProofState.WORKSPACE_DISPOSED)
-            runner.lifecycle.advance(RawProductionProofState.POSTRUN_INTEGRITY_VERIFIED)
+            runner.lifecycle.advance(state_type.WORKSPACE_DISPOSED)
+            runner.lifecycle.advance(state_type.POSTRUN_INTEGRITY_VERIFIED)
         except BaseException as error:
             result["error"] = result["error"] or str(error)
         rows = getattr(backend.structural_session, "transactions", ())
@@ -414,14 +442,14 @@ async def execute_raw_production_attempt(prepared, backend):
         )
         if backend.accounting.failed:
             result["error"] = result["error"] or "Shared native frame budget failed"
-        semantic = runner.coordinator is not None and runner.coordinator.evidence.complete
+        semantic = capture(runner.semantic_complete)
         successful = (
             result["error"] is None
             and semantic
             and result["launches"] == result["connections"] == 1
-            and 1 <= result["requests_sent"] <= 608
+            and 1 <= result["requests_sent"] <= maximum_requests
         )
-        capture(lambda: retain_combined(attempt, runner, backend, successful))
+        capture(lambda: retain(attempt, runner, backend, successful))
         capture(
             lambda: write_json(
                 attempt / "admin-frame-accounting.json", backend.accounting.snapshot()
@@ -443,8 +471,9 @@ async def execute_raw_production_attempt(prepared, backend):
         if private is not False:
             result["error"] = result["error"] or "Private credential retained in evidence"
         if successful and result["error"] is None:
-            runner.lifecycle.advance(RawProductionProofState.COMPLETED)
+            runner.lifecycle.advance(state_type.COMPLETED)
             result["status"] = backend.kind + "_SUCCESS"
+            result["qualified_for_planning"] = qualification
         else:
             runner.lifecycle.fail()
             if not result["launches"]:
@@ -452,10 +481,13 @@ async def execute_raw_production_attempt(prepared, backend):
         result["states"] = [s.name for s in runner.lifecycle.states]
 
         def terminal():
-            combined = attempt / "combined-session.json"
+            combined = attempt / (
+                "qualification-session.json" if qualification else "combined-session.json"
+            )
             if combined.exists():
                 value = json.loads(combined.read_text())
                 value.update(
+                    qualified_for_planning=qualification and result["status"].endswith("_SUCCESS"),
                     complete=result["status"].endswith("_SUCCESS"),
                     final_acceptance_pending=False,
                     lifecycle=result["states"],
@@ -466,24 +498,29 @@ async def execute_raw_production_attempt(prepared, backend):
                     path = attempt / name
                     if path.exists():
                         value = json.loads(path.read_text())
-                        value.update(complete=False, failure=result["error"])
+                        value.update(
+                            complete=False, qualified_for_planning=False, failure=result["error"]
+                        )
                         path.write_text(json.dumps(value, sort_keys=True, indent=2) + "\n")
                 (attempt / "production-canonical.json").unlink(missing_ok=True)
             write_json(attempt / "proof-evidence.json", result)
             (attempt / "final-report.md").write_text(
                 f"# {result['status']}\n\n"
                 f"Complete raw production: {result['status'].endswith('_SUCCESS')}.\n"
-                "Qualified history: NOT PROVEN. Independent production source: NONE.\n"
+                "Qualified history: "
+                f"{'PROVEN' if result['qualified_for_planning'] else 'NOT PROVEN'}. "
+                "Independent production source: NONE.\n"
                 "NON-ATOMIC, PRE-DECISION; station allocation is not vehicle delivery.\n"
                 f"Error: {result['error']}\nP08 completion: NO.\n"
             )
-            retain_attempt_identity(attempt, metadata, result)
+            retain_identity(attempt, metadata, result)
             (attempt / "artifact-manifest.sha256").write_text(manifest(attempt))
 
         try:
             terminal()
         except BaseException as error:
             result["error"] = result["error"] or f"Terminal evidence retention failure: {error}"
+            result["qualified_for_planning"] = False
             result["status"] = (
                 backend.kind + "_FAILED" if result["launches"] else "PRELAUNCH_FAILED"
             )
@@ -494,20 +531,24 @@ async def execute_raw_production_attempt(prepared, backend):
             for name in (
                 "production-session.json",
                 "production-observation.json",
-                "combined-session.json",
+                "qualification-session.json" if qualification else "combined-session.json",
             ):
                 path = attempt / name
                 if path.exists():
 
                     def normalize(path=path):
                         value = json.loads(path.read_text())
-                        value.update(complete=False, failure=result["error"])
-                        if path.name == "combined-session.json":
+                        value.update(
+                            complete=False, qualified_for_planning=False, failure=result["error"]
+                        )
+                        if path.name in ("combined-session.json", "qualification-session.json"):
                             value.update(lifecycle=result["states"], final_acceptance_pending=False)
                         path.write_text(json.dumps(value, sort_keys=True, indent=2) + "\n")
 
                     capture(normalize)
             capture(lambda: (attempt / "production-canonical.json").unlink(missing_ok=True))
+            if qualification:
+                capture(lambda: (attempt / "qualified-month.json").unlink(missing_ok=True))
             capture(lambda: (attempt / "proof-attempt.json").unlink(missing_ok=True))
             capture(
                 lambda: (attempt / "proof-evidence.json").write_text(
@@ -519,6 +560,6 @@ async def execute_raw_production_attempt(prepared, backend):
                     f"# {result['status']}\n\n{result['error']}\n"
                 )
             )
-            capture(lambda: retain_attempt_identity(attempt, metadata, result))
+            capture(lambda: retain_identity(attempt, metadata, result))
             capture(lambda: (attempt / "artifact-manifest.sha256").write_text(manifest(attempt)))
     return result

@@ -2,7 +2,7 @@
 class QualificationBridge extends RawObservationBridge {
     function Handle(request) {
         if (typeof request != "table" || !("type" in request) ||
-            (request.type != "economy_clock" && request.type != "industry_lifetime")) return base.Handle(request);
+            (request.type != "economy_clock" && request.type != "industry_lifetime")) return RawObservationBridge.Handle.call(this, request);
         if (!("protocol" in request) || typeof request.protocol != "integer" || request.protocol != 1 ||
             !("request_id" in request) || !this.ValidRequestID(request.request_id)) return false;
         if (request.type == "economy_clock") return this.EconomyClock(request);

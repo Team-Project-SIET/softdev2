@@ -1,0 +1,85 @@
+FF                                                                       [100%]
+=================================== FAILURES ===================================
+_____________ test_current_next_attempt_preserves_frozen_identity ______________
+
+    def test_current_next_attempt_preserves_frozen_identity():
+        path = freeze(2) / "attempt-lineage.json"
+        before = path.read_bytes()
+>       value = lineage.derive_next_attempt(
+            ROOT / f"{PREFIX}-real-prelaunch-v3", 3, ROOT / f"{PREFIX}-real-attempt3"
+        )
+
+tests/test_historical_attempt_lineage.py:47: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+directory = PosixPath('/tmp/qualification-consumed3-j0jvztvo/openttd-15.3-two-rollover-qualification-real-prelaunch-v3')
+revision = 3
+destination = PosixPath('/tmp/qualification-consumed3-j0jvztvo/openttd-15.3-two-rollover-qualification-real-attempt3')
+
+    def derive_next_attempt(directory: Path, revision: int, destination: Path) -> dict:
+        """Derive execution identity from complete current consumed history."""
+>       return capture_lineage(directory, revision, destination)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+app/simulation/openttd/proof/qualification_lineage.py:408: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+directory = PosixPath('/tmp/qualification-consumed3-j0jvztvo/openttd-15.3-two-rollover-qualification-real-prelaunch-v3')
+revision = 3
+destination = PosixPath('/tmp/qualification-consumed3-j0jvztvo/openttd-15.3-two-rollover-qualification-real-attempt3')
+
+    def capture_lineage(directory: Path, revision: int, destination: Path) -> dict:
+        predecessors = [predecessor_row(p) for p in relevant_failures(directory.parent)]
+        predecessors.sort(key=lambda item: item["attempt_id"])
+        launches = sum(r["launches"] for r in predecessors)
+        attempt = launches + 1
+        value = dict(
+            policy=POLICY,
+            proof_kind=KIND,
+            freeze_revision=revision,
+            attempt_id=f"two-rollover-qualification-v{revision}-native-attempt{attempt}",
+            attempt_number=attempt,
+            evidence_directory=destination.name,
+            supersedes_prelaunch_attempts=[
+                r for r in predecessors if r["classification"] == "PRELAUNCH"
+            ],
+            post_launch_predecessors=[r for r in predecessors if r["classification"] != "PRELAUNCH"],
+            continuation="NEW_RUNTIME_ATTEMPT" if launches else "PRELAUNCH_CONTINUATION",
+            prelaunch_continuation_exception_used=not bool(launches) and bool(predecessors),
+            fresh_explicit_authorization_required=True,
+        )
+        value["lineage_digest"] = digest(value)
+>       validate_lineage(directory, value, revision, destination)
+
+app/simulation/openttd/proof/qualification_lineage.py:292: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+directory = PosixPath('/tmp/qualification-consumed3-j0jvztvo/openttd-15.3-two-rollover-qualification-real-prelaunch-v3')
+value = {'policy': 'two-rollover-qualification-attempt-lineage-v1', 'proof_kind': 'two-rollover-qualification', 'freeze_revision': 3, 'attempt_id': 'two-rollover-qualification-v3-native-attempt4', ...}
+revision = 3
+destination = PosixPath('/tmp/qualification-consumed3-j0jvztvo/openttd-15.3-two-rollover-qualification-real-attempt3')
+
+    def validate_lineage(directory: Path, value: dict, revision: int, destination: Path) -> int:
+        """Execution gate: historical identity plus complete current consumed history."""
+        if destination.exists() or destination.is_symlink():
+>           raise ValueError(
+                "Attempt destination already consumed; exact new attempt destination required"
+            )
+E           ValueError: Attempt destination already consumed; exact new attempt destination required
+
+app/simulation/openttd/proof/qualification_lineage.py:306: ValueError
+____________________ test_next_attempt_requires_new_freeze _____________________
+
+    def test_next_attempt_requires_new_freeze():
+>       with pytest.raises(ValueError, match="Newer freeze"):
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'Newer freeze'
+E         Actual message: 'Attempt destination already consumed; exact new attempt destination required'
+
+tests/test_historical_attempt_lineage.py:74: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_historical_attempt_lineage.py::test_current_next_attempt_preserves_frozen_identity
+FAILED tests/test_historical_attempt_lineage.py::test_next_attempt_requires_new_freeze
+2 failed in 0.09s
+CONTROLLED_POST_CONSUMPTION_EXIT 1

@@ -26,6 +26,11 @@ from app.simulation.openttd.industry_production import (
     IndustryProductionRequest,
 )
 from app.simulation.openttd.industry_production_evidence import parse_industry_production_evidence
+from app.simulation.openttd.qualification_clock import (
+    EconomyClockRequest,
+    IndustryLifetimeRequest,
+    NativeReadReceipt,
+)
 from app.simulation.openttd.secure_admin import SecureAdminSession
 from app.simulation.openttd.structural_world import StructuralWorldContext
 from app.simulation.openttd.structural_world_session import STRUCTURAL_WORLD_SESSION_ID
@@ -47,6 +52,10 @@ class StructuralRecordedSession(GameScriptSession):
         self.transactions: list[dict] = []
         self.expected = None
 
+    @property
+    def _frame_observer(self):
+        return self.session._frame_observer
+
     def expect(self, request):
         if self.expected is not None or (
             self.transactions and not self.transactions[-1]["validated"]
@@ -61,7 +70,9 @@ class StructuralRecordedSession(GameScriptSession):
                 if q is None or decode_gamescript(frame[3:]) != q.to_bytes():
                     raise ValueError("Only one expected structural query may be sent")
                 kind = (
-                    "INDUSTRY_PAGE"
+                    q.command.upper()
+                    if isinstance(q, (EconomyClockRequest, IndustryLifetimeRequest))
+                    else "INDUSTRY_PAGE"
                     if isinstance(q, IndustryPageRequest)
                     else "INDUSTRY_CARGO"
                     if isinstance(q, IndustryCargoRequest)
@@ -104,7 +115,11 @@ class StructuralRecordedSession(GameScriptSession):
                 row = self.transactions[-1]
                 row["response_payload"] = body[:-1] if body.endswith(b"\0") else body
                 row["events"].append(row["kind"] + "_RESPONSE_RECEIVED")
-                if isinstance(row["request"], IndustryPageRequest):
+                if isinstance(row["request"], (EconomyClockRequest, IndustryLifetimeRequest)):
+                    row["receipt"] = NativeReadReceipt.correlate(
+                        row["request_payload"], decode_gamescript(body)
+                    )
+                elif isinstance(row["request"], IndustryPageRequest):
                     row["receipt"] = IndustryPageReceipt.correlate(
                         row["request_payload"], decode_gamescript(body)
                     )
@@ -132,7 +147,9 @@ class StructuralRecordedSession(GameScriptSession):
         ) != (exchange.request_payload, exchange.response_payload, exchange.receipt):
             raise ValueError("Structural transaction/receipt mismatch")
         row["events"].append(
-            "PAGE_VALIDATED"
+            row["kind"] + "_VALIDATED"
+            if isinstance(row["request"], (EconomyClockRequest, IndustryLifetimeRequest))
+            else "PAGE_VALIDATED"
             if row["kind"] == "INDUSTRY_PAGE"
             else "CAPABILITY_VALIDATED"
             if row["kind"] == "INDUSTRY_CARGO"

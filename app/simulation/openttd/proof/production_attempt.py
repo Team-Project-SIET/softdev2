@@ -10,6 +10,7 @@ from app.simulation.openttd.industry_production import PRODUCTION_NETWORK_SEQUEN
 from app.simulation.openttd.industry_production_evidence import parse_industry_production_evidence
 
 from .attempt import Gate, Gates
+from .endpoints import verify_cleanup_endpoints
 from .harness import EndpointReservation, manifest, verify_freeze, write_json
 from .preflight import preflight_prepared
 from .production_contract import PRODUCTION_ATTEMPT_DIRECTORY, PRODUCTION_REQUEST
@@ -228,8 +229,7 @@ async def execute_production_attempt(prepared, backend):
             result["error"] = "Exact single-request secure frame accounting not proven"
         prepared.key_path.unlink(missing_ok=True)
         try:
-            closed = EndpointReservation.allocate(*prepared.endpoints)
-            closed.close()
+            cleanup.update(verify_cleanup_endpoints(prepared, cleanup, reservation))
             cleanup["sockets_closed"] = True
         except OSError as error:
             cleanup["sockets_closed"] = False

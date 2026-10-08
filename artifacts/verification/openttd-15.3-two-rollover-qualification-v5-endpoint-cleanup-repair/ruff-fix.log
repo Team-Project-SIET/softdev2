@@ -1,0 +1,34 @@
+E501 Line too long (125 > 100)
+  --> app/simulation/openttd/proof/endpoints.py:23:101
+   |
+21 |         family="AF_INET",
+22 |         host="127.0.0.1",
+23 |         required=["owned_process_reaped", "reservation_released", "listener_closed", "connection_closed", "game_udp_closed"],
+   |                                                                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^
+24 |         kernel_tables=list(TABLES),
+25 |         allowed_residual_state="TCP_TIME_WAIT_ONLY",
+   |
+
+E501 Line too long (109 > 100)
+   --> app/simulation/openttd/proof/qualification_preparation.py:175:101
+    |
+173 | def validate_qualification_preparation(prepared, metadata, bridge):
+174 |     directory = prepared.directory
+175 |     if json.loads((directory / "endpoint-cleanup-contract.json").read_text()) != endpoint_cleanup_contract():
+    |                                                                                                     ^^^^^^^^^
+176 |         raise ValueError("Frozen cleanup endpoint contract mismatch")
+177 |     if (
+    |
+
+E501 Line too long (118 > 100)
+  --> tests/test_qualification_preparation.py:45:101
+   |
+43 |             old_freeze = tmp_path / f"controlled-freeze-v{number}"
+44 |             old_freeze.mkdir()
+45 |             write_json(old_freeze / "PRELAUNCH.json", dict(mode=KIND, prelaunch_revision=number if number < 3 else 4))
+   |                                                                                                     ^^^^^^^^^^^^^^^^^^
+46 |             record = dict(
+47 |                 status="REAL_FAILED",
+   |
+
+Found 5 errors (2 fixed, 3 remaining).

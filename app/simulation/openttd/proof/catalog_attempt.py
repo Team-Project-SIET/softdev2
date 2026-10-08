@@ -23,6 +23,7 @@ from .catalog_contract import (
     verify_catalog,
 )
 from .catalog_lineage import retain_attempt_identity
+from .endpoints import verify_cleanup_endpoints
 from .harness import PROJECT, EndpointReservation, manifest, sha256, verify_freeze, write_json
 from .historical_protection import protection_base, validate_protection
 from .preflight import preflight_prepared
@@ -325,8 +326,7 @@ async def execute_catalog_attempt(prepared, backend) -> dict:
             capture(lambda: prepared.key_path.unlink(missing_ok=True))
 
         def closed_endpoints():
-            endpoints = EndpointReservation.allocate(*prepared.endpoints)
-            endpoints.close()
+            cleanup.update(verify_cleanup_endpoints(prepared, cleanup, reservation))
             return True
 
         cleanup["sockets_closed"] = bool(capture(closed_endpoints))

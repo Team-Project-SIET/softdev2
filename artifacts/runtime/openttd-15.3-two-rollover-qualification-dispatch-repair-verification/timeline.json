@@ -1,0 +1,32 @@
+{
+  "ordering": "partial order; no absent monotonic timestamps invented",
+  "process_native_log": "08:24:43",
+  "secure_setup": "before transaction1",
+  "clock_range": "1-59 January; 60 February1; 61 M1 guard",
+  "first_rollover": {
+    "economy_date": 712254,
+    "month": 2,
+    "year": 1950
+  },
+  "anchor_creation": "after validated clock61 by coordinator source",
+  "request": {
+    "delivery": "SENT",
+    "events": [
+      "INDUSTRY_PAGE_REQUEST_SENT"
+    ],
+    "gamescript": null,
+    "receipt": null,
+    "request": {
+      "after_id": null,
+      "limit": 2,
+      "protocol": 1,
+      "request_id": "openttd15-qualification-001-anchor-inv-p001",
+      "type": "industry_page"
+    },
+    "response": null,
+    "validated": false
+  },
+  "timeout": "approximately5 seconds after first anchor send; absolute timestamp not retained in Python evidence",
+  "shutdown_native_log": "08:25:51",
+  "classification": "B \u2014 sent, no GS receive evidence"
+}

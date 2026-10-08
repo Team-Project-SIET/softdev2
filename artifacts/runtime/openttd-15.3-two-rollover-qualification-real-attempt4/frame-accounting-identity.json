@@ -1,0 +1,16 @@
+{
+  "files": {
+    "app/simulation/openttd/admin_protocol.py": "82f6b0b31da0d5e9e20e8ecf8b1dd88995b56428df31d8f994b0e1e561bc1d00",
+    "app/simulation/openttd/admin_session.py": "e134308787424050fdaf0584e67e95f5ee07d472275436c8dfe56c30d5a8bc54",
+    "app/simulation/openttd/gamescript_transport.py": "2466bef697f7160ee3fb5fe491745b48dc04ccd0ff9ab5a302c13e291f10b650",
+    "app/simulation/openttd/proof/qualification_accounting.py": "04628d98ab88dcf123556b074d9b37ba5c9ffc79b336cdd8550e53c96659d492",
+    "app/simulation/openttd/proof/qualification_contract.py": "55fb4deae3e831b9540f35db56f4a4722ba1912acd623b1d59f6ed947df84c19",
+    "app/simulation/openttd/proof/qualification_native.py": "b7e90d7b6bab8bf59f53b7651c8d21620d2172fe9e20ced91bcb67204a00240d",
+    "app/simulation/openttd/proof/structural_contract.py": "d7f086ad5538323f36353d6a47af643efebe10d2b9dcb1c101301ba787a9107d",
+    "app/simulation/openttd/proof/structural_native.py": "688e9a33ac1bff20601a0c494dec8bf32cc4957e791580b7db7abc766145bdf8",
+    "app/simulation/openttd/qualification_policy.py": "6ac123bd75d53239be3cd67be2695798e15b7245ac51bea9a65abae37f4be40f",
+    "app/simulation/openttd/qualification_session.py": "c5054bb828483cfdeeb87764d3a50112eba5ff7454364a89248174f3089c4745",
+    "app/simulation/openttd/secure_admin.py": "f249f410502a0a6b608a18f2415c61b9691fd2e2b0c54b5c27ae71493f4f63ac"
+  },
+  "sha256": "9f44510c24194a214dbf2b3d412c90669ef56d810c255c7ef494df8dcac8fd74"
+}

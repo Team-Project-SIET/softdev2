@@ -48,6 +48,9 @@ from .production_contract import (
     PRODUCTION_REQUEST,
     PRODUCTION_REVISION,
 )
+from .qualification_contract import MODEL as QUALIFICATION_MODEL
+from .qualification_contract import REVISION as QUALIFICATION_REVISION
+from .qualification_contract import first_request as qualification_first_request
 from .raw_production_contract import (
     RAW_PRODUCTION_MODEL,
     RAW_PRODUCTION_REVISION,
@@ -84,6 +87,7 @@ def load_prepared(directory: Path, *, mode: str = "ack") -> PreparedProof:
     catalog = mode == "cargo-catalog"
     structural = mode == "structural-world"
     production = mode == "industry-production"
+    qualification = mode == "two-rollover-qualification"
     combined = mode == "complete-raw-production"
     if mode not in (
         "ack",
@@ -97,6 +101,7 @@ def load_prepared(directory: Path, *, mode: str = "ack") -> PreparedProof:
         "structural-world",
         "industry-production",
         "complete-raw-production",
+        "two-rollover-qualification",
     ):
         raise ValueError("Unsupported proof mode")
     request = {
@@ -111,12 +116,13 @@ def load_prepared(directory: Path, *, mode: str = "ack") -> PreparedProof:
         "structural-world": structural_first_request(),
         "industry-production": PRODUCTION_REQUEST,
         "complete-raw-production": raw_production_first_request(),
+        "two-rollover-qualification": qualification_first_request(),
     }[mode]
     if (
         data.get("attempt")
         != (
             json.loads((directory / "attempt-lineage.json").read_text())["attempt_number"]
-            if production or combined
+            if production or combined or qualification
             else INDUSTRY_ATTEMPT
             if industry
             else 1
@@ -129,11 +135,14 @@ def load_prepared(directory: Path, *, mode: str = "ack") -> PreparedProof:
             or structural
             or production
             or combined
+            or qualification
             else 2
         )
         or data.get("prelaunch_revision")
         != (
-            RAW_PRODUCTION_REVISION
+            QUALIFICATION_REVISION
+            if qualification
+            else RAW_PRODUCTION_REVISION
             if combined
             else PRODUCTION_REVISION
             if production
@@ -153,7 +162,9 @@ def load_prepared(directory: Path, *, mode: str = "ack") -> PreparedProof:
         )
         or data.get("proof_model")
         != (
-            RAW_PRODUCTION_MODEL
+            QUALIFICATION_MODEL
+            if qualification
+            else RAW_PRODUCTION_MODEL
             if combined
             else PRODUCTION_MODEL
             if production

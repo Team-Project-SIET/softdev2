@@ -1,0 +1,47 @@
+{
+  "events": [
+    [
+      "server_FIN_observed",
+      5942.084160856
+    ],
+    [
+      "all_sockets_closed",
+      5942.084199599
+    ],
+    [
+      "naive_EADDRINUSE",
+      5942.084278137
+    ],
+    [
+      "semantic_verifier_PASS",
+      5942.087219688
+    ]
+  ],
+  "verification": {
+    "sockets_closed": true,
+    "endpoint_verification": {
+      "policy": "linux-kernel-endpoint-closure-v1",
+      "family": "AF_INET",
+      "host": "127.0.0.1",
+      "game_port": 52881,
+      "admin_port": 54581,
+      "process_reaped": true,
+      "reservation_released": true,
+      "listener_closed": true,
+      "connection_closed": true,
+      "kernel_states": [
+        {
+          "table": "tcp",
+          "local": "127.0.0.1",
+          "local_port": 54581,
+          "remote": "127.0.0.1",
+          "remote_port": 42048,
+          "state": "TIME_WAIT",
+          "inode": 0
+        }
+      ],
+      "immediate_rebindability_required": false,
+      "connection_probe": false
+    }
+  }
+}

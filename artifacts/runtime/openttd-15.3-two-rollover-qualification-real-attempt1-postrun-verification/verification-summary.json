@@ -1,0 +1,16 @@
+{
+  "focused": "2070 passed, 4 skipped; 214.64s",
+  "ordinary": "2606 passed, 38 skipped; 275.66s",
+  "Ruff": "PASS",
+  "format": "PASS;331 files",
+  "typecheck": "PASS scoped qualification lifecycle",
+  "diff": "PASS",
+  "whitespace": "PASS qualification source",
+  "import_boundary": "PASS qualification/query source",
+  "native_clock_exchanges_validated": 61,
+  "source_integrity": "PASS;247",
+  "history_integrity": "PASS;1360",
+  "freeze_manifest": "EXACT",
+  "HEAD": "cc7f7479e3fbfa8c036901ba041dee1b97dc6b42",
+  "private_key_marker_in_evidence": false
+}

@@ -220,6 +220,27 @@ def capture_lineage(directory: Path, revision: int, destination: Path) -> dict:
 
 
 def validate_lineage(directory: Path, value: dict, revision: int, destination: Path) -> int:
+    """Execution gate: historical identity plus complete current consumed history."""
+    if destination.exists() or destination.is_symlink():
+        raise ValueError(
+            "Attempt destination already consumed; exact new attempt destination required"
+        )
+    count = validate_historical_lineage(directory, value, revision, destination)
+    rows = value["supersedes_prelaunch_attempts"]
+    names = [r["evidence_directory"] for r in rows]
+    observed = {p.name for p in relevant_failures(directory.parent)}
+    own_failure = directory.with_name(directory.name + "-gate-failure")
+    if own_failure.exists():
+        observed.add(own_failure.name)
+    if set(names) != observed:
+        raise ValueError("Unknown, unacknowledged, or missing predecessor failure")
+    return count
+
+
+def validate_historical_lineage(
+    directory: Path, value: dict, revision: int, destination: Path
+) -> int:
+    """Validate frozen predecessor identities without discovering later attempts."""
     try:
         if (
             value["policy"] != POLICY
@@ -237,12 +258,6 @@ def validate_lineage(directory: Path, value: dict, revision: int, destination: P
         names = [r["evidence_directory"] for r in rows]
         if ids != sorted(set(ids)) or len(set(names)) != len(names):
             raise ValueError("Duplicate or noncanonical predecessor identity")
-        observed = {p.name for p in relevant_failures(directory.parent)}
-        own_failure = directory.with_name(directory.name + "-gate-failure")
-        if own_failure.exists():
-            observed.add(own_failure.name)
-        if set(names) != observed:
-            raise ValueError("Unknown, unacknowledged, or missing predecessor failure")
         for row in rows:
             name = row["evidence_directory"]
             if Path(name).name != name:

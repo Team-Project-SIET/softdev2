@@ -1,0 +1,55 @@
+.........................F....FFF.                                       [100%]
+=================================== FAILURES ===================================
+________ test_after_attempt3_consumption_next_is_attempt4[REAL_SUCCESS] ________
+tests/test_historical_attempt_lineage.py:302: in test_after_attempt3_consumption_next_is_attempt4
+    next_value = lineage.derive_next_attempt(
+app/simulation/openttd/proof/qualification_lineage.py:408: in derive_next_attempt
+    return capture_lineage(directory, revision, destination)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app/simulation/openttd/proof/qualification_lineage.py:292: in capture_lineage
+    validate_lineage(directory, value, revision, destination)
+app/simulation/openttd/proof/qualification_lineage.py:309: in validate_lineage
+    count = validate_historical_lineage(directory, value, revision, destination)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app/simulation/openttd/proof/qualification_lineage.py:368: in validate_historical_lineage
+    raise ValueError("Failed post-launch predecessor required for new attempt")
+E   ValueError: Failed post-launch predecessor required for new attempt
+_ test_shared_terminal_consumption_derives_new_destination[REAL_SUCCESS-qualification] _
+tests/test_historical_attempt_lineage.py:356: in test_shared_terminal_consumption_derives_new_destination
+    value = api.capture_lineage(
+app/simulation/openttd/proof/qualification_lineage.py:292: in capture_lineage
+    validate_lineage(directory, value, revision, destination)
+app/simulation/openttd/proof/qualification_lineage.py:309: in validate_lineage
+    count = validate_historical_lineage(directory, value, revision, destination)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app/simulation/openttd/proof/qualification_lineage.py:368: in validate_historical_lineage
+    raise ValueError("Failed post-launch predecessor required for new attempt")
+E   ValueError: Failed post-launch predecessor required for new attempt
+_ test_shared_terminal_consumption_derives_new_destination[REAL_SUCCESS-production] _
+tests/test_historical_attempt_lineage.py:356: in test_shared_terminal_consumption_derives_new_destination
+    value = api.capture_lineage(
+app/simulation/openttd/proof/production_lineage.py:271: in capture_lineage
+    validate_lineage(directory, value, revision, destination)
+app/simulation/openttd/proof/production_lineage.py:288: in validate_lineage
+    count = validate_historical_lineage(directory, value, revision, destination)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app/simulation/openttd/proof/production_lineage.py:343: in validate_historical_lineage
+    raise ValueError("Failed post-launch predecessor required for new attempt")
+E   ValueError: Failed post-launch predecessor required for new attempt
+_ test_shared_terminal_consumption_derives_new_destination[REAL_SUCCESS-raw_production] _
+tests/test_historical_attempt_lineage.py:356: in test_shared_terminal_consumption_derives_new_destination
+    value = api.capture_lineage(
+app/simulation/openttd/proof/raw_production_lineage.py:236: in capture_lineage
+    validate_lineage(directory, value, revision, destination)
+app/simulation/openttd/proof/raw_production_lineage.py:253: in validate_lineage
+    count = validate_historical_lineage(directory, value, revision, destination)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app/simulation/openttd/proof/raw_production_lineage.py:308: in validate_historical_lineage
+    raise ValueError("Failed post-launch predecessor required for new attempt")
+E   ValueError: Failed post-launch predecessor required for new attempt
+=========================== short test summary info ============================
+FAILED tests/test_historical_attempt_lineage.py::test_after_attempt3_consumption_next_is_attempt4[REAL_SUCCESS]
+FAILED tests/test_historical_attempt_lineage.py::test_shared_terminal_consumption_derives_new_destination[REAL_SUCCESS-qualification]
+FAILED tests/test_historical_attempt_lineage.py::test_shared_terminal_consumption_derives_new_destination[REAL_SUCCESS-production]
+FAILED tests/test_historical_attempt_lineage.py::test_shared_terminal_consumption_derives_new_destination[REAL_SUCCESS-raw_production]
+4 failed, 30 passed in 0.84s

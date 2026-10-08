@@ -280,6 +280,24 @@ def lineage_rows(value):
 
 
 def validate_lineage(directory: Path, value: dict, revision: int, destination: Path) -> int:
+    """Execution gate: historical identity plus complete current consumed history."""
+    if destination.exists() or destination.is_symlink():
+        raise ValueError(
+            "Attempt destination already consumed; exact new attempt destination required"
+        )
+    count = validate_historical_lineage(directory, value, revision, destination)
+    rows = lineage_rows(value)
+    names = [r["evidence_directory"] for r in rows]
+    observed = {p.name for p in relevant_failures(directory.parent)}
+    if set(names) != observed:
+        raise ValueError("Unknown, unacknowledged, or missing predecessor failure")
+    return count
+
+
+def validate_historical_lineage(
+    directory: Path, value: dict, revision: int, destination: Path
+) -> int:
+    """Validate frozen predecessor identities without discovering later attempts."""
     try:
         rows = lineage_rows(value)
         launches = sum(r["launches"] for r in rows)
@@ -305,9 +323,6 @@ def validate_lineage(directory: Path, value: dict, revision: int, destination: P
         names = [r["evidence_directory"] for r in rows]
         if ids != sorted(set(ids)) or len(set(names)) != len(names):
             raise ValueError("Duplicate or noncanonical predecessor identity")
-        observed = {p.name for p in relevant_failures(directory.parent)}
-        if set(names) != observed:
-            raise ValueError("Unknown, unacknowledged, or missing predecessor failure")
         for row in rows:
             name = row["evidence_directory"]
             if Path(name).name != name:
@@ -323,9 +338,11 @@ def validate_lineage(directory: Path, value: dict, revision: int, destination: P
             elif (
                 current["classification"] not in ("RUNTIME", "POST_LAUNCH_FAILURE")
                 or current["launches"] != 1
-                or "FAIL" not in current["terminal_status"]
+                or not any(mark in current["terminal_status"] for mark in ("FAIL", "SUCCESS"))
             ):
-                raise ValueError("Failed post-launch predecessor required for new attempt")
+                raise ValueError(
+                    "Consumed terminal post-launch predecessor required for new attempt"
+                )
             if revision <= current["freeze_revision"]:
                 raise ValueError("Newer freeze required; same-freeze reauthorization forbidden")
         return len(rows)

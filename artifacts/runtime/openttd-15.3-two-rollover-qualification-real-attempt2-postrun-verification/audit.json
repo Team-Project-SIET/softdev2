@@ -1,0 +1,442 @@
+{
+  "historical_files": 1461,
+  "source_inputs": 252,
+  "archived_credentials": 7,
+  "integrity": "PASS",
+  "transactions": 185,
+  "phase_usage": [
+    [
+      "clock",
+      [
+        115,
+        26075,
+        460
+      ]
+    ],
+    [
+      "anchor_structural",
+      [
+        21,
+        4695,
+        84
+      ]
+    ],
+    [
+      "anchor_lifetime",
+      [
+        9,
+        1881,
+        36
+      ]
+    ],
+    [
+      "final_structural",
+      [
+        21,
+        4674,
+        84
+      ]
+    ],
+    [
+      "final_lifetime",
+      [
+        9,
+        1872,
+        36
+      ]
+    ],
+    [
+      "production",
+      [
+        10,
+        2857,
+        40
+      ]
+    ]
+  ],
+  "first_anchor_request": {
+    "delivery": "SENT",
+    "events": [
+      "INDUSTRY_PAGE_REQUEST_SENT",
+      "INDUSTRY_PAGE_RESPONSE_RECEIVED",
+      "TRANSPORT_RECEIPT_CREATED",
+      "PAGE_VALIDATED"
+    ],
+    "gamescript": {
+      "line_numbers": [
+        318,
+        319,
+        320,
+        321
+      ],
+      "ordered_sequence": [
+        "BRIDGE_REQUEST_RECEIVED",
+        "INDUSTRY_PAGE_READ",
+        "BRIDGE_RESPONSE_SENT",
+        "BRIDGE_POST_RESPONSE_ALIVE"
+      ],
+      "raw_evidence_digest": "3f17736a1dc16b6956b0a211837fdcd02bc66823424e89f1053f76d20d590f52",
+      "request_id": "openttd15-qualification-001-anchor-inv-p001",
+      "source_log": "stderr.log",
+      "suffixes": [
+        " type=industry_page protocol=1",
+        " after_id=null limit=2 returned_count=2 first_id=0 last_id=1 next_after_id=1 has_more=true",
+        " type=industry_page_result status=ok protocol=1",
+        ""
+      ]
+    },
+    "receipt": {
+      "request_id": "openttd15-qualification-001-anchor-inv-p001",
+      "request_payload_sha256": "8e2168bb724c1e6f3555cb3021b966a37a7b47eb9ba0a720d12bac4abe121f71",
+      "response_payload_sha256": "0a232d43d560608fe8b23c0e094af0e445a5a39016854757da31b0d8e3606d33"
+    },
+    "request": {
+      "after_id": null,
+      "limit": 2,
+      "protocol": 1,
+      "request_id": "openttd15-qualification-001-anchor-inv-p001",
+      "type": "industry_page"
+    },
+    "response": "{\"has_more\":true,\"industries\":[{\"id\":0,\"tile\":1965,\"type\":0,\"x\":45,\"y\":30},{\"id\":1,\"tile\":1615,\"type\":1,\"x\":15,\"y\":25}],\"next_after_id\":1,\"protocol\":1,\"request_id\":\"openttd15-qualification-001-anchor-inv-p001\",\"status\":\"ok\",\"type\":\"industry_page_result\"}",
+    "validated": true
+  },
+  "final_guard": {
+    "delivery": "SENT",
+    "events": [
+      "ECONOMY_CLOCK_REQUEST_SENT",
+      "ECONOMY_CLOCK_RESPONSE_RECEIVED",
+      "TRANSPORT_RECEIPT_CREATED",
+      "ECONOMY_CLOCK_VALIDATED"
+    ],
+    "gamescript": {
+      "command": "economy_clock",
+      "line_numbers": [
+        810,
+        811,
+        812,
+        813
+      ],
+      "raw_digest": "2f82307d50c3480739eaeecc76d8e495b60ab039967c1defa6f27036a12ade65",
+      "request_id": "openttd15-qualification-001-clock-115",
+      "sequence": [
+        "BRIDGE_REQUEST_RECEIVED",
+        "ECONOMY_CLOCK_READ",
+        "BRIDGE_RESPONSE_SENT",
+        "BRIDGE_POST_RESPONSE_ALIVE"
+      ],
+      "suffixes": [
+        " type=economy_clock protocol=1",
+        " economy_date=712283 economy_year=1950 economy_month=3 economy_day=2 month_start=712282 month_end=712313",
+        " type=economy_clock_result status=ok protocol=1",
+        ""
+      ]
+    },
+    "receipt": {
+      "request_payload_sha256": "a4dcadde0460138bb8a73784fe0302319f253dd480cf083a27fe505cf24d4dff",
+      "response_payload_sha256": "dc87060fcf0fd83703dd14e78ffc15ab49711577e9de500de3307440fe2cf6b7"
+    },
+    "request": {
+      "protocol": 1,
+      "request_id": "openttd15-qualification-001-clock-115",
+      "type": "economy_clock"
+    },
+    "response": "{\"economy_date\":712283,\"economy_day\":2,\"economy_month\":3,\"economy_year\":1950,\"month_end\":712313,\"month_start\":712282,\"protocol\":1,\"request_id\":\"openttd15-qualification-001-clock-115\",\"status\":\"ok\",\"type\":\"economy_clock_result\"}",
+    "validated": true
+  },
+  "totals": [
+    185,
+    42054,
+    740
+  ],
+  "frames": 746,
+  "clock": {
+    "polls": 115,
+    "samples": [
+      {
+        "economy_date": 712223,
+        "economy_day": 1,
+        "economy_month": 1,
+        "economy_year": 1950,
+        "month_end": 712254,
+        "month_start": 712223
+      },
+      {
+        "economy_date": 712254,
+        "economy_day": 1,
+        "economy_month": 2,
+        "economy_year": 1950,
+        "month_end": 712282,
+        "month_start": 712254
+      },
+      {
+        "economy_date": 712282,
+        "economy_day": 1,
+        "economy_month": 3,
+        "economy_year": 1950,
+        "month_end": 712313,
+        "month_start": 712282
+      }
+    ],
+    "state": "SECOND_ROLLOVER_OBSERVED"
+  },
+  "qualified_month": {
+    "boundary_end": {
+      "economy_date": 712282,
+      "economy_day": 1,
+      "economy_month": 3,
+      "economy_year": 1950,
+      "month_end": 712313,
+      "month_start": 712282
+    },
+    "boundary_start": {
+      "economy_date": 712254,
+      "economy_day": 1,
+      "economy_month": 2,
+      "economy_year": 1950,
+      "month_end": 712282,
+      "month_start": 712254
+    },
+    "bridge_digest": "d8b263ec580fe4f0f4bd96007da168ddc4d96a2b1b5d502b912f335026d711b3",
+    "configuration_digest": "64b64c536b4d28e2099b889f93581a9b1441e337cb0bc7909fbed8d39a090f13",
+    "economy_month": 2,
+    "economy_year": 1950,
+    "runtime": "RuntimeIdentity(executable=PosixPath('/home/fed/Downloads/openttd-15.3-linux-generic-amd64/openttd'), version='15.3', sha256='276d5b698a6b706154f3af588f6f885b3aebe518f4ecc8f869abf71383b1904c', backend='external')"
+  },
+  "anchor": {
+    "bridge_digest": "d8b263ec580fe4f0f4bd96007da168ddc4d96a2b1b5d502b912f335026d711b3",
+    "capability_complete": true,
+    "capability_count": 10,
+    "capability_digest": "b65dc04752fffcc3958dac6cb40aa5a8cd017a3f23fb2408d9122c6bfb8a94b3",
+    "cargo_count": 11,
+    "catalog_complete": true,
+    "catalog_digest": "2859ff3ddac519e712a8513d14605a32313bc2a2f487abf632238258a64dffaa",
+    "complete": true,
+    "configuration_digest": "64b64c536b4d28e2099b889f93581a9b1441e337cb0bc7909fbed8d39a090f13",
+    "connection_identity_file": "admin-auth-evidence.json",
+    "industry_count": 10,
+    "inventory_complete": true,
+    "inventory_digest": "dce9b4d257af150776e679b09c74880b918163b86ae5e5f9f6e30e35d26c865a",
+    "map_height": 64,
+    "map_width": 64,
+    "ordered_cargo_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "ordered_industry_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "process_identity_file": "process-lifecycle.json",
+    "runtime_identity_file": "runtime-identity.json",
+    "same_connection": true,
+    "same_process": true,
+    "session_id": "openttd15-qualification-001-anchor",
+    "structural_world_digest": "cb3986f04767359b76d6cefd8181b4830335665a2560316e014b9204ee7e7207"
+  },
+  "final": {
+    "bridge_digest": "d8b263ec580fe4f0f4bd96007da168ddc4d96a2b1b5d502b912f335026d711b3",
+    "capability_complete": true,
+    "capability_count": 10,
+    "capability_digest": "b65dc04752fffcc3958dac6cb40aa5a8cd017a3f23fb2408d9122c6bfb8a94b3",
+    "cargo_count": 11,
+    "catalog_complete": true,
+    "catalog_digest": "2859ff3ddac519e712a8513d14605a32313bc2a2f487abf632238258a64dffaa",
+    "complete": true,
+    "configuration_digest": "64b64c536b4d28e2099b889f93581a9b1441e337cb0bc7909fbed8d39a090f13",
+    "connection_identity_file": "admin-auth-evidence.json",
+    "industry_count": 10,
+    "inventory_complete": true,
+    "inventory_digest": "dce9b4d257af150776e679b09c74880b918163b86ae5e5f9f6e30e35d26c865a",
+    "map_height": 64,
+    "map_width": 64,
+    "ordered_cargo_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "ordered_industry_ids": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9
+    ],
+    "process_identity_file": "process-lifecycle.json",
+    "runtime_identity_file": "runtime-identity.json",
+    "same_connection": true,
+    "same_process": true,
+    "session_id": "openttd15-qualification-001-final",
+    "structural_world_digest": "cb3986f04767359b76d6cefd8181b4830335665a2560316e014b9204ee7e7207"
+  },
+  "production": {
+    "complete": true,
+    "production_digest": "f873858c6aba09802d22b07898412731dc66d376609447576ac47fbce4fded72",
+    "qualified_for_planning": true,
+    "records": [
+      {
+        "cargo_id": 1,
+        "economy_date_after": 712283,
+        "economy_date_before": 712283,
+        "industry_id": 0,
+        "last_month_produced": 168,
+        "last_month_transported": 0,
+        "last_month_transported_pct": 0
+      },
+      {
+        "cargo_id": 5,
+        "economy_date_after": 712283,
+        "economy_date_before": 712283,
+        "industry_id": 2,
+        "last_month_produced": 0,
+        "last_month_transported": 0,
+        "last_month_transported_pct": 0
+      },
+      {
+        "cargo_id": 7,
+        "economy_date_after": 712283,
+        "economy_date_before": 712283,
+        "industry_id": 3,
+        "last_month_produced": 80,
+        "last_month_transported": 0,
+        "last_month_transported_pct": 0
+      },
+      {
+        "cargo_id": 5,
+        "economy_date_after": 712283,
+        "economy_date_before": 712283,
+        "industry_id": 4,
+        "last_month_produced": 0,
+        "last_month_transported": 0,
+        "last_month_transported_pct": 0
+      },
+      {
+        "cargo_id": 5,
+        "economy_date_after": 712283,
+        "economy_date_before": 712283,
+        "industry_id": 5,
+        "last_month_produced": 0,
+        "last_month_transported": 0,
+        "last_month_transported_pct": 0
+      },
+      {
+        "cargo_id": 9,
+        "economy_date_after": 712283,
+        "economy_date_before": 712283,
+        "industry_id": 6,
+        "last_month_produced": 0,
+        "last_month_transported": 0,
+        "last_month_transported_pct": 0
+      },
+      {
+        "cargo_id": 4,
+        "economy_date_after": 712283,
+        "economy_date_before": 712283,
+        "industry_id": 7,
+        "last_month_produced": 56,
+        "last_month_transported": 0,
+        "last_month_transported_pct": 0
+      },
+      {
+        "cargo_id": 6,
+        "economy_date_after": 712283,
+        "economy_date_before": 712283,
+        "industry_id": 7,
+        "last_month_produced": 88,
+        "last_month_transported": 0,
+        "last_month_transported_pct": 0
+      },
+      {
+        "cargo_id": 3,
+        "economy_date_after": 712283,
+        "economy_date_before": 712283,
+        "industry_id": 8,
+        "last_month_produced": 96,
+        "last_month_transported": 0,
+        "last_month_transported_pct": 0
+      },
+      {
+        "cargo_id": 8,
+        "economy_date_after": 712283,
+        "economy_date_before": 712283,
+        "industry_id": 9,
+        "last_month_produced": 88,
+        "last_month_transported": 0,
+        "last_month_transported_pct": 0
+      }
+    ],
+    "source_structural_world_digest": "cb3986f04767359b76d6cefd8181b4830335665a2560316e014b9204ee7e7207"
+  },
+  "cleanup": {
+    "cleanup_error": [],
+    "credential_removed": true,
+    "events": [
+      "quit_requested",
+      "reaped"
+    ],
+    "graceful_attempted": true,
+    "pid": 4,
+    "postrun_integrity_verified": true,
+    "quit_command": "quit",
+    "reaped": true,
+    "remaining_processes": [],
+    "returncode": 0,
+    "sockets_closed": true,
+    "workspace_disposed": true
+  },
+  "lifecycle": [
+    "PREPARED",
+    "LAUNCHED",
+    "ADMIN_ACTIVE",
+    "QUALIFICATION_SESSION_STARTED",
+    "BASELINE_MONTH_OBSERVED",
+    "FIRST_ROLLOVER_OBSERVED",
+    "ANCHOR_COLLECTION_STARTED",
+    "ANCHOR_COLLECTION_COMPLETED",
+    "QUALIFIED_MONTH_ACTIVE",
+    "SECOND_ROLLOVER_OBSERVED",
+    "QUALIFIED_MONTH_COMPLETED",
+    "FINAL_COLLECTION_STARTED",
+    "FINAL_STRUCTURAL_COMPLETED",
+    "STABILITY_VALIDATED",
+    "FINAL_PRODUCTION_COMPLETED",
+    "QUALIFICATION_VALIDATED",
+    "QUALIFIED_OBSERVATION_ASSEMBLED",
+    "CLEANUP_STARTED",
+    "PROCESS_REAPED",
+    "ENDPOINTS_CLOSED",
+    "CREDENTIAL_REMOVED",
+    "WORKSPACE_DISPOSED",
+    "POSTRUN_INTEGRITY_VERIFIED",
+    "COMPLETED"
+  ]
+}

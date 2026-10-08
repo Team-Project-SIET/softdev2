@@ -1,0 +1,26 @@
+{
+  "public_files_exact": 1627,
+  "historical_v3_protection_exact": 1565,
+  "source_changes": [
+    "app/simulation/openttd/proof/production_lineage.py",
+    "app/simulation/openttd/proof/qualification_contract.py",
+    "app/simulation/openttd/proof/qualification_lineage.py",
+    "app/simulation/openttd/proof/raw_production_lineage.py",
+    "tests/test_historical_attempt_lineage.py",
+    "tests/test_qualification_preparation.py"
+  ],
+  "contract_changes": {
+    "revision": [
+      3,
+      4
+    ]
+  },
+  "dispatch": "EXACT",
+  "historical_attempt1": "PASS",
+  "historical_attempt2": "PASS",
+  "v3_prelaunch": "PASS",
+  "native_attempt3_consumed": false,
+  "whitespace": "PASS",
+  "import_boundary": "PASS",
+  "debug_instrumentation": "NONE"
+}

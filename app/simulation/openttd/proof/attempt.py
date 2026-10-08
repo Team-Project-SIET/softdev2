@@ -10,6 +10,7 @@ from typing import Any, Protocol
 from app.simulation.openttd.gamescript_protocol import CommunicationReceipt, PingRequest
 
 from .causality import PROOF_MODEL, NetworkProofEvidence, validate_proof
+from .endpoints import verify_cleanup_endpoints
 from .gamescript_evidence import GameScriptProofEvidence, parse_gamescript_evidence
 from .harness import (
     REQUEST,
@@ -178,6 +179,7 @@ async def execute_attempt(prepared: PreparedProof, backend: Backend) -> dict[str
             cleanup_ok = bool(lifecycle.get("reaped")) and not lifecycle.get("remaining_processes")
             if not cleanup_ok or lifecycle.get("cleanup_error"):
                 raise RuntimeError("Process/session cleanup incomplete")
+            lifecycle.update(verify_cleanup_endpoints(prepared, lifecycle, reservation))
         except BaseException as error:
             outcome["error_type"] = outcome["error_type"] or type(error).__name__
         finally:

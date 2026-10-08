@@ -17,6 +17,7 @@ from .cargo_contract import (
 )
 from .cargo_evidence import parse_cargo_proof_evidence
 from .cargo_verification import verify_industry_cargo
+from .endpoints import verify_cleanup_endpoints
 from .harness import EndpointReservation, manifest, sha256, verify_freeze, write_json
 from .preflight import historical_snapshot, preflight_prepared
 from .world_attempt import record_prelaunch_failure
@@ -316,10 +317,9 @@ async def execute_cargo_attempt(prepared, backend) -> dict:
         if getattr(backend, "session", None) is not None:
             result["connections"] = 1
         try:
-            endpoints = EndpointReservation.allocate(*prepared.endpoints)
-            endpoints.close()
+            cleanup.update(verify_cleanup_endpoints(prepared, cleanup, reservation))
             cleanup["sockets_closed"] = True
-        except OSError:
+        except OSError, ValueError:
             cleanup["sockets_closed"] = False
             result["error"] = result["error"] or "Runtime endpoints still occupied"
         post = capture(lambda: {path: sha256_path_if_present(path) for path in frozen})

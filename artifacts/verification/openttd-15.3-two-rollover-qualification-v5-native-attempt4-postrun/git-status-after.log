@@ -1,0 +1,55 @@
+ M README.md
+ M app/simulation/openttd/proof/__main__.py
+ M app/simulation/openttd/proof/attempt.py
+ M app/simulation/openttd/proof/cargo_attempt.py
+ M app/simulation/openttd/proof/cargo_page_attempt.py
+ M app/simulation/openttd/proof/cargo_page_lineage.py
+ M app/simulation/openttd/proof/catalog_attempt.py
+ M app/simulation/openttd/proof/catalog_lineage.py
+ M app/simulation/openttd/proof/enrichment_attempt.py
+ M app/simulation/openttd/proof/enrichment_lineage.py
+ M app/simulation/openttd/proof/harness.py
+ M app/simulation/openttd/proof/industry_attempt.py
+ M app/simulation/openttd/proof/inventory_attempt.py
+ M app/simulation/openttd/proof/native.py
+ M app/simulation/openttd/proof/ownership.py
+ M app/simulation/openttd/proof/preflight.py
+ M app/simulation/openttd/proof/production_attempt.py
+ M app/simulation/openttd/proof/production_lineage.py
+ M app/simulation/openttd/proof/raw_production_attempt.py
+ M app/simulation/openttd/proof/raw_production_lineage.py
+ M app/simulation/openttd/proof/structural_attempt.py
+ M app/simulation/openttd/proof/structural_lineage.py
+ M app/simulation/openttd/proof/structural_native.py
+ M app/simulation/openttd/proof/world_attempt.py
+ M app/simulation/openttd/qualification_bridge.nut
+ M docs/specs/planning-executor-boundary.md
+ M docs/srs.md
+?? .env.example
+?? CONTEXT.md
+?? app/planning/preparation/
+?? app/simulation/openttd/proof/endpoints.py
+?? app/simulation/openttd/proof/offline_verification.py
+?? app/simulation/openttd/proof/qualification_attempt.py
+?? app/simulation/openttd/proof/qualification_authority.py
+?? app/simulation/openttd/proof/qualification_contract.py
+?? app/simulation/openttd/proof/qualification_lineage.py
+?? app/simulation/openttd/proof/qualification_native.py
+?? app/simulation/openttd/proof/qualification_preparation.py
+?? docs/specs/p08-world-preparation-design.md
+?? docs/two-rollover-qualification-attempt1-diagnosis.md
+?? docs/two-rollover-qualification-attempt3-readiness.md
+?? docs/two-rollover-qualification-endpoint-cleanup.md
+?? docs/two-rollover-qualification-lineage-repair.md
+?? docs/two-rollover-qualification-proof-preparation.md
+?? tests/fixtures/p08_api_13_4.json
+?? tests/fixtures/p08_query_api.nut
+?? tests/reference/qualification_dispatch_15_3/
+?? tests/test_historical_attempt_lineage.py
+?? tests/test_planning_preparation.py
+?? tests/test_preparation_lifecycle.py
+?? tests/test_preparation_probe.py
+?? tests/test_proof_endpoints.py
+?? tests/test_qualification_dispatch_repair.py
+?? tests/test_qualification_preparation.py
+?? ther.md

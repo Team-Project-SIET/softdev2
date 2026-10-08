@@ -1,0 +1,96 @@
+{
+  "attempt_id": "two-rollover-qualification-v4-native-attempt3",
+  "freeze": "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-two-rollover-qualification-real-prelaunch-v4",
+  "native_attempt": 3,
+  "checkpoint_head": "cc7f7479e3fbfa8c036901ba041dee1b97dc6b42",
+  "native_status": "REAL_FAILED",
+  "native_lifecycle": "FAILED",
+  "native_semantic_execution": "SUCCESS",
+  "qualified_coordinator_event": "QUALIFIED_OBSERVATION_ASSEMBLED",
+  "public_complete": false,
+  "public_qualified_for_planning": false,
+  "production_digest": null,
+  "public_cleanup": "FAILED",
+  "public_postrun_integrity": false,
+  "supplemental_cleanup": {
+    "workspace_disposed": true,
+    "credential_removed": true,
+    "postrun_integrity_verified": true,
+    "public_cleanup_gate": "FAILED",
+    "public_failure_preserved": true,
+    "process_reaped": true,
+    "credential_removed_by_public_finally": true,
+    "no_owned_listener_or_established_connection": true,
+    "additional_launches": 0,
+    "additional_connections": 0,
+    "additional_requests": 0
+  },
+  "offline_verification": "PASS",
+  "final_acceptance": "FAILED",
+  "failure_phase": "POST_LAUNCH_CLEANUP_ENDPOINT_VERIFICATION",
+  "terminal_reason": "[Errno 98] Address already in use",
+  "runtime_activity": {
+    "launches": 1,
+    "connections": 1,
+    "real_requests": 185,
+    "retries": 0,
+    "reconnects": 0,
+    "resume": false,
+    "additional_launches": 0,
+    "gameplay_mutations": 0
+  },
+  "tests": {
+    "original": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "7",
+      "time": "0.952",
+      "timestamp": "2026-10-08T13:42:19.960671+07:00",
+      "hostname": "fedora"
+    },
+    "original-exact": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "3",
+      "time": "0.582",
+      "timestamp": "2026-10-08T13:51:23.475528+07:00",
+      "hostname": "fedora"
+    },
+    "focused": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "3",
+      "tests": "1988",
+      "time": "306.801",
+      "timestamp": "2026-10-08T13:42:21.097620+07:00",
+      "hostname": "fedora"
+    },
+    "ordinary": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "39",
+      "tests": "2713",
+      "time": "313.983",
+      "timestamp": "2026-10-08T13:50:29.773426+07:00",
+      "hostname": "fedora"
+    }
+  },
+  "next_native_attempt": 4,
+  "source_and_history_integrity": "PASS",
+  "protected_count": 1627,
+  "source_inputs": 254,
+  "quality": {
+    "ruff": "PASS",
+    "format": "PASS",
+    "typecheck": "PASS",
+    "diff": "PASS",
+    "whitespace": "PASS",
+    "import_boundary": "PASS"
+  }
+}

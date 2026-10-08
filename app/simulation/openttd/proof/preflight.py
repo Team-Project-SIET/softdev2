@@ -56,6 +56,7 @@ from .inventory_contract import (
 from .production_contract import (
     PRODUCTION_REQUEST,
 )
+from .qualification_contract import first_request as qualification_first_request
 from .raw_production_contract import raw_production_first_request
 from .structural_contract import (
     STRUCTURAL_ATTEMPT_DIRECTORY,
@@ -108,6 +109,7 @@ def validate_native_inputs(prepared: PreparedProof) -> dict:
         "structural-world",
         "industry-production",
         "complete-raw-production",
+        "two-rollover-qualification",
     ):
         from .harness import PROJECT
         from .historical_protection import protection_base, validate_protection
@@ -159,6 +161,7 @@ def validate_native_inputs(prepared: PreparedProof) -> dict:
             "structural-world": structural_first_request(),
             "industry-production": PRODUCTION_REQUEST,
             "complete-raw-production": raw_production_first_request(),
+            "two-rollover-qualification": qualification_first_request(),
         }.get(metadata.get("mode"), REQUEST).to_bytes()
         or (directory / "request.json").read_bytes() != request
         or hashlib.sha256(request).hexdigest() != metadata["request_sha256"]
@@ -380,6 +383,10 @@ def validate_native_inputs(prepared: PreparedProof) -> dict:
         from .raw_production_preparation import validate_raw_production_preparation
 
         lineage_count = validate_raw_production_preparation(prepared, metadata, bridge)
+    if metadata.get("mode") == "two-rollover-qualification":
+        from .qualification_preparation import validate_qualification_preparation
+
+        lineage_count = validate_qualification_preparation(prepared, metadata, bridge)
     if Path(metadata["attempt_directory"]).exists():
         raise ValueError("Proof attempt already claimed")
     config = workspace.config.read_text()
@@ -438,6 +445,7 @@ def validate_native_inputs(prepared: PreparedProof) -> dict:
             "structural-world",
             "industry-production",
             "complete-raw-production",
+            "two-rollover-qualification",
         ),
         "enrichment_contract": enrichment_contract()
         if metadata.get("mode") == "industry-enrichment"
@@ -514,6 +522,27 @@ def preflight_prepared(prepared: PreparedProof, backend) -> dict:
             continuous_accounting=True,
             lifecycle_overhead_frames=6,
             final_subprocess_boundary_validated=True,
+            subprocess_created=False,
+            admin_connected=False,
+            request_sent=False,
+            launches=0,
+            connections=0,
+            requests=0,
+        )
+    if result["proof_kind"] == "two-rollover-qualification":
+        from .qualification_attempt import QualificationRunner
+        from .qualification_contract import qualification_contract
+
+        result.update(qualification_contract())
+        result.update(QualificationRunner(prepared, backend).launch_boundary())
+        result.update(
+            polling_loaded=True,
+            accounting_loaded=True,
+            qualification_coordinator_loaded=True,
+            endpoint_verifier_loaded=True,
+            endpoint_cleanup_policy="linux-kernel-endpoint-closure-v1",
+            ownership_loaded=True,
+            native_authority_loaded=True,
             subprocess_created=False,
             admin_connected=False,
             request_sent=False,

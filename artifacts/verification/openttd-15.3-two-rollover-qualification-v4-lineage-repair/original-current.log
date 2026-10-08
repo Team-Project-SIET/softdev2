@@ -1,0 +1,137 @@
+F.                                                                       [100%]
+=================================== FAILURES ===================================
+_____________ test_current_next_attempt_preserves_frozen_identity ______________
+
+    def test_current_next_attempt_preserves_frozen_identity():
+        path = freeze(2) / "attempt-lineage.json"
+        before = path.read_bytes()
+>       value = lineage.derive_next_attempt(
+            ROOT / f"{PREFIX}-real-prelaunch-v3", 3, ROOT / f"{PREFIX}-real-attempt3"
+        )
+
+tests/test_historical_attempt_lineage.py:47: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+directory = PosixPath('/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-two-rollover-qualification-real-prelaunch-v3')
+revision = 3
+destination = PosixPath('/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-two-rollover-qualification-real-attempt3')
+
+    def derive_next_attempt(directory: Path, revision: int, destination: Path) -> dict:
+        """Derive execution identity from complete current consumed history."""
+>       return capture_lineage(directory, revision, destination)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+app/simulation/openttd/proof/qualification_lineage.py:408: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+directory = PosixPath('/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-two-rollover-qualification-real-prelaunch-v3')
+revision = 3
+destination = PosixPath('/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-two-rollover-qualification-real-attempt3')
+
+    def capture_lineage(directory: Path, revision: int, destination: Path) -> dict:
+        predecessors = [predecessor_row(p) for p in relevant_failures(directory.parent)]
+        predecessors.sort(key=lambda item: item["attempt_id"])
+        launches = sum(r["launches"] for r in predecessors)
+        attempt = launches + 1
+        value = dict(
+            policy=POLICY,
+            proof_kind=KIND,
+            freeze_revision=revision,
+            attempt_id=f"two-rollover-qualification-v{revision}-native-attempt{attempt}",
+            attempt_number=attempt,
+            evidence_directory=destination.name,
+            supersedes_prelaunch_attempts=[
+                r for r in predecessors if r["classification"] == "PRELAUNCH"
+            ],
+            post_launch_predecessors=[r for r in predecessors if r["classification"] != "PRELAUNCH"],
+            continuation="NEW_RUNTIME_ATTEMPT" if launches else "PRELAUNCH_CONTINUATION",
+            prelaunch_continuation_exception_used=not bool(launches) and bool(predecessors),
+            fresh_explicit_authorization_required=True,
+        )
+        value["lineage_digest"] = digest(value)
+>       validate_lineage(directory, value, revision, destination)
+
+app/simulation/openttd/proof/qualification_lineage.py:292: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+directory = PosixPath('/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-two-rollover-qualification-real-prelaunch-v3')
+value = {'policy': 'two-rollover-qualification-attempt-lineage-v1', 'proof_kind': 'two-rollover-qualification', 'freeze_revision': 3, 'attempt_id': 'two-rollover-qualification-v3-native-attempt3', ...}
+revision = 3
+destination = PosixPath('/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-two-rollover-qualification-real-attempt3')
+
+    def validate_lineage(directory: Path, value: dict, revision: int, destination: Path) -> int:
+        """Execution gate: historical identity plus complete current consumed history."""
+        if destination.exists() or destination.is_symlink():
+            raise ValueError(
+                "Attempt destination already consumed; exact new attempt destination required"
+            )
+>       count = validate_historical_lineage(directory, value, revision, destination)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+app/simulation/openttd/proof/qualification_lineage.py:309: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+directory = PosixPath('/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-two-rollover-qualification-real-prelaunch-v3')
+value = {'policy': 'two-rollover-qualification-attempt-lineage-v1', 'proof_kind': 'two-rollover-qualification', 'freeze_revision': 3, 'attempt_id': 'two-rollover-qualification-v3-native-attempt3', ...}
+revision = 3
+destination = PosixPath('/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-two-rollover-qualification-real-attempt3')
+
+    def validate_historical_lineage(
+        directory: Path, value: dict, revision: int, destination: Path
+    ) -> int:
+        """Validate frozen predecessor identities without discovering later attempts."""
+        try:
+            rows = lineage_rows(value)
+            launches = sum(r["launches"] for r in rows)
+            attempt = launches + 1
+            if (
+                value["policy"] != POLICY
+                or value["proof_kind"] != KIND
+                or value["freeze_revision"] != revision
+                or value["evidence_directory"] != destination.name
+                or value["attempt_number"] != attempt
+                or value["attempt_id"]
+                != f"two-rollover-qualification-v{revision}-native-attempt{attempt}"
+                or value["fresh_explicit_authorization_required"] is not True
+                or value["continuation"]
+                != ("NEW_RUNTIME_ATTEMPT" if launches else "PRELAUNCH_CONTINUATION")
+                or value["prelaunch_continuation_exception_used"] != (not bool(launches) and bool(rows))
+                or value["lineage_digest"]
+                != digest({k: v for k, v in value.items() if k != "lineage_digest"})
+            ):
+                raise ValueError("Frozen lineage identity/destination mismatch")
+            if destination.name != f"{PREFIX}-real-attempt{attempt}":
+                raise ValueError("Post-launch failure requires exact new attempt destination")
+            ids = [r["attempt_id"] for r in rows]
+            names = [r["evidence_directory"] for r in rows]
+            if ids != sorted(set(ids)) or len(set(names)) != len(names):
+                raise ValueError("Duplicate or noncanonical predecessor identity")
+            for row in rows:
+                name = row["evidence_directory"]
+                if Path(name).name != name:
+                    raise ValueError("Unsafe predecessor path")
+                reader = (
+                    predecessor_row if "postrun_evidence_directory" in row else native_predecessor_row
+                )
+                current = json.loads(json.dumps(reader(directory.parent / name)))
+                if current != json.loads(json.dumps(row)):
+                    raise ValueError("Predecessor evidence identity/digest mismatch")
+                if row in value["supersedes_prelaunch_attempts"]:
+                    if current["classification"] != "PRELAUNCH" or any(
+                        current[k] != 0 for k in ("launches", "connections", "requests")
+                    ):
+                        raise ValueError("Runtime failure cannot use prelaunch continuation")
+                elif (
+                    current["classification"] not in ("RUNTIME", "POST_LAUNCH_FAILURE")
+                    or current["launches"] != 1
+                    or "FAIL" not in current["terminal_status"]
+                ):
+                    raise ValueError("Failed post-launch predecessor required for new attempt")
+                if revision <= current["freeze_revision"]:
+>                   raise ValueError("Newer freeze required; same-freeze reauthorization forbidden")
+E                   ValueError: Newer freeze required; same-freeze reauthorization forbidden
+
+app/simulation/openttd/proof/qualification_lineage.py:370: ValueError
+=========================== short test summary info ============================
+FAILED tests/test_historical_attempt_lineage.py::test_current_next_attempt_preserves_frozen_identity
+1 failed, 1 passed in 0.44s

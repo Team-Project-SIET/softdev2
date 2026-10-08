@@ -1,0 +1,82 @@
+{
+  "source_identities_exact": 247,
+  "protected_identities_exact": 1360,
+  "archived_credentials_exact": 7,
+  "freeze_manifest_exact": true,
+  "clock_receipts_correlated": 61,
+  "clock_chains_complete": true,
+  "clock_boundaries": [
+    {
+      "economy_date": 712223,
+      "economy_day": 1,
+      "economy_month": 1,
+      "economy_year": 1950,
+      "month_end": 712254,
+      "month_start": 712223
+    },
+    {
+      "economy_date": 712254,
+      "economy_day": 1,
+      "economy_month": 2,
+      "economy_year": 1950,
+      "month_end": 712282,
+      "month_start": 712254
+    }
+  ],
+  "phase_usage": [
+    [
+      "clock",
+      [
+        61,
+        13819,
+        244
+      ]
+    ],
+    [
+      "anchor_structural",
+      [
+        1,
+        0,
+        0
+      ]
+    ],
+    [
+      "anchor_lifetime",
+      [
+        0,
+        0,
+        0
+      ]
+    ],
+    [
+      "final_structural",
+      [
+        0,
+        0,
+        0
+      ]
+    ],
+    [
+      "final_lifetime",
+      [
+        0,
+        0,
+        0
+      ]
+    ],
+    [
+      "production",
+      [
+        0,
+        0,
+        0
+      ]
+    ]
+  ],
+  "failure": "TransportTimeout: structural-world phase deadline expired",
+  "qualified_for_planning": false,
+  "runtime_launches": 1,
+  "connections": 1,
+  "retries": 0,
+  "reconnects": 0
+}

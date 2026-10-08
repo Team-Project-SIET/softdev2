@@ -6,7 +6,9 @@ from pathlib import Path
 from app.simulation.openttd.runtime.ownership import OwnershipGraph, PathClass, PathOwnership
 
 
-def freeze_materializations(directory, workspace, key_path, graphics, frozen):
+def freeze_materializations(
+    directory, workspace, key_path, graphics, frozen, *, bridge_sources=None
+):
     from app.simulation.openttd.gamescript_bridge import BRIDGE_DIRECTORY
 
     from .harness import sha256, write_json
@@ -24,7 +26,7 @@ def freeze_materializations(directory, workspace, key_path, graphics, frozen):
             derivation = "archive-member:opengfx-8.0/" + path.name
             classification = "RUNTIME_COPY"
         elif relative.parts[0] == "game":
-            origin = (BRIDGE_DIRECTORY / path.name).resolve()
+            origin = ((bridge_sources or {}).get(path.name, BRIDGE_DIRECTORY / path.name)).resolve()
             derivation = "byte-copy"
             classification = "RUNTIME_COPY"
             if sha256(origin) != digest:

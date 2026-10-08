@@ -1,0 +1,127 @@
+........................................................................ [  3%]
+........................................................................ [  7%]
+........................................................................ [ 10%]
+........................................................................ [ 14%]
+........................................................................ [ 17%]
+........................................................................ [ 21%]
+........................................................................ [ 24%]
+........................................................................ [ 28%]
+........................................................................ [ 32%]
+........................................................................ [ 35%]
+........................................................................ [ 39%]
+........................................................................ [ 42%]
+........................................................................ [ 46%]
+........................................................................ [ 49%]
+........................................................................ [ 53%]
+.........................................................s.............. [ 57%]
+........................................................................ [ 60%]
+........................................................................ [ 64%]
+........................................................................ [ 67%]
+..s..................................................................... [ 71%]
+........................................................................ [ 74%]
+..................................................s..................... [ 78%]
+........................................................................ [ 82%]
+.............................................F.......................... [ 85%]
+........................................................................ [ 89%]
+........................................................................ [ 92%]
+........................................................................ [ 96%]
+........................................................................ [ 99%]
+..                                                                       [100%]
+=================================== FAILURES ===================================
+_ test_complete_owned_encrypted_combined_session[industries4-produces4-cargoes4] _
+
+tmp_path = PosixPath('/tmp/pytest-of-fed/pytest-34/test_complete_owned_encrypted_4')
+industries = (0, 1, 2, 3, 4, 5, ...), produces = (0, 1, 2, 3, 4, 5, ...)
+cargoes = (0, 1, 2, 3, 4, 5, ...)
+
+    @pytest.mark.parametrize(
+        "industries,produces,cargoes",
+        [
+            ((), (), (1,)),
+            ((17,), (), (1,)),
+            ((0,), (1,), (1, 9)),
+            ((2, 17), (1, 63), (1, 9, 63)),
+            (tuple(range(32)), tuple(range(16)), tuple(range(64))),
+        ],
+    )
+    def test_complete_owned_encrypted_combined_session(tmp_path, industries, produces, cargoes):
+        p, b, result = run_proof(tmp_path, industries=industries, produces=produces, cargoes=cargoes)
+>       assert result["status"] == "MOCK_SUCCESS", result["error"]
+E       AssertionError: Frozen source/input changed; no launch permitted
+E       assert 'MOCK_FAILED' == 'MOCK_SUCCESS'
+E         
+E         - MOCK_SUCCESS
+E         + MOCK_FAILED
+
+tests/test_raw_production_proof.py:168: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_raw_production_proof.py::test_complete_owned_encrypted_combined_session[industries4-produces4-cargoes4]
+1 failed, 2014 passed, 3 skipped in 260.79s (0:04:20)
+ference = 2[ms]
+Time difference = 1[ms]
+Time difference = 1[ms]
+Time difference = 1[ms]
+Time difference = 1[ms]
+Time difference = 1[ms]
+Time difference = 3[ms]
+Time difference = 2[ms]
+Time difference = 1[ms]
+Time difference = 1[ms]
+Time difference = 2[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]

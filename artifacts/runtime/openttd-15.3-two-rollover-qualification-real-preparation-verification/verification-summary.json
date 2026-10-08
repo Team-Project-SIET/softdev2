@@ -1,0 +1,86 @@
+{
+  "baseline": "cc7f7479e3fbfa8c036901ba041dee1b97dc6b42",
+  "preparation_tests": 57,
+  "qualification_foundation_and_coordinator_tests": 133,
+  "focused": {
+    "passed": 2070,
+    "skipped": 4,
+    "duration_seconds": 169.03
+  },
+  "ordinary": {
+    "passed": 2606,
+    "skipped": 38,
+    "duration_seconds": 214.71
+  },
+  "quality": {
+    "ruff": "PASS",
+    "format": "PASS: 331 files",
+    "typecheck": "PASS: new proof modules plus changed shared lifecycle/public CLI files",
+    "diff": "PASS",
+    "whitespace": "PASS",
+    "import_boundary": "PASS"
+  },
+  "historical": {
+    "pre_task_files": 1891,
+    "intended_source_changes": 8,
+    "unchanged": 1883,
+    "all_previous_proof_artifacts": "EXACT",
+    "CONTEXT": "UNCHANGED"
+  },
+  "runtime": {
+    "launches": 0,
+    "connections": 0,
+    "real_requests": 0
+  },
+  "freeze_unchanged": true,
+  "credential_mode": "0600",
+  "private_bytes_public": false,
+  "resources": {
+    "poll_interval": 1.0,
+    "timeout": 300.0,
+    "wait_polls": 299,
+    "clock_requests": 304,
+    "phase_bounds": {
+      "clock": {
+        "requests": 304,
+        "response_bytes": 82384,
+        "query_operations": 2432
+      },
+      "anchor_structural": {
+        "requests": 96,
+        "response_bytes": 49152,
+        "query_operations": 1024
+      },
+      "anchor_lifetime": {
+        "requests": 32,
+        "response_bytes": 7936,
+        "query_operations": 256
+      },
+      "final_structural": {
+        "requests": 96,
+        "response_bytes": 49152,
+        "query_operations": 1024
+      },
+      "final_lifetime": {
+        "requests": 32,
+        "response_bytes": 7936,
+        "query_operations": 256
+      },
+      "production": {
+        "requests": 512,
+        "response_bytes": 171520,
+        "query_operations": 4096
+      }
+    },
+    "application_requests": 1072,
+    "response_bytes": 368080,
+    "query_operations": 9088,
+    "lifecycle_frames": 6,
+    "post_auth_frames": 9094
+  },
+  "guarded_preflight": "READY_TO_LAUNCH",
+  "real_qualification": "NOT YET PROVEN",
+  "P08": false,
+  "atomic_snapshot": false,
+  "status": "READY TO REQUEST AUTHORIZATION FOR ONE OPENTTD 15.3 REAL TWO-ROLLOVER QUALIFICATION PROOF"
+}

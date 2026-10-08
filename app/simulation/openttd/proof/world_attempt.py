@@ -14,6 +14,7 @@ from app.simulation.openttd.world_info import WorldInfoExchange, verify_world_in
 from app.simulation.openttd.world_info_evidence import WorldInfoEvidence, parse_world_info_evidence
 
 from .attempt import Gate, Gates
+from .endpoints import verify_cleanup_endpoints
 from .harness import (
     WORLD_MODEL,
     WORLD_REQUEST,
@@ -132,6 +133,17 @@ def record_prelaunch_failure(directory: Path, error: Exception) -> None:
     metadata_path = directory / "PRELAUNCH.json"
     if metadata_path.exists():
         metadata = json.loads(metadata_path.read_text())
+        if metadata.get("mode") == "two-rollover-qualification":
+            from .qualification_lineage import (
+                retain_attempt_identity as retain_qualification_identity,
+            )
+
+            record = json.loads((failure / "PRELAUNCH-FAILURE.json").read_text())
+            record["preparation"] = str(directory)
+            (failure / "PRELAUNCH-FAILURE.json").write_text(
+                json.dumps(record, sort_keys=True, indent=2) + "\n"
+            )
+            retain_qualification_identity(failure, metadata, record)
         if metadata.get("mode") == "complete-raw-production":
             from .raw_production_lineage import retain_attempt_identity as retain_combined_identity
 
@@ -408,10 +420,9 @@ async def execute_world_attempt(prepared: PreparedProof, backend: WorldBackend) 
         if getattr(backend, "session", None) is not None:
             result["connections"] = 1
         try:
-            closed_endpoints = EndpointReservation.allocate(*prepared.endpoints)
-            closed_endpoints.close()
+            cleanup.update(verify_cleanup_endpoints(prepared, cleanup, reservation))
             cleanup["sockets_closed"] = True
-        except OSError:
+        except OSError, ValueError:
             cleanup["sockets_closed"] = False
             result["error"] = result["error"] or "Runtime endpoints still occupied"
         post = {path: sha256(Path(path)) if Path(path).is_file() else None for path in frozen}

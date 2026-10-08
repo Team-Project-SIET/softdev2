@@ -18,6 +18,7 @@ from .cargo_page_contract import (
 from .cargo_page_evidence import parse_page_proof_evidence
 from .cargo_page_lineage import retain_attempt_identity
 from .cargo_page_verification import verify_cargo_page
+from .endpoints import verify_cleanup_endpoints
 from .harness import PROJECT, EndpointReservation, manifest, sha256, verify_freeze, write_json
 from .historical_protection import protection_base, validate_protection
 from .preflight import preflight_prepared
@@ -333,10 +334,9 @@ async def execute_page_attempt(prepared, backend) -> dict:
         if network is not None:
             result["requests_sent"] = network.get("requests_sent", 0)
         try:
-            endpoints = EndpointReservation.allocate(*prepared.endpoints)
-            endpoints.close()
+            cleanup.update(verify_cleanup_endpoints(prepared, cleanup, reservation))
             cleanup["sockets_closed"] = True
-        except OSError:
+        except OSError, ValueError:
             cleanup["sockets_closed"] = False
             result["error"] = result["error"] or "Runtime endpoints still occupied"
         post = capture(lambda: {path: sha256_path_if_present(path) for path in frozen})

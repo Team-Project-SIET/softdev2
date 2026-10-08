@@ -1,0 +1,14 @@
+{
+  "attempt_id": "two-rollover-qualification-v1-native-attempt1",
+  "attempt_number": 1,
+  "continuation": "PRELAUNCH_CONTINUATION",
+  "evidence_directory": "openttd-15.3-two-rollover-qualification-real-attempt1",
+  "freeze_revision": 1,
+  "fresh_explicit_authorization_required": true,
+  "lineage_digest": "636b8dd6cc070de93c1d2cd603a7247af2b90f4c0055fb250229282c4f65a09a",
+  "policy": "two-rollover-qualification-attempt-lineage-v1",
+  "post_launch_predecessors": [],
+  "prelaunch_continuation_exception_used": false,
+  "proof_kind": "two-rollover-qualification",
+  "supersedes_prelaunch_attempts": []
+}
