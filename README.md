@@ -1,275 +1,318 @@
-# Transport Planning Experimentation Platform
+# OpenTTD transport planning and freight demonstration
 
-The core goal is transport route, network and infrastructure optimization evaluated
-in OpenTTD: choose connections, construction corridors, stations, transport modes and
-fleet capacity, then measure the resulting network's efficiency and economics.
-OpenTTD supplies the simulated world, vehicle behavior, cargo and company economics.
-Its lower-level vehicle pathfinding, including YAPF, navigates infrastructure that
-already exists; it does not replace the repository's intended network-design optimizer.
-See the pinned [OpenTTD 13.4 road YAPF source](https://github.com/OpenTTD/OpenTTD/blob/13.4/src/pathfinder/yapf/yapf_road.cpp).
+Python plans transport services and verifies their execution in **OpenTTD 15.3**.
+The working native MVP builds a road, two truck stops and a depot, buys one truck,
+loads coal from a real mine, delivers it to a real power station, and verifies
+industry attribution and payment over an encrypted AdminPort connection.
 
-The implemented experiment platform uses Python, version-pinned
-[OpenTTDLab](https://github.com/michalc/OpenTTDLab), headless OpenTTD and PostgreSQL
-to compare external AI policies reproducibly. Those AIs currently design, construct
-and operate the networks; Python selects their configuration and records outcomes.
+On 2026-10-11, freight Attempt 4 delivered **20 units of coal**. Offline replay
+verified £341 delivery income, £304 vehicle-profit increase and £9,358 construction
+and purchase spending. The plan-bound receipt is in
+`artifacts/runtime/openttd-15.3-first-freight-delivery-attempt4/receipt.json`.
+All three authorized follow-up launches were consumed. Another execution requires
+its own authorization; inspecting the existing receipt does not launch OpenTTD.
 
-## OpenTTD 15.3 integration status
+This README describes the current worktree. The freight modules and ignored runtime
+artifacts have not been committed or pushed. Use a checkout containing
+`app/simulation/openttd/proof/freight_delivery.py` and its GameScript package.
+Historical runtime evidence is optional for a **new `--demo` run**.
 
-OpenTTD **15.3** is the primary integration target. Python owns planning,
-validation and evidence assembly; a thin GameScript exchanges bounded JSON over
-an encrypted, authorized-key AdminPort connection. See [project context](CONTEXT.md),
-[secure transport](docs/secure-admin-transport.md) and the
-[proof CLI](docs/openttd-15.3-proof-cli.md).
+## What works, and what remains incomplete
 
-Committed work includes correlated ACK and world-info proofs, paginated industry
-inventory, capability enrichment, cargo catalog queries, same-run structural
-observation and production observation. Complete coverage and planning qualification
-are separate claims. Two-rollover Attempt 2 completed native qualification, but its
-mandatory offline verification failed, so its overall status remains **FAILED**.
-The [lineage repair and Attempt 3 readiness report](docs/two-rollover-qualification-attempt3-readiness.md)
-records that distinction; readiness does not authorize another launch.
+| Capability | Current evidence |
+| --- | --- |
+| Secure AdminPort, industry/cargo observation and native qualification | Native milestones; qualification Attempt 2's overall post-run acceptance remains FAILED |
+| Road, stops, depot, purchase, orders and movement | Native readbacks |
+| Freight loading, final industry delivery and payment | Attempt 4, 20 units, verified receipt and cleanup |
+| WorldPlanningObservation → P08 → P05 → ExecutionPlan | Controlled end-to-end verification |
+| P05 output → checked single-vehicle freight intent | Controlled compiler in `freight_planning.py` |
+| Qualified observation → P08 → native delivery | **Incomplete**: authoritative post-qualification save correspondence and same-world supplemental facts are still missing |
+| Arbitrary maps, rail delivery, multiple vehicles, closed-loop optimization | Outside the demonstrated MVP |
 
-The [controlled P08-to-P05 pipeline](docs/p08-15-3-controlled-end-to-end-p05-verification.md)
-admits observation, supplemental planning facts and source correspondence, generates
-bounded road candidates, solves them with P05 and validates the resulting plan.
-Its fixtures do not establish executable-save correspondence or native execution.
-Full P08 acquisition, native planner-to-executor integration, plan-attributed
-15.3 evaluation and closed-loop optimization remain incomplete.
+The demo uses its own native admission and `DeliveryPlan`. It does **not** claim
+that P05 selected the service. Controlled planning inputs cannot authorize native
+execution. Positive last-month production in the demo is native supply evidence,
+not a replacement for the separate two-rollover qualification contract.
 
-As of 2026-10-11, the local worktree also contains uncommitted terrain acquisition,
-company-owned road mutation, freight infrastructure and road vehicle lifecycle work.
-Local reports record native road and vehicle movement milestones. Freight delivery
-has a separate bounded proof implementation. These sources, reports and ignored
-runtime artifacts are outside this documentation commit and are not available from
-this push. A road mutation or depot departure does not establish cargo delivery.
-
-## Current architecture and project status
+## Architecture
 
 ```text
-HISTORICAL 13.4 EXPERIMENT PATH
-Scenario + versioned AI policy -> ExperimentService
-    -> batch: OpenTTDLabRunner -> OpenTTD + pinned external AI -> public save parser
-    -> live:  LiveSimulationRunner -> owned OpenTTD + pinned external AI
-                 -> P04 AdminObserver -> typed telemetry -> PostgreSQL
-                 -> explicit final save -> public save parser
-    -> typed final metrics + PostgreSQL experiment history + retained artifacts
+Planning path, controlled
+WorldPlanningObservation + supplemental facts + prepared-source correspondence
+  → P08 bounded road candidates → P05 CP-SAT → ExecutionPlan
+  → checked freight intent → native-source correspondence gate [currently blocked]
 
-PLANNING BOUNDARY
-PreparationRequest + supported pinned world
-    -> P08 extraction + deterministic candidate graph               [controlled; real proof pending]
-PlanningScenario + PreparedWorldManifest
-    -> P05 baseline candidate-network optimizer (supplied corridors)  [implemented]
-    -> P02 ExecutionPlan contracts -> validate/hash -> P03 staging
-    -> P03ThinExecutor: decode/validate world/acknowledge              [implemented]
-    -> P06 construction, fleet purchase and service orders           [implemented; road proof passed]
-    -> P07 plan-attributed simulation evaluation                     [controlled; real proof pending]
+Working native demonstration
+Python CLI → isolated OpenTTD 15.3 + company + bridge GameScript
+  → encrypted authorized-key AdminPort → bounded native admission
+  → native construction / vehicle / orders → loading / arrival / unloading
+  → industry cargo monitors + company income + vehicle profit
+  → Python receipt replay + saved states + complete cleanup
 ```
 
-- **P01** defines the [planning/executor boundary](docs/specs/planning-executor-boundary.md).
-- **P02** implements pure typed planning contracts, canonical serialization/hashing
-  and prelaunch semantic validation (`app/planning/`); it does not generate plans.
-- **P03** implements deterministic plan transport and a thin Squirrel executor.
-  Python validates and stages the plan; `P03ThinExecutor` consumes/decodes it,
-  validates runtime-world facts and acknowledges its IDs. The accepted receipt
-  does not establish construction, vehicle purchase or service-order execution.
-  [Runtime identity and Attempt #6 coverage](docs/planning-runtime-world-identity.md)
-  describe the completed proof and its limits.
-- **P04** completes the read-only Admin observation boundary used by the live
-  runner: protocol framing/validation, owned session cleanup, authentication,
-  identity checks, subscriptions, polling and heartbeat observations. Process
-  launch, reconnect policy and persistence belong to surrounding components.
+Python owns planning, immutable identities, deadlines and verification. GameScript
+performs native queries and synchronous commands in company mode. P05 optimizes
+supplied candidates; OpenTTD's vehicle pathfinder navigates the built road.
+See [CONTEXT.md](CONTEXT.md) and [freight proof details](docs/first-freight-delivery-proof.md).
 
-**P05** implements the baseline [candidate-network optimizer](docs/specs/planning-executor-boundary.md#p05--baseline-candidate-network-optimizer)
-over supplied road/rail corridors, with shared construction costs, fleet sizing and
-minimum-capex CP-SAT selection. **P06** adds faithful road/rail construction, exact
-fleet purchase and repeating service orders, with separate execution receipts and
-partial-failure evidence. Controlled tests execute the production Squirrel against
-stub command APIs. Real OpenTTD 13.4 Attempt #2 passed the complete road setup
-lifecycle; rail remains covered by controlled tests.
-The optimizer → ExecutionPlan → executor → P07 evaluation chain exists structurally
-and has controlled coverage; real P07 evaluation proof remains separately authorized.
-P04 observations support evaluation. Final-save period metrics and
-company-level Admin observations are not a complete route-level profit measure.
-These are current implementation gaps, not new task definitions.
+## Requirements and Fedora/Linux setup
 
-The local **P08** work implements world preparation and candidate search-space generation
-under `app/planning/preparation/`: strict extraction snapshots, a read-only GameScript,
-bounded framed parsing, deterministic road demand/facility/corridor/fleet projection,
-combination checks, save/artifact identities and a separately injected preparation
-runtime. Controlled tests launch no OpenTTD. P08 v1 emits one historical fixed-OD
-demand per scenario; P05 remains capable of multi-demand optimization over supplied
-scenarios. P08 does not choose networks, execute infrastructure, evaluate outcomes,
-replace YAPF or support arbitrary terrain/content/saves. Real extraction proof is
-not yet performed; P08 remains incomplete and uncommitted.
+The supported demo platform is Linux x86-64 with the pinned generic-amd64 OpenTTD
+15.3 distribution and OpenGFX 8.0. Python **3.14+** is required; this work used 3.14.6.
+Python dependencies include Pydantic, pymonocypher, OR-Tools, SQLAlchemy, Alembic,
+psycopg and OpenTTDLab. Development checks use pytest, Ruff and squirrel-lang.
+The standalone freight demo needs **neither PostgreSQL nor Docker**.
 
-### Documented history
-
-Commit `6b612fa` cleaned up older pre-T-series documents and scaffolding.
-**T01–T18 are the current project's production telemetry/runtime foundation**, documented in the
-[ticket definitions and completion context](docs/specs/realtime-openttd-telemetry-ticket-plan.md).
-T17's accepted production proof is retained in [the smoke report](docs/live-production-smoke.md)
-and commit `eca5a44`. T18 (`5a7e5ee`) retired the executable prototype, preserving
-reference evidence; it did not retire the production T-series implementation.
-
-P01–P04 are later planning/integration work: P01's specification, P02 (`76e176c`),
-P03 (`7260f8c`) and P04 (`84ccb61`). The repository defines no one-to-one T-to-P
-mapping. P05 adds repository-owned candidate-network selection. Historical proof
-reports retain their original attempt status; current status comes from the accepted evidence and implementation history.
-
-## Run the baseline experiment
-
-Start PostgreSQL and configure `DATABASE_URL` as described below. Then run:
+Install basic tools on Fedora and install [uv](https://docs.astral.sh/uv/getting-started/installation/):
 
 ```bash
-uv sync --group dev
-uv run alembic upgrade head
-uv run transport-experiment run --seed 17 --days 730
+sudo dnf install git curl tar xz
+curl -LsSf https://astral.sh/uv/install.sh | sh
+source "$HOME/.local/bin/env"
 ```
 
-The command runs without a GUI and prints its run ID, final simulation date, metrics, and
-artifact path. Repeating it creates a separate history row with the same configuration. The
-scenario pins a generated 256-by-256 map configuration; the seed fixes world generation.
-The baseline uses OpenTTD **13.4**, OpenGFX **7.1**, OpenTTDLab **0.0.75**, and trAIns AI
-**2.1** from BaNaNaS with MD5 `c4c069dc797674e545411b59867ad0c2`.
-Python **3.14.6** has been exercised with this combination on Linux. OpenTTDLab downloads
-and caches the pinned game, graphics, and AI archives under `artifacts/experiments/cache/`.
-Its final parsed savegame chunks and run configuration are saved as
-`experiment-<run ID>.json.gz` beside that cache.
-
-The first metrics are company money, current loan, income and expenses for the savegame's
-current economy period, and cargo delivered in that period. These are values parsed from
-the company record; the period metrics are not lifetime totals. Experiment rows preserve
-the scenario/version, strategy/version and configuration, AI ID and MD5, game/graphics
-versions, seed, duration, timestamps, completion status, and artifact reference. Failed
-simulations remain recorded as failures. The OpenTTDLab adapter owns all savegame dictionary
-access; strategies and persistence use application models.
-
-## Compare transport policies
-
-The comparison uses the same pinned SimpleAI 14 archive (MD5
-`b3137bbd0c73641cf510ead06e36dab6`) for both policies. Python owns the versioned
-strategy definitions and serializes their exact AI settings. `multimodal` sets
-`use_trains=1`, `use_roadvehs=1`, and `use_aircraft=1`; `road-only` sets them to `0`, `1`,
-and `0`. SimpleAI then constructs and operates routes inside OpenTTD. This is a transport
-mode policy comparison, not a claim that one mode is universally better. This experiment
-path uses pinned external AIs rather than a repository-owned Squirrel optimizer.
-The repository does contain the P03 thin Squirrel executor and generated plan-data
-transport. Its default P03 mode validates and acknowledges supplied decisions.
-Optional P06 execution uses explicit runtime catalog bindings and faithfully executes
-the validated plan; optimization remains in Python.
+From the project root:
 
 ```bash
-uv run transport-experiment compare \
-  --scenario generated-256-square \
-  --strategies multimodal,road-only \
-  --seeds 0:10 \
-  --days 730
+uv python install 3.14
+uv sync --locked --group dev
 ```
 
-The seed range is start-inclusive and stop-exclusive, so `0:10` runs seeds 0 through 9
-for each policy. Every attempt has its own PostgreSQL experiment row and parsed-result
-artifact. The command prints per-run metrics and per-policy mean, median, min, max, and
-sample standard deviation for each metric, then saves the full comparison as a JSON report
-under `artifacts/experiments/`. Failed runs remain visible and do not contribute to
-summaries. The descriptive statistics make no significance claim.
+The lockfile and dev group are required for the controlled GameScript tests.
 
-## Research stack and project layout
+## Install the pinned OpenTTD assets
 
-The current platform uses Python 3.14+, OpenTTDLab, Pydantic, SQLAlchemy,
-Alembic and PostgreSQL 16. OR-Tools powers the implemented P05 CP-SAT candidate-network optimizer.
+Keep the **whole extracted distribution**, including `lib`, `lang` and other
+asset directories. Installing a different system OpenTTD package does not satisfy
+the executable checksum gate.
+
+```bash
+mkdir -p artifacts/tools artifacts/runtime/verified-assets
+curl --fail --location \
+  https://cdn.openttd.org/openttd-releases/15.3/openttd-15.3-linux-generic-amd64.tar.xz \
+  -o artifacts/tools/openttd-15.3-linux-generic-amd64.tar.xz
+printf '%s  %s\n' \
+  f49eb25d61b00f8f4d332fee02b530ad75552d1efb8f2bb01e7ca5e6540fe059 \
+  artifacts/tools/openttd-15.3-linux-generic-amd64.tar.xz | sha256sum --check
+tar -xJf artifacts/tools/openttd-15.3-linux-generic-amd64.tar.xz -C artifacts/tools
+curl --fail --location \
+  https://cdn.openttd.org/opengfx-releases/8.0/opengfx-8.0-all.zip \
+  -o artifacts/runtime/verified-assets/opengfx-8.0-all.zip
+export OPENTTD_BINARY="$PWD/artifacts/tools/openttd-15.3-linux-generic-amd64/openttd"
+export OPENTTD_OPENGFX_ARCHIVE="$PWD/artifacts/runtime/verified-assets/opengfx-8.0-all.zip"
+printf '%s  %s\n' \
+  276d5b698a6b706154f3af588f6f885b3aebe518f4ecc8f869abf71383b1904c \
+  "$OPENTTD_BINARY" | sha256sum --check
+printf '%s  %s\n' \
+  43a0c1dabf39cb865394f3a6cc36d4da5c10ecfaaf55652043104806810903be \
+  "$OPENTTD_OPENGFX_ARCHIVE" | sha256sum --check
+```
+
+These checksums identify the locally verified official distributions. Preparation
+also validates the graphics descriptor and native GRF checksums.
+
+## Configuration
+
+| Variable | Use |
+| --- | --- |
+| `OPENTTD_BINARY` | Freight demo executable path; bytes must match the pinned 15.3 binary |
+| `OPENTTD_OPENGFX_ARCHIVE` | OpenGFX 8.0 ZIP path; defaults to `artifacts/runtime/verified-assets/opengfx-8.0-all.zip` |
+| `UV_CACHE_DIR`, `UV_TOOL_DIR` | Optional writable uv cache/tool directories |
+| `DATABASE_URL`, `APP_ENV`, `SQL_ECHO` | Optional database-backed experiment configuration; not needed by the freight demo |
+
+Without `OPENTTD_BINARY`, the historical local default is
+`/home/fed/Downloads/openttd-15.3-linux-generic-amd64/openttd`; set the variable on
+another machine. Export the two asset variables in the shell; the proof CLI does
+not load them from `.env`.
+
+The CLI generates isolated OpenTTD configuration, loopback game/Admin ports,
+OpenGFX staging, the GameScript and company AI, and an ephemeral authorized key
+with mode 0600. Insecure Admin login is disabled. It does not use your normal
+OpenTTD profile. No manual game setup or permanent Admin password is needed.
+
+## Complete freight usage example
+
+Run controlled checks first:
+
+```bash
+uv run --no-sync pytest -q tests/test_freight_delivery.py tests/test_freight_planning.py
+```
+
+Choose a new attempt, generate its immutable preparation, and validate it:
+
+```bash
+FREIGHT_ATTEMPT="$(uv run --no-sync python -m app.simulation.openttd.proof.freight_delivery next)"
+uv run --no-sync python -m app.simulation.openttd.proof.freight_delivery \
+  prepare "$FREIGHT_ATTEMPT" --demo
+uv run --no-sync python -m app.simulation.openttd.proof.freight_delivery \
+  preflight "$FREIGHT_ATTEMPT"
+```
+
+Expected output is `PRELAUNCH PASS`, then `PREFLIGHT PASS`. These commands create
+no OpenTTD process or Admin connection. Preparation stages a 64×64 flat heightmap;
+**the next command** creates the native world and its industries.
+
+When authorized for one native launch:
+
+```bash
+uv run --no-sync python -m app.simulation.openttd.proof.freight_delivery \
+  run "$FREIGHT_ATTEMPT" --authorize-one-launch
+uv run --no-sync python -m app.simulation.openttd.proof.freight_delivery \
+  verify "$FREIGHT_ATTEMPT"
+```
+
+The native demo uses seed 42, default temperate content, a real coal mine and power
+station, and native clearing of its bounded construction footprint. It leaves
+production, cargo allocation and payment to OpenTTD. The company buys one compatible
+truck and receives source full-load and destination no-load orders.
+
+A successful run prints:
+
+```json
+{"connections":1,"launches":1,"mutations":10,"preflight":"PASS","requests":26,"status":"NATIVE_DELIVERY_VERIFIED"}
+```
+
+`verify` returns the replayed receipt as JSON and exits zero only when frame
+correlation, construction accounting, loading, arrival, unloading, both industry
+monitors, payment, saves and cleanup all agree. Attempt 4's verified values were
+`loaded=20`, `delivered=20`, `pickup_monitor=20`, `payment_income=341` and
+`vehicle_profit_delta=304`. Dates and costs are observations, not hard-coded success
+values. A future invocation is a fresh attempt, not a replay of Attempt 4.
+
+Do not edit source files or configuration between preparation and run. A consumed
+attempt cannot be run again. Diagnose a failure before preparing another attempt;
+`next` does not authorize execution or implement an automatic retry loop.
+
+## Inspect results and receipts
+
+To verify the existing successful local evidence without launching the game:
+
+```bash
+uv run --no-sync python -m app.simulation.openttd.proof.freight_delivery \
+  verify artifacts/runtime/openttd-15.3-first-freight-delivery-attempt4
+```
+
+For a new run, inspect these files under `$FREIGHT_ATTEMPT`:
+
+| File | Meaning |
+| --- | --- |
+| `PRELAUNCH.json`, `PRELAUNCH.sha256`, `frozen-source.zip` | Immutable runtime/input/policy/source provenance |
+| `CLAIM.json` | One-launch attempt consumed before starting |
+| `inspect-1-response.json`, `plan.json` | Native admission and plan identity |
+| `build-*-response.json`, `read-*-response.json` | Command results and independent state reads |
+| `observe-*-response.json`, `finish-1-response.json` | Physical cargo and native monitor/payment evidence |
+| `receipt.json` | Verified delivery, attribution, costs and digests; success only |
+| `result.json`, `cleanup.json` | Overall result and process/socket/credential/workspace cleanup |
+| `before.sav`, `after.sav`, `failure.sav` | Native saves, according to outcome |
+| `frames.json`, `stdout.log`, `stderr.log`, `artifact-manifest.sha256` | Retained exchanges, logs and file integrity |
+
+The disposable runtime is removed after cleanup; the evidence stays. These artifacts
+are ignored by Git. Back them up before removing an attempt directory.
+
+## Planning integration boundary
+
+`app/planning/p08_adapter.py` and `p08_road.py` consume admitted observation,
+supplemental facts and source correspondence. P05's `optimize_candidate_network`
+produces the existing `ExecutionPlan`; it does not choose terrain outside supplied
+candidates. `app/simulation/openttd/freight_planning.py` compiles its selected
+single-vehicle road service into a checked freight intent, retaining industry,
+cargo, engine and plan identities. It never drops additional vehicles to fit the demo.
+
+The intent's native binding calls the existing real-source gate before comparing
+native geometry and identities. That gate currently rejects controlled source
+correspondence. The native runner therefore remains a **standalone delivery demo**,
+not a P05-driven native executor. Remaining work is same-world qualified observation,
+native supplemental capture, authoritative saved-world correspondence, and support
+for the exact selected corridor/facility geometry. The demonstrated L route is not
+a general executor for every P08 candidate.
+
+Verify the existing controlled pipeline and the new boundary:
+
+```bash
+uv run --no-sync pytest -q tests/test_p08_controlled_e2e.py tests/test_freight_planning.py
+```
+
+## Troubleshooting
+
+- **Pinned executable/assets mismatch:** check the exported paths and SHA-256 values.
+  Keep the distribution's bundled files together; do not substitute a system binary.
+- **`NO_NATIVE_FEASIBLE_OD`:** inspect `result.json` and the inspection response.
+  Versioned failure counters distinguish absent pairs from rejected pairs and report
+  the first rejecting gate. Attempt 2 rejected all layouts on topology/footprint;
+  `--demo` supplies genuine flat terrain without weakening those checks.
+- **`quote` rejection or failed purchase:** read the native response. Vehicle purchase
+  is tested only after the owned depot exists; initial admission reserves the native
+  engine price. Funds and native command cost checks still apply.
+- **Frozen source changed:** the prepared attempt is stale. Do not rewrite its seal.
+  Restore the exact prepared source or discard only that unconsumed preparation and
+  create a fresh attempt under the applicable authorization policy.
+- **Window exhaustion or readback mismatch:** this is a failed/inconclusive attempt,
+  not proof of delivery or path blockage. Inspect the retained phase response and save.
+- **Script died:** read `stderr.log`. Runtime script errors are reported separately
+  from actual cleanup failures. For the historical Attempt 3, disposal recovery was
+  recorded separately; its original failure record remains unchanged.
+- **Port/process ownership failure:** another matching runtime or live endpoint blocks
+  preflight. Stop only a process you own; never bypass the ownership gate.
+- **uv cannot write its cache:** export writable paths such as
+  `UV_CACHE_DIR=/tmp/softdev2-uv-cache` and `UV_TOOL_DIR=/tmp/softdev2-uv-tools`.
+
+## Development checks and repository layout
+
+```bash
+uv run --no-sync pytest -q tests/test_freight_delivery.py tests/test_freight_planning.py
+uv run --no-sync ruff check app/simulation/openttd/freight_delivery.py \
+  app/simulation/openttd/freight_planning.py app/simulation/openttd/proof/freight_delivery.py \
+  tests/test_freight_delivery.py tests/test_freight_planning.py
+uv run --no-sync ruff format --check app/simulation/openttd/freight_delivery.py \
+  app/simulation/openttd/freight_planning.py app/simulation/openttd/proof/freight_delivery.py \
+  tests/test_freight_delivery.py tests/test_freight_planning.py
+uvx ty check app/simulation/openttd/freight_delivery.py \
+  app/simulation/openttd/freight_planning.py app/simulation/openttd/proof/freight_delivery.py \
+  tests/test_freight_delivery.py tests/test_freight_planning.py
+```
+
+Default tests do not launch OpenTTD. Real integration tests are opt-in; they are
+separate from running this explicitly authorized proof CLI.
 
 ```text
-app/
-├── config.py          # Current application/database settings
-├── database/          # Shared Base, session factory and current ORM registry
-├── experiments/       # Scenarios, policies, batch/live service, history and CLI
-├── simulation/openttd/# Runtime, Admin observation, telemetry and final parsing
-└── planning/          # P02 contracts, P03 transport, P05 optimizer and P06 executor
-alembic/versions/      # Migration history 0001 through 0008
-tests/                # Contracts, controlled runtime tests and opt-in real proofs
-docker-compose.yml    # PostgreSQL service and persistent database volume
+app/planning/                         typed contracts, P08 candidates, P05 optimizer
+app/simulation/openttd/                transport, observation and delivery verification
+app/simulation/openttd/freight_delivery_package/ native freight GameScript
+app/simulation/openttd/proof/           isolated preparation, launch and receipt replay
+app/experiments/                       historical batch/live experiment CLI and persistence
+tests/                                controlled verification and opt-in native tests
+artifacts/runtime/                    ignored native evidence and verified assets
+docs/                                 contracts, proof reports and limitations
 ```
 
-## Set up PostgreSQL and the Python environment
+## Optional historical experiments and PostgreSQL
 
-Install Python 3.14 or newer and [uv](https://docs.astral.sh/uv/). Configure a
-local `.env` with your own database credentials, for example:
-
-```dotenv
-POSTGRES_DB=logistics
-POSTGRES_USER=logistics
-POSTGRES_PASSWORD=replace-with-your-password
-POSTGRES_PORT=5432
-DATABASE_URL=postgresql+psycopg://logistics:replace-with-your-password@localhost:5432/logistics
-APP_ENV=development
-SQL_ECHO=false
-```
-
-Keep `DATABASE_URL` aligned with the Compose database/user/password/port. The
-name `logistics` preserves the existing database contract; experiment and telemetry
-history use this PostgreSQL database. URL-encode password characters when needed.
-The real `.env` is ignored by Git.
+The separate `transport-experiment` CLI retains the historical OpenTTDLab/OpenTTD
+13.4 external-AI experiment path. It is not the native 15.3 freight demonstration.
+For that database-backed path, configure `.env` with `POSTGRES_DB`, `POSTGRES_USER`,
+`POSTGRES_PASSWORD`, `POSTGRES_PORT`, `DATABASE_URL`, `APP_ENV=development` and
+`SQL_ECHO=false`. Match the PostgreSQL URL to the Compose credentials.
 
 ```bash
-uv sync --group dev
 docker compose up -d postgres
 docker compose ps
 uv run alembic upgrade head
+uv run transport-experiment --help
 ```
 
-Wait for PostgreSQL to report healthy before migrating. The application needs no
-mock operational dataset. The `postgres_data` named volume retains database data.
-Migration status can be inspected with:
+Wait for PostgreSQL to be healthy before migrating. Migration history is retained;
+no database schema retirement is part of this MVP. See [the proof CLI guide](docs/openttd-15.3-proof-cli.md)
+for other 15.3 observation modes and their separate authorization rules.
 
-```bash
-uv run alembic current
-uv run alembic history
-```
+## Known limits
 
-The current ORM registry contains experiment scenarios, strategies, runs, final
-simulation results/metrics, live telemetry sessions and observations. Published
-migrations `0001`–`0007` remain unchanged and resolvable. Earlier migrations still
-create historical operational tables; application-code retirement does not remove
-those tables or their data. Schema retirement requires a separate data-retention
-and migration decision.
+One company, one vehicle, one coal producer/acceptor pair, two bay stops, one depot,
+a bounded flat vacant L route and default content are demonstrated. Each run uses
+one process, one secure connection, no reconnect or retry, at most 26 service
+requests, 512-byte responses and a 180-second overall deadline. World preparation
+has its own bound of two industry builds and at most 50 clearing commands.
 
-## Run tests and lint
-
-```bash
-uv run pytest
-uv run pytest --run-postgres tests/test_postgres_integration.py tests/test_telemetry_repository.py tests/test_live_isolation.py
-uv run ruff check .
-uv run ruff format --check .
-```
-
-Default tests use SQLite, fake runners and controlled child processes/Admin peers.
-They cover experiments, planning serialization/validation/transport, P04 observation,
-telemetry, runtime lifecycle, isolation and recovery without launching OpenTTD.
-Shared PostgreSQL fixtures and migration helpers live in `tests/postgres_support.py`.
-The `--run-postgres` option uses temporary isolated schemas in the configured
-PostgreSQL database to verify migration compatibility, telemetry constraints,
-history preservation, persistence and isolation. Historical migration tests run
-without retired runtime ORM packages and include PostgreSQL SQL-generation checks.
-
-Real OpenTTD integration and P03/production proofs require `--run-openttd` and their
-specific proof configuration. Ordinary test runs skip those launches. Existing
-proof artifacts and fixture savegames remain the historical evidence; controlled
-tests do not replace real-proof acceptance.
-
-## Stop local infrastructure
-
-```bash
-docker compose down
-```
-
-This stops containers while preserving `postgres_data`. Removing database volumes
-would also delete current experiment and telemetry history.
-
-P07 adds explicit plan-attributed evaluation through `ExperimentService.run_plan`:
-P05 optimization → immutable ExecutionPlan → P03/P06 setup → existing live runner,
-P04 telemetry and final-save parser → plan-linked realized metrics and conservative
-estimate comparisons. Plan runs use explicit provenance rather than external-AI
-strategy rows (forward migration 0008). Current-period income/expenses/cargo retain
-their period semantics; full-run profit and realized construction costs are unavailable.
-Historical controlled verification included PostgreSQL checks; a real
-P07 evaluation proof requires separate authorization. Closed-loop optimization is not yet implemented.
+The demo proves one paid delivery, not long-run profitability, recurring reliability,
+route-level optimization or full qualified planning integration. Amounts are OpenTTD
+GBP accounting units. Receipts fail closed; neither a command ACK nor an empty
+vehicle alone can establish freight delivery.
