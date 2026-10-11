@@ -13,10 +13,40 @@ The implemented experiment platform uses Python, version-pinned
 to compare external AI policies reproducibly. Those AIs currently design, construct
 and operate the networks; Python selects their configuration and records outcomes.
 
+## OpenTTD 15.3 integration status
+
+OpenTTD **15.3** is the primary integration target. Python owns planning,
+validation and evidence assembly; a thin GameScript exchanges bounded JSON over
+an encrypted, authorized-key AdminPort connection. See [project context](CONTEXT.md),
+[secure transport](docs/secure-admin-transport.md) and the
+[proof CLI](docs/openttd-15.3-proof-cli.md).
+
+Committed work includes correlated ACK and world-info proofs, paginated industry
+inventory, capability enrichment, cargo catalog queries, same-run structural
+observation and production observation. Complete coverage and planning qualification
+are separate claims. Two-rollover Attempt 2 completed native qualification, but its
+mandatory offline verification failed, so its overall status remains **FAILED**.
+The [lineage repair and Attempt 3 readiness report](docs/two-rollover-qualification-attempt3-readiness.md)
+records that distinction; readiness does not authorize another launch.
+
+The [controlled P08-to-P05 pipeline](docs/p08-15-3-controlled-end-to-end-p05-verification.md)
+admits observation, supplemental planning facts and source correspondence, generates
+bounded road candidates, solves them with P05 and validates the resulting plan.
+Its fixtures do not establish executable-save correspondence or native execution.
+Full P08 acquisition, native planner-to-executor integration, plan-attributed
+15.3 evaluation and closed-loop optimization remain incomplete.
+
+As of 2026-10-11, the local worktree also contains uncommitted terrain acquisition,
+company-owned road mutation, freight infrastructure and road vehicle lifecycle work.
+Local reports record native road and vehicle movement milestones. Freight delivery
+has a separate bounded proof implementation. These sources, reports and ignored
+runtime artifacts are outside this documentation commit and are not available from
+this push. A road mutation or depot departure does not establish cargo delivery.
+
 ## Current architecture and project status
 
 ```text
-CURRENT EXPERIMENT PATH
+HISTORICAL 13.4 EXPERIMENT PATH
 Scenario + versioned AI policy -> ExperimentService
     -> batch: OpenTTDLabRunner -> OpenTTD + pinned external AI -> public save parser
     -> live:  LiveSimulationRunner -> owned OpenTTD + pinned external AI
@@ -24,13 +54,15 @@ Scenario + versioned AI policy -> ExperimentService
                  -> explicit final save -> public save parser
     -> typed final metrics + PostgreSQL experiment history + retained artifacts
 
-SEPARATE PLANNING BOUNDARY
+PLANNING BOUNDARY
+PreparationRequest + supported pinned world
+    -> P08 extraction + deterministic candidate graph               [controlled; real proof pending]
 PlanningScenario + PreparedWorldManifest
     -> P05 baseline candidate-network optimizer (supplied corridors)  [implemented]
     -> P02 ExecutionPlan contracts -> validate/hash -> P03 staging
     -> P03ThinExecutor: decode/validate world/acknowledge              [implemented]
     -> P06 construction, fleet purchase and service orders           [implemented; road proof passed]
-    -> plan-attributed simulation evaluation loop                     [missing]
+    -> P07 plan-attributed simulation evaluation                     [controlled; real proof pending]
 ```
 
 - **P01** defines the [planning/executor boundary](docs/specs/planning-executor-boundary.md).
@@ -54,12 +86,21 @@ fleet purchase and repeating service orders, with separate execution receipts an
 partial-failure evidence. Controlled tests execute the production Squirrel against
 stub command APIs. Real OpenTTD 13.4 Attempt #2 passed the complete road setup
 lifecycle; rail remains covered by controlled tests.
-The optimizer → ExecutionPlan → executor chain exists structurally. The evaluation
-loop that attributes realized results to an executed plan remains missing. P03 staging
-is separate from the production `ExperimentService` input path; P04 observations
-support evaluation but do not complete that loop. Final-save period metrics and
+The optimizer → ExecutionPlan → executor → P07 evaluation chain exists structurally
+and has controlled coverage; real P07 evaluation proof remains separately authorized.
+P04 observations support evaluation. Final-save period metrics and
 company-level Admin observations are not a complete route-level profit measure.
 These are current implementation gaps, not new task definitions.
+
+The local **P08** work implements world preparation and candidate search-space generation
+under `app/planning/preparation/`: strict extraction snapshots, a read-only GameScript,
+bounded framed parsing, deterministic road demand/facility/corridor/fleet projection,
+combination checks, save/artifact identities and a separately injected preparation
+runtime. Controlled tests launch no OpenTTD. P08 v1 emits one historical fixed-OD
+demand per scenario; P05 remains capable of multi-demand optimization over supplied
+scenarios. P08 does not choose networks, execute infrastructure, evaluate outcomes,
+replace YAPF or support arbitrary terrain/content/saves. Real extraction proof is
+not yet performed; P08 remains incomplete and uncommitted.
 
 ### Documented history
 
@@ -135,8 +176,7 @@ summaries. The descriptive statistics make no significance claim.
 ## Research stack and project layout
 
 The current platform uses Python 3.14+, OpenTTDLab, Pydantic, SQLAlchemy,
-Alembic and PostgreSQL 16. OR-Tools remains an intentional dependency for future
-optimization research; it is not an implemented network optimizer.
+Alembic and PostgreSQL 16. OR-Tools powers the implemented P05 CP-SAT candidate-network optimizer.
 
 ```text
 app/
@@ -145,7 +185,7 @@ app/
 ├── experiments/       # Scenarios, policies, batch/live service, history and CLI
 ├── simulation/openttd/# Runtime, Admin observation, telemetry and final parsing
 └── planning/          # P02 contracts, P03 transport, P05 optimizer and P06 executor
-alembic/versions/      # Published migration history 0001 through 0007
+alembic/versions/      # Migration history 0001 through 0008
 tests/                # Contracts, controlled runtime tests and opt-in real proofs
 docker-compose.yml    # PostgreSQL service and persistent database volume
 ```
@@ -231,5 +271,5 @@ P04 telemetry and final-save parser → plan-linked realized metrics and conserv
 estimate comparisons. Plan runs use explicit provenance rather than external-AI
 strategy rows (forward migration 0008). Current-period income/expenses/cargo retain
 their period semantics; full-run profit and realized construction costs are unavailable.
-Controlled implementation passes 990 tests, including PostgreSQL checks; a real
+Historical controlled verification included PostgreSQL checks; a real
 P07 evaluation proof requires separate authorization. Closed-loop optimization is not yet implemented.
