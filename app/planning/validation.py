@@ -426,6 +426,86 @@ def _validate_routes(plan: ExecutionPlan, scenario: PlanningScenario, index: _In
         PlanningFailureCode.INVALID_PLAN,
         "assigned cargo exceeds demand",
     )
+    network = scenario.constraints.network_selection
+    if network is not None:
+        _require(
+            all(a.candidate_id in candidates for a in plan.infrastructure.actions),
+            PlanningFailureCode.UNSUPPORTED_CONSTRUCTION,
+            "construction candidate missing",
+        )
+        selected = [candidates[a.candidate_id] for a in plan.infrastructure.actions]
+        for station in (c for c in selected if c.kind is ConstructionKind.STATION):
+            assert station.site_id is not None
+            site = locations[station.site_id]
+            footprint = {
+                Tile(x=x, y=y)
+                for x in range(site.tile.x, site.tile.x + (station.footprint_width_tiles or 1))
+                for y in range(site.tile.y, site.tile.y + (station.footprint_height_tiles or 1))
+            }
+            for segment in (c for c in selected if c.kind is ConstructionKind.SEGMENT):
+                _require(
+                    station.site_id in (segment.origin_id, segment.destination_id)
+                    or not footprint.intersection(segment.tiles),
+                    PlanningFailureCode.UNSUPPORTED_CONSTRUCTION,
+                    "corridor conflicts with another service station",
+                )
+        _unique([r.demand_id for r in network.service_resources], "service resource declaration")
+        resources = {r.demand_id: set(r.candidate_ids) for r in network.service_resources}
+        _require(
+            all(d in demands and ids <= candidates.keys() for d, ids in resources.items()),
+            PlanningFailureCode.INVALID_PLAN,
+            "unknown service resources",
+        )
+        for route in plan.routes:
+            for assignment in route.cargo_assignments:
+                if assignment.demand_id in resources:
+                    _require(
+                        {actions[a].candidate_id for a in route.infrastructure_ids}
+                        <= resources[assignment.demand_id],
+                        PlanningFailureCode.INVALID_PLAN,
+                        "service uses unqualified infrastructure",
+                    )
+        supplies = {(s.origin_id, s.cargo_type): s.quantity for s in network.supplies}
+        _require(
+            len(supplies) == len(network.supplies)
+            and all((d.origin_id, d.cargo_type) in supplies for d in demands.values()),
+            PlanningFailureCode.INVALID_PLAN,
+            "unique supply limits required for every service",
+        )
+        for key, limit in supplies.items():
+            _require(
+                sum(
+                    q
+                    for demand_id, q in assigned.items()
+                    if (demands[demand_id].origin_id, demands[demand_id].cargo_type) == key
+                )
+                <= limit,
+                PlanningFailureCode.INVALID_PLAN,
+                "shared producer supply exceeded",
+            )
+        _require(
+            sum(g.count for g in plan.fleet.groups) <= network.max_vehicles,
+            PlanningFailureCode.INVALID_FLEET,
+            "shared vehicle limit exceeded",
+        )
+        _unique([r.candidate_id for r in network.resource_limits], "resource limit")
+        for limit in network.resource_limits:
+            _require(
+                limit.candidate_id in candidates,
+                PlanningFailureCode.INVALID_PLAN,
+                "unknown limited resource",
+            )
+            used_routes = {
+                r.route_id
+                for r in plan.routes
+                if any(actions[a].candidate_id == limit.candidate_id for a in r.infrastructure_ids)
+            }
+            _require(
+                sum(g.count for g in plan.fleet.groups if used_routes.intersection(g.route_ids))
+                <= limit.max_vehicles,
+                PlanningFailureCode.INVALID_FLEET,
+                "shared infrastructure capacity exceeded",
+            )
 
 
 def _validate_fleet(plan: ExecutionPlan, scenario: PlanningScenario, index: _Index) -> Decimal:

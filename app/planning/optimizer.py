@@ -167,7 +167,9 @@ def _emit(scenario: PlanningScenario, chosen: list[_Alternative]) -> ExecutionPl
         world_fingerprint=scenario.world_fingerprint,
         planner_name="candidate-network-optimizer",
         planner_version="1",
-        strategy_identifier="min-capex",
+        strategy_identifier="max-cargo-min-capex"
+        if scenario.constraints.network_selection is not None
+        else "min-capex",
         strategy_version="1",
         planner_inputs_digest=digest,
         routes=tuple(sorted(routes, key=lambda r: r.route_id)),
@@ -265,6 +267,10 @@ def _alternatives(scenario: PlanningScenario) -> list[list[_Alternative]]:
     locations = {s.location_id: s for s in scenario.locations}
     candidates = sorted(scenario.infrastructure_candidates, key=lambda c: c.candidate_id)
     modes = set(scenario.constraints.permitted_modes)
+    network = scenario.constraints.network_selection
+    resources = (
+        {r.demand_id: set(r.candidate_ids) for r in network.service_resources} if network else {}
+    )
     stations = [c for c in candidates if c.kind is ConstructionKind.STATION and c.mode in modes]
     depots = [c for c in candidates if c.kind is ConstructionKind.DEPOT and c.mode in modes]
     # Directed supplied graph edges; retain the original candidate, including tiles and costs.
@@ -284,11 +290,17 @@ def _alternatives(scenario: PlanningScenario) -> list[list[_Alternative]]:
             and locations[b.site_id].serves_location_id == demand.destination_id
         ]
         if not pairs:
+            if network is not None:
+                result.append([])
+                continue
             raise OptimizerFailure(OptimizerFailureCode.NO_FEASIBLE_STATION_PAIR, demand.demand_id)
         connected = [
             (a, b, edge) for a, b in pairs for edge in edges.get((a.site_id, b.site_id, a.mode), [])
         ]
         if not connected:
+            if network is not None:
+                result.append([])
+                continue
             raise OptimizerFailure(OptimizerFailureCode.NO_CONNECTING_SEGMENT, demand.demand_id)
         alternatives = []
         rail_infeasible = False
@@ -341,6 +353,12 @@ def _alternatives(scenario: PlanningScenario) -> list[list[_Alternative]]:
                         rail_infeasible = True
                         continue
                     composition, count, purchase = rail
+                if (
+                    demand.demand_id in resources
+                    and not {c.candidate_id for c in (a, b, depot, edge)}
+                    <= resources[demand.demand_id]
+                ):
+                    continue
                 alternatives.append(
                     _Alternative(
                         demand,
@@ -352,7 +370,7 @@ def _alternatives(scenario: PlanningScenario) -> list[list[_Alternative]]:
                         purchase,
                     )
                 )
-        if not alternatives:
+        if not alternatives and network is None:
             raise OptimizerFailure(
                 OptimizerFailureCode.RAIL_CONSIST_INFEASIBLE
                 if rail_infeasible
@@ -388,6 +406,9 @@ def _construction_conflicts(
                 ConstructionKind.STATION,
                 ConstructionKind.SEGMENT,
             }
+            if station_segment and scenario.constraints.network_selection is not None:
+                station, segment = (a, b) if a.kind is ConstructionKind.STATION else (b, a)
+                station_segment = station.site_id in (segment.origin_id, segment.destination_id)
             if not station_segment and footprints[a.candidate_id] & footprints[b.candidate_id]:
                 conflicts.append((a.candidate_id, b.candidate_id))
     return conflicts
@@ -437,8 +458,12 @@ def _solve(
         key=lambda c: c.candidate_id,
     )
     builds = {c.candidate_id: model.new_bool_var(f"c-{i}") for i, c in enumerate(candidates)}
+    network = scenario.constraints.network_selection
     for items, variables in zip(alternatives, choices, strict=True):
-        model.add_exactly_one(variables)
+        if network is None:
+            model.add_exactly_one(variables)
+        else:
+            model.add_at_most_one(variables)
         for alternative, variable in zip(items, variables, strict=True):
             for c in alternative.candidates:
                 model.add(variable <= builds[c.candidate_id])
@@ -465,10 +490,54 @@ def _solve(
     capex = cp_model.LinearExpr.weighted_sum(
         [builds[c.candidate_id] for c in candidates] + [v for _, v in flat], units[: len(amounts)]
     )
-    model.minimize(capex)
     solver = cp_model.CpSolver()
     solver.parameters.num_search_workers = 1
     solver.parameters.random_seed = 0
+    if network is not None:
+        supplies = {(s.origin_id, s.cargo_type): s.quantity for s in network.supplies}
+        if len(supplies) != len(network.supplies) or any(
+            (a.demand.origin_id, a.demand.cargo_type) not in supplies for a, _ in flat
+        ):
+            raise OptimizerFailure(
+                OptimizerFailureCode.UNSUPPORTED_SCENARIO,
+                "unique supply limits required for every service",
+            )
+        for key, quantity in supplies.items():
+            model.add(
+                sum(
+                    a.demand.quantity * v
+                    for a, v in flat
+                    if (a.demand.origin_id, a.demand.cargo_type) == key
+                )
+                <= quantity
+            )
+        model.add(sum(a.count * v for a, v in flat) <= network.max_vehicles)
+        limits = {r.candidate_id: r.max_vehicles for r in network.resource_limits}
+        catalog_ids = {c.candidate_id for c in scenario.infrastructure_candidates}
+        if len(limits) != len(network.resource_limits) or not limits.keys() <= catalog_ids:
+            raise OptimizerFailure(
+                OptimizerFailureCode.UNSUPPORTED_SCENARIO, "invalid resource limits"
+            )
+        for candidate_id, capacity in limits.items():
+            model.add(
+                sum(
+                    a.count * v
+                    for a, v in flat
+                    if any(c.candidate_id == candidate_id for c in a.candidates)
+                )
+                <= capacity
+            )
+        if budget is not None:
+            model.add(capex <= units[-1])
+        cargo = sum(a.demand.quantity * v for a, v in flat)
+        model.maximize(cargo)
+        status = solver.solve(model)
+        if status != cp_model.OPTIMAL or solver.value(cargo) == 0:
+            raise OptimizerFailure(
+                OptimizerFailureCode.GLOBALLY_INFEASIBLE, "no positive feasible service combination"
+            )
+        model.add(cargo == solver.value(cargo))
+    model.minimize(capex)
     status = solver.solve(model)
     if status != cp_model.OPTIMAL:
         raise OptimizerFailure(OptimizerFailureCode.GLOBALLY_INFEASIBLE, solver.status_name(status))
@@ -522,7 +591,7 @@ def optimize_candidate_network(scenario: PlanningScenario) -> OptimizationResult
                 ).hexdigest(),
                 horizon_days=scenario.horizon_days,
                 currency="GBP",
-                predicted_delivered_cargo_units=sum(d.quantity for d in scenario.cargo_demands),
+                predicted_delivered_cargo_units=sum(a.demand.quantity for a in chosen),
                 infrastructure_spend_gbp=sum(
                     (a.estimated_build_cost_gbp for a in plan.infrastructure.actions), Decimal(0)
                 ),

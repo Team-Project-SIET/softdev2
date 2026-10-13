@@ -28,6 +28,8 @@ _ID_COLLECTIONS = {
     "resolved_sites": "location_id",
     "cargo_types": None,
     "vehicle_types": None,
+    "service_resources": "demand_id",
+    "resource_limits": "candidate_id",
 }
 
 
@@ -43,7 +45,12 @@ def _decimal_string(value: Decimal) -> str:
 def _json_value(value: object) -> object:
     if isinstance(value, BaseModel):
         fields = type(value).model_fields
-        return {name: _json_field(name, getattr(value, name)) for name in fields}
+        return {
+            name: _json_field(name, getattr(value, name))
+            for name in fields
+            # Preserve frozen schema-v1 identities for the single-service workflow.
+            if name != "network_selection" or getattr(value, name) is not None
+        }
     if isinstance(value, Decimal):
         return _decimal_string(value)
     if isinstance(value, date):

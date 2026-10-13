@@ -188,10 +188,36 @@ class EconomicAssumptions(Contract):
     late_penalty_gbp_per_cargo_unit_day: NonNegativeAmount | None = None
 
 
+class SupplyLimit(Contract):
+    origin_id: Identifier
+    cargo_type: Identifier
+    quantity: NonNegativeInt
+
+
+class ResourceLimit(Contract):
+    candidate_id: Identifier
+    max_vehicles: NonNegativeInt
+
+
+class ServiceResources(Contract):
+    demand_id: Identifier
+    candidate_ids: tuple[Identifier, ...] = Field(min_length=1)
+
+
+class NetworkSelection(Contract):
+    """Optional historical-batch services; maximize cargo, then minimize CAPEX."""
+
+    supplies: tuple[SupplyLimit, ...] = Field(min_length=1)
+    max_vehicles: PositiveInt
+    resource_limits: tuple[ResourceLimit, ...] = ()
+    service_resources: tuple[ServiceResources, ...] = ()
+
+
 class PlanningConstraints(Contract):
     budget_gbp: NonNegativeAmount | None = None
     permitted_modes: tuple[Mode, ...]
     max_train_length_tiles: PositiveInt | None = None
+    network_selection: NetworkSelection | None = None
 
 
 class ResolvedSite(Contract):

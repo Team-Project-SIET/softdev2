@@ -39,7 +39,8 @@ Historical runtime evidence is optional for a **new `--demo` run**.
 | P05 output → checked single-vehicle freight intent | Controlled compiler and native Attempt 9 |
 | Qualified observation → P08 → native delivery | Attempt 9, 20 coal units, attributed payment, plan-bound offline replay and cleanup |
 | P07 post-play evaluation, run history and charts | Offline replay of Attempts 4 and 9; native plan comparison for Attempt 9; failed Attempt 8 excluded from delivery averages |
-| Arbitrary maps, rail delivery, multiple vehicles, closed-loop optimization | Outside the demonstrated MVP |
+| Multiple candidate services, shared-constrained P05 selection and network P07 estimates | Controlled three-candidate scenario; native multi-service execution unproven |
+| Arbitrary maps, rail delivery, multiple native vehicles, closed-loop optimization | Outside the demonstrated native MVP |
 
 The standalone `--demo` result uses native OD selection. `--demo --planner` instead
 qualifies that generated world, captures the missing planning facts, runs P08/P05,
@@ -456,9 +457,60 @@ Focused offline checks:
 uv run --no-sync pytest -q tests/test_freight_analytics.py tests/test_plan_evaluation.py
 ```
 
+## Controlled multi-service optimization
+
+Run the saved three-candidate scenario without starting OpenTTD:
+
+```bash
+uv run --no-sync python -m app.planning.network_cli \
+  tests/fixtures/multi_service/scenario.json \
+  --output artifacts/experiments/multi-service
+```
+
+The scenario comes from a qualified controlled observation and three bounded P08
+OD fact packages. P05 selects two 40-unit services using four vehicles. Estimated
+CAPEX is £2,580: £580 infrastructure and £2,000 vehicle purchases. Reducing shared
+producer supply, vehicle availability, depot capacity or budget changes the selection.
+An unavailable optional service is excluded while feasible services remain selectable.
+
+`generate_freight_network(inputs, max_vehicles=..., resource_limits=...)` combines
+up to 16 adapter-issued packages from one source, qualified month and policy. Each
+package uses the existing bounded road generator. Conflicting shared facts and
+duplicate OD packages are rejected. The `NetworkSelection` contract binds shared
+supply and resource limits into the scenario digest; legacy single-service digests
+and default minimum-CAPEX behavior remain unchanged.
+
+The existing CP-SAT solver maximizes historical batch cargo, then minimizes CAPEX.
+It builds a standard multi-route `ExecutionPlan`. Exact infrastructure candidates
+are charged once across services. Partially overlapping corridors and incompatible
+facility orientations remain conflicts; incremental road-bit reuse is unsupported.
+Per-service resource declarations prevent borrowing an unqualified depot or corridor.
+The historical supply limit is not a production forecast or measured acceptor capacity.
+
+The output contains `execution-plan.json`, `estimates.json` and `evaluation.json`.
+P07 reports selected services, unique network construction CAPEX and fleet purchases.
+`evaluate_freight_network(plan, scenario, service_directories)` verifies retained
+receipts before accepting service actuals and requires exact plan/scenario attribution.
+Verified service-batch subtotals exclude failed and unattributed evidence. Independent
+windows cannot establish concurrent network performance, and company income cannot
+be assigned to concurrent services. Revenue, vehicle profit, CAPEX and unknown OPEX
+remain separate; unknown expenses never become zero or a claimed net return.
+
+The current native freight compiler and executor still support one service. A
+controlled multi-route plan is **not native execution ready**. This task launches
+nothing and adds no new proof framework. Existing single-service commands still work.
+
+Focused verification:
+
+```bash
+uv run --no-sync pytest -q tests/test_freight_network.py tests/test_planning_optimizer.py
+uv run --no-sync pytest -q tests/test_freight_history_postgres.py --run-postgres
+```
+
 ## Known limits
 
-One company, one vehicle, one coal producer/acceptor pair, two bay stops, one depot,
+The proven native execution uses one company, one vehicle, one coal producer/acceptor
+pair, two bay stops, one depot,
 a bounded flat vacant L route and default content are demonstrated. Each run uses
 one process, one secure connection, no reconnect or retry, at most 26 service
 requests and 768-byte service responses. The standalone deadline is 180 seconds;
