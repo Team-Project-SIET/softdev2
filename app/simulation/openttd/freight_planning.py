@@ -185,3 +185,56 @@ def compile_freight_service(road: ControlledRoadScenario, plan: ExecutionPlan):
         engine=engine,
         capacity=option.vehicle.capacity_cargo_units,
     )
+
+
+def compile_freight_network(network, plan: ExecutionPlan):
+    """Bind two selected routes to their original P08 packages without replanning."""
+    validate_execution_plan(plan, network.scenario)
+    if plan.planner_inputs_digest != scenario_hash(network.scenario) or len(plan.routes) != 2:
+        raise ValueError("exactly two source-bound selected freight services required")
+    roads = {r.scenario.cargo_demands[0].demand_id: r for r in network.services}
+    groups = {g.fleet_group_id: g for g in plan.fleet.groups}
+    actions = {a.construction_id: a for a in plan.infrastructure.actions}
+    options = {o.option_id: o for o in network.scenario.fleet_options}
+    compiled = []
+    for route in sorted(plan.routes, key=lambda r: r.route_id):
+        if len(route.cargo_assignments) != 1:
+            raise ValueError("one cargo assignment per native service required")
+        assignment = route.cargo_assignments[0]
+        road = roads[assignment.demand_id]
+        group = groups[route.fleet_group_id]
+        option = options[group.option_id]
+        expected = {p.candidate_id for p in road.candidate_provenance if p.engine_id is None}
+        engines = {
+            p.engine_id
+            for p in road.candidate_provenance
+            if p.engine_id is not None and p.candidate_id == group.option_id
+        }
+        if (
+            group.count != 1
+            or group.start_day != 0
+            or group.planned_trips_per_vehicle != 1
+            or len(group.route_ids) != 1
+            or not isinstance(option, RoadFleetOption)
+            or assignment.quantity != option.vehicle.capacity_cargo_units
+            or {actions[i].candidate_id for i in route.infrastructure_ids} != expected
+            or len(engines) != 1
+        ):
+            raise ValueError(
+                "native network requires one full-capacity vehicle per selected service"
+            )
+        compiled.append(
+            (
+                route.route_id,
+                PlannedFreightService(
+                    road,
+                    plan_hash(plan),
+                    road.benchmark.producer.industry_id,
+                    road.benchmark.acceptor.industry_id,
+                    road.benchmark.cargo.cargo_id,
+                    engines.pop(),
+                    option.vehicle.capacity_cargo_units,
+                ),
+            )
+        )
+    return tuple(compiled)

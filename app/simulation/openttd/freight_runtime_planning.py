@@ -258,7 +258,9 @@ async def collect_qualified_world(backend, prepared, session, accounting):
     return WorldPlanningObservation(result.verification.stability.final, result)
 
 
-async def capture_planning_facts(backend, prepared, world, *, read_exchange=None, retain=True):
+async def capture_planning_facts(
+    backend, prepared, world, *, read_exchange=None, retain=True, relationship=None, prefix=""
+):
     from .proof.freight_delivery import exchange
     from .proof.harness import sha256, write_json
 
@@ -280,7 +282,9 @@ async def capture_planning_facts(backend, prepared, world, *, read_exchange=None
     )
     if not relationships:
         raise ValueError("no qualified compatible freight relationship")
-    src, dst, cargo = relationships[0]
+    if relationship is not None and relationship not in relationships:
+        raise ValueError("unqualified freight relationship")
+    src, dst, cargo = relationship or relationships[0]
     records = {r.id: r for r in world.structural.inventory.observation.records}
     a, b = records[src], records[dst]
     x, y = min(a.x, b.x) - 2, min(a.y, b.y) - 2
@@ -292,7 +296,7 @@ async def capture_planning_facts(backend, prepared, world, *, read_exchange=None
     async def read(kind, arg=0):
         backend.health()
         request = PlanningRead(
-            request_id=f"planning-{len(responses)}",
+            request_id=f"planning-{prefix}{len(responses)}",
             kind=kind,
             arg=arg,
             src=src,

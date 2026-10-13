@@ -61,6 +61,8 @@ def evaluate_freight_network(
     plan: ExecutionPlan,
     scenario: PlanningScenario,
     service_directories: dict[str, Path] | None = None,
+    *,
+    native_network_directory: Path | None = None,
 ) -> NetworkEvaluation:
     """Verify retained packages; never count independent historical runs as a network.
 
@@ -71,7 +73,20 @@ def evaluate_freight_network(
     validate_execution_plan(plan, scenario)
     if plan.planner_inputs_digest != scenario_hash(scenario):
         raise ValueError("network plan input digest mismatch")
+    native = None
+    native_services = {}
+    if native_network_directory is not None:
+        from app.simulation.openttd.freight_native_network import verify_network_receipt
+
+        native = verify_network_receipt(native_network_directory)
+        if native["execution_plan_digest"] != plan_hash(plan):
+            raise ValueError("native network receipt belongs to a different plan")
+        native_services = {r["route_id"]: r for r in native["services"]}
+        if set(native_services) != {r.route_id for r in plan.routes}:
+            raise ValueError("native network services differ from selected plan")
     directories = service_directories or {}
+    if native is not None and directories:
+        raise ValueError("native network and historical service windows cannot be mixed")
     if not directories.keys() <= {r.route_id for r in plan.routes}:
         raise ValueError("evidence references an unselected service")
     digest = plan_hash(plan)
@@ -141,6 +156,38 @@ def evaluate_freight_network(
                 seen_receipts.add(evidence.history_key)
                 actual = {m.name: m for m in evidence.metrics}
                 status = "verified-delivery"
+        if route.route_id in native_services:
+            retained = native_services[route.route_id]
+            stage_costs = retained["mutation_costs"]
+            from app.simulation.openttd.freight_native_network import stage_assets
+
+            mapped = stage_assets(plan, route.route_id)
+            exclusive_actual = sum(
+                stage_costs[i] for i, asset in mapped.items() if len(actions[asset].route_ids) == 1
+            )
+            observed_values = dict(
+                delivered_cargo=retained["delivered"],
+                vehicles=1,
+                vehicle_purchase=stage_costs[6],
+                exclusive_infrastructure_capex=exclusive_actual,
+                delivery_revenue=retained["payment_income"],
+                vehicle_profit=retained["vehicle_profit_delta"],
+            )
+            actual = {
+                name: FreightMetric(
+                    name=name,
+                    unit="cargo_units"
+                    if name == "delivered_cargo"
+                    else "vehicles"
+                    if name == "vehicles"
+                    else "GBP",
+                    scope="service_batch",
+                    actual=Decimal(value),
+                    provenance="Native readbacks; only this vehicle runs in the payment window.",
+                )
+                for name, value in observed_values.items()
+            }
+            status = "verified-delivery"
         metrics = []
         for name, unit in (
             ("delivered_cargo", "cargo_units"),
@@ -156,7 +203,11 @@ def evaluate_freight_network(
             # Current revenue is company-level; concurrent service attribution is unavailable.
             amount = (
                 observed.actual
-                if observed and name not in {"delivery_revenue", "operating_costs", "net_return"}
+                if observed
+                and (
+                    native is not None
+                    or name not in {"delivery_revenue", "operating_costs", "net_return"}
+                )
                 else None
             )
             planned = estimate.get(name)
@@ -218,12 +269,30 @@ def evaluate_freight_network(
                 unit=unit,
                 scope="network_batch",
                 planned=planned.get(name),
-                actual=None,
-                provenance="Unique selected construction actions and fleet purchases; "
+                actual=(Decimal(native[name]) if native[name] is not None else None)
+                if native is not None and name in native
+                else (
+                    Decimal(native["actual_capex"])
+                    if native is not None and name == "total_capex"
+                    else Decimal(native["delivered"])
+                    if native is not None and name == "delivered_cargo"
+                    else Decimal(native["payment_income"])
+                    if native is not None and name == "delivery_revenue"
+                    else Decimal(2)
+                    if native is not None and name == "vehicles"
+                    else None
+                ),
+                provenance="Verified unique native ledger; OPEX and net return unknown."
+                if native is not None
+                else "Unique selected construction actions and fleet purchases; "
                 "actual network ledger unavailable.",
             )
         )
     return NetworkEvaluation(
+        classification="NATIVE_MULTI_SERVICE_EVALUATION"
+        if native
+        else "CONTROLLED_MULTI_SERVICE_EVALUATION",
+        native_execution_ready=native is not None,
         plan_digest=digest,
         scenario_digest=scenario_hash(scenario),
         services=tuple(services),
@@ -231,6 +300,11 @@ def evaluate_freight_network(
         verified_service_count=sum(s.status == "verified-delivery" for s in services),
         verified_batch_subtotals=verified_batch_subtotals(tuple(services)),
         limitations=(
+            "Serial same-session services; concurrent throughput is unmeasured.",
+            "Operating expenses and net return remain unknown.",
+        )
+        if native is not None
+        else (
             "Historical qualified supply batch, not future production or measured acceptor demand.",
             "Native multi-service execution is unproven; "
             "the existing executor accepts one service.",

@@ -270,6 +270,47 @@ def test_network_cli_runs_saved_scenario_without_native_operations(tmp_path):
     assert json.loads((tmp_path / "evaluation.json").read_text())["native_execution_ready"] is False
 
 
+def test_native_network_p07_preserves_unknown_costs(network, monkeypatch, tmp_path):
+    from app.experiments.freight_network import evaluate_freight_network
+    from app.simulation.openttd import freight_native_network
+
+    plan = optimize_candidate_network(network.scenario).plan
+    # Controlled receipt fixture tests evaluation, not native receipt verification.
+    receipt = dict(
+        execution_plan_digest=plan_hash(plan),
+        services=[
+            dict(
+                route_id=route.route_id,
+                delivered=20,
+                mutation_costs=[10] * 6 + [500],
+                payment_income=100,
+                vehicle_profit_delta=90,
+            )
+            for route in plan.routes
+        ],
+        delivered=40,
+        payment_income=200,
+        actual_capex=1120,
+        infrastructure_capex=120,
+        vehicle_purchase=1000,
+        operating_costs=None,
+        net_return=None,
+    )
+    monkeypatch.setattr(freight_native_network, "verify_network_receipt", lambda _: receipt)
+    report = evaluate_freight_network(plan, network.scenario, native_network_directory=tmp_path)
+    metrics = {m.name: m.actual for m in report.metrics}
+    assert report.verified_service_count == 2
+    assert metrics["delivered_cargo"] == 40
+    assert metrics["delivery_revenue"] == 200
+    assert metrics["total_capex"] == 1120
+    assert metrics["operating_costs"] is None
+    assert metrics["net_return"] is None
+    for service in report.services:
+        actuals = {m.name: m.actual for m in service.metrics}
+        assert actuals["operating_costs"] is None
+        assert actuals["net_return"] is None
+
+
 def test_unavailable_optional_service_does_not_abort_feasible_network(network):
     scenario = network.scenario
     blocked = scenario.cargo_demands[0].model_copy(
@@ -297,6 +338,7 @@ def test_independent_verified_native_runs_are_not_network_actuals(network):
         pytest.skip("optional retained native evidence not installed")
     plan = optimize_candidate_network(network.scenario).plan
     report = evaluate_freight_network(plan, network.scenario, {plan.routes[0].route_id: retained})
+    assert report.services[0].evidence is not None
     assert report.services[0].evidence.status == "verified-delivery"
     assert report.services[0].status == "unattributed"
     assert all(m.actual is None for m in report.metrics)

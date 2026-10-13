@@ -4,7 +4,7 @@ import hashlib
 import json
 from typing import Literal
 
-from pydantic import StrictInt
+from pydantic import PrivateAttr, StrictInt
 
 from app.planning.canonical import canonical_bytes
 from app.planning.domain import Contract, Digest
@@ -53,14 +53,22 @@ class DeliveryReadback(Contract):
     s: tuple[StrictInt, ...]
     # Current economy quarter, optional closed period tick/date/quarter/cargo/income.
     e: tuple[StrictInt, ...] = ()
+    _legacy: bool = PrivateAttr(default=False)
 
     @property
     def digest(self):
-        return hashlib.sha256(canonical_bytes(self)).hexdigest()
+        raw = canonical_bytes(self)
+        if self._legacy:
+            value = json.loads(raw)
+            value.pop("e")
+            raw = json.dumps(
+                value, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+            ).encode()
+        return hashlib.sha256(raw).hexdigest()
 
     @classmethod
-    def parse_for(cls, q, raw):
-        if len(raw) > 768:
+    def parse_for(cls, q, raw, *, legacy=False):
+        if len(raw) > (512 if legacy else 768):
             raise ValueError("response exceeds 768 bytes")
 
         def unique(pairs):
@@ -73,6 +81,9 @@ class DeliveryReadback(Contract):
 
         json.loads(raw, object_pairs_hook=unique)
         r = cls.model_validate_json(raw)
+        r._legacy = legacy
+        if legacy and r.e:
+            raise ValueError("legacy snapshot cannot contain quarter segments")
         if any(
             getattr(r, k) != getattr(q, k)
             for k in ("protocol", "op", "request_id", "plan", "arg", "max_cost")
@@ -176,8 +187,8 @@ def verify_observation(plan, r, phase):
     if (
         r.status != "OBSERVED"
         or r.arg != phase
-        or not 0 <= r.s[0] - r.s[26] <= observation_budget(plan)
-        or not 1 <= r.s[27] <= observation_budget(plan) + 1
+        or not 0 <= r.s[0] - r.s[26] <= (2048 if r._legacy else observation_budget(plan))
+        or not 1 <= r.s[27] <= (2048 if r._legacy else observation_budget(plan)) + 1
     ):
         raise ValueError("bounded native observation failed or inconclusive")
     if phase == 0 and r.s[15] <= 0:
@@ -236,7 +247,7 @@ def verify_delivery(plan, baseline, observations, final):
         or final.s[21] < baseline.s[1]
     ):
         raise ValueError("native source pickup, industry delivery and actual payment required")
-    return dict(
+    receipt = dict(
         schema="first-freight-delivery-receipt-v1",
         plan_digest=plan.digest,
         source=plan.a[0],
@@ -259,6 +270,11 @@ def verify_delivery(plan, baseline, observations, final):
         ],
         verification="NATIVE_FINAL_INDUSTRY_DELIVERY_AND_PAYMENT",
     )
+
+    if final._legacy:
+        receipt.pop("economy_transitions")
+        receipt.pop("economy_snapshots")
+    return receipt
 
 
 ADMISSION_COUNTERS = (

@@ -90,6 +90,80 @@ def _covers_ipv4(address: str) -> bool:
     )
 
 
+def _residual_socket(row: dict, ports: tuple, *, retained: bool = False) -> dict | None:
+    """Interpret the same final socket observation online and from retained bytes."""
+    if not isinstance(row, dict) or set(row) != {
+        "table",
+        "local",
+        "local_port",
+        "remote",
+        "remote_port",
+        "state",
+        "inode",
+    }:
+        raise ValueError("Malformed endpoint socket observation")
+    if (
+        row["table"] not in TABLES
+        or any(
+            type(row[k]) is not int or not 0 <= row[k] <= 65535
+            for k in ("local_port", "remote_port")
+        )
+        or type(row["inode"]) is not int
+        or row["inode"] < 0
+    ):
+        raise ValueError("Malformed endpoint socket observation")
+    version = 6 if row["table"].endswith("6") else 4
+    if any(ipaddress.ip_address(row[k]).version != version for k in ("local", "remote")):
+        raise ValueError("Endpoint address family mismatch")
+    local = row["local_port"] in ports and _covers_ipv4(row["local"])
+    remote = row["remote_port"] in ports and _covers_ipv4(row["remote"])
+    if not (local or remote):
+        if retained:
+            raise ValueError("Unrelated retained endpoint socket observation")
+        return None
+    state_valid = (
+        row["state"] == "TIME_WAIT"
+        if retained
+        else (type(row["state"]) is int and row["state"] == 6)
+    )
+    if not row["table"].startswith("tcp") or not state_valid:
+        raise ValueError(f"Live or ambiguous endpoint socket: {row}")
+    return dict(row, state="TIME_WAIT")
+
+
+def verify_retained_endpoints(value: dict, metadata: dict) -> None:
+    """Validate the final matched observation; no live probing or cleanup inference."""
+    try:
+        ports = (metadata["game_port"], metadata["admin_port"])
+        expected = dict(
+            policy=POLICY,
+            family="AF_INET",
+            host="127.0.0.1",
+            game_port=ports[0],
+            admin_port=ports[1],
+            process_reaped=True,
+            reservation_released=True,
+            listener_closed=True,
+            connection_closed=True,
+            immediate_rebindability_required=False,
+            connection_probe=False,
+        )
+        if (
+            any(type(p) is not int or not 0 < p < 65536 for p in ports)
+            or ports[0] == ports[1]
+            or list(ports) != metadata["endpoints"]
+            or not isinstance(value, dict)
+            or set(value) != set(expected) | {"kernel_states"}
+            or any(type(value[k]) is not type(v) or value[k] != v for k, v in expected.items())
+            or not isinstance(value["kernel_states"], list)
+        ):
+            raise ValueError("Endpoint identity or closure summary mismatch")
+        for row in value["kernel_states"]:
+            _residual_socket(row, ports, retained=True)
+    except (KeyError, TypeError, ValueError) as error:
+        raise ValueError("Retained endpoint observation inconsistent or malformed") from error
+
+
 def verify_cleanup_endpoints(prepared, cleanup: dict, reservation=None, *, family=socket.AF_INET):
     """Require reaped ownership and no live endpoint sockets; retain TIME_WAIT.
 
@@ -121,13 +195,9 @@ def verify_cleanup_endpoints(prepared, cleanup: dict, reservation=None, *, famil
         raise ValueError("Frozen endpoint identity mismatch")
     matched = []
     for row in kernel_socket_rows():
-        local = row["local_port"] in ports and _covers_ipv4(row["local"])
-        remote = row["remote_port"] in ports and _covers_ipv4(row["remote"])
-        if not (local or remote):
-            continue
-        if row["table"].startswith("udp") or row["state"] != 6:
-            raise ValueError(f"Live or ambiguous endpoint socket: {row}")
-        matched.append(dict(row, state="TIME_WAIT"))
+        residual = _residual_socket(row, ports)
+        if residual is not None:
+            matched.append(residual)
     return dict(
         sockets_closed=True,
         endpoint_verification=dict(

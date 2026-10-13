@@ -2,6 +2,7 @@
 
 import argparse
 import asyncio
+import configparser
 import json
 import os
 import re
@@ -108,6 +109,16 @@ PLANNER_BUDGETS = DEMO_BUDGETS | dict(
     construction_commands=64,
 )
 
+NETWORK_BUDGETS = PLANNER_BUDGETS | dict(
+    requests=58,
+    mutations=22,
+    supplemental_requests=1168,
+    total_seconds=900,
+    world_preparation_mutations=108,
+    construction_commands=128,
+    selected_services=2,
+)
+
 
 def flat_heightmap():
     """64x64 grayscale 1: native heightmap loader maps every interior tile to height 1."""
@@ -180,11 +191,11 @@ def backend_for(metadata):
     return cls(authorized_one_launch=True)
 
 
-def staged_package(demo, planner=False):
+def staged_package(demo, planner=False, network=False):
     out = {
         p.name: p.read_bytes()
         for p in PACKAGE.glob("*.nut")
-        if p.name not in ("demo.nut", "planner.nut")
+        if p.name not in ("demo.nut", "planner.nut", "network.nut")
     }
     if demo:
         out["delivery.nut"] = out["main.nut"]
@@ -209,6 +220,30 @@ def staged_package(demo, planner=False):
         out["main.nut"] = (PACKAGE / "planner.nut").read_bytes()
         out["qualification.nut"] = qualification_bridge_source().encode()
         out["info.nut"] = out["info.nut"].replace(b'"FreightDemoProof"', b'"PlannerFreightProof"')
+    if network:
+        out["network-parent.nut"] = (
+            out["main.nut"]
+            .replace(b"function Handle(q)", b"function PlannerHandle(q)")
+            .replace(b"function Quote(i)", b"function PlannerQuote(i)")
+        )
+        out["network-parent.nut"] = out["network-parent.nut"].replace(
+            b"planner_requests>=292", b"planner_requests>=1168"
+        )
+        out["network-parent.nut"] = (
+            out["network-parent.nut"]
+            .replace(b'FREIGHT_ROUTE_EDGE a="+a', b'FREIGHT_ROUTE_EDGE plan="+dplan+" a="+a')
+            .replace(
+                b'FREIGHT_ROUTE_FRONTS origin="', b'FREIGHT_ROUTE_FRONTS plan="+dplan+" origin="'
+            )
+        )
+        out["delivery.nut"] = out["delivery.nut"].replace(b"drequests>=26", b"drequests>=58")
+        out["delivery.nut"] = out["delivery.nut"].replace(
+            b"GSVehicleList().Count()!=1", b"GSVehicleList().Count()!=ExpectedVehicleCount()"
+        )
+        out["main.nut"] = (PACKAGE / "network.nut").read_bytes()
+        out["info.nut"] = out["info.nut"].replace(
+            b'"PlannerFreightProof"', b'"NetworkFreightProof"'
+        )
     return out
 
 
@@ -361,7 +396,9 @@ def consumed_identity(directory):
     )
 
 
-def prepare(directory, *, demo=False, planner=False, batch_limit=20):
+def prepare(directory, *, demo=False, planner=False, batch_limit=20, network=False):
+    if network and (not demo or not planner):
+        raise ValueError("network requires --demo --planner")
     if planner and not demo:
         raise ValueError("planner demonstration requires --demo")
     if type(batch_limit) is not int or not 1 <= batch_limit <= 65535:
@@ -418,7 +455,10 @@ def prepare(directory, *, demo=False, planner=False, batch_limit=20):
             shutil.copyfile(workspace.root / "heightmap.png", directory / "heightmap.png")
         if planner:
             workspace.config.write_text(
-                workspace.config.read_text() + "\n[economy]\ntimekeeping_units = 0\n[newgrf]\n"
+                workspace.config.read_text()
+                + "\n[economy]\ntimekeeping_units = 0\n"
+                + ("multiple_industry_per_town = true\n" if network else "")
+                + "[newgrf]\n"
             )
         graphics = stage_opengfx(
             GRAPHICS_ARCHIVE,
@@ -439,7 +479,7 @@ def prepare(directory, *, demo=False, planner=False, batch_limit=20):
             target = parent / name
             target.mkdir()
             if src == PACKAGE:
-                for name, data in staged_package(demo, planner).items():
+                for name, data in staged_package(demo, planner, network).items():
                     (target / name).write_bytes(data)
             else:
                 for p in src.glob("*.nut"):
@@ -475,6 +515,7 @@ def prepare(directory, *, demo=False, planner=False, batch_limit=20):
                 PROJECT / "app/simulation/openttd" / (name + ".py")
                 for name in (
                     "freight_planning",
+                    "freight_native_network",
                     "freight_runtime_planning",
                     "freight_planning_replay",
                     "prepared_source_correspondence",
@@ -491,6 +532,12 @@ def prepare(directory, *, demo=False, planner=False, batch_limit=20):
                 PROJECT / "tests/reference/map_api_15_3/script_map.hpp",
                 PROJECT / "tests/reference/map_api_15_3/SOURCE.txt",
             ]
+        if network:
+            snapshot_paths += [
+                PROJECT / "tests/test_native_freight_network.py",
+                PROJECT / "tests/test_network_world_preparation.py",
+                PROJECT / "app/experiments/freight_network.py",
+            ]
         archive = directory / "frozen-source.zip"
         with zipfile.ZipFile(archive, "x", compression=zipfile.ZIP_DEFLATED) as z:
             for src in snapshot_paths:
@@ -498,7 +545,7 @@ def prepare(directory, *, demo=False, planner=False, batch_limit=20):
                 info.compress_type = zipfile.ZIP_DEFLATED
                 z.writestr(info, src.read_bytes())
             if planner:
-                for name, data in staged_package(demo, planner).items():
+                for name, data in staged_package(demo, planner, network).items():
                     z.writestr("staged/" + name, data)
                 z.writestr("staged/openttd.cfg", workspace.config.read_bytes())
         frozen = source_freeze()
@@ -522,6 +569,7 @@ def prepare(directory, *, demo=False, planner=False, batch_limit=20):
             attempt=number,
             demo=demo,
             planner=planner,
+            network=network,
             construction_readback_version=1 if planner else None,
             delivery_batch_limit=batch_limit if planner else None,
             delivery_predecessor=prior,
@@ -578,7 +626,13 @@ def prepare(directory, *, demo=False, planner=False, batch_limit=20):
                 str(directory),
                 "--authorize-one-launch",
             ],
-            budgets=PLANNER_BUDGETS if planner else DEMO_BUDGETS if demo else BUDGETS,
+            budgets=NETWORK_BUDGETS
+            if network
+            else PLANNER_BUDGETS
+            if planner
+            else DEMO_BUDGETS
+            if demo
+            else BUDGETS,
             cleanup=[
                 "reap process",
                 "close secure stream and listeners",
@@ -623,6 +677,30 @@ def reopen(directory):
     )
 
 
+def validate_network_world_inputs(prepared, metadata):
+    """Admit only a fresh generated world; retained failure saves are evidence."""
+    root = prepared.spec.workspace.root
+    config = configparser.ConfigParser(interpolation=None)
+    try:
+        config.read_string(prepared.spec.workspace.config.read_text())
+        if not config.getboolean("economy", "multiple_industry_per_town"):
+            raise ValueError("network requires multiple industries per town")
+    except configparser.Error as error:
+        raise ValueError("network preparation config is ambiguous or incomplete") from error
+    heightmap = root / "heightmap.png"
+    retained = prepared.directory / "heightmap.png"
+    if (
+        heightmap.is_symlink()
+        or retained.is_symlink()
+        or heightmap.read_bytes() != flat_heightmap()
+        or retained.read_bytes() != heightmap.read_bytes()
+        or metadata["source"] != dict(kind="NATIVE_FLAT_HEIGHTMAP", input_sha256=sha256(retained))
+    ):
+        raise ValueError("network fresh heightmap identity mismatch")
+    if any(path.suffix.lower() == ".sav" for path in root.rglob("*")):
+        raise ValueError("network disposable world contains a retained save")
+
+
 def preflight(p):
     if (p.directory / "CLAIM.json").exists():
         raise ValueError("one attempt consumed")
@@ -634,7 +712,9 @@ def preflight(p):
         or m["attempt"] != attempt_number(p.directory)
         or m["budgets"]
         != (
-            PLANNER_BUDGETS
+            NETWORK_BUDGETS
+            if m.get("network", False)
+            else PLANNER_BUDGETS
             if m.get("planner", False)
             else DEMO_BUDGETS
             if m.get("demo", False)
@@ -654,7 +734,11 @@ def preflight(p):
             raise ValueError("disposable source mismatch")
     elif (p.spec.workspace.root / "heightmap.png").read_bytes() != flat_heightmap():
         raise ValueError("deterministic heightmap mismatch")
-    for name, data in staged_package(m.get("demo", False), m.get("planner", False)).items():
+    if m.get("network", False):
+        validate_network_world_inputs(p, m)
+    for name, data in staged_package(
+        m.get("demo", False), m.get("planner", False), m.get("network", False)
+    ).items():
         if data != (p.spec.workspace.game / "RoadFreightProof" / name).read_bytes():
             raise ValueError("stale delivery package")
     if (PACKAGE / "infrastructure.nut").read_bytes() != (
@@ -690,7 +774,7 @@ async def exchange(session, q, directory, *, response_type=DeliveryReadback):
                 return response_type.parse_for(getattr(q, "admission_request", q), response)
 
 
-def construction_evidence(plan, records, *, planner=False):
+def construction_evidence(plan, records, *, planner=False, reused_stages=()):
     """Bind fresh native command accounting and independent owned-state reads."""
     costs = []
     digests = []
@@ -702,7 +786,11 @@ def construction_evidence(plan, records, *, planner=False):
         if (built.status, read.status, built.s[22], read.s[22]) != ("BUILT", "READ", i + 1, i + 1):
             raise ValueError("construction result/readback sequence mismatch")
         cost = built.s[23]
-        if cost < 0 or ((2 if planner else 0) <= i < 7 and cost == 0) or (i >= 7 and cost != 0):
+        if (
+            cost < 0
+            or ((2 if planner else 0) <= i < 7 and i not in reused_stages and cost == 0)
+            or (i >= 7 and cost != 0)
+        ):
             raise ValueError("native construction/order/start cost mismatch")
         if i < 9 and (previous - built.s[3] != cost or built.s[3] != read.s[3]):
             raise ValueError("native spending/readback mismatch")
@@ -716,7 +804,7 @@ def construction_evidence(plan, records, *, planner=False):
     )
 
 
-def command_readback_evidence(log_path, plan, records):
+def command_readback_evidence(log_path, plan, records, *, network_plans=()):
     """Replay bounded native command outcomes; failures remain failures."""
     stages = []
     commands = []
@@ -725,7 +813,10 @@ def command_readback_evidence(log_path, plan, records):
         if match is None:
             continue
         data = dict(item.split("=", 1) for item in match[2].split())
-        if data.pop("plan") != plan.digest:
+        digest = data.pop("plan")
+        if digest != plan.digest:
+            if digest in network_plans:
+                continue
             raise ValueError("construction command provenance mismatch")
         kind = match[1]
         stage = int(data["stage"])
@@ -824,7 +915,7 @@ async def run(p):
             before = await save(backend, p, "before")
 
             async def query(op, id, arg=0, plan=seal):
-                if result["requests"] >= BUDGETS["requests"]:
+                if result["requests"] >= m["budgets"]["requests"]:
                     raise ValueError("request budget exhausted")
                 if op == "build":
                     result["mutations"] += 1
@@ -833,6 +924,12 @@ async def run(p):
                     session, DeliveryRequest(op=op, request_id=id, plan=plan, arg=arg), p.directory
                 )
 
+            if m.get("network", False):
+                from app.simulation.openttd.freight_native_network import execute_network
+
+                await execute_network(backend, p, session, accounting, before, seal, m, result)
+                result["status"] = "NATIVE_MULTI_SERVICE_DELIVERY_VERIFIED"
+                return result
             service = None
             source_save = before
             if m.get("planner", False):
@@ -936,16 +1033,39 @@ async def run(p):
 
 
 def verify_receipt(directory):
+    directory = directory.resolve()
     if manifest(directory) != (directory / "artifact-manifest.sha256").read_text():
         raise ValueError("artifact manifest mismatch")
     m = json.loads((directory / "PRELAUNCH.json").read_text())
     seal = sha256(directory / "PRELAUNCH.json")
-    if seal != (directory / "PRELAUNCH.sha256").read_text().strip() or m["budgets"] != (
-        PLANNER_BUDGETS
-        if m.get("planner", False)
-        else DEMO_BUDGETS
-        if m.get("demo", False)
-        else BUDGETS
+    legacy_budgets = DEMO_BUDGETS | dict(
+        observation_script_ticks=2048,
+        samples=2049,
+        observation_economy_days=30,
+        observation_seconds=60,
+        response_bytes=512,
+    )
+    for key in (
+        "observation_route_ticks_per_tile",
+        "observation_slack_ticks",
+        "movement_stall_ticks",
+        "permitted_quarter_transitions",
+        "permitted_year_transitions",
+    ):
+        legacy_budgets.pop(key)
+    legacy = m.get("demo", False) and not m.get("planner", False) and m["budgets"] == legacy_budgets
+    if seal != (directory / "PRELAUNCH.sha256").read_text().strip() or (
+        not legacy
+        and m["budgets"]
+        != (
+            NETWORK_BUDGETS
+            if m.get("network", False)
+            else PLANNER_BUDGETS
+            if m.get("planner", False)
+            else DEMO_BUDGETS
+            if m.get("demo", False)
+            else BUDGETS
+        )
     ):
         raise ValueError("prelaunch mismatch")
     claim = json.loads((directory / "CLAIM.json").read_text())
@@ -999,7 +1119,7 @@ def verify_receipt(directory):
             q = selected.admission_request
         else:
             q = DeliveryRequest.model_validate_json(path.read_bytes())
-        records[q.request_id] = DeliveryReadback.parse_for(q, raw)
+        records[q.request_id] = DeliveryReadback.parse_for(q, raw, legacy=legacy)
     expected_ids = (
         ["inspect-1"]
         + [name for i in range(10) for name in (f"build-{i}", f"read-{i}")]
@@ -1099,6 +1219,9 @@ def main():
     )
     parser.add_argument("--authorize-one-launch", action="store_true")
     parser.add_argument(
+        "--network", action="store_true", help="two P05-selected services in one session"
+    )
+    parser.add_argument(
         "--planner", action="store_true", help="qualify and plan in the same native world"
     )
     parser.add_argument(
@@ -1121,20 +1244,37 @@ def main():
     if args.command == "cleanup":
         print(json.dumps(recover_cleanup(directory), sort_keys=True))
     elif args.command == "prepare":
-        p = prepare(directory, demo=args.demo, planner=args.planner, batch_limit=args.batch_limit)
+        p = prepare(
+            directory,
+            demo=args.demo,
+            planner=args.planner,
+            batch_limit=args.batch_limit,
+            network=args.network,
+        )
         preflight(p)
         print("PRELAUNCH PASS")
     elif args.command == "preflight":
         preflight(reopen(directory))
         print("PREFLIGHT PASS")
     elif args.command == "verify":
-        print(json.dumps(verify_receipt(directory), sort_keys=True))
+        metadata = json.loads((directory / "PRELAUNCH.json").read_text())
+        if metadata.get("network", False):
+            from app.simulation.openttd.freight_native_network import verify_network_receipt
+
+            print(json.dumps(verify_network_receipt(directory), sort_keys=True))
+        else:
+            print(json.dumps(verify_receipt(directory), sort_keys=True))
     else:
         if not args.authorize_one_launch:
             parser.error("run requires --authorize-one-launch")
         result = asyncio.run(run(reopen(directory)))
         print(json.dumps(result, sort_keys=True))
-        raise SystemExit(0 if result["status"] == "NATIVE_DELIVERY_VERIFIED" else 1)
+        raise SystemExit(
+            0
+            if result["status"]
+            in ("NATIVE_DELIVERY_VERIFIED", "NATIVE_MULTI_SERVICE_DELIVERY_VERIFIED")
+            else 1
+        )
 
 
 if __name__ == "__main__":
