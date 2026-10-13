@@ -1,8 +1,8 @@
-"""Pure controlled correspondence. Byte identity never confers runtime authority."""
+"""Prepared-source links. Byte identity alone never confers runtime authority."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Literal
 
@@ -19,7 +19,7 @@ class SourceTrust(StrEnum):
 
 
 class ControlledSourceLinks(Contract):
-    """Explicitly simulated, not independently established native receipts."""
+    """Semantic links; native labels require a separately validated authority capability."""
 
     original_save_digest: Digest
     loaded_source_digest: Digest | None
@@ -32,7 +32,7 @@ class ControlledSourceLinks(Contract):
     qualified_production_digest: Digest
     post_qualification_save_digest: Digest | None
     # This describes evidence kind, never real-proof authority.
-    evidence_kind: Literal["controlled-simulation", "missing"]
+    evidence_kind: Literal["controlled-simulation", "missing", "owned-native-save-snapshots"]
 
     def require_world(self, world: WorldPlanningObservation) -> None:
         c = world.context
@@ -64,6 +64,9 @@ class PreparedSourceCorrespondence:
     world: WorldPlanningObservation
     manifest: PreparedWorldManifest
     links: ControlledSourceLinks
+    # Only the owned live capture seam can supply this capability. JSON imports
+    # and controlled source links cannot upgrade trust.
+    _native_authority: object | None = field(default=None, repr=False, compare=False)
 
     def __post_init__(self) -> None:
         if (
@@ -95,6 +98,8 @@ class PreparedSourceCorrespondence:
 
     @property
     def post_qualification_status(self) -> str:
+        if self.trust is SourceTrust.REAL_RUNTIME_CORRESPONDENCE_PROVEN:
+            return "NATIVE_CAPTURED"
         return (
             "UNPROVEN"
             if self.links.post_qualification_save_digest is None
@@ -103,9 +108,17 @@ class PreparedSourceCorrespondence:
 
     @property
     def trust(self) -> SourceTrust:
+        if self._native_authority is not None:
+            from app.simulation.openttd.freight_runtime_planning import NativeSaveCorrespondence
+
+            if isinstance(self._native_authority, NativeSaveCorrespondence):
+                self._native_authority.require_correspondence(self)
+                return SourceTrust.REAL_RUNTIME_CORRESPONDENCE_PROVEN
         return SourceTrust.CONTROLLED_FIXTURE
 
     def require_real_executable_source(self) -> None:
+        if self.trust is SourceTrust.REAL_RUNTIME_CORRESPONDENCE_PROVEN:
+            return
         # No authoritative native save/load/capture evidence issuer exists yet.
         raise PlanningFactError(
             "real executable source blocked: trusted post-qualification correspondence unproven"

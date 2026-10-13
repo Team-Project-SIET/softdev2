@@ -25,7 +25,14 @@ def delivery_vm(*, no_supply=False, no_payment=False, no_delivery=False, paused=
     vm.execute(f"""
         ::no_supply <- {str(no_supply).lower()};::no_payment <- {str(no_payment).lower()};
         ::no_delivery <- {str(no_delivery).lower()};::paused={str(paused).lower()};
+        ::GSMap=class extends GSMap {{static function DistanceManhattan(a,b){{
+            return abs(a%64-b%64)+abs(a/64-b/64);}}}};
         ::roads <- {{}};::roadbits <- {{}};
+        ::GSError <- class {{static function GetLastError(){{return 0;}}}};
+        ::GSAccounting=class {{initial=0;
+            constructor(){{::account++;::cost=0;initial=::funds;}}
+            function GetCosts(){{return ::account in ::tests?::cost:initial-::funds;}}
+        }};
         ::stops <- {{}};::depots <- {{}};::actual <- 0;::dvid <- -1;
         ::ddorders <- [];::monitored <- false;
         ::GSDate <- class {{
@@ -78,28 +85,34 @@ def delivery_vm(*, no_supply=False, no_payment=False, no_delivery=False, paused=
             static function IsRockTile(t){{return (
                 false);}}static function IsRoughTile(t){{return false;}}
             static function HasTransportType(t,k){{return t in ::roads;}}
+            static function DemolishTile(t){{
+                if(!(::account in ::tests))throw "unexpected demolition";::cost=0;return true;}}
             static function GetCargoProduction(t,c,w,h,r){{return 1;}}
             static function GetCargoAcceptance(t,c,w,h,r){{return 8;}}
         }};
-        ::GSRoad = class {{static ROADTYPE_ROAD=0;static ROADVEHTYPE_TRUCK=1;
+        ::GSRoad = class {{static BT_ROAD=0;static ROADTYPE_ROAD=0;static ROADVEHTYPE_TRUCK=1;
             static function SetCurrentRoadType(t){{}}static function GetCurrentRoadType(){{return (
                 0);}}
             static function IsRoadTypeAvailable(t){{return true;}}
             static function CanRunOnRoad(e,t){{return true;}}
             static function GetRoadVehicleTypeForCargo(c){{return 1;}}
             static function IsRoadTile(t){{return t in ::roads;}}
+            static function HasRoadType(t,rt){{return rt==0&&(
+                t in ::roads||t in ::stops||t in ::depots);}}
             static function IsRoadStationTile(t){{return t in ::stops;}}
             static function IsDriveThroughRoadStationTile(t){{return false;}}
             static function GetRoadStationFrontTile(t){{return ::stops[t];}}
             static function IsRoadDepotTile(t){{return t in ::depots;}}
             static function GetRoadDepotFrontTile(t){{return ::depots[t];}}
+            static function GetBuildCost(t,k){{return 50;}}
             static function HasBit(t,f){{
                 if(t in ::stops)return ::stops[t]==f;
                 if(t in ::depots)return ::depots[t]==f;
                 return t in ::roadbits&&(f-t) in ::roadbits[t];}}
             static function AreRoadTilesConnected(a,b){{return HasBit(a,b)&&HasBit(b,a);}}
-            static function BuildRoad(a,b){{::cost=100;if(::account in ::tests)return true;
-                ::funds-=100;::actual++;::roads[a]<-true;::roads[b]<-true;
+            static function BuildRoad(a,b){{::cost=(HasBit(a,b)?0:50)+(HasBit(b,a)?0:50);
+                if(::account in ::tests)return ::cost>0;
+                ::funds-=::cost;::actual++;::roads[a]<-true;::roads[b]<-true;
                 foreach(t in [a,b]){{if(!(t in ::roadbits))::roadbits[t]<-{{}};
                     ::roadbits[t][t==a?b-a:a-b]<-true;}}return true;}}
             static function BuildRoadFull(a,b){{::cost=100;if(::account in ::tests)return true;
@@ -180,7 +193,7 @@ def call(vm, op, id, arg=0, plan=SEAL):
             str(v)
             if k in ("op", "request_id", "plan", "status")
             else [int(v[i]) for i in range(len(v))]
-            if k in ("a", "f", "s")
+            if k in ("a", "f", "s", "e")
             else int(v)
         )
     return DeliveryReadback.parse_for(q, json.dumps(data, separators=(",", ":")).encode())
@@ -240,7 +253,7 @@ def test_no_payment_exhaustion_is_inconclusive():
     vm = delivery_vm(no_payment=True)
     with pytest.raises(ValueError, match="inconclusive"):
         complete(vm)
-    assert int(vm.get_roottable()["ticks"]) <= 2068
+    assert int(vm.get_roottable()["ticks"]) <= 4468
 
 
 def test_packets_and_duplicate_keys_are_bounded():
@@ -251,8 +264,8 @@ def test_packets_and_duplicate_keys_are_bounded():
     q = DeliveryRequest(op="inspect", request_id="inspect-1", plan=SEAL)
     with pytest.raises(ValueError, match="duplicate"):
         DeliveryReadback.parse_for(q, raw[:-1] + b',"arg":0}')
-    with pytest.raises(ValueError, match="512"):
-        DeliveryReadback.parse_for(q, b" " * 513)
+    with pytest.raises(ValueError, match="768"):
+        DeliveryReadback.parse_for(q, b" " * 769)
 
 
 def test_deadline_sends_once_without_retry(tmp_path):
@@ -499,9 +512,8 @@ def test_depot_spur_requires_actual_front_road_bit():
             "GSStation.GetCargoWaiting <- function(s,c) {return 0;};::frozen_clock=true;",
             "CLOCK_STALLED",
         ),
-        ("::ticks=74;GSDate.GetMonth <- function(d) {return d>700000?4:1;};", "WINDOW_EXHAUSTED"),
         (
-            "::dates <- 700000;GSDate.GetCurrentDate <- function() {::dates+=31;return ::dates;};",
+            "::dates <- 700000;GSDate.GetCurrentDate <- function() {::dates+=61;return ::dates;};",
             "WINDOW_EXHAUSTED",
         ),
     ],
@@ -737,3 +749,107 @@ def test_cli_requires_explicit_launch_authorization(tmp_path, monkeypatch, capsy
     assert error.value.code == 2
     assert "--authorize-one-launch" in capsys.readouterr().err
     assert not (tmp_path / "CLAIM.json").exists()
+
+
+def test_quarter_rollover_during_transit_and_delayed_delivery():
+    vm = delivery_vm()
+    vm.execute("""
+        GSDate.GetMonth <- function(d) {return d>=700010?4:3;};
+        GSVehicle.GetLocation <- function(v) {return !::running?::bridge.choice.a[8]:
+            (::ticks<20?::bridge.choice.a[4]:(::ticks<2500?900+(::ticks/100%2):
+                ::bridge.choice.a[6]));};
+        GSVehicle.GetCargoLoad <- function(v,c) {return ::running&&::ticks>=5&&::ticks<2510?20:0;};
+        GSVehicle.GetCurrentSpeed <- function(v) {return ::ticks>=20&&::ticks<2500?45:0;};
+        GSCompany.GetQuarterlyCargoDelivered <- function(c,q) {return q==0&&::ticks>=2510?20:0;};
+        GSCompany.GetQuarterlyIncome <- function(c,q) {return q==0&&::ticks>=2510?500:0;};
+        GSVehicle.GetProfitThisYear <- function(v) {return ::ticks>=2510?480:0;};
+    """)
+    plan, baseline, records, final = complete(vm)
+    receipt = verify_delivery(plan, baseline, records, final)
+    assert receipt["delivered"] == 20 and receipt["payment_income"] == 500
+    assert records[2].s[0] > 2048
+    assert len(final.e) == 6 and receipt["economy_transitions"]
+    broken = final.model_copy(update={"e": (final.e[0],)})
+    with pytest.raises(ValueError, match="period lineage"):
+        verify_delivery(plan, baseline, records, broken)
+
+
+def test_transit_timeout_and_lost_cargo():
+    for lost, expected in [(False, "WINDOW_EXHAUSTED"), (True, "LOST_CARGO")]:
+        vm = delivery_vm()
+        admission = call(vm, "inspect", "inspect-1")
+        plan = admit(admission, SEAL, "b" * 64, "c" * 64)
+        for i in range(10):
+            assert call(vm, "build", f"build-{i}", i, plan.digest).status == "BUILT"
+        for phase in range(2):
+            assert call(vm, "observe", f"observe-{phase}", phase, plan.digest).status == "OBSERVED"
+        vm.execute(
+            "GSVehicle.GetLocation <- function(v) {return 900+(::ticks%2);};"
+            "GSVehicle.GetCurrentSpeed <- function(v) {return 45;};"
+            f"GSVehicle.GetCargoLoad <- function(v,c) {{return {0 if lost else 20};}};"
+        )
+        result = call(vm, "observe", "observe-2", 2, plan.digest)
+        assert result.status == expected
+        with pytest.raises(ValueError):
+            verify_observation(plan, result, 2)
+
+
+@pytest.mark.parametrize(
+    "change,status",
+    [
+        ("GSVehicle.GetLocation <- function(v) {return 900;};", "MOVEMENT_STALLED"),
+        ("GSIndustry.IsValidIndustry <- function(i) {return i==7;};", "DESTINATION_LOST"),
+        ("GSVehicle.GetState <- function(v) {return -1;};", "INVALID_VEHICLE_STATE"),
+    ],
+)
+def test_transit_failures(change, status):
+    vm = delivery_vm()
+    vm.execute("GSVehicle.VS_BROKEN <- 4;")
+    plan = admit(call(vm, "inspect", "inspect-1"), SEAL, "b" * 64, "c" * 64)
+    for i in range(10):
+        assert call(vm, "build", f"build-{i}", i, plan.digest).status == "BUILT"
+    for phase in range(2):
+        assert call(vm, "observe", f"observe-{phase}", phase, plan.digest).status == "OBSERVED"
+    vm.execute("GSVehicle.GetCargoLoad <- function(v,c) {return 20;};" + change)
+    r = call(vm, "observe", "observe-2", 2, plan.digest)
+    assert r.status == status
+
+
+@pytest.mark.parametrize("change", ["vehicle", "plan", "orders", "period"])
+def test_broken_observation_lineage(change):
+    plan, baseline, records, final = complete(delivery_vm())
+    r = records[2]
+    values = list(r.s)
+    if change == "vehicle":
+        values[4] += 1
+    elif change == "orders":
+        values[14] += 1
+    elif change == "plan":
+        r = r.model_copy(update={"plan": SEAL})
+    else:
+        r = r.model_copy(update={"e": (r.e[0] + 2,)})
+    records[2] = r.model_copy(update={"s": tuple(values)})
+    with pytest.raises(ValueError):
+        verify_delivery(plan, baseline, records, final)
+
+
+def test_retained_planner_receipt_replay_never_requests_native_authority(monkeypatch):
+    import subprocess
+
+    from app.simulation.openttd.proof.native import NativeBackend
+    from app.simulation.openttd.secure_admin import SecureAdminSession
+
+    directory = proof.PROJECT / "artifacts/runtime/openttd-15.3-first-freight-delivery-attempt9"
+    if not (directory / "receipt.json").exists():
+        pytest.skip("retained native Attempt 9 evidence unavailable")
+
+    def forbidden(*args, **kwargs):
+        pytest.fail("offline replay requested native authority, a process or a connection")
+
+    monkeypatch.setattr(NativeBackend, "__init__", forbidden)
+    monkeypatch.setattr(proof.PlannerBackend, "launch", forbidden)
+    monkeypatch.setattr(SecureAdminSession, "connect_secure", forbidden)
+    monkeypatch.setattr(subprocess, "Popen", forbidden)
+    retained = json.loads((directory / "receipt.json").read_text())
+    assert proof.verify_receipt(directory) == retained
+    assert retained["delivered"] == 20 and retained["payment_income"] == 325

@@ -1,10 +1,13 @@
 """Controlled 15.3 fact mapping. No geometry, solver, native reads or execution."""
 
+import json
 from calendar import monthrange
 from dataclasses import dataclass, replace
 from datetime import date
 from enum import StrEnum
 from hashlib import sha256
+
+from pydantic import Field
 
 from app.planning.canonical import canonical_bytes
 from app.planning.domain import Contract, NonNegativeAmount, PreparedWorldManifest
@@ -55,6 +58,8 @@ class MonthlyBatchPolicy(Contract):
 
     start_date: date  # Configured benchmark calendar, never inferred from economy ticks.
     budget_gbp: NonNegativeAmount | None = None
+    # Explicit user-selected demonstration batch; never changes qualified supply.
+    delivery_batch_limit: int | None = Field(default=None, ge=1, le=65535)
 
     @property
     def horizon_days(self) -> int:
@@ -62,6 +67,14 @@ class MonthlyBatchPolicy(Contract):
 
     @property
     def digest(self) -> str:
+        if self.delivery_batch_limit is None:
+            legacy = json.loads(canonical_bytes(self))
+            legacy.pop("delivery_batch_limit")
+            return sha256(
+                json.dumps(
+                    legacy, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+                ).encode()
+            ).hexdigest()
         return sha256(canonical_bytes(self)).hexdigest()
 
 

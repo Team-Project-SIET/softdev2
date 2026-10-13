@@ -9,12 +9,22 @@ On 2026-10-11, freight Attempt 4 delivered **20 units of coal**. Offline replay
 verified £341 delivery income, £304 vehicle-profit increase and £9,358 construction
 and purchase spending. The plan-bound receipt is in
 `artifacts/runtime/openttd-15.3-first-freight-delivery-attempt4/receipt.json`.
-All three authorized follow-up launches were consumed. Another execution requires
+These historical launches were consumed. Another execution requires
 its own authorization; inspecting the existing receipt does not launch OpenTTD.
 
-This README describes the current worktree. The freight modules and ignored runtime
-artifacts have not been committed or pushed. Use a checkout containing
-`app/simulation/openttd/proof/freight_delivery.py` and its GameScript package.
+On 2026-10-13, planner-driven Attempt 9 delivered **20 coal units** to the selected
+power station after an economy-quarter rollover. Fresh same-session qualification,
+P08/P05 selection, native construction, loaded arrival, industry-attributed delivery
+and payment passed. Offline replay reproduced the complete plan-bound
+[Attempt 9 receipt](artifacts/runtime/openttd-15.3-first-freight-delivery-attempt9/receipt.json).
+Delivery income was £325, vehicle profit increased £289, and construction plus
+purchase cost £9,586. One launch and one encrypted session were consumed, without
+retry or reconnection. The process was reaped, listeners closed, credentials removed
+and the disposable workspace deleted. Attempts 1–8 remain unchanged.
+
+The standalone freight MVP is checkpointed in commit `92388cb`. Planner integration
+and the Attempt 9 monitoring and offline replay repairs are in the current worktree.
+Runtime artifacts are ignored by Git and have not been pushed.
 Historical runtime evidence is optional for a **new `--demo` run**.
 
 ## What works, and what remains incomplete
@@ -24,23 +34,23 @@ Historical runtime evidence is optional for a **new `--demo` run**.
 | Secure AdminPort, industry/cargo observation and native qualification | Native milestones; qualification Attempt 2's overall post-run acceptance remains FAILED |
 | Road, stops, depot, purchase, orders and movement | Native readbacks |
 | Freight loading, final industry delivery and payment | Attempt 4, 20 units, verified receipt and cleanup |
-| WorldPlanningObservation → P08 → P05 → ExecutionPlan | Controlled end-to-end verification |
-| P05 output → checked single-vehicle freight intent | Controlled compiler in `freight_planning.py` |
-| Qualified observation → P08 → native delivery | **Incomplete**: authoritative post-qualification save correspondence and same-world supplemental facts are still missing |
+| WorldPlanningObservation → P08 → P05 → ExecutionPlan | Controlled verification and native Attempt 9 |
+| P05 output → checked single-vehicle freight intent | Controlled compiler and native Attempt 9 |
+| Qualified observation → P08 → native delivery | Attempt 9, 20 coal units, attributed payment, plan-bound offline replay and cleanup |
 | Arbitrary maps, rail delivery, multiple vehicles, closed-loop optimization | Outside the demonstrated MVP |
 
-The demo uses its own native admission and `DeliveryPlan`. It does **not** claim
-that P05 selected the service. Controlled planning inputs cannot authorize native
-execution. Positive last-month production in the demo is native supply evidence,
-not a replacement for the separate two-rollover qualification contract.
+The standalone `--demo` result uses native OD selection. `--demo --planner` instead
+qualifies that generated world, captures the missing planning facts, runs P08/P05,
+and admits the selected service. Controlled planning inputs cannot authorize native
+execution. Attempt 4 proves standalone delivery; Attempt 9 proves planner-driven delivery.
 
 ## Architecture
 
 ```text
-Planning path, controlled
+Planning path, verified in native Attempt 9
 WorldPlanningObservation + supplemental facts + prepared-source correspondence
   → P08 bounded road candidates → P05 CP-SAT → ExecutionPlan
-  → checked freight intent → native-source correspondence gate [currently blocked]
+  → checked freight intent → same-session native-source correspondence gate
 
 Working native demonstration
 Python CLI → isolated OpenTTD 15.3 + company + bridge GameScript
@@ -218,13 +228,74 @@ candidates. `app/simulation/openttd/freight_planning.py` compiles its selected
 single-vehicle road service into a checked freight intent, retaining industry,
 cargo, engine and plan identities. It never drops additional vehicles to fit the demo.
 
-The intent's native binding calls the existing real-source gate before comparing
-native geometry and identities. That gate currently rejects controlled source
-correspondence. The native runner therefore remains a **standalone delivery demo**,
-not a P05-driven native executor. Remaining work is same-world qualified observation,
-native supplemental capture, authoritative saved-world correspondence, and support
-for the exact selected corridor/facility geometry. The demonstrated L route is not
-a general executor for every P08 candidate.
+`--planner` reuses the existing two-rollover qualification coordinator on the freight
+runner's one encrypted connection. It captures at most 256 tiles, both cargo coverage
+scopes, compatible engines, road costs and native settings. These facts are bound to
+the same qualified `WorldPlanningObservation`. An owned native save after qualification
+becomes the prepared source. Process, connection, configuration, save-completion and
+final-month checks establish correspondence. This workflow captures a generated
+world; it does not claim to load an arbitrary prepared save.
+
+P08 generates candidates and P05 produces `ExecutionPlan`. The compiler passes the
+selected identities, corridor and depot front to native admission, which validates
+that selection before the existing construction, vehicle, order and delivery stages.
+No second OD search substitutes another service.
+
+`--batch-limit 20` is an explicit planning policy that caps the demonstration at 20
+qualified supply units without changing observed production. The one-load assumption,
+planning calendar and cost estimates remain planning assumptions. Native capacity,
+command quotes, funds, loading, delivery and payment are checked separately. Execution
+supports one vehicle starting immediately, a planned batch equal to its native
+full-load capacity, 2..47 flat corridor road tiles, two stops and one depot.
+Partial loads and larger fleets are rejected. Attempt 9 verified this planner workflow
+natively with fresh production observations. Historical observations never supply
+fresh planning inputs.
+
+Pre-planning collection retains its coherent economy-month and same-run qualification
+checks. Post-execution monitoring permits one economy-quarter transition within the
+same year. Each readback retains raw current-quarter counters; a separate period
+record stores the first observed transition tick, economy date, closed quarter,
+completed-quarter cargo and income. Receipt replay sums these explicit periods against
+the original financial baseline, without treating them as one atomic snapshot.
+
+The finite per-phase budget is `min(4440, 2048 + 128 * route_tiles)` script ticks,
+where `route_tiles` includes the station approaches. Attempt 8 traversed 18 tiles in
+1,064 transit ticks and retained all 20 coal units at speed 45 when its quarter guard
+stopped observation. The new allowance includes departure and loading slack and
+more than twice that observed travel time per tile. The entire observation lifecycle
+must finish within 60 economy days. Each response has a 135-second deadline; the
+planner run has a 600-second ceiling. Pause, clock failure, invalid vehicle or orders,
+cargo loss in transit, destination loss, 2,048 ticks without movement and timeout fail
+closed. Loaded arrival, actual unloading, industry monitors and payment remain required.
+Year rollover remains excluded because vehicle profit resets annually.
+
+Prepare and validate the next planner proof without launching OpenTTD:
+
+```bash
+PLANNER_ATTEMPT="$(uv run --no-sync python -m app.simulation.openttd.proof.freight_delivery next)"
+uv run --no-sync python -m app.simulation.openttd.proof.freight_delivery prepare "$PLANNER_ATTEMPT" --demo --planner --batch-limit 20
+uv run --no-sync python -m app.simulation.openttd.proof.freight_delivery preflight "$PLANNER_ATTEMPT"
+```
+
+Expected output is `PRELAUNCH PASS`, then `PREFLIGHT PASS`. No `CLAIM.json` is created.
+Once a separate launch is authorized, execute once and verify the retained result:
+
+```bash
+uv run --no-sync python -m app.simulation.openttd.proof.freight_delivery run "$PLANNER_ATTEMPT" --authorize-one-launch
+uv run --no-sync python -m app.simulation.openttd.proof.freight_delivery verify "$PLANNER_ATTEMPT"
+```
+
+Run uses the sealed planner mode and batch cap. Inspect `world-planning-observation.json`,
+`supplemental-planning-facts.json`, `planning-policy.json`, `planning-scenario.json`,
+`execution-plan.json`, `planning-binding.json` and `qualified.sav`. A successful
+`receipt.json` contains the execution-plan digest and native selection binding.
+Offline verification replays qualification receipts with their exact log prefixes,
+reconstructs supplemental facts, reruns P08/P05 and checks the delivery receipt.
+Verification never launches or connects to OpenTTD and preserves retained evidence.
+
+Native fact calls use the tagged OpenTTD 15.3
+[engine API](https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/script/api/script_engine.hpp)
+and [road API](https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/script/api/script_road.hpp).
 
 Verify the existing controlled pipeline and the new boundary:
 
@@ -309,10 +380,13 @@ for other 15.3 observation modes and their separate authorization rules.
 One company, one vehicle, one coal producer/acceptor pair, two bay stops, one depot,
 a bounded flat vacant L route and default content are demonstrated. Each run uses
 one process, one secure connection, no reconnect or retry, at most 26 service
-requests, 512-byte responses and a 180-second overall deadline. World preparation
+requests and 768-byte service responses. The standalone deadline is 180 seconds;
+the planner run allows 600 seconds, including fresh qualification and supplemental
+reads. World preparation
 has its own bound of two industry builds and at most 50 clearing commands.
 
 The demo proves one paid delivery, not long-run profitability, recurring reliability,
-route-level optimization or full qualified planning integration. Amounts are OpenTTD
+arbitrary-world route optimization or support for larger fleets. Attempt 9 proves
+the qualified single-service planning integration. Amounts are OpenTTD
 GBP accounting units. Receipts fail closed; neither a command ACK nor an empty
 vehicle alone can establish freight delivery.

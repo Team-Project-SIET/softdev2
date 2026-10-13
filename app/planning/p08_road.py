@@ -171,7 +171,12 @@ def select_benchmark(value: BoundedRoadInput) -> Benchmark | NoRoadScenario:
                 industries[a.industry_id],
                 industries[b.industry_id],
                 cargos[a.cargo_id],
-                s.quantity,
+                min(s.quantity, value.policy.delivery_batch_limit)
+                if value.policy.delivery_batch_limit is not None
+                else s.quantity,
+                meaning="policy-capped-qualified-supply-demonstration"
+                if value.policy.delivery_batch_limit is not None
+                else "historical-qualified-supply-transport-benchmark",
             )
     return NoRoadScenario(RoadOutcome.NO_ELIGIBLE_BENCHMARK, "no compatible covered OD", value)
 

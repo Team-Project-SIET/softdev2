@@ -150,7 +150,7 @@ class ContentSettings(Contract):
     serve_neutral_industries: bool
     timekeeping: Literal["calendar"]
     effective_truck_stop_radius: Literal[3, 4]
-    context: Literal["deity-public"]
+    context: Literal["deity-public", "company-0"]
     gameplay_newgrf_ids: tuple[()]  # No gameplay NewGRFs in minimum slice.
 
     @model_validator(mode="after")

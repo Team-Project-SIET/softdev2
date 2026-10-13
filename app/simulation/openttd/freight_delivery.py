@@ -11,9 +11,9 @@ from app.planning.domain import Contract, Digest
 
 OPERATIONS = Literal["inspect", "build", "read", "observe", "finish"]
 MAX_COST = 100000
-OBS_TICKS = 2048
-OBS_SAMPLES = 2049
-OBS_SECONDS = 60
+OBS_TICKS = 4440
+OBS_SAMPLES = 4441
+OBS_SECONDS = 135
 
 
 class DeliveryRequest(Contract):
@@ -51,6 +51,8 @@ class DeliveryReadback(Contract):
     # count,order0,order1,waiting,sid0,sid1,delivered,income,profit,lastaccepted,
     # stage,cost,pickupmonitor,deliverymonitor,firsttick,samples
     s: tuple[StrictInt, ...]
+    # Current economy quarter, optional closed period tick/date/quarter/cargo/income.
+    e: tuple[StrictInt, ...] = ()
 
     @property
     def digest(self):
@@ -58,8 +60,8 @@ class DeliveryReadback(Contract):
 
     @classmethod
     def parse_for(cls, q, raw):
-        if len(raw) > 512:
-            raise ValueError("response exceeds 512 bytes")
+        if len(raw) > 768:
+            raise ValueError("response exceeds 768 bytes")
 
         def unique(pairs):
             d = {}
@@ -96,10 +98,10 @@ class DeliveryPlan(Contract):
         return hashlib.sha256(canonical_bytes(self)).hexdigest()
 
 
-def admit(r, seal, save, predecessor, *, executor_source=None):
+def admit(r, seal, save, predecessor, *, executor_source=None, selection_digest=None):
     if (
         r.status != "READY"
-        or r.plan != seal
+        or r.plan != (selection_digest or seal)
         or r.a[0] == r.a[1]
         or min(r.a[:4]) < 0
         or r.f[4] <= 0
@@ -140,13 +142,42 @@ def verify_snapshot(plan, r):
         raise ValueError("two native orders required")
 
 
+def observation_budget(plan):
+    start, end = plan.a[4], plan.a[6]
+    distance = abs(start % 64 - end % 64) + abs(start // 64 - end // 64) + 2
+    return min(OBS_TICKS, 2048 + 128 * distance)
+
+
+def period_totals(r, baseline):
+    if not r.e and not baseline.e:  # Retained v1 evidence.
+        return r.s[18], r.s[19]
+    if len(baseline.e) != 1 or len(r.e) not in (1, 6):
+        raise ValueError("economy period lineage broken")
+    offset = r.e[0] - baseline.e[0]
+    if r.e[0] // 4 != baseline.e[0] // 4:
+        raise ValueError("economy period lineage broken")
+    if offset == 0 and len(r.e) == 1:
+        return r.s[18], r.s[19]
+    if (
+        offset != 1
+        or len(r.e) != 6
+        or r.e[3] != baseline.e[0]
+        or not baseline.s[0] <= r.e[1] <= r.s[0]
+        or not baseline.s[1] < r.e[2] <= r.s[1]
+        or r.e[4] < baseline.s[18]
+        or r.e[5] < baseline.s[19]
+    ):
+        raise ValueError("economy period lineage broken")
+    return r.s[18] + r.e[4], r.s[19] + r.e[5]
+
+
 def verify_observation(plan, r, phase):
     verify_snapshot(plan, r)
     if (
         r.status != "OBSERVED"
         or r.arg != phase
-        or not 0 <= r.s[0] - r.s[26] <= OBS_TICKS
-        or not 1 <= r.s[27] <= OBS_SAMPLES
+        or not 0 <= r.s[0] - r.s[26] <= observation_budget(plan)
+        or not 1 <= r.s[27] <= observation_budget(plan) + 1
     ):
         raise ValueError("bounded native observation failed or inconclusive")
     if phase == 0 and r.s[15] <= 0:
@@ -166,13 +197,32 @@ def verify_delivery(plan, baseline, observations, final):
     if baseline.s[22] != 9 or baseline.s[11] != 0 or final.s[22] != 10:
         raise ValueError("empty pre-start vehicle and complete lifecycle required")
     previous_tick = baseline.s[0]
+    previous = baseline
     for phase, r in enumerate(observations):
-        if r.s[0] < previous_tick or r.s[4] != baseline.s[4] or r.s[22] != 10:
+        if (
+            r.s[0] < previous_tick
+            or r.s[4] != baseline.s[4]
+            or r.s[22] != 10
+            or r.s[26] < previous_tick
+        ):
             raise ValueError("cargo observation chronology or vehicle mismatch")
+        if r.s[1] < previous.s[1] or r.s[1] - baseline.s[1] > 60:
+            raise ValueError("economy clock chronology mismatch")
+        period_totals(r, baseline)
+        if len(previous.e) == 6 and r.e != previous.e:
+            raise ValueError("economy period lineage broken")
+        previous = r
         previous_tick = r.s[0]
         verify_observation(plan, r, phase)
     verify_snapshot(plan, final)
     loaded = observations[1].s[11]
+    cargo_total, income_total = period_totals(final, baseline)
+    if (
+        final.s[1] < previous.s[1]
+        or final.s[1] - baseline.s[1] > 60
+        or (len(previous.e) == 6 and final.e != previous.e)
+    ):
+        raise ValueError("economy period lineage broken")
     if (
         final.s[0] < previous_tick
         or final.s[4] != baseline.s[4]
@@ -180,8 +230,8 @@ def verify_delivery(plan, baseline, observations, final):
         or final.s[11] != 0
         or final.s[24] != loaded
         or final.s[25] != loaded
-        or final.s[18] - baseline.s[18] != loaded
-        or final.s[19] <= baseline.s[19]
+        or cargo_total - baseline.s[18] != loaded
+        or income_total <= baseline.s[19]
         or final.s[20] <= baseline.s[20]
         or final.s[21] < baseline.s[1]
     ):
@@ -199,9 +249,14 @@ def verify_delivery(plan, baseline, observations, final):
         loaded=loaded,
         delivered=final.s[25],
         pickup_monitor=final.s[24],
-        payment_income=final.s[19] - baseline.s[19],
+        payment_income=income_total - baseline.s[19],
         vehicle_profit_delta=final.s[20] - baseline.s[20],
         native_digests=[baseline.digest] + [r.digest for r in observations] + [final.digest],
+        economy_transitions=list(final.e[1:]),
+        economy_snapshots=[
+            dict(tick=r.s[0], date=r.s[1], period=list(r.e), cargo=r.s[18], income=r.s[19])
+            for r in [baseline, *observations, final]
+        ],
         verification="NATIVE_FINAL_INDUSTRY_DELIVERY_AND_PAYMENT",
     )
 

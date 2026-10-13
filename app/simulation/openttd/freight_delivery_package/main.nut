@@ -2,7 +2,7 @@ require("vehicle.nut");
 class FreightDeliveryProof extends RoadVehicleProof {
     choice=null; dplan=null; dstage=0; dvehicle=-1; dused=null; drequests=0; dfailed=false;
     dcost=0; dstations=null; monitors=false; monitor_pickup=0; monitor_delivery=0;
-    baseline=null; obs_stage=0; diagnostic=null; first_rejection=0;
+    period=null; closed=null; baseline=null; obs_stage=0; diagnostic=null; first_rejection=0;
     function Reject(gate) {
         diagnostic[gate]++;if(first_rejection==0)first_rejection=gate+1;
     }
@@ -38,6 +38,7 @@ class FreightDeliveryProof extends RoadVehicleProof {
         if(i==7||i==8) return GSOrder.AppendOrder(dvehicle,a[i==7?4:6],i==7?GSOrder.OF_FULL_LOAD:GSOrder.OF_NO_LOAD);
         return GSVehicle.StartStopVehicle(dvehicle);
     }
+    function RecordConstruction(i,result,quoted,cost,funds) {}
     function Quote(i) {
         local account=GSAccounting();local test=GSTestMode();local result=Execute(i);local cost=account.GetCosts();
         test=null;account=null;return [i==6?result==0:result,cost];
@@ -128,22 +129,46 @@ class FreightDeliveryProof extends RoadVehicleProof {
         return s;
     }
     function Quarter(date) {return GSDate.GetYear(date)*4+(GSDate.GetMonth(date)-1)/3;}
+    function ObservationBudget() {
+        local a=choice.a;local distance=GSMap.DistanceManhattan(a[4],a[6])+2;
+        local budget=2048+128*distance;return budget>4440?4440:budget;
+    }
+    function Period(s) {
+        local q=Quarter(s[1]);
+        if(period==null){period=q;closed=[];}
+        if(q!=period) {
+            if(q!=period+1||closed.len()!=0)throw "PERIOD_LINEAGE_BROKEN";
+            closed=[s[0],s[1],period,GSCompany.GetQuarterlyCargoDelivered(0,1),GSCompany.GetQuarterlyIncome(0,1)];
+            period=q;
+        }
+        local e=[q];e.extend(closed);return e;
+    }
     function Observe(phase,r) {
-        local first=GetTick();local prev=first;local date=GSDate.GetCurrentDate();local polls=0;
-        for(local i=0;i<=2048;i++) {
+        local first=GetTick();local prev=first;local date=GSDate.GetCurrentDate();local polls=0;local budget=ObservationBudget();
+        local last_tile=-1;local last_move=first;
+        for(local i=0;i<=budget;i++) {
             local s=Snapshot();polls++;r.s=s;s[26]=first;s[27]=polls;
+            if(s[1]<baseline[1]||s[1]-baseline[1]>60||GSDate.GetYear(s[1])!=GSDate.GetYear(baseline[1])){r.status="WINDOW_EXHAUSTED";break;}
+            r.e<-Period(s);
             if(s[2]!=0){r.status="PAUSED";break;}
             if(i>0&&s[0]<=prev){r.status="CLOCK_STALLED";break;}
-            if(s[0]-first>2048||s[1]-date>30||Quarter(s[1])!=Quarter(baseline[1])){r.status="WINDOW_EXHAUSTED";break;}
+            if(s[0]-first>budget||s[1]-date>60){r.status="WINDOW_EXHAUSTED";break;}
             if(!Route(choice.a)||GSVehicleList().Count()!=1||s[5]!=0||s[6]!=choice.a[3]||s[7]!=choice.f[5]||s[12]!=2||
                 s[13]!=choice.a[4]||s[14]!=choice.a[6]||GSOrder.GetOrderFlags(dvehicle,0)!=GSOrder.OF_FULL_LOAD||
                 GSOrder.GetOrderFlags(dvehicle,1)!=GSOrder.OF_NO_LOAD||!GSOrder.IsGotoStationOrder(dvehicle,0)||!GSOrder.IsGotoStationOrder(dvehicle,1))
                 {r.status="READBACK_MISMATCH";break;}
+            if(!GSIndustry.IsValidIndustry(choice.a[1])||GSIndustry.IsCargoAccepted(choice.a[1],choice.a[2])!=GSIndustry.CAS_ACCEPTED){r.status="DESTINATION_LOST";break;}
+            if(s[9]!=GSVehicle.VS_RUNNING&&s[9]!=GSVehicle.VS_AT_STATION&&s[9]!=GSVehicle.VS_BROKEN){r.status="INVALID_VEHICLE_STATE";break;}
+            if(phase==2&&s[8]!=choice.a[6]&&s[11]!=choice.f[5]){r.status="LOST_CARGO";break;}
+            if(s[8]!=last_tile){last_tile=s[8];last_move=s[0];}
+            if(phase==2&&s[0]-last_move>2048){r.status="MOVEMENT_STALLED";break;}
+            local cargo=s[18]+(closed.len()==0?0:closed[3]);
+            local income=s[19]+(closed.len()==0?0:closed[4]);
             local ok=phase==0?s[15]>0:(phase==1?s[8]==choice.a[4]&&s[11]==choice.f[5]:
                 (phase==2?s[8]==choice.a[6]&&s[9]==GSVehicle.VS_AT_STATION&&s[11]>0:
-                 s[11]==0&&s[18]>baseline[18]&&s[19]>baseline[19]&&s[20]>baseline[20]));
+                 s[11]==0&&cargo>baseline[18]&&income>baseline[19]&&s[20]>baseline[20]));
             if(ok){r.status="OBSERVED";obs_stage++;break;}
-            if(s[0]-first>=2048||i==2048){r.status="WINDOW_EXHAUSTED";break;}
+            if(s[0]-first>=budget||i==budget){r.status="WINDOW_EXHAUSTED";break;}
             prev=s[0];Sleep(1);
         }
     }
@@ -161,7 +186,7 @@ class FreightDeliveryProof extends RoadVehicleProof {
             GSRoad.SetCurrentRoadType(GSRoad.ROADTYPE_ROAD);
             if(GSRoad.GetCurrentRoadType()!=0||!GSRoad.IsRoadTypeAvailable(0))r.status="UNSUPPORTED_ROAD_TYPE";
             else if(q.op=="inspect"&&choice==null&&!dfailed&&dstage==0)r.status=Select();
-            else if(choice==null||dfailed||(dplan!=null&&q.plan!=dplan))r.status="OUT_OF_ORDER";
+            else if(choice==null||(dfailed&&q.op!="read")||(dplan!=null&&q.plan!=dplan))r.status="OUT_OF_ORDER";
             else if(q.op=="read")r.status="READ";
             else if(q.op=="build"&&q.arg==dstage&&dstage<10) {
                 if(GSGame.IsPaused()||!Compatible(choice.a[3])||GSIndustry.GetLastMonthProduction(choice.a[0],choice.a[2])<=0||
@@ -181,6 +206,7 @@ class FreightDeliveryProof extends RoadVehicleProof {
                             if(monitor_pickup!=0||monitor_delivery!=0)throw "NONZERO_MONITOR_BASELINE";
                         }
                         local accounting=GSAccounting();local result=Execute(dstage);dcost=accounting.GetCosts();accounting=null;
+                        RecordConstruction(dstage,result,test[1],dcost,funds);
                         if(dstage==6&&GSVehicle.IsValidVehicle(result))dvehicle=result;
                         if((dstage==6&&dvehicle<0)||(dstage!=6&&!result)||dcost!=test[1]||
                             (dstage<9&&funds-GSCompany.GetBankBalance(0)!=dcost))r.status="CONSTRUCTION_FAILED";
@@ -194,7 +220,8 @@ class FreightDeliveryProof extends RoadVehicleProof {
             }
         }
         if(choice!=null){r.a=choice.a;r.f=choice.f;}
-        if(r.s.len()==0)r.s=Snapshot();if(q.op=="inspect"&&choice!=null)r.s[23]=choice.ceiling;
+        if(r.s.len()==0)r.s=Snapshot();
+        if(dstage>=9&&!("e" in r))r.e<-Period(r.s);if(q.op=="inspect"&&choice!=null)r.s[23]=choice.ceiling;
         // Failure-only versioned overlay: no extra JSON fields or response growth.
         if(q.op=="inspect"&&choice==null&&diagnostic!=null) {
             for(local i=0;i<10;i++)r.a[i]=diagnostic[i];

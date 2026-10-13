@@ -16,6 +16,7 @@ from typing import Any
 from app.simulation.openttd.admin_crypto import AuthorizedKey
 from app.simulation.openttd.admin_protocol import AdminFrameDecoder
 from app.simulation.openttd.freight_delivery import (
+    OBS_SECONDS,
     DeliveryPlan,
     DeliveryReadback,
     DeliveryRequest,
@@ -54,6 +55,7 @@ from .harness import (
     verify_freeze,
     write_json,
 )
+from .qualification_native import QualificationNativeBackend
 from .road_mutation import console, save, wait_log
 
 BINARY = Path(os.environ.get("OPENTTD_BINARY", str(DEFAULT_BINARY))).expanduser().resolve()
@@ -82,18 +84,29 @@ BUDGETS = dict(
     engines=32,
     industries=32,
     road_tiles=48,
-    observation_script_ticks=2048,
-    samples=2049,
+    observation_script_ticks=4440,
+    observation_route_ticks_per_tile=128,
+    observation_slack_ticks=2048,
+    movement_stall_ticks=2048,
+    permitted_quarter_transitions=1,
+    permitted_year_transitions=0,
+    samples=4441,
     poll_interval=1,
-    observation_economy_days=30,
-    observation_seconds=60,
+    observation_economy_days=60,
+    observation_seconds=OBS_SECONDS,
     total_seconds=180,
-    response_bytes=512,
+    response_bytes=768,
     gsadmin_bytes=1450,
 )
 
 
 DEMO_BUDGETS = BUDGETS | dict(world_preparation_mutations=52)
+PLANNER_BUDGETS = DEMO_BUDGETS | dict(
+    qualification_seconds=300,
+    supplemental_requests=292,
+    total_seconds=600,
+    construction_commands=64,
+)
 
 
 def flat_heightmap():
@@ -159,17 +172,55 @@ class DemoBackend(vehicle.VehicleBackend):
 
 
 def backend_for(metadata):
-    cls = DemoBackend if metadata.get("demo", False) else vehicle.VehicleBackend
+    cls = (
+        PlannerBackend
+        if metadata.get("planner", False)
+        else (DemoBackend if metadata.get("demo", False) else vehicle.VehicleBackend)
+    )
     return cls(authorized_one_launch=True)
 
 
-def staged_package(demo):
-    out = {p.name: p.read_bytes() for p in PACKAGE.glob("*.nut") if p.name != "demo.nut"}
+def staged_package(demo, planner=False):
+    out = {
+        p.name: p.read_bytes()
+        for p in PACKAGE.glob("*.nut")
+        if p.name not in ("demo.nut", "planner.nut")
+    }
     if demo:
         out["delivery.nut"] = out["main.nut"]
         out["main.nut"] = (PACKAGE / "demo.nut").read_bytes()
         out["info.nut"] = out["info.nut"].replace(b'"FreightDeliveryProof"', b'"FreightDemoProof"')
+    if planner:
+        from app.simulation.openttd.qualification_bridge import qualification_bridge_source
+
+        out["demo-world.nut"] = out["main.nut"]
+        out["delivery.nut"] = out["delivery.nut"].replace(
+            b"function Handle(q)", b"function DeliveryHandle(q)"
+        )
+        out["delivery.nut"] = out["delivery.nut"].replace(
+            b"function Execute(i)", b"function DeliveryExecute(i)"
+        )
+        out["delivery.nut"] = out["delivery.nut"].replace(
+            b"function Tiles(a)", b"function DeliveryTiles(a)"
+        )
+        out["delivery.nut"] = out["delivery.nut"].replace(
+            b"function Quote(i)", b"function DeliveryQuote(i)"
+        )
+        out["main.nut"] = (PACKAGE / "planner.nut").read_bytes()
+        out["qualification.nut"] = qualification_bridge_source().encode()
+        out["info.nut"] = out["info.nut"].replace(b'"FreightDemoProof"', b'"PlannerFreightProof"')
     return out
+
+
+class PlannerBackend(DemoBackend, QualificationNativeBackend):
+    """Reuse qualification evidence validators on the owned freight runtime."""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.qualification_coordinator = None
+        self.secure_connection = None
+        self.structural_session = None
+        self.query_operation_baseline = 0
 
 
 class DeliverySession(vehicle.VehicleSecureSession):
@@ -182,6 +233,46 @@ class DeliverySession(vehicle.VehicleSecureSession):
             DeliveryRequest.model_validate_json(decode_gamescript(frame[3:])).to_bytes()
         else:
             super().validate_outbound(frame)
+
+
+class PlannerDeliverySession(DeliverySession):
+    def validate_outbound(self, frame):
+        if len(frame) >= 3 and frame[2] == ADMIN_GAMESCRIPT:
+            from app.simulation.openttd.cargo_page import CargoPageRequest
+            from app.simulation.openttd.freight_planning import PlanningSelectionRequest
+            from app.simulation.openttd.freight_runtime_planning import PlanningRead
+            from app.simulation.openttd.industry_cargo import IndustryCargoRequest
+            from app.simulation.openttd.industry_page import IndustryPageRequest
+            from app.simulation.openttd.industry_production import IndustryProductionRequest
+            from app.simulation.openttd.qualification_clock import (
+                EconomyClockRequest,
+                IndustryLifetimeRequest,
+            )
+
+            if self.state is not AuthState.ACTIVE or struct.unpack_from("<H", frame)[0] != len(
+                frame
+            ):
+                raise ValueError("active correctly framed planning request required")
+            raw = decode_gamescript(frame[3:])
+            value = json.loads(raw)
+            if value.get("type") == "planning_read":
+                PlanningRead.model_validate_json(raw).to_bytes()
+                return
+            if value.get("op") == "select":
+                PlanningSelectionRequest.model_validate_json(raw).to_bytes()
+                return
+            classes = dict(
+                economy_clock=EconomyClockRequest,
+                industry_lifetime=IndustryLifetimeRequest,
+                industry_page=IndustryPageRequest,
+                industry_cargo=IndustryCargoRequest,
+                cargo_page=CargoPageRequest,
+                industry_production=IndustryProductionRequest,
+            )
+            if value.get("type") in classes:
+                classes[value["type"]].parse(raw)
+                return
+        super().validate_outbound(frame)
 
 
 def attempt_number(directory):
@@ -270,7 +361,11 @@ def consumed_identity(directory):
     )
 
 
-def prepare(directory, *, demo=False):
+def prepare(directory, *, demo=False, planner=False, batch_limit=20):
+    if planner and not demo:
+        raise ValueError("planner demonstration requires --demo")
+    if type(batch_limit) is not int or not 1 <= batch_limit <= 65535:
+        raise ValueError("positive bounded delivery batch required")
     number = attempt_number(directory)
     prior = (
         consumed_identity(
@@ -321,6 +416,10 @@ def prepare(directory, *, demo=False):
             )
             (workspace.root / "heightmap.png").write_bytes(flat_heightmap())
             shutil.copyfile(workspace.root / "heightmap.png", directory / "heightmap.png")
+        if planner:
+            workspace.config.write_text(
+                workspace.config.read_text() + "\n[economy]\ntimekeeping_units = 0\n[newgrf]\n"
+            )
         graphics = stage_opengfx(
             GRAPHICS_ARCHIVE,
             workspace.root / "baseset/OpenGFX",
@@ -340,7 +439,7 @@ def prepare(directory, *, demo=False):
             target = parent / name
             target.mkdir()
             if src == PACKAGE:
-                for name, data in staged_package(demo).items():
+                for name, data in staged_package(demo, planner).items():
                     (target / name).write_bytes(data)
             else:
                 for p in src.glob("*.nut"):
@@ -370,13 +469,41 @@ def prepare(directory, *, demo=False):
             PROJECT / "tests/test_freight_delivery.py",
             PROJECT / "docs/first-freight-delivery-proof.md",
         ]
+        if planner:
+            snapshot_paths += sorted((PROJECT / "app/planning").rglob("*.py"))
+            snapshot_paths += [
+                PROJECT / "app/simulation/openttd" / (name + ".py")
+                for name in (
+                    "freight_planning",
+                    "freight_runtime_planning",
+                    "freight_planning_replay",
+                    "prepared_source_correspondence",
+                    "supplemental_planning_facts",
+                    "world_planning_observation",
+                    "qualified_production",
+                    "qualification_session",
+                )
+            ]
+            snapshot_paths += [PROJECT / "tests/test_freight_planning.py", PROJECT / "README.md"]
+            snapshot_paths += [
+                PROJECT / "tests/reference/freight_attempt6_route.json",
+                PROJECT / "tests/reference/freight_attempt7_construction.json",
+                PROJECT / "tests/reference/map_api_15_3/script_map.hpp",
+                PROJECT / "tests/reference/map_api_15_3/SOURCE.txt",
+            ]
         archive = directory / "frozen-source.zip"
         with zipfile.ZipFile(archive, "x", compression=zipfile.ZIP_DEFLATED) as z:
             for src in snapshot_paths:
                 info = zipfile.ZipInfo(str(src.relative_to(PROJECT)))
                 info.compress_type = zipfile.ZIP_DEFLATED
                 z.writestr(info, src.read_bytes())
+            if planner:
+                for name, data in staged_package(demo, planner).items():
+                    z.writestr("staged/" + name, data)
+                z.writestr("staged/openttd.cfg", workspace.config.read_bytes())
         frozen = source_freeze()
+        if planner:
+            frozen.update({str(p.resolve()): sha256(p) for p in snapshot_paths})
         frozen[str(BINARY)] = sha256(BINARY)
         frozen[str(archive)] = sha256(archive)
         for p in (
@@ -394,6 +521,9 @@ def prepare(directory, *, demo=False):
             schema="first-freight-delivery-prelaunch-v1",
             attempt=number,
             demo=demo,
+            planner=planner,
+            construction_readback_version=1 if planner else None,
+            delivery_batch_limit=batch_limit if planner else None,
             delivery_predecessor=prior,
             workspace=str(workspace.root),
             binary_sha256=BINARY_SHA256,
@@ -448,7 +578,7 @@ def prepare(directory, *, demo=False):
                 str(directory),
                 "--authorize-one-launch",
             ],
-            budgets=DEMO_BUDGETS if demo else BUDGETS,
+            budgets=PLANNER_BUDGETS if planner else DEMO_BUDGETS if demo else BUDGETS,
             cleanup=[
                 "reap process",
                 "close secure stream and listeners",
@@ -502,7 +632,14 @@ def preflight(p):
         != (p.directory / "PRELAUNCH.sha256").read_text().strip()
         or m["schema"] != "first-freight-delivery-prelaunch-v1"
         or m["attempt"] != attempt_number(p.directory)
-        or m["budgets"] != (DEMO_BUDGETS if m.get("demo", False) else BUDGETS)
+        or m["budgets"]
+        != (
+            PLANNER_BUDGETS
+            if m.get("planner", False)
+            else DEMO_BUDGETS
+            if m.get("demo", False)
+            else BUDGETS
+        )
     ):
         raise ValueError("sealed budgets mismatch")
     verify_freeze(m["frozen"])
@@ -517,7 +654,7 @@ def preflight(p):
             raise ValueError("disposable source mismatch")
     elif (p.spec.workspace.root / "heightmap.png").read_bytes() != flat_heightmap():
         raise ValueError("deterministic heightmap mismatch")
-    for name, data in staged_package(m.get("demo", False)).items():
+    for name, data in staged_package(m.get("demo", False), m.get("planner", False)).items():
         if data != (p.spec.workspace.game / "RoadFreightProof" / name).read_bytes():
             raise ValueError("stale delivery package")
     if (PACKAGE / "infrastructure.nut").read_bytes() != (
@@ -535,12 +672,12 @@ def preflight(p):
     reservation.close()
 
 
-async def exchange(session, q, directory):
+async def exchange(session, q, directory, *, response_type=DeliveryReadback):
     raw = q.to_bytes()
     (directory / (q.request_id + "-request.json")).write_bytes(raw)
     await session.send(encode_gamescript(raw))
     decoder = AdminFrameDecoder()
-    async with asyncio.timeout(60 if q.op == "observe" else 20):
+    async with asyncio.timeout(OBS_SECONDS if getattr(q, "op", None) == "observe" else 20):
         while True:
             chunk = await session.receive()
             if not chunk:
@@ -550,10 +687,10 @@ async def exchange(session, q, directory):
                     raise ValueError("unexpected packet")
                 response = decode_gamescript(body)
                 (directory / (q.request_id + "-response.json")).write_bytes(response)
-                return DeliveryReadback.parse_for(q, response)
+                return response_type.parse_for(getattr(q, "admission_request", q), response)
 
 
-def construction_evidence(plan, records):
+def construction_evidence(plan, records, *, planner=False):
     """Bind fresh native command accounting and independent owned-state reads."""
     costs = []
     digests = []
@@ -565,7 +702,7 @@ def construction_evidence(plan, records):
         if (built.status, read.status, built.s[22], read.s[22]) != ("BUILT", "READ", i + 1, i + 1):
             raise ValueError("construction result/readback sequence mismatch")
         cost = built.s[23]
-        if cost < 0 or (i < 7 and cost == 0) or (i >= 7 and cost != 0):
+        if cost < 0 or ((2 if planner else 0) <= i < 7 and cost == 0) or (i >= 7 and cost != 0):
             raise ValueError("native construction/order/start cost mismatch")
         if i < 9 and (previous - built.s[3] != cost or built.s[3] != read.s[3]):
             raise ValueError("native spending/readback mismatch")
@@ -579,6 +716,53 @@ def construction_evidence(plan, records):
     )
 
 
+def command_readback_evidence(log_path, plan, records):
+    """Replay bounded native command outcomes; failures remain failures."""
+    stages = []
+    commands = []
+    for line in log_path.read_text().splitlines():
+        match = re.search(r"FREIGHT_CONSTRUCTION_(STAGE|ROAD|FACILITY) (.+)$", line)
+        if match is None:
+            continue
+        data = dict(item.split("=", 1) for item in match[2].split())
+        if data.pop("plan") != plan.digest:
+            raise ValueError("construction command provenance mismatch")
+        kind = match[1]
+        stage = int(data["stage"])
+        if kind == "STAGE":
+            if stage != len(stages) or int(data["result"]) != 1:
+                raise ValueError("construction stage command failed or duplicated")
+            cost = records[f"build-{stage}"].s[23]
+            if (
+                int(data["quoted"]) != cost
+                or int(data["cost"]) != cost
+                or int(data["spent"]) != cost
+            ):
+                raise ValueError("construction command quote/spending mismatch")
+            stages.append(data)
+        else:
+            if not 0 <= stage <= 5 or len(commands) >= 64:
+                raise ValueError("construction command readback bounds")
+            satisfied = data["classification"] == "ALREADY_SATISFIED"
+            if (
+                data["classification"] not in ("ALREADY_SATISFIED", "COMMAND_SUCCEEDED")
+                or int(data["result"]) != 1
+                or int(data["after"]) != 1
+                or int(data["before"]) != int(satisfied)
+                or int(data["spent"]) < 0
+                or (satisfied and int(data["spent"]) != 0)
+            ):
+                raise ValueError("failed or inconsistent construction command")
+            commands.append(dict(kind=kind, **data))
+    if len(stages) != 10:
+        raise ValueError("missing construction command stage readback")
+    for stage in range(6):
+        group = [c for c in commands if int(c["stage"]) == stage]
+        if not group or sum(int(c["spent"]) for c in group) != int(stages[stage]["cost"]):
+            raise ValueError("construction command accounting incomplete")
+    return dict(construction_command_readbacks=commands, construction_stage_readbacks=stages)
+
+
 async def run(p):
     preflight(p)
     seal = sha256(p.directory / "PRELAUNCH.json")
@@ -589,23 +773,38 @@ async def run(p):
     )
     backend = backend_for(m)
     frames = []
+    accounting = None
+    if m.get("planner", False):
+        from .qualification_accounting import QualificationFrameBudget
+
+        class PlanningAccounting(QualificationFrameBudget):
+            def observe(self, direction, frame):
+                frames.append((direction, frame.hex()))
+                super().observe(direction, frame)
+
+        accounting = PlanningAccounting()
+    backend.planning_frame_observer = lambda d, f: frames.append((d, f.hex()))
+    backend.planning_frames = frames
     result: dict[str, Any] = dict(
         preflight="PASS", launches=0, connections=0, requests=0, mutations=0, status="FAILED"
     )
     try:
-        async with asyncio.timeout(180):
+        async with asyncio.timeout(m["budgets"]["total_seconds"]):
             await backend.launch(p)
             result["launches"] = 1
             await wait_log(backend, p, "FREIGHT_DELIVERY_READY")
             if m.get("demo", False):
                 console(backend, "start_ai RoadProofCompany")
                 await wait_log(backend, p, "ROAD_PROOF_COMPANY_READY")
-            session = await DeliverySession.connect_secure(
+            session_class = PlannerDeliverySession if m.get("planner", False) else DeliverySession
+            session = await session_class.connect_secure(
                 "127.0.0.1",
                 p.endpoints[1],
                 5,
                 key=AuthorizedKey.from_bytes(p.key_path.read_bytes()),
-                frame_observer=lambda d, f: frames.append((d, f.hex())),
+                frame_observer=accounting.observe
+                if accounting is not None
+                else backend.planning_frame_observer,
             )
             backend.session = session
             result["connections"] = 1
@@ -619,6 +818,8 @@ async def run(p):
             )
             if session.protocol is None:
                 raise ValueError("negotiated native Admin protocol required")
+            if accounting is not None:
+                accounting.enter("setup")
             await GameScriptTransport(session, session.protocol).subscribe()
             before = await save(backend, p, "before")
 
@@ -632,22 +833,45 @@ async def run(p):
                     session, DeliveryRequest(op=op, request_id=id, plan=plan, arg=arg), p.directory
                 )
 
-            admission = await query("inspect", "inspect-1")
+            service = None
+            source_save = before
+            if m.get("planner", False):
+                from app.simulation.openttd.freight_runtime_planning import plan_same_world
+
+                service, source_save = await plan_same_world(
+                    backend, p, session, accounting, before, batch_limit=m["delivery_batch_limit"]
+                )
+                result["supplemental_requests"] = backend.planning_read_count
+                result["qualification_requests"] = sum(
+                    v[0]
+                    for _, v in service.road.input.admitted.world.qualification.evidence.phase_usage
+                )
+                request = service.selection_request()
+                admission = await exchange(session, request, p.directory)
+                result["requests"] += 1
+            else:
+                admission = await query("inspect", "inspect-1")
             plan = admit(
                 admission,
                 seal,
-                before if m.get("demo", False) else m["source"]["save_sha256"],
+                source_save if m.get("demo", False) else m["source"]["save_sha256"],
                 m["predecessor"].get("receipt_sha256"),
                 executor_source=m["predecessor"].get("executor_source_digest"),
+                selection_digest=service.execution_plan_digest if service is not None else None,
             )
             write_json(p.directory / "plan.json", plan.model_dump(mode="json"))
+            binding = (
+                service.validate_native_selection(plan, admission) if service is not None else None
+            )
+            if binding is not None:
+                write_json(p.directory / "planning-binding.json", binding)
             baseline = None
             records = {"inspect-1": admission}
             for i in range(10):
                 built = await query("build", f"build-{i}", i, plan.digest)
+                read = await query("read", f"read-{i}", i, plan.digest)
                 if built.status != "BUILT" or built.s[22] != i + 1:
                     raise ValueError(f"mutation {i} failed: {built.status}")
-                read = await query("read", f"read-{i}", i, plan.digest)
                 records[f"build-{i}"] = built
                 records[f"read-{i}"] = read
                 verify_snapshot(plan, read)
@@ -659,15 +883,23 @@ async def run(p):
                     raise ValueError("independent construction/readback mismatch")
                 if i == 8:
                     baseline = read
-            construction = construction_evidence(plan, records)
+            construction = construction_evidence(plan, records, planner=service is not None)
             observations = []
             for phase in range(4):
                 r = await query("observe", f"observe-{phase}", phase, plan.digest)
+                if r.status != "OBSERVED":
+                    raise ValueError(f"observation {phase}: {r.status}")
                 verify_observation(plan, r, phase)
                 observations.append(r)
             final = await query("finish", "finish-1", 0, plan.digest)
             receipt = verify_delivery(plan, baseline, observations, final)
             receipt.update(construction)
+            if m.get("construction_readback_version") == 1:
+                receipt.update(
+                    command_readback_evidence(p.spec.workspace.logs / "stderr.log", plan, records)
+                )
+            if binding is not None:
+                receipt["planning_binding"] = binding
             receipt.update(
                 before_save_sha256=before, after_save_sha256=await save(backend, p, "after")
             )
@@ -709,7 +941,11 @@ def verify_receipt(directory):
     m = json.loads((directory / "PRELAUNCH.json").read_text())
     seal = sha256(directory / "PRELAUNCH.json")
     if seal != (directory / "PRELAUNCH.sha256").read_text().strip() or m["budgets"] != (
-        DEMO_BUDGETS if m.get("demo", False) else BUDGETS
+        PLANNER_BUDGETS
+        if m.get("planner", False)
+        else DEMO_BUDGETS
+        if m.get("demo", False)
+        else BUDGETS
     ):
         raise ValueError("prelaunch mismatch")
     claim = json.loads((directory / "CLAIM.json").read_text())
@@ -750,10 +986,19 @@ def verify_receipt(directory):
                 if kind == SERVER_GAMESCRIPT:
                     replies.append(decode_gamescript(body))
     for path in directory.glob("*-request.json"):
-        q = DeliveryRequest.model_validate_json(path.read_bytes())
+        value = json.loads(path.read_bytes())
         raw = path.with_name(path.name.replace("-request", "-response")).read_bytes()
         if sent.count(encode_gamescript(path.read_bytes())) != 1 or replies.count(raw) != 1:
             raise ValueError("unique secure exchange missing")
+        if m.get("planner", False) and value.get("type") is not None:
+            continue
+        if m.get("planner", False) and value.get("op") == "select":
+            from app.simulation.openttd.freight_planning import PlanningSelectionRequest
+
+            selected = PlanningSelectionRequest.model_validate_json(path.read_bytes())
+            q = selected.admission_request
+        else:
+            q = DeliveryRequest.model_validate_json(path.read_bytes())
         records[q.request_id] = DeliveryReadback.parse_for(q, raw)
     expected_ids = (
         ["inspect-1"]
@@ -764,20 +1009,26 @@ def verify_receipt(directory):
     wire_ids = []
     for frame in sent:
         if frame[2] == ADMIN_GAMESCRIPT:
-            wire_ids.append(
-                DeliveryRequest.model_validate_json(decode_gamescript(frame[3:])).request_id
-            )
-    if wire_ids != expected_ids or set(records) != set(expected_ids) or len(replies) != 26:
+            value = json.loads(decode_gamescript(frame[3:]))
+            if m.get("planner", False) and value.get("type") is not None:
+                continue
+            wire_ids.append(value["request_id"])
+    if (
+        wire_ids != expected_ids
+        or set(records) != set(expected_ids)
+        or (not m.get("planner", False) and len(replies) != 26)
+    ):
         raise ValueError("ordered single-attempt secure exchanges required")
     if (
         admit(
             records["inspect-1"],
             seal,
-            sha256(directory / "before.sav")
+            sha256(directory / ("qualified.sav" if m.get("planner", False) else "before.sav"))
             if m.get("demo", False)
             else m["source"]["save_sha256"],
             m["predecessor"].get("receipt_sha256"),
             executor_source=m["predecessor"].get("executor_source_digest"),
+            selection_digest=records["inspect-1"].plan if m.get("planner", False) else None,
         )
         != plan
     ):
@@ -797,7 +1048,19 @@ def verify_receipt(directory):
     receipt = verify_delivery(
         plan, records["read-8"], [records[f"observe-{i}"] for i in range(4)], records["finish-1"]
     )
-    receipt.update(construction_evidence(plan, records))
+    receipt.update(construction_evidence(plan, records, planner=m.get("planner", False)))
+    if m.get("construction_readback_version") == 1:
+        receipt.update(command_readback_evidence(directory / "stderr.log", plan, records))
+    if m.get("planner", False):
+        from app.simulation.openttd.freight_planning_replay import replay_planning_binding
+
+        binding = replay_planning_binding(directory, m, runtime, plan)
+        if binding != json.loads((directory / "planning-binding.json").read_bytes()):
+            raise ValueError("plan-bound native receipt mismatch")
+        request = json.loads((directory / "inspect-1-request.json").read_bytes())
+        if request != binding["selection"]:
+            raise ValueError("native selection request differs from P05 decision")
+        receipt["planning_binding"] = binding
     receipt.update(
         before_save_sha256=sha256(directory / "before.sav"),
         after_save_sha256=sha256(directory / "after.sav"),
@@ -835,6 +1098,12 @@ def main():
         "--demo", action="store_true", help="generate genuine native flat-world freight demo"
     )
     parser.add_argument("--authorize-one-launch", action="store_true")
+    parser.add_argument(
+        "--planner", action="store_true", help="qualify and plan in the same native world"
+    )
+    parser.add_argument(
+        "--batch-limit", type=int, default=20, help="explicit planning batch cap, not native demand"
+    )
     parser.add_argument("directory", type=Path, nargs="?")
     args = parser.parse_args()
     if args.command == "next":
@@ -852,7 +1121,7 @@ def main():
     if args.command == "cleanup":
         print(json.dumps(recover_cleanup(directory), sort_keys=True))
     elif args.command == "prepare":
-        p = prepare(directory, demo=args.demo)
+        p = prepare(directory, demo=args.demo, planner=args.planner, batch_limit=args.batch_limit)
         preflight(p)
         print("PRELAUNCH PASS")
     elif args.command == "preflight":

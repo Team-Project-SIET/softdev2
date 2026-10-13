@@ -16,6 +16,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import pytest
+from pydantic import ValidationError
 from test_qualification_coordinator import QualificationWire, collect
 from test_supplemental_planning_contracts import correspondence, fact_dict
 
@@ -23,6 +24,7 @@ from app.planning.canonical import canonical_bytes, plan_hash, scenario_hash, wo
 from app.planning.domain import (
     ConstructionKind,
     Contract,
+    ExecutionPlan,
     PlanningScenario,
     PreparedWorldManifest,
     RoadFleetOption,
@@ -1056,6 +1058,7 @@ def test_no_native_activity_and_inputs_unchanged(owned, monkeypatch):
         pytest.fail("controlled integration attempted native activity")
 
     monkeypatch.setattr(socket.socket, "connect", denied)
+    monkeypatch.setattr(socket.socket, "connect_ex", denied)
     monkeypatch.setattr(socket, "create_connection", denied)
     monkeypatch.setattr(subprocess, "Popen", denied)
     monkeypatch.setattr(asyncio, "create_subprocess_exec", denied)
@@ -1064,6 +1067,30 @@ def test_no_native_activity_and_inputs_unchanged(owned, monkeypatch):
     solution = optimize_candidate_network(r.scenario)
     semantic_checks(a, p, r, solution)
     assert before == {p.name: digest(p.read_bytes()) for p in owned.iterdir() if p.is_file()}
+
+
+@pytest.mark.parametrize("field", ["road_piece_cost_gbp", "truck_stop_cost_gbp", "depot_cost_gbp"])
+def test_missing_required_construction_cost_blocks_end_to_end(owned, field):
+    revise_bundle(owned, lambda d: d["road"].pop(field))
+    with pytest.raises(PlanningFactError):
+        admit(owned)
+
+
+def test_missing_buildability_blocks_end_to_end(owned):
+    revise_bundle(owned, lambda d: d["tiles"][0].pop("buildable"))
+    with pytest.raises(PlanningFactError):
+        admit(owned)
+
+
+@pytest.mark.parametrize("kind", ["terraform", "bridge", "tunnel", "build_gamescript_command"])
+def test_unsupported_execution_action_is_not_a_plan(owned, kind):
+    _, _, road = admit(owned)
+    assert isinstance(road, ControlledRoadScenario)
+    plan = optimize_candidate_network(road.scenario).plan
+    payload = plan.model_dump(mode="json")
+    payload["infrastructure"]["actions"][0]["kind"] = kind
+    with pytest.raises(ValidationError):
+        ExecutionPlan.model_validate(payload)
 
 
 @pytest.mark.parametrize(
