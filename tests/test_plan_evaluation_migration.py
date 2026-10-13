@@ -25,8 +25,10 @@ def test_fresh_and_current_upgrade(initial):
         for rev in ("0001", "0002", "0003", "0004", "0006", "0007"):
             scripts.get_revision(rev).module.upgrade()
         scripts.get_revision("0008").module.upgrade()
+        scripts.get_revision("0009").module.upgrade()
         assert "plan_evaluations" in inspect(connection).get_table_names()
         assert current_metadata_diff(connection) == []
+        scripts.get_revision("0009").module.downgrade()
         scripts.get_revision("0008").module.downgrade()
         assert "plan_evaluations" not in inspect(connection).get_table_names()
     engine.dispose()
@@ -41,7 +43,7 @@ def test_postgres_fresh_and_upgrade(postgres_factory, initial):
     upgrade_isolated(config, engine, "head")
     with engine.connect() as connection:
         assert current_metadata_diff(connection) == []
-        assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "0008"
+        assert connection.scalar(text("SELECT version_num FROM alembic_version")) == "0009"
 
 
 def test_downgrade_refuses_plan_history(session_factory, tmp_path):

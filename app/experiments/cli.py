@@ -54,7 +54,30 @@ def main(argv: list[str] | None = None) -> int:
     compare_parser.add_argument("--seeds", required=True)
     compare_parser.add_argument("--days", type=int, default=730)
     compare_parser.add_argument("--artifact-dir", type=Path, default=Path("artifacts/experiments"))
+    analytics_parser = commands.add_parser(
+        "analyze-freight", help="evaluate retained native freight receipts offline"
+    )
+    analytics_parser.add_argument("attempts", type=Path, nargs="+")
+    analytics_parser.add_argument(
+        "--history", type=Path, default=Path("artifacts/experiments/freight-history.sqlite")
+    )
+    analytics_parser.add_argument(
+        "--output", type=Path, default=Path("artifacts/experiments/p07-freight")
+    )
     args = parser.parse_args(argv)
+
+    if args.command == "analyze-freight":
+        import json
+
+        from app.experiments.freight_analytics import analyze
+
+        try:
+            result = analyze(args.attempts, args.history, args.output)
+        except (OSError, ValueError) as error:
+            print(f"analysis rejected: {error}", file=sys.stderr)
+            return 1
+        print(json.dumps(result, sort_keys=True))
+        return 0
 
     if args.command == "recover":
         recovery = OutcomeRecoveryService().recover(args.artifact_dir, args.manifest)

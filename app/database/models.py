@@ -5,6 +5,7 @@ mappers.  Model modules use string-resolved annotations to avoid importing one
 another at runtime.
 """
 
+from app.experiments.freight_history import FreightRunRecord
 from app.experiments.model import (
     ExperimentMetricRecord,
     ExperimentRunRecord,
@@ -17,6 +18,7 @@ from app.experiments.model import (
 )
 
 __all__ = [
+    "FreightRunRecord",
     "ExperimentMetricRecord",
     "ExperimentRunRecord",
     "ExperimentScenario",

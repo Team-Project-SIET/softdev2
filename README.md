@@ -22,8 +22,9 @@ purchase cost £9,586. One launch and one encrypted session were consumed, witho
 retry or reconnection. The process was reaped, listeners closed, credentials removed
 and the disposable workspace deleted. Attempts 1–8 remain unchanged.
 
-The standalone freight MVP is checkpointed in commit `92388cb`. Planner integration
-and the Attempt 9 monitoring and offline replay repairs are in the current worktree.
+The standalone freight MVP is checkpointed in commit `92388cb`. Planner-driven freight,
+Attempt 9 monitoring and offline replay are checkpointed in `93986e0`. P07 offline
+analytics are implemented in the current worktree.
 Runtime artifacts are ignored by Git and have not been pushed.
 Historical runtime evidence is optional for a **new `--demo` run**.
 
@@ -37,6 +38,7 @@ Historical runtime evidence is optional for a **new `--demo` run**.
 | WorldPlanningObservation → P08 → P05 → ExecutionPlan | Controlled verification and native Attempt 9 |
 | P05 output → checked single-vehicle freight intent | Controlled compiler and native Attempt 9 |
 | Qualified observation → P08 → native delivery | Attempt 9, 20 coal units, attributed payment, plan-bound offline replay and cleanup |
+| P07 post-play evaluation, run history and charts | Offline replay of Attempts 4 and 9; native plan comparison for Attempt 9; failed Attempt 8 excluded from delivery averages |
 | Arbitrary maps, rail delivery, multiple vehicles, closed-loop optimization | Outside the demonstrated MVP |
 
 The standalone `--demo` result uses native OD selection. `--demo --planner` instead
@@ -58,6 +60,7 @@ Python CLI → isolated OpenTTD 15.3 + company + bridge GameScript
   → native construction / vehicle / orders → loading / arrival / unloading
   → industry cargo monitors + company income + vehicle profit
   → Python receipt replay + saved states + complete cleanup
+  → P07 offline comparison → SQLAlchemy history → CSV / JSON / HTML charts
 ```
 
 Python owns planning, immutable identities, deadlines and verification. GameScript
@@ -374,6 +377,84 @@ uv run transport-experiment --help
 Wait for PostgreSQL to be healthy before migrating. Migration history is retained;
 no database schema retirement is part of this MVP. See [the proof CLI guide](docs/openttd-15.3-proof-cli.md)
 for other 15.3 observation modes and their separate authorization rules.
+
+## P07 post-play analytics
+
+Analyze retained results without an OpenTTD launch, Admin connection, PostgreSQL
+server or additional plotting dependency:
+
+```bash
+uv run --no-sync python -m app.experiments.cli analyze-freight \
+  artifacts/runtime/openttd-15.3-first-freight-delivery-attempt4 \
+  artifacts/runtime/openttd-15.3-first-freight-delivery-attempt8 \
+  artifacts/runtime/openttd-15.3-first-freight-delivery-attempt9 \
+  --history artifacts/experiments/freight-history.sqlite \
+  --output artifacts/experiments/p07-freight
+```
+
+The installed `transport-experiment analyze-freight` command accepts the same
+arguments. Open `artifacts/experiments/p07-freight/charts.html` in a browser. The
+self-contained report has planned-versus-actual charts, revenue and spending,
+delivered cargo, measured load fill, and trends within comparable cohorts.
+`summary.json` includes provenance, metric scopes, findings and per-cohort descriptive
+statistics. `metrics.csv` has one row per metric; empty numeric fields mean unknown.
+Example output reports `successful_deliveries: 2`, `failed_attempts: 1`, `cohorts: 2`.
+
+| Attempt | Service mode | Delivered | Revenue | Infrastructure CAPEX | Purchase | Vehicle profit delta |
+| --- | --- | --- | --- | --- | --- | --- |
+| 4 | Standalone | 20 coal units | £341 | £4,929 | £4,429 | £304 |
+| 8 | Planner-driven, failed | Unknown | Unknown | Unknown | Unknown | Unknown |
+| 9 | Planner-driven | 20 coal units | £325 | £5,157 | £4,429 | £289 |
+
+Attempt 9 planned and delivered the same 20-unit batch, two stations, one depot,
+one vehicle and a connected 24-tile corridor. Planned total CAPEX was £8,583;
+actual service construction and purchase spending was £9,586. Infrastructure alone
+was estimated at £4,154 versus £5,157 actual. Its £1,003 forecast error consists of
+£588 for roads including entrance bits, £385 for stations and £30 for the depot.
+Reconcile these estimates with retained native command quotes before another plan.
+P08/P05 are unchanged by this evaluation.
+
+Measured load fill was 100%, with 48 cargo units still waiting at source after
+Attempt 9's delivery. Measure repeat-trip frequency and queue growth before buying
+more vehicles. Retained timestamps include source dwell and travel, and do not
+prove a detour or inefficient routing. Planned cargo is an explicit batch policy,
+not a production forecast or a measured cargo-per-day forecast.
+
+Delivery revenue and vehicle profit are separate, overlapping measures. The £36
+difference in Attempt 9 is a revenue-minus-displayed-profit residual, **not** an
+itemized operating-cost ledger. Full operating costs and net return are unknown.
+The native API exposes [displayed vehicle profit](https://github.com/OpenTTD/OpenTTD/blob/15.3/src/script/api/script_vehicle.cpp#L339-L344),
+while [delivery accounting](https://github.com/OpenTTD/OpenTTD/blob/15.3/src/economy.cpp#L1091-L1129)
+distinguishes company revenue and vehicle shares. Sparse phase snapshots measure
+load fill but cannot measure the fraction of time a vehicle moved or idled. No
+full planning-horizon performance, recurring profitability, asset residual value
+or capital payback forecast is claimed. CAPEX excludes preparation of the demo world.
+
+Each successful import must pass the existing offline receipt verifier, including
+plan binding, native cargo/payment evidence and cleanup. Attempt 4 uses its sealed
+historical receipt format. Failed attempts retain their failure reason and unknown
+delivery metrics. Modified or unverified packages are rejected before storage.
+No historical artifacts are rewritten. Source receipt, manifest and result digests,
+native/P05 plan digests, source paths and comparison definitions remain in history.
+
+The local SQLite history uses the project's SQLAlchemy models and portable JSON
+storage conventions. Migration `0009` adds the equivalent table to a managed
+project database; the offline command creates only its own SQLite table. Reimporting
+the same evaluation does not duplicate it. Conflicting provenance or changed stored
+content is rejected. Downgrade refuses to discard retained history.
+
+Comparisons require matching service mode, simulator/content, bridge semantics,
+world/geometry, native supply and engine facts, planning policy and observed window.
+Attempts 4 and 9 differ and have separate cohorts. Failed attempts never enter
+successful-delivery averages. Each current cohort has one run, so the trend panels
+show a point and state that no trend can be inferred. More comparable verified runs
+are needed before drawing performance conclusions.
+
+Focused offline checks:
+
+```bash
+uv run --no-sync pytest -q tests/test_freight_analytics.py tests/test_plan_evaluation.py
+```
 
 ## Known limits
 
