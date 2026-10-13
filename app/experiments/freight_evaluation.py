@@ -34,7 +34,7 @@ class FreightEvaluation(Contract):
     schema_version: Literal[1] = 1
     run_name: str
     attempt: int
-    mode: Literal["standalone", "planner-driven"]
+    mode: Literal["standalone", "planner-driven", "planner-network"]
     status: Literal["verified-delivery", "failed"]
     reason: str | None
     source_directory: str
@@ -46,6 +46,7 @@ class FreightEvaluation(Contract):
     cohort_digest: Digest | None
     cohort_definition: dict
     metrics: tuple[FreightMetric, ...]
+    network_report: dict | None = None
     findings: tuple[str, ...]
     limitations: tuple[str, ...]
 
@@ -57,7 +58,7 @@ class FreightEvaluation(Contract):
 class _RunIdentity(TypedDict):
     run_name: str
     attempt: int
-    mode: Literal["standalone", "planner-driven"]
+    mode: Literal["standalone", "planner-driven", "planner-network"]
     source_directory: str
     artifact_manifest: ArtifactReference
     result: ArtifactReference
@@ -77,8 +78,12 @@ def evaluate_freight(directory: Path) -> FreightEvaluation:
 
     consumed_identity(directory)  # Immutable package, claim and retained cleanup; no live probe.
     metadata, result = read("PRELAUNCH.json"), read("result.json")
-    mode: Literal["standalone", "planner-driven"] = (
-        "planner-driven" if metadata.get("planner") else "standalone"
+    mode: Literal["standalone", "planner-driven", "planner-network"] = (
+        "planner-network"
+        if metadata.get("network")
+        else "planner-driven"
+        if metadata.get("planner")
+        else "standalone"
     )
     common = _RunIdentity(
         run_name=directory.name,
@@ -88,7 +93,12 @@ def evaluate_freight(directory: Path) -> FreightEvaluation:
         artifact_manifest=reference("artifact-manifest.sha256"),
         result=reference("result.json"),
     )
-    if result["status"] != "NATIVE_DELIVERY_VERIFIED":
+    success_status = (
+        "NATIVE_MULTI_SERVICE_DELIVERY_VERIFIED"
+        if metadata.get("network")
+        else "NATIVE_DELIVERY_VERIFIED"
+    )
+    if result["status"] != success_status:
         return FreightEvaluation(
             **common,
             status="failed",
@@ -101,6 +111,48 @@ def evaluate_freight(directory: Path) -> FreightEvaluation:
             metrics=(),
             findings=(),
             limitations=("No verified paid delivery; excluded from successful-run statistics.",),
+        )
+    if metadata.get("network"):
+        from app.experiments.freight_network import evaluate_freight_network
+
+        plan = ExecutionPlan.model_validate_json((directory / "execution-plan.json").read_bytes())
+        scenario = PlanningScenario.model_validate_json(
+            (directory / "planning-scenario.json").read_bytes()
+        )
+        report = evaluate_freight_network(plan, scenario, native_network_directory=directory)
+        retained = read("receipt.json")
+        cohort = dict(
+            mode=mode,
+            binary_sha256=metadata["binary_sha256"],
+            graphics_archive_sha256=read("graphics-identity.json")["archive_sha256"],
+            world=metadata["world"],
+            plan_digest=report.plan_digest,
+            scenario_digest=report.scenario_digest,
+            sequencing=retained["sequencing"],
+            measurement="serial-network-first-paid-batches",
+            policy=read("planning-policy.json"),
+            service_windows=[
+                {
+                    key: service[key]
+                    for key in ("economy_snapshots", "economy_transitions", "orders")
+                }
+                for service in retained["services"]
+            ],
+            frozen_source_sha256=reference("frozen-source.zip").sha256,
+        )
+        return FreightEvaluation(
+            **common,
+            status="verified-delivery",
+            reason=None,
+            receipt=reference("receipt.json"),
+            native_plan_digest=None,
+            execution_plan_digest=report.plan_digest,
+            cohort_digest=document_digest(cohort),
+            cohort_definition=cohort,
+            metrics=report.metrics,
+            network_report=report.model_dump(mode="json"),
+            findings=tuple(f.recommendation for f in report.feedback),
+            limitations=report.limitations,
         )
     receipt = verify_receipt(directory)
     native = read("plan.json")

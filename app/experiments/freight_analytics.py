@@ -42,7 +42,7 @@ def summarize(runs: tuple[FreightEvaluation, ...]) -> dict:
                 definition=members[0].cohort_definition,
                 runs=[run.run_name for run in members],
                 count=len(members),
-                trend_available=len(members) > 1,
+                trend_available=False,
                 metrics={name: value.model_dump() for name, value in metrics.items()},
             )
         )
@@ -52,7 +52,8 @@ def summarize(runs: tuple[FreightEvaluation, ...]) -> dict:
         cohorts=cohorts,
         successful_deliveries=sum(run.status == "verified-delivery" for run in runs),
         failed_attempts=sum(run.status == "failed" for run in runs),
-        comparison_policy="No pooled averages across cohorts. Failed attempts have unknown "
+        comparison_policy="Descriptive comparison only; no trend inferred from retained attempts. "
+        "No pooled averages across cohorts. Failed attempts have unknown "
         "delivery metrics and are excluded from successful-delivery averages.",
     )
 
@@ -148,9 +149,6 @@ def render_html(runs: tuple[FreightEvaluation, ...], summary: dict) -> str:
             '<path d="M60 25 V180 H700" fill="none" stroke="#667"/>',
             '<text x="10" y="20">GBP</text><text x="60" y="210">Attempt</text>',
         ]
-        if len(points) > 1:
-            coords = " ".join(f"{x:.1f},{180 - v / maximum * 145:.1f}" for x, v, _ in points)
-            plot.append(f'<polyline points="{coords}" fill="none" stroke="#176b86"/>')
         for x, v, attempt in points:
             y = 180 - v / maximum * 145
             plot.append(
@@ -160,12 +158,94 @@ def render_html(runs: tuple[FreightEvaluation, ...], summary: dict) -> str:
             )
         plot.append("</svg>")
         caption = (
-            "Comparable descriptive history; no causal claim."
+            "Comparable descriptive history; no trend or causal claim."
             if len(points) > 1
             else "One comparable run; no trend can be inferred."
         )
         trends.append(
             f"<h3>{escape(members[0].mode)} · cohort {suffix}</h3><p>{caption}</p>" + "".join(plot)
+        )
+    network_sections = []
+    for run in runs:
+        if not run.network_report:
+            continue
+        report = run.network_report
+        service_charts = []
+        for name, label, unit in (
+            ("delivered_cargo", "Service planned batch vs actual", "cargo units"),
+            ("exclusive_infrastructure_capex", "Service exclusive infrastructure CAPEX", "GBP"),
+            ("vehicle_purchase", "Service vehicle CAPEX", "GBP"),
+            ("delivery_revenue", "Attributed service revenue", "GBP"),
+        ):
+            rows = []
+            for index, service in enumerate(report["services"], 1):
+                m = next((m for m in service["metrics"] if m["name"] == name), {})
+                for key, color in (("planned", "#b66a08"), ("actual", "#176b86")):
+                    rows.append((f"Service {index} " + key, m.get(key), color))
+            service_charts.append(_bars(label, rows, unit))
+        capacity = []
+        for index, service in enumerate(report["services"], 1):
+            m = next((m for m in service["metrics"] if m["name"] == "capacity_utilization"), {})
+            amount = m.get("actual")
+            capacity.append(
+                (
+                    f"Service {index}",
+                    float(amount) * 100 if amount is not None else None,
+                    "#176b86",
+                )
+            )
+        load_fill = []
+        for index, service in enumerate(report["services"], 1):
+            m = next((m for m in service["metrics"] if m["name"] == "load_fill"), {})
+            amount = m.get("actual")
+            load_fill.append(
+                (f"Service {index}", float(amount) * 100 if amount is not None else None, "#176b86")
+            )
+        identities = "".join(
+            f"<li>Service {index}: <code>{escape(service['route_id'])}</code>"
+            f" · {escape(service['demand_id'])}</li>"
+            for index, service in enumerate(report["services"], 1)
+        )
+        recommendations = "".join(
+            "<li>"
+            + escape(
+                f["code"] + " · " + f["scope"] + " · " + f["metric"] + ": " + f["recommendation"]
+            )
+            + "<br><small>"
+            + escape(
+                " · ".join(
+                    f"{label}: {f[key]}"
+                    for key, label in (
+                        ("planned", "Planned"),
+                        ("actual", "Actual"),
+                        ("difference", "Actual minus planned"),
+                    )
+                    if f.get(key) is not None
+                )
+            )
+            + "</small>"
+            + "<br><small>Evidence: "
+            + ", ".join(
+                f'<a href="{escape((Path(run.source_directory) / ref).as_uri(), quote=True)}">'
+                f"{escape(ref)}</a>"
+                for ref in f["evidence_refs"]
+            )
+            + "</small></li>"
+            for f in report.get("feedback", [])
+        )
+        network_sections.append(
+            f"<section><h2>Attempt {run.attempt}: serial network services</h2>"
+            + "<ul>"
+            + identities
+            + "</ul>"
+            + "".join(service_charts)
+            + _bars("Verified batch / planned fleet capacity", capacity, "percent", 100)
+            + _bars("Measured source load fill", load_fill, "percent", 100)
+            + "<p>This batch ratio does not measure load factor or throughput over time.</p>"
+            + "<h3>Evidence-linked optimization feedback</h3><ul>"
+            + recommendations
+            + "</ul><p>No automatic parameter updates; one network run establishes "
+            "no trend.</p></section>"
         )
     details = []
     for run in runs:
@@ -208,24 +288,26 @@ h1{margin-bottom:8px}h3{font-size:18px}small,.unknown{color:#687580}svg{width:10
 svg text{font:14px system-ui;fill:#172532}.axis{fill:#667}
 table{border-collapse:collapse;font-size:13px}
 td,th{text-align:left;border-bottom:1px solid #ddd;padding:9px}.table{overflow:auto}
-summary{cursor:pointer;font-weight:600}code{overflow-wrap:anywhere}li{margin:8px 0}</style><main>
+summary{cursor:pointer;font-weight:600}code,small{overflow-wrap:anywhere}
+li{margin:8px 0}</style><main>
 <h1>P07 native freight analytics</h1>
 <p>Verified retained evidence. No OpenTTD launch or connection.</p>"""
         + f"""
-<p>{summary["successful_deliveries"]} verified deliveries ·
+<p>{summary["successful_deliveries"]} verified runs ·
 {summary["failed_attempts"]} failed attempts ·
 {len(summary["cohorts"])} comparison cohorts</p>
 <p>Unknown is not zero. Orange shows planned values or spending; blue shows actual performance.
 Company revenue and vehicle profit overlap and must not be added.
 Full operating costs and net return
-remain unknown. Attempts 4 and 9 are separate service modes and geometries.</p>
+remain unknown. Standalone, planner-driven and serial network batches remain separate cohorts.</p>
 <section><h2>1. Planned vs actual performance</h2>{performance}</section>
 <section><h2>2. Revenue and spending</h2>{_bars("Financial readbacks", finance, "GBP")}</section>
 <section><h2>3. Delivered cargo</h2>{_bars("First paid batch", cargo, "cargo units")}</section>
 <section><h2>4. Vehicle utilization</h2>
 <p>Load fill is measured at source. Moving/idle time is unavailable.</p>
 {_bars("Capacity and time", utilization, "percent", 100)}</section>
-<section><h2>5. Performance trends across comparable runs</h2>{"".join(trends)}</section>
+<section><h2>5. Descriptive history across comparable runs</h2>{"".join(trends)}</section>
+{"".join(network_sections)}
 <h2>Evidence, findings and limitations</h2>{"".join(details)}</main></html>"""
     )
 
@@ -236,7 +318,16 @@ def analyze(paths: list[Path], history_path: Path, output: Path) -> dict:
     destinations = [
         history_path,
         output,
-        *(output / name for name in ("summary.json", "metrics.csv", "charts.html")),
+        *(
+            output / name
+            for name in (
+                "summary.json",
+                "metrics.csv",
+                "charts.html",
+                "network-reports.json",
+                "feedback.json",
+            )
+        ),
     ]
     if any(target.resolve().is_relative_to(p) for p in roots for target in destinations):
         raise ValueError("analysis output/history must not modify retained evidence")
@@ -309,6 +400,23 @@ def analyze(paths: list[Path], history_path: Path, output: Path) -> dict:
                         run.reason,
                     )
                 )
+    networks = [
+        dict(run=run.run_name, report=run.network_report)
+        for run in runs
+        if run.network_report is not None
+    ]
+    (output / "network-reports.json").write_text(json.dumps(networks, indent=2) + "\n")
+    feedback = [
+        dict(
+            run=run.run_name,
+            evidence_directory=run.network_report.get("evidence_directory"),
+            findings=run.network_report.get("feedback", []),
+            evidence_refs=run.network_report.get("evidence_refs", []),
+        )
+        for run in runs
+        if run.network_report is not None
+    ]
+    (output / "feedback.json").write_text(json.dumps(feedback, indent=2) + "\n")
     (output / "charts.html").write_text(render_html(runs, summary))
     return dict(
         successful_deliveries=summary["successful_deliveries"],
@@ -318,4 +426,6 @@ def analyze(paths: list[Path], history_path: Path, output: Path) -> dict:
         csv=str(output / "metrics.csv"),
         charts=str(output / "charts.html"),
         history=str(history_path),
+        network_reports=str(output / "network-reports.json"),
+        feedback=str(output / "feedback.json"),
     )

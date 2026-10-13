@@ -3,7 +3,7 @@
 import json
 from pathlib import Path
 
-from sqlalchemy import String, create_engine, select
+from sqlalchemy import Engine, String, create_engine, select
 from sqlalchemy.orm import Mapped, Session, mapped_column
 
 from app.database.base import Base
@@ -25,10 +25,20 @@ class FreightHistory:
         self.engine = create_engine("sqlite+pysqlite:///" + str(path.resolve()))
         Base.metadata.tables[FreightRunRecord.__tablename__].create(self.engine, checkfirst=True)
 
+    @classmethod
+    def from_engine(cls, engine: Engine) -> FreightHistory:
+        """Use a migrated SQLAlchemy database, including PostgreSQL; never migrate here."""
+        history = cls.__new__(cls)
+        history.engine = engine
+        return history
+
     def add(self, evaluations: list[FreightEvaluation]) -> None:
         with Session(self.engine) as session, session.begin():
             for evaluation in evaluations:
                 document = evaluation.model_dump(mode="json")
+                # Keep pre-network history bytes stable when the optional report is absent.
+                if document.get("network_report") is None:
+                    document.pop("network_report", None)
                 digest = document_digest(document)
                 prior = session.get(FreightRunRecord, evaluation.history_key)
                 if prior is not None:

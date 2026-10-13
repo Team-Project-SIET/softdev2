@@ -1,9 +1,10 @@
 # OpenTTD transport planning and freight demonstration
 
 Python plans transport services and verifies their execution in **OpenTTD 15.3**.
-The working native MVP builds a road, two truck stops and a depot, buys one truck,
-loads coal from a real mine, delivers it to a real power station, and verifies
-industry attribution and payment over an encrypted AdminPort connection.
+The native multi-service MVP selected and delivered two coal services in one world
+in Attempt 12: **20 + 20 coal, £682 revenue and £19,101 CAPEX**. Independent
+retained receipt replay verifies both services and their aggregate. Services ran
+serially; concurrency, paid shared-asset reuse and full OPEX remain unproven.
 
 On 2026-10-11, freight Attempt 4 delivered **20 units of coal**. Offline replay
 verified £341 delivery income, £304 vehicle-profit increase and £9,358 construction
@@ -23,8 +24,8 @@ retry or reconnection. The process was reaped, listeners closed, credentials rem
 and the disposable workspace deleted. Attempts 1–8 remain unchanged.
 
 The standalone freight MVP is checkpointed in commit `92388cb`. Planner-driven freight,
-Attempt 9 monitoring and offline replay are checkpointed in `93986e0`. P07 offline
-analytics are implemented in the current worktree.
+Attempt 9 monitoring and offline replay are checkpointed in `93986e0`. Native multi-service freight is checkpointed in `16345fa`. P07 offline
+planned-vs-actual reporting, charts and deterministic feedback are available.
 Runtime artifacts are ignored by Git and have not been pushed.
 Historical runtime evidence is optional for a **new `--demo` run**.
 
@@ -39,8 +40,8 @@ Historical runtime evidence is optional for a **new `--demo` run**.
 | P05 output → checked single-vehicle freight intent | Controlled compiler and native Attempt 9 |
 | Qualified observation → P08 → native delivery | Attempt 9, 20 coal units, attributed payment, plan-bound offline replay and cleanup |
 | P07 post-play evaluation, run history and charts | Offline replay of Attempts 4 and 9; native plan comparison for Attempt 9; failed Attempt 8 excluded from delivery averages |
-| Multiple candidate services, shared-constrained P05 selection and network P07 estimates | Controlled three-candidate scenario; native multi-service execution unproven |
-| Arbitrary maps, rail delivery, multiple native vehicles, closed-loop optimization | Outside the demonstrated native MVP |
+| Multiple candidate services, shared-constrained P05 selection and network P07 estimates | Attempt 12: two native P05-selected services delivered in one world; paid shared-asset reuse remains unproven |
+| Arbitrary maps, rail delivery, concurrent native vehicles, closed-loop optimization | Outside the demonstrated native MVP |
 
 The standalone `--demo` result uses native OD selection. `--demo --planner` instead
 qualifies that generated world, captures the missing planning facts, runs P08/P05,
@@ -396,7 +397,7 @@ uv run --no-sync python -m app.experiments.cli analyze-freight \
 The installed `transport-experiment analyze-freight` command accepts the same
 arguments. Open `artifacts/experiments/p07-freight/charts.html` in a browser. The
 self-contained report has planned-versus-actual charts, revenue and spending,
-delivered cargo, measured load fill, and trends within comparable cohorts.
+delivered cargo, measured load fill, and descriptive history within comparable cohorts.
 `summary.json` includes provenance, metric scopes, findings and per-cohort descriptive
 statistics. `metrics.csv` has one row per metric; empty numeric fields mean unknown.
 Example output reports `successful_deliveries: 2`, `failed_attempts: 1`, `cohorts: 2`.
@@ -447,9 +448,9 @@ content is rejected. Downgrade refuses to discard retained history.
 Comparisons require matching service mode, simulator/content, bridge semantics,
 world/geometry, native supply and engine facts, planning policy and observed window.
 Attempts 4 and 9 differ and have separate cohorts. Failed attempts never enter
-successful-delivery averages. Each current cohort has one run, so the trend panels
-show a point and state that no trend can be inferred. More comparable verified runs
-are needed before drawing performance conclusions.
+successful-delivery averages. History charts show separate points and never infer
+a trend from the retained attempts. More comparable measurements and a justified
+sampling design are needed before drawing performance conclusions.
 
 Focused offline checks:
 
@@ -496,9 +497,10 @@ windows cannot establish concurrent network performance, and company income cann
 be assigned to concurrent services. Revenue, vehicle profit, CAPEX and unknown OPEX
 remain separate; unknown expenses never become zero or a claimed net return.
 
-The current native freight compiler and executor still support one service. A
-controlled multi-route plan is **not native execution ready**. This task launches
-nothing and adds no new proof framework. Existing single-service commands still work.
+The checkpointed native proof establishes two serial services. The multi-service path
+reuses the service executor with serial execution in one session, independent vehicles and
+orders, and stops each vehicle empty after delivery. A controlled multi-route plan
+is **not native execution ready**. Existing single-service commands still work.
 
 Focused verification:
 
@@ -507,19 +509,166 @@ uv run --no-sync pytest -q tests/test_freight_network.py tests/test_planning_opt
 uv run --no-sync pytest -q tests/test_freight_history_postgres.py --run-postgres
 ```
 
+PostgreSQL history persistence was verified using migrated isolated test schemas,
+including readback, idempotency and conflicting-provenance rejection. SQLite remains
+the default offline history backend. `FreightHistory.from_engine(engine)` supports an
+already migrated SQLAlchemy/PostgreSQL database without changing its public schema.
+
+## Native multi-service preparation
+
+Attempt 10 used fresh-world preparation for two producer/acceptor pairs. The intended
+pipeline qualifies that world, captures bounded native facts, runs P08/P05, preserves
+both selected identities, admits aggregate native quotes against observed funds, and
+sequences the existing freight construction/loading/delivery/payment checks. Unique
+construction actions form the CAPEX ledger; repeated shared actions must spend zero.
+Only the active service vehicle runs during its payment window. This establishes
+serial service attribution, not concurrent network throughput. OPEX and net profit
+remain unknown unless measured.
+
+Preparation and preflight passed. The **single consumed launch failed** with
+`NETWORK_INDUSTRY_BUILD_FAILED` during the second layout (`y=44`), before readiness,
+Admin connection, qualification or P05 selection. No native services were selected;
+no service construction, delivery, revenue or CAPEX was verified. The first native
+industry pair was built before failure. Offline retained-save inspection found
+exactly those two industries, one town, and `economy.multiple_industry_per_town=0`.
+The third call, coal mine type 0 at tile 2836 `(20,44)`, violates the same-type,
+same-town rule in [OpenTTD 15.3](https://github.com/OpenTTD/OpenTTD/blob/15.3/src/industry_cmd.cpp).
+That rule rejects the call before footprint and terrain checks. Total world
+preparation mutations remain unmeasured.
+Do not rerun this attempt or treat zero service requests as zero world mutations.
+
+The immutable attempt directory retains `PRELAUNCH.json`, `CLAIM.json`, frozen
+sources, logs, `failure.sav`, result, cleanup and artifact hashes. Independent retained
+readback verified the manifest, one launch/zero connections, process reaping, closed
+endpoints, credential removal and workspace disposal. Historical evidence was
+preserved. No success receipts or native network P07 results exist for Attempt 10.
+
+`verify_network_receipt(directory)` replays qualified observations, native facts,
+P08/P05 selection, per-command spending, logged ownership/topology, each service's
+cargo/payment and stopped-vehicle readback, and unique aggregate accounting for a
+completed package. P07 accepts such a package through
+`evaluate_freight_network(..., native_network_directory=directory)`; independent
+historical runs cannot satisfy that input. These additions are checkpointed in `16345fa`. Attempt 12 proved native receipt replay and P07 network
+actuals for two serial services, as recorded below.
+
+### Attempt 12: verified native two-service execution
+
+On 2026-10-14, one OpenTTD 15.3 launch and one continuous secure Admin connection
+constructed and independently read back two coal mines and two power stations
+(industry IDs 0–3). The sealed launch config contained exactly one `[economy]`
+section; the running GameScript checked `economy.multiple_industry_per_town=1`
+before construction. Same-world qualification and P08/P05 selected exactly two
+services; native selection bindings, vehicles, orders, loading, final delivery and
+payment were replayed from retained evidence.
+
+| Service (native industry IDs) | Delivered coal | Actual revenue (GBP) | Construction and vehicle CAPEX (GBP) |
+| --- | ---: | ---: | ---: |
+| 2 → 3 | 20 | 356 | 9,515 |
+| 0 → 1 | 20 | 326 | 9,586 |
+| Aggregate | 40 | 682 | 19,101 |
+
+The unique infrastructure ledger totals £10,243; vehicle purchases total £8,858.
+P05 selected no shared construction actions, so shared CAPEX is £0. This attempt
+proves aggregate accounting without duplication; paid shared-asset reuse remains
+unproven. Services ran serially, with each vehicle stopped empty after delivery;
+concurrent throughput, OPEX and net return remain unmeasured.
+
+[Attempt 12 receipts](artifacts/runtime/openttd-15.3-first-freight-delivery-attempt12/receipt.json)
+passed independent offline replay. The
+[P07 evaluation](artifacts/experiments/attempt12-native-network/evaluation.json)
+records two verified services and their attributed actuals. Cleanup verified process
+reaping, closed connection/listeners, credential removal and workspace disposal.
+Attempts 1–11 remain preserved. The multi-service implementation is checkpointed in `16345fa`;
+ignored native evidence stays local.
+
+Focused verification passed (96 tests), plus Ruff, format and scoped typecheck:
+
+```bash
+uv run --no-sync pytest -q tests/test_native_freight_network.py \
+  tests/test_freight_network.py tests/test_freight_planning.py \
+  tests/test_freight_delivery.py tests/test_freight_analytics.py
+```
+
+Network preparation now explicitly sets `economy.multiple_industry_per_town=true`
+and checks the setting before construction. The anchors and seed remain unchanged.
+Each build checks the native outcome, industry count, type, and location. A failed
+build stops preparation; the one-shot runner retains evidence and disposes the
+workspace. Network preflight rejects retained saves in the disposable workspace
+and checks both heightmap copies against the sealed source identity.
+
+Attempts 10 and 11 are consumed failures. Use the fresh-attempt preparation
+workflow below; never reuse their mutated saves.
+
 ## Known limits
 
-The proven native execution uses one company, one vehicle, one coal producer/acceptor
-pair, two bay stops, one depot,
-a bounded flat vacant L route and default content are demonstrated. Each run uses
-one process, one secure connection, no reconnect or retry, at most 26 service
-requests and 768-byte service responses. The standalone deadline is 180 seconds;
-the planner run allows 600 seconds, including fresh qualification and supplemental
-reads. World preparation
-has its own bound of two industry builds and at most 50 clearing commands.
+Attempt 12 demonstrates one company and two independent coal producer/acceptor
+pairs with two trucks, serial payment windows, bay stops, depots and bounded flat
+road corridors using default content. One process and one continuous secure
+connection were consumed without retries or reconnections. Its sealed budgets
+permit 58 requests, 768-byte service responses and a 900-second total deadline;
+world preparation is bounded separately in `PRELAUNCH.json`.
 
-The demo proves one paid delivery, not long-run profitability, recurring reliability,
-arbitrary-world route optimization or support for larger fleets. Attempt 9 proves
-the qualified single-service planning integration. Amounts are OpenTTD
-GBP accounting units. Receipts fail closed; neither a command ACK nor an empty
-vehicle alone can establish freight delivery.
+The proof covers each service's first paid batch. Long-run profitability, recurring
+reliability, arbitrary-world route search, concurrent throughput and paid shared
+asset reuse remain unproven. Full operating expenses and net return are unknown.
+Amounts are OpenTTD GBP accounting units. Receipts fail closed; neither a command
+ACK nor an empty vehicle alone can establish freight delivery.
+
+## Reproducible multi-service replay and feedback
+
+After `uv sync --locked --group dev`, the following commands run offline. They do
+not need PostgreSQL, Docker, OpenTTD installation or Admin credentials. Native
+replay requires the retained Attempt 12 package, which is ignored by Git; a fresh
+clone can use the checked-in controlled scenario shown above, but cannot claim
+native proof without the retained package.
+
+```bash
+ATTEMPT=artifacts/runtime/openttd-15.3-first-freight-delivery-attempt12
+uv run --no-sync python -m app.planning.network_cli \
+  "$ATTEMPT/planning-scenario.json" --native-network-directory "$ATTEMPT" \
+  --output artifacts/experiments/attempt12-replay
+uv run --no-sync python -m app.experiments.cli analyze-freight \
+  artifacts/runtime/openttd-15.3-first-freight-delivery-attempt4 \
+  artifacts/runtime/openttd-15.3-first-freight-delivery-attempt8 \
+  artifacts/runtime/openttd-15.3-first-freight-delivery-attempt9 \
+  "$ATTEMPT" --history artifacts/experiments/multi-service-history.sqlite \
+  --output artifacts/experiments/multi-service-feedback
+```
+
+Network replay uses the retained selected plan rather than re-running selection.
+Inspect `attempt12-replay/evaluation.json` for each service and the unique network
+ledger. Open `multi-service-feedback/charts.html` for planned/actual batches,
+CAPEX components, attributed service revenue and measured capacity. The same folder
+contains `summary.json`, `metrics.csv`, `network-reports.json` and `feedback.json`.
+Feedback references retained evidence and its hashes. Repeating the commands
+preserves content-addressed history without adding duplicate runs. Keep generated
+output and history outside every retained evidence directory.
+
+Estimated infrastructure CAPEX is compared with native command spending; vehicle
+purchases are separate. Company revenue and displayed vehicle profit overlap and
+must not be added. Full OPEX, net return, moving/idle utilization and capital
+recovery remain unknown. Batch/capacity ratios describe observed batches, not
+recurring throughput. Failure packages retain unknown metrics; standalone,
+planner-driven and serial-network runs use separate cohorts. History provides
+descriptive comparisons and never infers trends from one or two runs.
+
+Recommendations identify cost quote discrepancies and which further measurements
+P08/P05 need. They do not retrain anything or change optimizer parameters. Attempt
+12 selected no shared construction actions; a zero shared ledger does not prove
+paid reuse. Future native execution requires fresh authorization and a new attempt.
+To prepare a fresh multi-service attempt without launching it:
+
+```bash
+NEXT_ATTEMPT="$(uv run --no-sync python -m app.simulation.openttd.proof.freight_delivery next)"
+uv run --no-sync python -m app.simulation.openttd.proof.freight_delivery \
+  prepare "$NEXT_ATTEMPT" --demo --planner --network
+uv run --no-sync python -m app.simulation.openttd.proof.freight_delivery \
+  preflight "$NEXT_ATTEMPT"
+```
+
+Preparation and preflight grant no launch permission. Never reuse consumed Attempt
+10, 11 or 12 run commands. Focused offline checks:
+
+```bash
+uv run --no-sync pytest -q tests/test_freight_analytics.py tests/test_freight_network.py
+```

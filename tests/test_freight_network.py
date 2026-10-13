@@ -450,3 +450,101 @@ def test_package_order_does_not_change_scenario_or_plan(packages):
     assert plan_hash(optimize_candidate_network(forward.scenario).plan) == plan_hash(
         optimize_candidate_network(reverse.scenario).plan
     )
+
+
+def test_network_feedback_is_deterministic_and_preserves_unknowns(network, monkeypatch, tmp_path):
+    from app.experiments.freight_network import evaluate_freight_network
+    from app.simulation.openttd import freight_native_network
+
+    plan = optimize_candidate_network(network.scenario).plan
+    receipt = dict(
+        execution_plan_digest=plan_hash(plan),
+        services=[
+            dict(
+                route_id=r.route_id,
+                delivered=20,
+                mutation_costs=[10] * 6 + [500],
+                payment_income=100,
+                vehicle_profit_delta=90,
+            )
+            for r in plan.routes
+        ],
+        delivered=40,
+        payment_income=200,
+        actual_capex=1120,
+        infrastructure_capex=120,
+        vehicle_purchase=1000,
+        operating_costs=None,
+    )
+    monkeypatch.setattr(freight_native_network, "verify_network_receipt", lambda _: receipt)
+    first = evaluate_freight_network(plan, network.scenario, native_network_directory=tmp_path)
+    second = evaluate_freight_network(plan, network.scenario, native_network_directory=tmp_path)
+    assert first.model_dump_json() == second.model_dump_json()
+    metrics = {m.name: m for m in first.metrics}
+    assert metrics["total_capex"].difference == -1460
+    assert metrics["total_capex"].comparison == "comparable"
+    assert metrics["vehicle_profit"].actual == 180
+    assert metrics["operating_costs"].actual is None
+    assert metrics["net_return"].actual is None
+    for service in first.services:
+        rows = {m.name: m for m in service.metrics}
+        assert rows["capacity_units"].planned == 60
+        assert rows["capacity_units"].actual is None
+        assert rows["capacity_utilization"].actual == Decimal(20) / 60
+        assert rows["total_capex"].actual == 560
+    codes = {f.code for f in first.feedback}
+    assert codes == {
+        "cost_estimation_error",
+        "batch_capacity_utilization",
+        "collect_opex",
+        "validate_shared_assets",
+        "validate_concurrency",
+    }
+    assert not evaluate_freight_network(plan, network.scenario).feedback
+
+
+def test_attempt12_network_report_replays_both_services_without_runtime():
+    from app.experiments.freight_network import evaluate_freight_network
+    from app.planning.domain import ExecutionPlan, PlanningScenario
+
+    directory = (
+        Path(__file__).parents[1]
+        / "artifacts/runtime/openttd-15.3-first-freight-delivery-attempt12"
+    )
+    if not (directory / "artifact-manifest.sha256").exists():
+        pytest.skip("optional retained native evidence not installed")
+    plan = ExecutionPlan.model_validate_json((directory / "execution-plan.json").read_bytes())
+    scenario = PlanningScenario.model_validate_json(
+        (directory / "planning-scenario.json").read_bytes()
+    )
+    report = evaluate_freight_network(plan, scenario, native_network_directory=directory)
+    metrics = {m.name: m for m in report.metrics}
+    assert report.verified_service_count == 2
+    assert metrics["delivered_cargo"].actual == 40
+    assert metrics["total_capex"].actual == 19101
+    assert metrics["infrastructure_capex"].actual == 10243
+    assert metrics["vehicle_purchase"].actual == 8858
+    assert metrics["delivery_revenue"].actual == 682
+    assert metrics["total_capex"].planned is not None
+    assert (
+        metrics["total_capex"].difference
+        == metrics["total_capex"].actual - metrics["total_capex"].planned
+    )
+    assert metrics["operating_costs"].actual is None
+    assert len(report.evidence_refs) == 9
+    assert all(f.evidence_refs for f in report.feedback)
+    assert all(
+        {m.name: m for m in service.metrics}["delivered_cargo"].actual == 20
+        for service in report.services
+    )
+
+    waiting = []
+    for service in report.services:
+        rows = {m.name: m for m in service.metrics}
+        assert rows["capacity_units"].actual == 20
+        assert rows["load_fill"].actual == 1
+        assert rows["capacity_utilization"].actual == 1
+        waiting.append(rows["source_waiting"].actual)
+    assert all(value is not None for value in waiting)
+    assert sorted(value for value in waiting if value is not None) == [42, 54]
+    assert sum(f.code == "source_waiting_backlog" for f in report.feedback) == 2

@@ -176,7 +176,7 @@ def test_cli_exports_real_retained_results_and_is_idempotent(retained_paths, tmp
         "2. Revenue and spending",
         "3. Delivered cargo",
         "4. Vehicle utilization",
-        "5. Performance trends across comparable runs",
+        "5. Descriptive history across comparable runs",
     ):
         assert title in html
     assert html.count("<svg") == 8
@@ -226,8 +226,8 @@ def test_controlled_comparison_only_averages_matching_verified_cohorts(controlle
     assert report["successful_deliveries"] == 3 and len(report["cohorts"]) == 2
     group = next(c for c in report["cohorts"] if c["count"] == 2)
     assert group["metrics"]["delivered_cargo"]["mean"] == 25
-    assert group["trend_available"]
-    assert "<polyline" in render_html((old, failed, planner, second), report)
+    assert not group["trend_available"]
+    assert "<polyline" not in render_html((old, failed, planner, second), report)
     assert all(c["metrics"]["delivered_cargo"]["count"] == c["count"] for c in report["cohorts"])
 
 
@@ -287,3 +287,87 @@ def test_export_symlink_cannot_overwrite_retained_receipt(retained_paths, tmp_pa
     (output / "summary.json").symlink_to(retained_paths[2] / "receipt.json")
     with pytest.raises(ValueError, match="must not modify"):
         analyze([retained_paths[2]], tmp_path / "history.sqlite", output)
+
+
+def test_network_cli_and_history_replay_are_offline_and_reproducible(tmp_path):
+    from app.planning.network_cli import main as network_main
+
+    native = ROOT / "openttd-15.3-first-freight-delivery-attempt12"
+    if not (native / "artifact-manifest.sha256").exists():
+        pytest.skip("optional retained native network artifacts are not installed")
+    output = tmp_path / "network"
+    args = [
+        str(native / "planning-scenario.json"),
+        "--native-network-directory",
+        str(native),
+        "--output",
+        str(output),
+    ]
+    assert network_main(args) == 0
+    first = (output / "evaluation.json").read_bytes()
+    assert network_main(args) == 0
+    assert (output / "evaluation.json").read_bytes() == first
+    report = json.loads(first)
+    assert report["classification"] == "NATIVE_MULTI_SERVICE_EVALUATION"
+    assert report["verified_service_count"] == 2
+    paths = [ROOT / f"openttd-15.3-first-freight-delivery-attempt{n}" for n in (4, 8, 9, 12)]
+    analysis = tmp_path / "analysis"
+    db = tmp_path / "history.sqlite"
+    analyze(paths, db, analysis)
+    analyze(paths, db, analysis)
+    summary = json.loads((analysis / "summary.json").read_text())
+    assert len(summary["runs"]) == 4
+    assert summary["successful_deliveries"] == 3 and summary["failed_attempts"] == 1
+    network = next(run for run in summary["runs"] if run["attempt"] == 12)
+    assert network["mode"] == "planner-network"
+    metrics = {m["name"]: m for m in network["metrics"]}
+    assert metrics["delivered_cargo"]["actual"] == "40"
+    assert metrics["total_capex"]["actual"] == "19101"
+    assert metrics["delivery_revenue"]["actual"] == "682"
+    assert metrics["operating_costs"]["actual"] is None
+    assert all(not c["trend_available"] for c in summary["cohorts"])
+    feedback = json.loads((analysis / "feedback.json").read_text())[0]
+    assert feedback["findings"]
+    assert feedback["evidence_directory"] == str(native.resolve())
+    html = (analysis / "charts.html").read_text()
+    assert "serial network services" in html and "Evidence-linked optimization feedback" in html
+    assert "Actual minus planned: 1935" in html
+    assert "<polyline" not in html
+    with pytest.raises(SystemExit):
+        network_main([*args[:-1], str(native)])
+
+
+def test_network_failure_keeps_mode_and_unknown_delivery():
+    native = ROOT / "openttd-15.3-first-freight-delivery-attempt11"
+    if not (native / "artifact-manifest.sha256").exists():
+        pytest.skip("optional retained network failure is not installed")
+    evaluation = evaluate_freight(native)
+    assert evaluation.status == "failed" and evaluation.mode == "planner-network"
+    assert evaluation.metrics == () and evaluation.network_report is None
+
+
+def test_history_accepts_legacy_single_service_payload_without_optional_network_report(
+    controlled_evaluations, tmp_path
+):
+    from sqlalchemy.orm import Session
+
+    from app.experiments.freight_evaluation import document_digest
+    from app.experiments.freight_history import FreightRunRecord
+
+    evaluation = controlled_evaluations[2]
+    document = evaluation.model_dump(mode="json")
+    document.pop("network_report")
+    history = FreightHistory(tmp_path / "legacy.sqlite")
+    try:
+        with Session(history.engine) as session, session.begin():
+            session.add(
+                FreightRunRecord(
+                    source_digest=evaluation.history_key,
+                    evaluation_digest=document_digest(document),
+                    evaluation=document,
+                )
+            )
+        history.add([evaluation])
+        assert len(history.runs()) == 1
+    finally:
+        history.close()
