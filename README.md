@@ -837,15 +837,15 @@ Inspect starting cash, unchanged loan and saved-world provenance with the existi
 before/after balances and loan; preparation alone does not establish those values.
 
 For P08/P05 planning and native multi-service freight, prepare a separate fresh
-attempt without `--finance-only`. The finance workflow above was executed natively;
-the full freight workflow below has CLI and controlled preparation coverage only:
+attempt without `--finance-only`. Native Attempt 14 executed the full workflow
+below after preflight passed, using one launch and one secure connection:
 
 ```bash
 HIGH_BUDGET_ATTEMPT="$(uv run --no-sync python -m app.simulation.openttd.proof.freight_delivery next)"
 uv run --no-sync python -m app.simulation.openttd.proof.freight_delivery prepare "$HIGH_BUDGET_ATTEMPT" \
   --demo --planner --network --scenario high-budget-500k --planning-budget 500000
 uv run --no-sync python -m app.simulation.openttd.proof.freight_delivery preflight "$HIGH_BUDGET_ATTEMPT"
-# Future full freight run requires separate authorization after preflight:
+# Run only once with explicit authorization after preflight PASS:
 uv run --no-sync python -m app.simulation.openttd.proof.freight_delivery run "$HIGH_BUDGET_ATTEMPT" \
   --authorize-one-launch
 uv run --no-sync python -m app.simulation.openttd.proof.freight_delivery verify "$HIGH_BUDGET_ATTEMPT"
@@ -858,3 +858,58 @@ integer cap changes planner spending permission independently of company cash.
 The seed controls world generation, starting cash controls available company
 funds, and the planning budget limits selected plan cost. This financial preset
 retains seed 42 and creates separate artifacts; it does not alter verified saves.
+
+
+Native **Attempt 14** established **HIGH-BUDGET NATIVE FREIGHT EXECUTION PROVEN**.
+Implementation checkpoint: `ceaf6ee` (no push). Preparation sealed starting cash
+and the planning cap at **£500,000**, with infinite money disabled. Independent
+native funding readback verified cash **£100,000 → £500,000**, loan unchanged at
+**£100,000**, and exactly one £400,000 endowment. Funding changed neither income
+nor expenses and is excluded from freight revenue. Admission cash after the
+production qualification window was **£499,616**.
+
+P08/P05 naturally selected two coal services, within the current one-or-two-service
+executor limit. No benchmark identities or service count were forced. Native
+admission checked industry compatibility, route feasibility and available funds;
+the two £9,702 construction/purchase quotes totaled £19,404. Independent command,
+route and delivery readbacks established:
+
+| Native service | Delivered coal | Freight revenue | Actual CAPEX |
+| --- | ---: | ---: | ---: |
+| Industry 2 → 3 | 20 units | £356 | £9,515 |
+| Industry 0 → 1 | 20 units | £326 | £9,586 |
+| Total | 40 units | £682 | £19,101 |
+
+Actual CAPEX comprises **£10,243 infrastructure** and **£8,858 vehicle purchases**.
+Final retained cash readback was **£480,748**. Cash movement also includes the
+qualification and running periods; it is not a net-profit calculation. OPEX and
+net return remain unknown. Both vehicles stopped empty after delivery. Cleanup
+verified process reaping, socket closure, workspace disposal and credential removal.
+
+[Attempt 14 receipts](artifacts/runtime/openttd-15.3-first-freight-delivery-attempt14/receipt.json),
+[funding readback](artifacts/runtime/openttd-15.3-first-freight-delivery-attempt14/scenario-capital.json)
+and [P07 evaluation](artifacts/experiments/attempt14-high-budget/p07/evaluation.json)
+passed independent offline replay. P07 verified both selected services and recorded
+planned CAPEX £17,166 versus actual £19,101, a **£1,935** shortfall in the estimate.
+Replay and analytics commands executed successfully:
+
+```bash
+ATTEMPT=artifacts/runtime/openttd-15.3-first-freight-delivery-attempt14
+uv run --no-sync python -m app.planning.network_cli \
+  "$ATTEMPT/planning-scenario.json" --native-network-directory "$ATTEMPT" \
+  --output artifacts/experiments/attempt14-high-budget/p07
+uv run --no-sync python -m app.experiments.cli analyze-freight \
+  artifacts/runtime/openttd-15.3-first-freight-delivery-attempt12 "$ATTEMPT" \
+  --history artifacts/experiments/attempt14-high-budget/history.sqlite \
+  --output artifacts/experiments/attempt14-high-budget/analytics
+```
+
+[Historical comparison](artifacts/experiments/attempt14-high-budget/attempt12-comparison.json)
+keeps Attempt 12 separate: its planning cap was £100,000, versus £500,000 for
+Attempt 14. Admission funds were £99,616 versus £499,616. Both generated 64×64
+seed-42 worlds and selected the same industry/cargo relationships, delivering the
+same 40 units for £682 and £19,101 CAPEX. Fresh qualified save hashes and execution
+windows differ; this is not a matched native A/B comparison or evidence that the
+higher budget improved performance. Receipts prove serial service batches, not
+concurrent throughput. Historical evidence was preserved; no optimizer tuning,
+retry, reconnect or push occurred. Consumed Attempt 14 must never be launched again.
