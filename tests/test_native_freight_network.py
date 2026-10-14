@@ -46,6 +46,10 @@ def network_vm(service_limit=2):
         for line in code.splitlines():
             if line.startswith("require("):
                 code = code.replace(line, "")
+        # OpenTTD 15.3's Squirrel fork has no `base` keyword. Model its
+        # ordinary instance lookup instead of SQVM's newer parent-call syntax.
+        if name == "main.nut":
+            code = code.replace("base.", 'this["base"].')
         vm.execute(code)
     vm.execute("""
         ::vehicles <- {};
@@ -110,6 +114,12 @@ def test_selected_services_deliver_and_stop_in_one_executor_session(service_coun
     from app.simulation.openttd.freight_planning import PlanningSelectionRequest
 
     vm = network_vm(3 if service_count == 3 else 2)
+    vm.execute("""
+        ::construction_logs <- [];
+        ::GSLog = class extends GSLog {
+            static function Info(message){::construction_logs.append(message);}
+        };
+    """)
 
     def exchange(request):
         vm.execute("::bridge.Handle(" + request.to_bytes().decode() + ");")
@@ -169,6 +179,15 @@ def test_selected_services_deliver_and_stop_in_one_executor_session(service_coun
         receipts.append(verify_delivery(plan, baseline, observations, final))
         assert query("finish", f"s{n}-park", 1).status == "PARKED"
         assert query("read", f"s{n}-park-read").s[9] == 1
+    vm.execute("""
+        local stages=0;local markers=0;
+        foreach(message in ::construction_logs) {
+            if(message.find("FREIGHT_CONSTRUCTION_STAGE ")==0)stages++;
+            if(message.find("FREIGHT_GAME_TIME_CONSTRUCTION ")==0)markers++;
+        }
+        if(stages!=::bridge.services.len()*10)throw "ANCESTOR_STAGE_LOG_MISSING";
+        if(markers!=::bridge.services.len())throw "CONSTRUCTION_TIME_MARKER_MISSING";
+    """)
     assert [r["delivered"] for r in receipts] == [20] * service_count
     assert [r["payment_income"] for r in receipts] == [500] * service_count
     assert [r["vehicle"] for r in receipts] == list(range(23, 23 + service_count))
@@ -202,3 +221,138 @@ def test_one_naturally_selected_service_aggregates_delivery_and_spending(package
     assert aggregate["net_profit"] is None
     with pytest.raises(ValueError, match="exact selected"):
         aggregate_receipt(plan, services, [])
+
+
+def test_captured_attempt16_cash_residual_requires_exact_command_witness(tmp_path):
+    from pathlib import Path
+
+    from app.simulation.openttd.freight_delivery import DeliveryPlan
+    from app.simulation.openttd.freight_native_network import service_construction
+
+    directory = Path("artifacts/runtime/openttd-15.3-first-freight-delivery-attempt16")
+    if not (directory / "native-plan-1.json").exists():
+        pytest.skip("optional retained native evidence not installed")
+    plan = DeliveryPlan.model_validate_json((directory / "native-plan-1.json").read_bytes())
+    records = {
+        "inspect-1": DeliveryReadback.model_validate_json(
+            (directory / "activate-1-response.json").read_bytes()
+        )
+    }
+    for i in range(10):
+        for kind in ("build", "read"):
+            records[f"{kind}-{i}"] = DeliveryReadback.model_validate_json(
+                (directory / f"s1-{kind}-{i}-response.json").read_bytes()
+            )
+    with pytest.raises(ValueError, match="native spending/readback mismatch"):
+        service_construction(plan, records)
+    other = DeliveryPlan.model_validate_json((directory / "native-plan-0.json").read_bytes())
+    result = service_construction(
+        plan, records, log_path=directory / "stderr.log", network_plans=(other.digest,)
+    )
+    assert result["construction_purchase_spending"] == 9515
+    changes = result["unallocated_company_cash_changes"]
+    assert len(changes) == 1
+    assert changes[0]["stage"] == 4
+    assert changes[0]["unallocated_company_cash_decrease"] == 1
+    assert changes[0]["interval"] == "previous_read_to_build"
+    assert changes[0]["expense_category"] == "UNKNOWN"
+    assert changes[0]["before_digest"] == records["read-3"].digest
+    assert changes[0]["after_digest"] == records["build-4"].digest
+    broken = dict(records)
+    values = list(records["read-4"].s)
+    values[3] -= 1
+    broken["read-4"] = records["read-4"].model_copy(update={"s": tuple(values)})
+    concurrent = service_construction(
+        plan, broken, log_path=directory / "stderr.log", network_plans=(other.digest,)
+    )
+    assert concurrent["construction_purchase_spending"] == 9515
+    assert any(
+        change["stage"] == 4
+        and change["interval"] == "build_to_read"
+        and change["unallocated_company_cash_decrease"] == 1
+        and change["expense_category"] == "UNKNOWN"
+        and change["before_digest"] == records["build-4"].digest
+        and change["after_digest"] == broken["read-4"].digest
+        for change in concurrent["unallocated_company_cash_changes"]
+    )
+    with pytest.raises(ValueError, match="native spending/readback mismatch"):
+        service_construction(plan, broken)
+
+    same_tick = dict(broken)
+    same_values = list(broken["read-4"].s)
+    same_values[0] = records["build-4"].s[0]
+    same_tick["read-4"] = broken["read-4"].model_copy(update={"s": tuple(same_values)})
+    with pytest.raises(ValueError, match="cash reconciliation chronology mismatch"):
+        service_construction(
+            plan, same_tick, log_path=directory / "stderr.log", network_plans=(other.digest,)
+        )
+
+    tampered = tmp_path / "stderr.log"
+    tampered.write_text(
+        (directory / "stderr.log")
+        .read_text()
+        .replace(
+            f"plan={plan.digest} stage=4 result=1 quoted=307 cost=307 spent=307",
+            f"plan={plan.digest} stage=4 result=1 quoted=307 cost=307 spent=308",
+        )
+    )
+    with pytest.raises(ValueError, match="construction command quote/spending mismatch"):
+        service_construction(plan, records, log_path=tampered, network_plans=(other.digest,))
+
+
+def test_company_finance_reconciliation_replays_cash_without_inventing_opex(tmp_path):
+    from pathlib import Path
+
+    from app.simulation.openttd.freight_native_network import (
+        financial_reconciliation,
+        verify_financial_reconciliation,
+    )
+
+    directory = Path("artifacts/runtime/openttd-15.3-first-freight-delivery-attempt16")
+    if not (directory / "service-receipt-0.json").exists():
+        pytest.skip("optional retained native evidence not installed")
+    receipt = json.loads((directory / "service-receipt-0.json").read_bytes())
+    records = {
+        name: DeliveryReadback.model_validate_json(
+            (directory / f"{name}-response.json").read_bytes()
+        )
+        for name in ("select-0", "s0-park-read")
+    }
+    aggregate = dict(
+        services=[receipt],
+        actual_capex=receipt["construction_purchase_spending"],
+        payment_income=receipt["payment_income"],
+    )
+    result = financial_reconciliation(directory, records, aggregate)
+    assert result["operating_costs"] is None
+    assert result["net_profit"] is None
+    assert result["expense_category"] == "UNKNOWN"
+    assert result["final_cash"] == (
+        result["initial_cash"]
+        - result["command_construction_purchase_costs"]
+        + result["freight_revenue"]
+        - result["unallocated_company_cash_decrease"]
+    )
+    # Replay uses retained endpoint values, not a receipt's claimed cash totals.
+    (tmp_path / "capital-read-response.json").write_bytes(
+        (directory / "capital-read-response.json").read_bytes()
+    )
+    sidecar = tmp_path / "financial-reconciliation.json"
+    sidecar.write_text(json.dumps(result))
+    assert verify_financial_reconciliation(tmp_path, records, aggregate) == result
+    result["unallocated_company_cash_decrease"] += 1
+    sidecar.write_text(json.dumps(result))
+    with pytest.raises(ValueError, match="financial reconciliation replay mismatch"):
+        verify_financial_reconciliation(tmp_path, records, aggregate)
+
+
+def test_financial_reconciliation_version_rejects_unknown_versions():
+    from app.simulation.openttd.freight_native_network import (
+        validate_financial_reconciliation_version,
+    )
+
+    assert validate_financial_reconciliation_version({}) is None
+    assert validate_financial_reconciliation_version({"financial_reconciliation_version": 1}) == 1
+    for version in (True, 0, 2, "1"):
+        with pytest.raises(ValueError, match="unsupported financial reconciliation version"):
+            validate_financial_reconciliation_version({"financial_reconciliation_version": version})

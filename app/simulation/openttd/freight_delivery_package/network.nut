@@ -28,7 +28,7 @@ class NetworkFreightProof extends PlannerFreightProof {
         return GSVehicleList().Count()==ExpectedVehicleCount();
     }
     function RecordConstruction(i,result,quoted,cost,funds) {
-        base.RecordConstruction(i,result,quoted,cost,funds);
+        PlannerFreightProof.RecordConstruction.call(this,i,result,quoted,cost,funds);
         if(i==6&&GSVehicle.IsValidVehicle(result))GSLog.Info("FREIGHT_GAME_TIME_CONSTRUCTION plan="+dplan+
             " date="+GSDate.GetCurrentDate()+" tick="+GetTick());
     }

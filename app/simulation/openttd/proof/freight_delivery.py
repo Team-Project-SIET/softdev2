@@ -781,6 +781,8 @@ def prepare(
                 from app.simulation.openttd.scenario_capital import financial_preset
 
                 m["financial_preset"] = financial_preset(scenario)
+        if network:
+            m["financial_reconciliation_version"] = 1
         write_json(directory / "PRELAUNCH.json", m)
         (directory / "PRELAUNCH.sha256").write_text(sha256(directory / "PRELAUNCH.json") + "\n")
         return PreparedProof(
@@ -858,9 +860,13 @@ def preflight(p):
     if (p.directory / "CLAIM.json").exists():
         raise ValueError("one attempt consumed")
     m = json.loads((p.directory / "PRELAUNCH.json").read_text())
-    from app.simulation.openttd.freight_native_network import validate_game_time_version
+    from app.simulation.openttd.freight_native_network import (
+        validate_financial_reconciliation_version,
+        validate_game_time_version,
+    )
 
     validate_game_time_version(m)
+    validate_financial_reconciliation_version(m)
     if (
         sha256(p.directory / "PRELAUNCH.json")
         != (p.directory / "PRELAUNCH.sha256").read_text().strip()
@@ -936,11 +942,14 @@ async def exchange(session, q, directory, *, response_type=DeliveryReadback):
                 return response_type.parse_for(getattr(q, "admission_request", q), response)
 
 
-def construction_evidence(plan, records, *, planner=False, reused_stages=()):
+def construction_evidence(
+    plan, records, *, planner=False, reused_stages=(), command_stage_readbacks=()
+):
     """Bind fresh native command accounting and independent owned-state reads."""
     costs = []
     digests = []
-    previous = records["inspect-1"].s[3]
+    residuals = []
+    previous = records["inspect-1"]
     for i in range(10):
         built, read = records[f"build-{i}"], records[f"read-{i}"]
         verify_snapshot(plan, built)
@@ -954,16 +963,57 @@ def construction_evidence(plan, records, *, planner=False, reused_stages=()):
             or (i >= 7 and cost != 0)
         ):
             raise ValueError("native construction/order/start cost mismatch")
-        if i < 9 and (previous - built.s[3] != cost or built.s[3] != read.s[3]):
-            raise ValueError("native spending/readback mismatch")
-        previous = read.s[3]
+        if i < 9:
+            intervals = (
+                ("previous_read_to_build", previous, built, cost),
+                ("build_to_read", built, read, 0),
+            )
+            for interval, before, after, command_cost in intervals:
+                residual = before.s[3] - after.s[3] - command_cost
+                if not residual:
+                    continue
+                if len(command_stage_readbacks) != 10:
+                    raise ValueError("native spending/readback mismatch")
+                witness = command_stage_readbacks[i]
+                if any(
+                    int(witness[key]) != value
+                    for key, value in dict(
+                        stage=i, result=1, quoted=cost, cost=cost, spent=cost
+                    ).items()
+                ):
+                    raise ValueError("native command spending witness mismatch")
+                if after.s[0] <= before.s[0] or after.s[1] < before.s[1]:
+                    raise ValueError("native cash reconciliation chronology mismatch")
+                residuals.append(
+                    dict(
+                        stage=i,
+                        interval=interval,
+                        unallocated_company_cash_decrease=residual,
+                        expense_category="UNKNOWN",
+                        before_digest=before.digest,
+                        after_digest=after.digest,
+                        before_tick=before.s[0],
+                        after_tick=after.s[0],
+                        before_economy_date=before.s[1],
+                        after_economy_date=after.s[1],
+                        before_cash=before.s[3],
+                        after_cash=after.s[3],
+                        verified_command_cost=command_cost,
+                        before_quarter_income=before.s[19],
+                        after_quarter_income=after.s[19],
+                    )
+                )
+        previous = read
         costs.append(cost)
         digests.extend([built.digest, read.digest])
-    return dict(
+    evidence = dict(
         mutation_costs=costs,
         construction_purchase_spending=sum(costs),
         construction_native_digests=digests,
     )
+    if residuals:
+        evidence["unallocated_company_cash_changes"] = residuals
+    return evidence
 
 
 def command_readback_evidence(log_path, plan, records, *, network_plans=()):

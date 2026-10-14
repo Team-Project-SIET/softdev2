@@ -203,10 +203,27 @@ def network_route_readback(log_path, native, service):
     )
 
 
-def service_construction(plan, records, reused_stages=()):
-    from app.simulation.openttd.proof.freight_delivery import construction_evidence
+def service_construction(plan, records, reused_stages=(), *, log_path=None, network_plans=()):
+    from app.simulation.openttd.proof.freight_delivery import (
+        command_readback_evidence,
+        construction_evidence,
+    )
 
-    return construction_evidence(plan, records, planner=True, reused_stages=reused_stages)
+    commands = (
+        command_readback_evidence(log_path, plan, records, network_plans=network_plans)
+        if log_path is not None
+        else {}
+    )
+    return {
+        **construction_evidence(
+            plan,
+            records,
+            planner=True,
+            reused_stages=reused_stages,
+            command_stage_readbacks=commands.get("construction_stage_readbacks", ()),
+        ),
+        **commands,
+    }
 
 
 def stage_assets(plan, route_id):
@@ -290,6 +307,65 @@ def aggregate_receipt(plan, services, receipts):
         net_profit=None,
         sequencing="SERIAL_SAME_SESSION_STOP_AFTER_DELIVERY",
     )
+
+
+def financial_reconciliation(directory, records, aggregate):
+    """Separate command CAPEX/payment proof from unclassified company cash movement."""
+    count = len(aggregate["services"])
+    first, last = records["select-0"], records[f"s{count - 1}-park-read"]
+    if last.s[0] < first.s[0] or last.s[1] < first.s[1]:
+        raise ValueError("network finance endpoint chronology mismatch")
+    residual = first.s[3] - last.s[3] - aggregate["actual_capex"] + aggregate["payment_income"]
+    result = dict(
+        schema="native-network-financial-reconciliation-v1",
+        initial_readback_digest=first.digest,
+        final_readback_digest=last.digest,
+        initial_tick=first.s[0],
+        final_tick=last.s[0],
+        initial_economy_date=first.s[1],
+        final_economy_date=last.s[1],
+        initial_cash=first.s[3],
+        final_cash=last.s[3],
+        command_construction_purchase_costs=aggregate["actual_capex"],
+        freight_revenue=aggregate["payment_income"],
+        unallocated_company_cash_decrease=residual,
+        expense_category="UNKNOWN",
+        operating_costs=None,
+        net_profit=None,
+        construction_cash_changes=[
+            dict(route_id=receipt["route_id"], **change)
+            for receipt in aggregate["services"]
+            for change in receipt.get("unallocated_company_cash_changes", ())
+        ],
+    )
+    capital_path = directory / "capital-read-response.json"
+    if capital_path.exists():
+        capital = json.loads(capital_path.read_bytes())
+        if capital["status"] != "READ" or not capital["completed"]:
+            raise ValueError("network finance funding readback incomplete")
+        result.update(
+            funding_readback_sha256=sha256(capital_path),
+            funded_cash=capital["balance_after"],
+            funding_to_admission_unallocated_cash_decrease=capital["balance_after"] - first.s[3],
+            funded_to_final_unallocated_cash_decrease=capital["balance_after"]
+            - first.s[3]
+            + residual,
+        )
+    return result
+
+
+def verify_financial_reconciliation(directory, records, aggregate):
+    result = financial_reconciliation(directory, records, aggregate)
+    if result != json.loads((directory / "financial-reconciliation.json").read_bytes()):
+        raise ValueError("network financial reconciliation replay mismatch")
+    return result
+
+
+def validate_financial_reconciliation_version(metadata):
+    version = metadata.get("financial_reconciliation_version")
+    if version is not None and (type(version) is not int or version != 1):
+        raise ValueError("unsupported financial reconciliation version")
+    return version
 
 
 def validate_game_time_version(metadata):
@@ -395,7 +471,7 @@ def require_selected_service_count(metadata, services):
 
 async def execute_network(backend, prepared, session, accounting, before, seal, metadata, result):
     validate_game_time_version(metadata)
-    from app.simulation.openttd.proof.freight_delivery import command_readback_evidence, exchange
+    from app.simulation.openttd.proof.freight_delivery import exchange
     from app.simulation.openttd.proof.road_mutation import save
 
     network, execution, services, source_save = await plan_network_world(
@@ -468,14 +544,10 @@ async def execute_network(backend, prepared, session, accounting, before, seal, 
         receipt = verify_delivery(native, records["read-8"], observations, final)
         receipt.update(
             service_construction(
-                native, records, reused_stages=shared_stages(execution, services, n)
-            )
-        )
-        receipt.update(
-            command_readback_evidence(
-                prepared.spec.workspace.logs / "stderr.log",
                 native,
                 records,
+                reused_stages=shared_stages(execution, services, n),
+                log_path=prepared.spec.workspace.logs / "stderr.log",
                 network_plans=tuple(p.digest for p in plans),
             )
         )
@@ -511,6 +583,16 @@ async def execute_network(backend, prepared, session, accounting, before, seal, 
         qualified_save_sha256=source_save,
         after_save_sha256=await save(backend, prepared, "after"),
     )
+    finance_records = {
+        name: DeliveryReadback.model_validate_json(
+            (prepared.directory / f"{name}-response.json").read_bytes()
+        )
+        for name in ("select-0", f"s{len(services) - 1}-park-read")
+    }
+    write_json(
+        prepared.directory / "financial-reconciliation.json",
+        financial_reconciliation(prepared.directory, finance_records, aggregate),
+    )
     write_json(prepared.directory / "receipt.json", aggregate)
 
 
@@ -524,7 +606,6 @@ def verify_network_receipt(directory: Path, *, return_network=False):
     )
     from app.simulation.openttd.proof.endpoints import verify_retained_endpoints
     from app.simulation.openttd.proof.freight_delivery import (
-        command_readback_evidence,
         network_budgets,
     )
 
@@ -533,6 +614,7 @@ def verify_network_receipt(directory: Path, *, return_network=False):
         raise ValueError("network artifact manifest mismatch")
     metadata = json.loads((directory / "PRELAUNCH.json").read_bytes())
     validate_game_time_version(metadata)
+    validate_financial_reconciliation_version(metadata)
     seal = sha256(directory / "PRELAUNCH.json")
     if (
         not metadata.get("network")
@@ -691,11 +773,6 @@ def verify_network_receipt(directory: Path, *, return_network=False):
             [records[f"s{n}-observe-{i}"] for i in range(4)],
             records[f"s{n}-finish"],
         )
-        receipt.update(
-            service_construction(
-                native, service_records, reused_stages=shared_stages(plan, services, n)
-            )
-        )
         all_plans = tuple(
             DeliveryPlan.model_validate_json(
                 (directory / f"native-plan-{j}.json").read_bytes()
@@ -703,8 +780,12 @@ def verify_network_receipt(directory: Path, *, return_network=False):
             for j in range(len(services))
         )
         receipt.update(
-            command_readback_evidence(
-                directory / "stderr.log", native, service_records, network_plans=all_plans
+            service_construction(
+                native,
+                service_records,
+                reused_stages=shared_stages(plan, services, n),
+                log_path=directory / "stderr.log",
+                network_plans=all_plans,
             )
         )
         receipt.update(network_route_readback(directory / "stderr.log", native, service))
@@ -741,6 +822,11 @@ def verify_network_receipt(directory: Path, *, return_network=False):
     )
     if aggregate != json.loads((directory / "receipt.json").read_bytes()):
         raise ValueError("network aggregate receipt mismatch")
+    if (
+        metadata.get("financial_reconciliation_version") == 1
+        or (directory / "financial-reconciliation.json").exists()
+    ):
+        verify_financial_reconciliation(directory, records, aggregate)
     result = json.loads((directory / "result.json").read_bytes())
     if metadata.get("scenario") and (
         result.get("funding_requests"),
