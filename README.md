@@ -797,3 +797,64 @@ These are retrospective cost-feedback sensitivity results. Attempt 12 actual
 costs informed the uplift; the £19,101.04 revised estimate matching historical
 £19,101 is **not independent validation**. No launches or Admin connections occur;
 no profitability, native A/B improvement or automatic tuning is established.
+
+The finite `high-budget-500k` scenario preset initializes company 0 once to
+**£500,000 cash**, retains its loan unchanged and keeps infinite money disabled.
+The planning spending cap defaults separately to £500,000; `--planning-budget
+18000` retains a low planning cap while starting cash stays £500,000. Seed 42 is
+unchanged. Funding is an explicit scenario endowment, excluded from delivery
+revenue, operating profit and feedback performance metrics. Repeated or resumed
+funding is rejected; existing per-service execution safety limits remain in force.
+
+Finance-only native Attempt 13 verified seed 42, cash **£100,000 → £500,000**
+with a £400,000 scenario endowment, and loan **£100,000 → £100,000**. Its
+retained before/after save hashes and funding provenance passed offline readback
+verification. One launch and one connection were used; no freight run occurred.
+
+For the bounded finance-only lifecycle, use a fresh attempt directory:
+
+```bash
+FINANCE_ATTEMPT="$(uv run --no-sync python -m app.simulation.openttd.proof.freight_delivery next)"
+uv run --no-sync python -m app.simulation.openttd.proof.freight_delivery prepare "$FINANCE_ATTEMPT" \
+  --demo --planner --network --scenario high-budget-500k --finance-only
+uv run --no-sync python -m app.simulation.openttd.proof.freight_delivery preflight "$FINANCE_ATTEMPT"
+# One separately authorized launch only after independent effective-config review:
+uv run --no-sync python -m app.simulation.openttd.proof.freight_delivery run "$FINANCE_ATTEMPT" \
+  --authorize-one-launch
+uv run --no-sync python -m app.simulation.openttd.proof.freight_delivery verify "$FINANCE_ATTEMPT"
+```
+
+Preparation seals the exact runtime config, preset, planning cap, seed, content,
+bridge and source bytes. Finance-only execution performs initialization plus an
+independent cash/loan/income/expenses read, saves the funded initial state and
+stops before freight planning or construction. `scenario-capital.json` records the
+endowment separately; `receipt.json` leaves freight outcomes unknown. The retained
+verifier checks secure frames, runtime identity, save hashes and complete cleanup.
+A finance-only result does not establish delivery or improved A/B outcomes.
+
+Inspect starting cash, unchanged loan and saved-world provenance with the existing
+`verify "$FINANCE_ATTEMPT"` command above. Its finance receipt includes the native
+before/after balances and loan; preparation alone does not establish those values.
+
+For P08/P05 planning and native multi-service freight, prepare a separate fresh
+attempt without `--finance-only`. The finance workflow above was executed natively;
+the full freight workflow below has CLI and controlled preparation coverage only:
+
+```bash
+HIGH_BUDGET_ATTEMPT="$(uv run --no-sync python -m app.simulation.openttd.proof.freight_delivery next)"
+uv run --no-sync python -m app.simulation.openttd.proof.freight_delivery prepare "$HIGH_BUDGET_ATTEMPT" \
+  --demo --planner --network --scenario high-budget-500k --planning-budget 500000
+uv run --no-sync python -m app.simulation.openttd.proof.freight_delivery preflight "$HIGH_BUDGET_ATTEMPT"
+# Future full freight run requires separate authorization after preflight:
+uv run --no-sync python -m app.simulation.openttd.proof.freight_delivery run "$HIGH_BUDGET_ATTEMPT" \
+  --authorize-one-launch
+uv run --no-sync python -m app.simulation.openttd.proof.freight_delivery verify "$HIGH_BUDGET_ATTEMPT"
+```
+
+`--planner --network` qualifies observations, prepares P08 candidates, solves P05
+and executes selected services in the existing workflow. Omitting
+`--planning-budget` gives this preset the same £500,000 cap; an explicit positive
+integer cap changes planner spending permission independently of company cash.
+The seed controls world generation, starting cash controls available company
+funds, and the planning budget limits selected plan cost. This financial preset
+retains seed 42 and creates separate artifacts; it does not alter verified saves.

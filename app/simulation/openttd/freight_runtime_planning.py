@@ -433,7 +433,9 @@ async def capture_planning_facts(
     return facts
 
 
-async def plan_same_world(backend, prepared, session, accounting, before, *, batch_limit):
+async def plan_same_world(
+    backend, prepared, session, accounting, before, *, batch_limit, planning_budget=Decimal(100000)
+):
     from .proof.harness import write_json
     from .proof.road_mutation import save
 
@@ -478,7 +480,7 @@ async def plan_same_world(backend, prepared, session, accounting, before, *, bat
     )
     source = native_correspondence(backend, prepared, world, manifest, before, final)
     policy = MonthlyBatchPolicy(
-        start_date=date(1950, 1, 1), budget_gbp=Decimal(100000), delivery_batch_limit=batch_limit
+        start_date=date(1950, 1, 1), budget_gbp=planning_budget, delivery_batch_limit=batch_limit
     )
     road = generate_road_scenario(
         adapt_planning_facts(ValidatedPlanningFactInput(world, facts, source), policy)

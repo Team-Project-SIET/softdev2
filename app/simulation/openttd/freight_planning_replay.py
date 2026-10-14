@@ -71,6 +71,11 @@ async def replay_qualified_world(directory, metadata, runtime):
     for direction, raw in prefix[2:5]:
         accounting.observe(direction, bytes.fromhex(raw))
     session = RetainedSession()
+    if metadata.get("scenario"):
+        from .proof.freight_delivery import verify_capital_frames
+
+        verify_capital_frames(directory, prefix[5:9])
+        session.cursor = 9
     # Retained replay uses opaque ownership handles, never native process/socket handles.
     # Initialize only retained validator state. Native construction requires launch authority.
     backend: Any = object.__new__(PlannerBackend)

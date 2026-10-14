@@ -110,7 +110,7 @@ class NetworkFreightProof extends PlannerFreightProof {
             this.PlannerHandle(q);Store();return;
         }
         if(q.op=="read"&&q.request_id.find("activate-")==0) {
-            if(services==null||services.len()!=2||q.arg<0||q.arg>1)throw "NETWORK_ACTIVATION_ORDER";
+            if(services==null||services.len()<1||services.len()>2||q.arg<0||q.arg>=services.len())throw "NETWORK_ACTIVATION_ORDER";
             Load(q.arg);
         }
         if(!OthersStopped())throw "NETWORK_OTHER_VEHICLE_ACTIVE_OR_FOREIGN";

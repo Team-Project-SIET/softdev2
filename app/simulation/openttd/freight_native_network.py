@@ -131,7 +131,13 @@ async def plan_network_world(backend, prepared, session, accounting, before, bat
     )
     source = native_correspondence(backend, prepared, world, source_manifest, before, final)
     policy = MonthlyBatchPolicy(
-        start_date=date(1950, 1, 1), budget_gbp=Decimal(100000), delivery_batch_limit=batch_limit
+        start_date=date(1950, 1, 1),
+        budget_gbp=Decimal(
+            json.loads((prepared.directory / "PRELAUNCH.json").read_bytes()).get(
+                "planning_budget_gbp", "100000"
+            )
+        ),
+        delivery_batch_limit=batch_limit,
     )
     network = network_from_facts(world, facts, source, policy)
     optimized = optimize_candidate_network(network.scenario)
@@ -247,11 +253,13 @@ def asset_costs(plan, services, receipts):
 
 
 def aggregate_receipt(plan, services, receipts):
-    if len(receipts) != 2 or tuple(r["route_id"] for r in receipts) != tuple(
-        i for i, _ in services
+    if (
+        not 1 <= len(services) <= 2
+        or len(receipts) != len(services)
+        or tuple(r["route_id"] for r in receipts) != tuple(i for i, _ in services)
     ):
         raise ValueError("exact selected network service receipts required")
-    if len({r["vehicle"] for r in receipts}) != 2:
+    if len({r["vehicle"] for r in receipts}) != len(services):
         raise ValueError("independent network vehicles required")
     unique_costs = asset_costs(plan, services, receipts)
     capex = sum(r["construction_purchase_spending"] for r in receipts)
@@ -512,7 +520,9 @@ def verify_network_receipt(directory: Path):
     policy = MonthlyBatchPolicy.model_validate_json(
         (directory / "planning-policy.json").read_bytes()
     )
-    if policy.delivery_batch_limit != metadata["delivery_batch_limit"]:
+    if policy.delivery_batch_limit != metadata[
+        "delivery_batch_limit"
+    ] or policy.budget_gbp != Decimal(metadata.get("planning_budget_gbp", "100000")):
         raise ValueError("network batch differs from prelaunch")
     network = network_from_facts(world, facts, source, policy)
     plan = ExecutionPlan.model_validate_json((directory / "execution-plan.json").read_bytes())
@@ -571,7 +581,7 @@ def verify_network_receipt(directory: Path):
             DeliveryPlan.model_validate_json(
                 (directory / f"native-plan-{j}.json").read_bytes()
             ).digest
-            for j in range(2)
+            for j in range(len(services))
         )
         receipt.update(
             command_readback_evidence(
@@ -609,6 +619,11 @@ def verify_network_receipt(directory: Path):
     if aggregate != json.loads((directory / "receipt.json").read_bytes()):
         raise ValueError("network aggregate receipt mismatch")
     result = json.loads((directory / "result.json").read_bytes())
+    if metadata.get("scenario") and (
+        result.get("funding_requests"),
+        result.get("funding_mutations"),
+    ) != (2, 1):
+        raise ValueError("network funding accounting mismatch")
     if (
         (
             result["launches"],
@@ -617,7 +632,7 @@ def verify_network_receipt(directory: Path):
             result["mutations"],
             result["status"],
         )
-        != (1, 1, 58, 22, "NATIVE_MULTI_SERVICE_DELIVERY_VERIFIED")
+        != (1, 1, 29 * len(services), 11 * len(services), "NATIVE_MULTI_SERVICE_DELIVERY_VERIFIED")
         or not cleanup.get("reaped")
         or not cleanup.get("workspace_disposed")
         or not cleanup.get("credential_removed")

@@ -175,7 +175,13 @@ def delivery_vm(*, no_supply=False, no_payment=False, no_delivery=False, paused=
                 return keep?0:(::no_delivery?0:20);}}
         }};
     """)
-    vm.execute((proof.PACKAGE / "main.nut").read_text().replace('require("vehicle.nut");', ""))
+    vm.execute((proof.PACKAGE / "funding.nut").read_text())
+    vm.execute(
+        (proof.PACKAGE / "main.nut")
+        .read_text()
+        .replace('require("vehicle.nut");', "")
+        .replace('require("funding.nut");', "")
+    )
     vm.execute("::bridge=FreightDeliveryProof();")
     return vm
 

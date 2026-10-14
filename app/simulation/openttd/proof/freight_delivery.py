@@ -11,6 +11,7 @@ import struct
 import zipfile
 import zlib
 from dataclasses import asdict
+from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
@@ -56,6 +57,7 @@ from .harness import (
     verify_freeze,
     write_json,
 )
+from .qualification_accounting import QualificationFrameBudget
 from .qualification_native import QualificationNativeBackend
 from .road_mutation import console, save, wait_log
 
@@ -191,7 +193,7 @@ def backend_for(metadata):
     return cls(authorized_one_launch=True)
 
 
-def staged_package(demo, planner=False, network=False):
+def staged_package(demo, planner=False, network=False, scenario=None):
     out = {
         p.name: p.read_bytes()
         for p in PACKAGE.glob("*.nut")
@@ -244,6 +246,56 @@ def staged_package(demo, planner=False, network=False):
         out["info.nut"] = out["info.nut"].replace(
             b'"PlannerFreightProof"', b'"NetworkFreightProof"'
         )
+    if scenario:
+        if scenario != "high-budget-500k" or not planner:
+            raise ValueError("unsupported capital staging")
+        helpers = (
+            b'require("funding.nut");\n'
+            b"class FreightDeliveryProof extends RoadVehicleProof {\n"
+            b"    capital_funding=null; capital_planning_started=false;\n"
+            b"    function HandleScenarioCapital(q){\n"
+            b'        if(typeof q!="table"||!("type" in q)||'
+            b'q.type!="scenario_capital")return false;\n'
+            b"        if(capital_funding==null)capital_funding=ScenarioCapitalFunding();\n"
+            b"        return capital_funding.Handle(q,!capital_planning_started"
+            b"&&choice==null&&dstage==0&&dvehicle<0);\n"
+            b"    }\n"
+            b"    function SaveScenarioCapital(){return capital_funding==null?null:"
+            b"capital_funding.Save();}\n"
+            b"    function LoadScenarioCapital(data){capital_funding=ScenarioCapitalFunding();\n"
+            b"        if(data==null)capital_funding.resumed=true;"
+            b"else capital_funding.Load(data); }\n"
+        )
+        out["delivery.nut"] = out["delivery.nut"].replace(
+            b"class FreightDeliveryProof extends RoadVehicleProof {", helpers
+        )
+        for name in ("main.nut", "network-parent.nut"):
+            if name in out:
+                out[name] = out[name].replace(
+                    b"function Handle(q) {",
+                    b"function Handle(q) {\n        if(HandleScenarioCapital(q))return true;\n"
+                    b"        if(capital_funding==null||!capital_funding.completed)"
+                    b'throw "CAPITAL_REQUIRED_BEFORE_PLANNING";\n'
+                    b"        capital_planning_started=true;",
+                )
+        if network:
+            out["main.nut"] = (
+                out["main.nut"]
+                .replace(b"function Load(n)", b"function LoadService(n)")
+                .replace(b"Load(q.arg)", b"LoadService(q.arg)")
+            )
+        marker = (
+            b"class NetworkFreightProof extends PlannerFreightProof {"
+            if network
+            else b"class PlannerFreightProof extends FreightDemoProof {"
+        )
+        out["main.nut"] = out["main.nut"].replace(
+            marker,
+            marker
+            + b"\n    function Save(){return {scenario_capital=SaveScenarioCapital()};}"
+            + b'\n    function Load(version,data){LoadScenarioCapital(typeof data=="table" && '
+            + b'"scenario_capital" in data ? data.scenario_capital : null);}',
+        )
     return out
 
 
@@ -290,6 +342,11 @@ class PlannerDeliverySession(DeliverySession):
                 raise ValueError("active correctly framed planning request required")
             raw = decode_gamescript(frame[3:])
             value = json.loads(raw)
+            if value.get("type") == "scenario_capital":
+                from app.simulation.openttd.scenario_capital import ScenarioCapitalRequest
+
+                ScenarioCapitalRequest.model_validate_json(raw).to_bytes()
+                return
             if value.get("type") == "planning_read":
                 PlanningRead.model_validate_json(raw).to_bytes()
                 return
@@ -396,7 +453,33 @@ def consumed_identity(directory):
     )
 
 
-def prepare(directory, *, demo=False, planner=False, batch_limit=20, network=False):
+def prepare(
+    directory,
+    *,
+    demo=False,
+    planner=False,
+    batch_limit=20,
+    network=False,
+    scenario=None,
+    planning_budget=None,
+    finance_only=False,
+):
+    if scenario not in (None, "high-budget-500k"):
+        raise ValueError("unsupported scenario preset")
+    if scenario and (not demo or not planner):
+        raise ValueError("scenario funding requires --demo --planner")
+    if finance_only and not scenario:
+        raise ValueError("finance-only requires a scenario preset")
+    if planning_budget is not None:
+        planning_budget = Decimal(planning_budget)
+        if (
+            not planning_budget.is_finite()
+            or planning_budget <= 0
+            or planning_budget != planning_budget.to_integral_value()
+        ):
+            raise ValueError("planning budget must be finite positive integer GBP")
+    elif scenario:
+        planning_budget = Decimal(500000)
     if network and (not demo or not planner):
         raise ValueError("network requires --demo --planner")
     if planner and not demo:
@@ -450,6 +533,7 @@ def prepare(directory, *, demo=False, planner=False, batch_limit=20, network=Fal
                 "tree_placer = 0\namount_of_rivers = 0\n"
                 "[difficulty]\nnumber_towns = 4\nindustry_density = 0\n"
                 "max_no_competitors = 0\nvehicle_breakdowns = 0\ndisasters = false\n"
+                + ("infinite_money = false\n" if scenario else "")
             )
             (workspace.root / "heightmap.png").write_bytes(flat_heightmap())
             shutil.copyfile(workspace.root / "heightmap.png", directory / "heightmap.png")
@@ -479,7 +563,7 @@ def prepare(directory, *, demo=False, planner=False, batch_limit=20, network=Fal
             target = parent / name
             target.mkdir()
             if src == PACKAGE:
-                for name, data in staged_package(demo, planner, network).items():
+                for name, data in staged_package(demo, planner, network, scenario).items():
                     (target / name).write_bytes(data)
             else:
                 for p in src.glob("*.nut"):
@@ -509,6 +593,8 @@ def prepare(directory, *, demo=False, planner=False, batch_limit=20, network=Fal
             PROJECT / "tests/test_freight_delivery.py",
             PROJECT / "docs/first-freight-delivery-proof.md",
         ]
+        if scenario:
+            snapshot_paths += [PROJECT / "app/simulation/openttd/scenario_capital.py"]
         if planner:
             snapshot_paths += sorted((PROJECT / "app/planning").rglob("*.py"))
             snapshot_paths += [
@@ -545,7 +631,7 @@ def prepare(directory, *, demo=False, planner=False, batch_limit=20, network=Fal
                 info.compress_type = zipfile.ZIP_DEFLATED
                 z.writestr(info, src.read_bytes())
             if planner:
-                for name, data in staged_package(demo, planner, network).items():
+                for name, data in staged_package(demo, planner, network, scenario).items():
                     z.writestr("staged/" + name, data)
                 z.writestr("staged/openttd.cfg", workspace.config.read_bytes())
         frozen = source_freeze()
@@ -646,6 +732,16 @@ def prepare(directory, *, demo=False, planner=False, batch_limit=20, network=Fal
             ),
             frozen=frozen,
         )
+        if scenario or planning_budget is not None:
+            m.update(
+                scenario=scenario,
+                planning_budget_gbp=str(planning_budget or 100000),
+                finance_only=finance_only,
+            )
+            if scenario:
+                from app.simulation.openttd.scenario_capital import financial_preset
+
+                m["financial_preset"] = financial_preset(scenario)
         write_json(directory / "PRELAUNCH.json", m)
         (directory / "PRELAUNCH.sha256").write_text(sha256(directory / "PRELAUNCH.json") + "\n")
         return PreparedProof(
@@ -701,6 +797,24 @@ def validate_network_world_inputs(prepared, metadata):
         raise ValueError("network disposable world contains a retained save")
 
 
+def validate_capital_prelaunch(metadata, config_text):
+    from app.simulation.openttd.scenario_capital import financial_preset
+
+    if metadata.get("scenario") != "high-budget-500k" or metadata.get(
+        "financial_preset"
+    ) != financial_preset(metadata["scenario"]):
+        raise ValueError("sealed finite capital preset mismatch")
+    budget = Decimal(metadata["planning_budget_gbp"])
+    if not budget.is_finite() or budget <= 0 or budget != budget.to_integral_value():
+        raise ValueError("invalid sealed planning spending cap")
+    config = configparser.ConfigParser(interpolation=None)
+    config.read_string(config_text)
+    if config.getboolean("difficulty", "infinite_money"):
+        raise ValueError("infinite money forbidden")
+    if metadata["world"]["seed"] != 42 or not metadata["demo"] or not metadata["planner"]:
+        raise ValueError("financial preset must preserve bounded deterministic generated world")
+
+
 def preflight(p):
     if (p.directory / "CLAIM.json").exists():
         raise ValueError("one attempt consumed")
@@ -723,6 +837,8 @@ def preflight(p):
     ):
         raise ValueError("sealed budgets mismatch")
     verify_freeze(m["frozen"])
+    if m.get("scenario"):
+        validate_capital_prelaunch(m, p.spec.workspace.config.read_text())
     if m["attempt"] > 1 and m["delivery_predecessor"] != consumed_identity(
         p.directory.with_name(f"openttd-15.3-first-freight-delivery-attempt{m['attempt'] - 1}")
     ):
@@ -737,7 +853,7 @@ def preflight(p):
     if m.get("network", False):
         validate_network_world_inputs(p, m)
     for name, data in staged_package(
-        m.get("demo", False), m.get("planner", False), m.get("network", False)
+        m.get("demo", False), m.get("planner", False), m.get("network", False), m.get("scenario")
     ).items():
         if data != (p.spec.workspace.game / "RoadFreightProof" / name).read_bytes():
             raise ValueError("stale delivery package")
@@ -854,6 +970,93 @@ def command_readback_evidence(log_path, plan, records, *, network_plans=()):
     return dict(construction_command_readbacks=commands, construction_stage_readbacks=stages)
 
 
+class ScenarioPlanningAccounting(QualificationFrameBudget):
+    """Four funding frames outside unchanged qualification accounting, all retained."""
+
+    def __init__(self, frames):
+        super().__init__()
+        self.retained_frames = frames
+        self.funding = False
+        self.funding_count = 0
+
+    def observe(self, direction, frame):
+        self.retained_frames.append((direction, frame.hex()))
+        if self.failed:
+            raise ValueError("capital frame accounting failed; no resume")
+        if self.funding:
+            expected_direction = "outbound" if self.funding_count % 2 == 0 else "inbound"
+            expected_kind = (
+                ADMIN_GAMESCRIPT if expected_direction == "outbound" else SERVER_GAMESCRIPT
+            )
+            if (
+                self.funding_count >= 4
+                or direction != expected_direction
+                or len(frame) < 3
+                or frame[2] != expected_kind
+            ):
+                self.failed = True
+                raise ValueError("unexpected or excessive capital frame")
+            self.funding_count += 1
+        else:
+            super().observe(direction, frame)
+
+    def begin_funding(self):
+        if (
+            self.failed
+            or self.funding
+            or self.funding_count
+            or self.phase != "setup"
+            or self._counts["setup"] != 3
+        ):
+            raise ValueError("capital requires completed single subscription setup")
+        self.funding = True
+
+    def end_funding(self):
+        if self.failed or not self.funding or self.funding_count != 4:
+            raise ValueError("capital requires exactly four continuous frames")
+        self.funding = False
+
+
+def verify_capital_frames(directory, frames):
+    from app.simulation.openttd.gamescript_transport import decode_gamescript
+    from app.simulation.openttd.scenario_capital import (
+        ScenarioCapitalReadback,
+        ScenarioCapitalRequest,
+        verify_capital,
+    )
+
+    if len(frames) != 4:
+        raise ValueError("exactly four capital frames required")
+    readbacks = []
+    for i, request in enumerate(
+        (
+            ScenarioCapitalRequest(request_id="capital-initialize", op="initialize"),
+            ScenarioCapitalRequest(request_id="capital-read", op="read"),
+        )
+    ):
+        request_id = request.request_id
+        raw = (directory / (request_id + "-request.json")).read_bytes()
+        response = (directory / (request_id + "-response.json")).read_bytes()
+        inbound_direction, inbound_hex = frames[2 * i + 1]
+        inbound = bytes.fromhex(inbound_hex)
+        if (
+            raw != request.to_bytes()
+            or frames[2 * i] != ["outbound", encode_gamescript(raw).hex()]
+            or inbound_direction != "inbound"
+            or len(inbound) < 3
+            or struct.unpack_from("<H", inbound)[0] != len(inbound)
+            or inbound[2] != SERVER_GAMESCRIPT
+        ):
+            raise ValueError("capital continuous secure frames mismatch")
+        if decode_gamescript(inbound[3:]) != response:
+            raise ValueError("capital continuous secure frames mismatch")
+        readbacks.append(ScenarioCapitalReadback.parse_for(request, response))
+    financing = verify_capital(*readbacks)
+    if financing != json.loads((directory / "scenario-capital.json").read_bytes()):
+        raise ValueError("capital verified provenance mismatch")
+    return financing
+
+
 async def run(p):
     preflight(p)
     seal = sha256(p.directory / "PRELAUNCH.json")
@@ -866,14 +1069,7 @@ async def run(p):
     frames = []
     accounting = None
     if m.get("planner", False):
-        from .qualification_accounting import QualificationFrameBudget
-
-        class PlanningAccounting(QualificationFrameBudget):
-            def observe(self, direction, frame):
-                frames.append((direction, frame.hex()))
-                super().observe(direction, frame)
-
-        accounting = PlanningAccounting()
+        accounting = ScenarioPlanningAccounting(frames)
     backend.planning_frame_observer = lambda d, f: frames.append((d, f.hex()))
     backend.planning_frames = frames
     result: dict[str, Any] = dict(
@@ -912,7 +1108,51 @@ async def run(p):
             if accounting is not None:
                 accounting.enter("setup")
             await GameScriptTransport(session, session.protocol).subscribe()
+            if m.get("scenario"):
+                from app.simulation.openttd.scenario_capital import (
+                    ScenarioCapitalReadback,
+                    ScenarioCapitalRequest,
+                    verify_capital,
+                )
+
+                if accounting is None:
+                    raise ValueError("capital scenario requires planner accounting")
+                accounting.begin_funding()
+                initial = await exchange(
+                    session,
+                    ScenarioCapitalRequest(request_id="capital-initialize", op="initialize"),
+                    p.directory,
+                    response_type=ScenarioCapitalReadback,
+                )
+                check = await exchange(
+                    session,
+                    ScenarioCapitalRequest(request_id="capital-read", op="read"),
+                    p.directory,
+                    response_type=ScenarioCapitalReadback,
+                )
+                accounting.end_funding()
+                financing = verify_capital(initial, check)
+                result["funding_requests"] = 2
+                result["funding_mutations"] = 1
+                write_json(p.directory / "scenario-capital.json", financing)
             before = await save(backend, p, "before")
+            if m.get("finance_only"):
+                receipt = dict(
+                    classification="NATIVE_SCENARIO_FINANCE",
+                    prelaunch_digest=seal,
+                    scenario=m["scenario"],
+                    planning_budget_gbp=m["planning_budget_gbp"],
+                    financing=financing,
+                    before_save_sha256=before,
+                    after_save_sha256=await save(backend, p, "after"),
+                    delivered_cargo=None,
+                    delivery_revenue=None,
+                    operating_costs=None,
+                    net_profit=None,
+                )
+                write_json(p.directory / "receipt.json", receipt)
+                result["status"] = "NATIVE_SCENARIO_FINANCE_VERIFIED"
+                return result
 
             async def query(op, id, arg=0, plan=seal):
                 if result["requests"] >= m["budgets"]["requests"]:
@@ -936,7 +1176,13 @@ async def run(p):
                 from app.simulation.openttd.freight_runtime_planning import plan_same_world
 
                 service, source_save = await plan_same_world(
-                    backend, p, session, accounting, before, batch_limit=m["delivery_batch_limit"]
+                    backend,
+                    p,
+                    session,
+                    accounting,
+                    before,
+                    batch_limit=m["delivery_batch_limit"],
+                    planning_budget=Decimal(m.get("planning_budget_gbp", "100000")),
                 )
                 result["supplemental_requests"] = backend.planning_read_count
                 result["qualification_requests"] = sum(
@@ -1030,6 +1276,140 @@ async def run(p):
         write_json(p.directory / "result.json", result)
         (p.directory / "artifact-manifest.sha256").write_text(manifest(p.directory))
     return result
+
+
+def verify_finance_receipt(directory):
+    """Replay immutable financing requests and independent readback after cleanup."""
+    from app.simulation.openttd.scenario_capital import (
+        ScenarioCapitalReadback,
+        ScenarioCapitalRequest,
+        verify_capital,
+    )
+
+    from .endpoints import verify_retained_endpoints
+
+    directory = directory.resolve()
+    if manifest(directory) != (directory / "artifact-manifest.sha256").read_text():
+        raise ValueError("finance artifact manifest mismatch")
+    metadata = json.loads((directory / "PRELAUNCH.json").read_bytes())
+    seal = sha256(directory / "PRELAUNCH.json")
+    if (
+        not metadata.get("finance_only")
+        or seal != (directory / "PRELAUNCH.sha256").read_text().strip()
+    ):
+        raise ValueError("finance sealed policy mismatch")
+    with zipfile.ZipFile(directory / "frozen-source.zip") as archive:
+        config = archive.read("staged/openttd.cfg").decode()
+        if (
+            sha256(directory / "frozen-source.zip")
+            != metadata["predecessor"]["executor_source_digest"]
+        ):
+            raise ValueError("finance frozen source mismatch")
+    validate_capital_prelaunch(metadata, config)
+    if metadata["budgets"] != (NETWORK_BUDGETS if metadata["network"] else PLANNER_BUDGETS):
+        raise ValueError("finance request budgets mismatch")
+    if json.loads((directory / "CLAIM.json").read_bytes()) != dict(
+        consumed=True, prelaunch_digest=seal, launches_allowed=1, retries=0
+    ):
+        raise ValueError("finance one-launch claim mismatch")
+    runtime = json.loads((directory / "runtime-identity.json").read_bytes())
+    welcome = runtime["welcome"]
+    if runtime["encrypted"] is not True or (
+        welcome["revision"],
+        welcome["seed"],
+        welcome["width"],
+        welcome["height"],
+    ) != ("15.3", 42, 64, 64):
+        raise ValueError("finance native identity mismatch")
+    frames = json.loads((directory / "frames.json").read_bytes())
+    verify_capital_frames(directory, frames[5:9])
+    from app.simulation.openttd.admin_protocol import (
+        ServerProtocol,
+        ServerWelcome,
+        decode_server_packet,
+    )
+
+    if len(frames) < 9 or any(row[0] != "inbound" for row in frames[:2]):
+        raise ValueError("finance native establishment frames missing")
+    establishment = [bytes.fromhex(row[1]) for row in frames[:2]]
+    protocol = decode_server_packet(establishment[0][2], establishment[0][3:])
+    native_welcome = decode_server_packet(establishment[1][2], establishment[1][3:])
+    if (
+        not isinstance(protocol, ServerProtocol)
+        or not isinstance(native_welcome, ServerWelcome)
+        or native_welcome != ServerWelcome(**welcome)
+    ):
+        raise ValueError("finance native protocol/welcome readback mismatch")
+    sent = [bytes.fromhex(frame) for direction, frame in frames if direction == "outbound"]
+    decoder, replies = AdminFrameDecoder(), []
+    for direction, frame in frames:
+        if direction == "inbound":
+            replies.extend(
+                decode_gamescript(body)
+                for kind, body in decoder.feed_frames(bytes.fromhex(frame))
+                if kind == SERVER_GAMESCRIPT
+            )
+    readbacks = []
+    for request_id, operation in (("capital-initialize", "initialize"), ("capital-read", "read")):
+        request = ScenarioCapitalRequest(request_id=request_id, op=operation)
+        raw = (directory / (request_id + "-request.json")).read_bytes()
+        response = (directory / (request_id + "-response.json")).read_bytes()
+        if (
+            raw != request.to_bytes()
+            or sent.count(encode_gamescript(raw)) != 1
+            or replies.count(response) != 1
+        ):
+            raise ValueError("finance unique secure exchange missing")
+        readbacks.append(ScenarioCapitalReadback.parse_for(request, response))
+    financing = verify_capital(*readbacks)
+    if financing != json.loads((directory / "scenario-capital.json").read_bytes()):
+        raise ValueError("finance funding provenance mismatch")
+    receipt = dict(
+        classification="NATIVE_SCENARIO_FINANCE",
+        prelaunch_digest=seal,
+        scenario=metadata["scenario"],
+        planning_budget_gbp=metadata["planning_budget_gbp"],
+        financing=financing,
+        before_save_sha256=sha256(directory / "before.sav"),
+        after_save_sha256=sha256(directory / "after.sav"),
+        delivered_cargo=None,
+        delivery_revenue=None,
+        operating_costs=None,
+        net_profit=None,
+    )
+    if receipt != json.loads((directory / "receipt.json").read_bytes()):
+        raise ValueError("finance receipt replay mismatch")
+    result = json.loads((directory / "result.json").read_bytes())
+    cleanup = json.loads((directory / "cleanup.json").read_bytes())
+    if (
+        (
+            result["launches"],
+            result["connections"],
+            result["requests"],
+            result["mutations"],
+            result.get("funding_requests"),
+            result.get("funding_mutations"),
+            result["status"],
+        )
+        != (1, 1, 0, 0, 2, 1, "NATIVE_SCENARIO_FINANCE_VERIFIED")
+        or not cleanup.get("reaped")
+        or not cleanup.get("sockets_closed")
+        or cleanup.get("remaining_processes")
+        or not cleanup.get("workspace_disposed")
+        or not cleanup.get("credential_removed")
+        or cleanup.get("cleanup_error")
+        or cleanup.get("verification_error")
+    ):
+        raise ValueError("finance lifecycle incomplete")
+    verify_retained_endpoints(
+        cleanup["endpoint_verification"],
+        metadata | {"endpoints": [metadata["game_port"], metadata["admin_port"]]},
+    )
+    logs = (directory / "stdout.log").read_text() + (directory / "stderr.log").read_text()
+    for name in ("before", "after"):
+        if logs.count("Map successfully saved to '" + str(directory / (name + ".sav"))) != 1:
+            raise ValueError("finance unique native save completion missing")
+    return receipt
 
 
 def verify_receipt(directory):
@@ -1218,6 +1598,9 @@ def main():
         "--demo", action="store_true", help="generate genuine native flat-world freight demo"
     )
     parser.add_argument("--authorize-one-launch", action="store_true")
+    parser.add_argument("--scenario", choices=["high-budget-500k"])
+    parser.add_argument("--planning-budget", type=Decimal)
+    parser.add_argument("--finance-only", action="store_true")
     parser.add_argument(
         "--network", action="store_true", help="two P05-selected services in one session"
     )
@@ -1250,6 +1633,9 @@ def main():
             planner=args.planner,
             batch_limit=args.batch_limit,
             network=args.network,
+            scenario=args.scenario,
+            planning_budget=args.planning_budget,
+            finance_only=args.finance_only,
         )
         preflight(p)
         print("PRELAUNCH PASS")
@@ -1258,7 +1644,9 @@ def main():
         print("PREFLIGHT PASS")
     elif args.command == "verify":
         metadata = json.loads((directory / "PRELAUNCH.json").read_text())
-        if metadata.get("network", False):
+        if metadata.get("finance_only"):
+            print(json.dumps(verify_finance_receipt(directory), sort_keys=True))
+        elif metadata.get("network", False):
             from app.simulation.openttd.freight_native_network import verify_network_receipt
 
             print(json.dumps(verify_network_receipt(directory), sort_keys=True))
@@ -1272,7 +1660,11 @@ def main():
         raise SystemExit(
             0
             if result["status"]
-            in ("NATIVE_DELIVERY_VERIFIED", "NATIVE_MULTI_SERVICE_DELIVERY_VERIFIED")
+            in (
+                "NATIVE_DELIVERY_VERIFIED",
+                "NATIVE_MULTI_SERVICE_DELIVERY_VERIFIED",
+                "NATIVE_SCENARIO_FINANCE_VERIFIED",
+            )
             else 1
         )
 

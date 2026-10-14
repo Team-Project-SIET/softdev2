@@ -15,7 +15,7 @@ from app.simulation.openttd.freight_delivery import (
     admit,
     verify_delivery,
 )
-from app.simulation.openttd.freight_native_network import stage_assets
+from app.simulation.openttd.freight_native_network import aggregate_receipt, stage_assets
 from app.simulation.openttd.freight_planning import compile_freight_network
 from app.simulation.openttd.proof.freight_delivery import staged_package
 
@@ -104,7 +104,8 @@ def network_vm():
     return vm
 
 
-def test_two_services_deliver_and_stop_in_one_executor_session():
+@pytest.mark.parametrize("service_count", [1, 2])
+def test_selected_services_deliver_and_stop_in_one_executor_session(service_count):
     from app.simulation.openttd.freight_planning import PlanningSelectionRequest
 
     vm = network_vm()
@@ -128,7 +129,7 @@ def test_two_services_deliver_and_stop_in_one_executor_session():
         return DeliveryReadback.parse_for(getattr(request, "admission_request", request), raw)
 
     selections = []
-    for n in range(2):
+    for n in range(service_count):
         shift = n * 1536
         a = (
             7 + 2 * n,
@@ -167,6 +168,36 @@ def test_two_services_deliver_and_stop_in_one_executor_session():
         receipts.append(verify_delivery(plan, baseline, observations, final))
         assert query("finish", f"s{n}-park", 1).status == "PARKED"
         assert query("read", f"s{n}-park-read").s[9] == 1
-    assert [r["delivered"] for r in receipts] == [20, 20]
-    assert [r["payment_income"] for r in receipts] == [500, 500]
-    assert [r["vehicle"] for r in receipts] == [23, 24]
+    assert [r["delivered"] for r in receipts] == [20] * service_count
+    assert [r["payment_income"] for r in receipts] == [500] * service_count
+    assert [r["vehicle"] for r in receipts] == list(range(23, 23 + service_count))
+
+
+def test_one_naturally_selected_service_aggregates_delivery_and_spending(packages):  # noqa: F811
+    inputs = (
+        adapt_planning_facts(
+            packages[0].admitted, packages[0].policy.model_copy(update={"delivery_batch_limit": 30})
+        ),
+    )
+    network = generate_freight_network(inputs, max_vehicles=2)
+    plan = optimize_candidate_network(network.scenario).plan
+    services = compile_freight_network(network, plan)
+    assert len(services) == 1
+    receipt = dict(
+        route_id=services[0][0],
+        vehicle=23,
+        delivered=20,
+        payment_income=500,
+        construction_purchase_spending=5021,
+        mutation_costs=[1, 2, 3, 4, 5, 6, 5000],
+    )
+    aggregate = aggregate_receipt(plan, services, [receipt])
+    assert aggregate["delivered"] == 20
+    assert aggregate["payment_income"] == 500
+    assert aggregate["actual_capex"] == 5021
+    assert aggregate["infrastructure_capex"] == 21
+    assert aggregate["vehicle_purchase"] == 5000
+    assert aggregate["operating_costs"] is None
+    assert aggregate["net_profit"] is None
+    with pytest.raises(ValueError, match="exact selected"):
+        aggregate_receipt(plan, services, [])
