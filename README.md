@@ -726,3 +726,38 @@ Preparation and preflight grant no launch permission. Never reuse consumed Attem
 uv run --no-sync pytest -q tests/test_planning_feedback.py \
   tests/test_freight_analytics.py tests/test_freight_network.py
 ```
+
+### Matched Baseline versus Feedback-aware experiment
+
+Replay the same verified Attempt 12 initial world, observation, P08 candidates,
+budget and constraints under both policies. The feedback policy applies the
+explicit observed aggregate infrastructure-cost error assumption. Use the retained verified history
+and a fresh output directory:
+
+```bash
+ATTEMPT=artifacts/runtime/openttd-15.3-first-freight-delivery-attempt12
+FEEDBACK_RUN="$(sha256sum "$ATTEMPT/receipt.json" | cut -d ' ' -f 1)"
+uv run --no-sync python -m app.experiments.feedback_experiment "$ATTEMPT" \
+  --feedback-history artifacts/experiments/multi-service-mvp-feedback-2026-10-14/history.sqlite \
+  --feedback-run "$FEEDBACK_RUN" \
+  --output artifacts/experiments/matched-feedback-replay
+uv run --no-sync pytest -q tests/test_feedback_experiment.py \
+  tests/test_feedback_comparison.py
+```
+
+`planning-manifest.json` records matched input hashes, source-save provenance,
+assumptions, both policy results and the launch decision. Separate scenario and
+plan files permit reproducible replay. `comparison.json` and `charts.html` provide
+P07 planned metrics, estimation errors and unknown actuals; historical verified
+receipts and actual metrics appear only as a separate reference.
+
+The verified replay selects identical execution decisions, so it launches neither
+variant. Different cost estimates and plan digests do not imply different services,
+fleet or construction. No paired delivery, revenue or economic improvement is
+measured. The historical reference is not an outcome of either fresh variant.
+OPEX, net return, ROI and unmeasured time utilization remain unknown.
+
+If execution decisions differ, the command reports a blocker: the existing native
+network policy does not permit cloned retained saves. It does not launch or reuse
+a mutated world. A future native comparison requires both independently validated
+preflights and supported separate clones of the verified initial source.
