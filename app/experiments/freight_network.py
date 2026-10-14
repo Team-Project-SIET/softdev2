@@ -7,6 +7,12 @@ from pathlib import Path
 from typing import Literal
 
 from app.experiments.freight_evaluation import FreightEvaluation, FreightMetric, evaluate_freight
+from app.experiments.game_time import (
+    GameTimeMetrics,
+    network_game_time,
+    retained_game_time,
+    service_game_time,
+)
 from app.planning.canonical import plan_hash, scenario_hash
 from app.planning.domain import Contract, Digest, ExecutionPlan, PlanningScenario, RoadFleetOption
 from app.planning.realized import ArtifactReference
@@ -30,6 +36,7 @@ class ServiceEvaluation(Contract):
     status: Literal["unobserved", "failed", "unattributed", "verified-delivery"]
     evidence: FreightEvaluation | None = None
     metrics: tuple[FreightMetric, ...]
+    game_time: GameTimeMetrics = GameTimeMetrics()
 
 
 class NetworkEvaluation(Contract):
@@ -45,6 +52,7 @@ class NetworkEvaluation(Contract):
     evidence_directory: str | None = None
     evidence_refs: tuple[ArtifactReference, ...] = ()
     feedback: tuple[FeedbackFinding, ...] = ()
+    game_time: GameTimeMetrics = GameTimeMetrics()
 
 
 def verified_batch_subtotals(services: tuple[ServiceEvaluation, ...]) -> tuple[FreightMetric, ...]:
@@ -316,6 +324,9 @@ def evaluate_freight_network(
                 status=status,
                 evidence=evidence,
                 metrics=tuple(metrics),
+                game_time=service_game_time(native_network_directory, service_index, retained)
+                if native_network_directory is not None and native is not None
+                else GameTimeMetrics(),
             )
         )
     infrastructure = sum(
@@ -393,6 +404,9 @@ def evaluate_freight_network(
             tuple(services), tuple(network_metrics), references, native is not None
         ),
         metrics=tuple(network_metrics),
+        game_time=retained_game_time(native)
+        if native is not None and "game_time" in native
+        else network_game_time(tuple(s.game_time for s in services)),
         verified_service_count=sum(s.status == "verified-delivery" for s in services),
         verified_batch_subtotals=verified_batch_subtotals(tuple(services)),
         limitations=(

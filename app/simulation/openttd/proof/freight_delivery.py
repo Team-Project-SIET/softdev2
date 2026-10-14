@@ -122,6 +122,22 @@ NETWORK_BUDGETS = PLANNER_BUDGETS | dict(
 )
 
 
+def network_budgets(service_limit=2):
+    """Keep the consumed two-service seals valid; larger capacity is explicit."""
+    if type(service_limit) is not int or service_limit not in (2, 3):
+        raise ValueError("network service limit must be 2 or 3")
+    if service_limit == 2:
+        return NETWORK_BUDGETS
+    return NETWORK_BUDGETS | dict(
+        requests=87,
+        mutations=33,
+        total_seconds=1200,
+        world_preparation_mutations=162,
+        construction_commands=192,
+        selected_services=3,
+    )
+
+
 def flat_heightmap():
     """64x64 grayscale 1: native heightmap loader maps every interior tile to height 1."""
 
@@ -193,7 +209,7 @@ def backend_for(metadata):
     return cls(authorized_one_launch=True)
 
 
-def staged_package(demo, planner=False, network=False, scenario=None):
+def staged_package(demo, planner=False, network=False, scenario=None, network_service_limit=2):
     out = {
         p.name: p.read_bytes()
         for p in PACKAGE.glob("*.nut")
@@ -238,11 +254,24 @@ def staged_package(demo, planner=False, network=False, scenario=None):
                 b'FREIGHT_ROUTE_FRONTS origin="', b'FREIGHT_ROUTE_FRONTS plan="+dplan+" origin="'
             )
         )
-        out["delivery.nut"] = out["delivery.nut"].replace(b"drequests>=26", b"drequests>=58")
+        out["delivery.nut"] = out["delivery.nut"].replace(
+            b"drequests>=26",
+            f"drequests>={network_budgets(network_service_limit)['requests']}".encode(),
+        )
         out["delivery.nut"] = out["delivery.nut"].replace(
             b"GSVehicleList().Count()!=1", b"GSVehicleList().Count()!=ExpectedVehicleCount()"
         )
         out["main.nut"] = (PACKAGE / "network.nut").read_bytes()
+        if network_service_limit == 3:
+            out["main.nut"] = (
+                out["main.nut"]
+                .replace(b"[20,44]", b"[8,26,44]")
+                .replace(b"GetIndustryCount()!=4", b"GetIndustryCount()!=6")
+                .replace(b"count>104", b"count>156")
+                .replace(b"services.len()>=2", b"services.len()>=3")
+                .replace(b"services.len()>2", b"services.len()>3")
+                .replace(b"drequests>=58", b"drequests>=87")
+            )
         out["info.nut"] = out["info.nut"].replace(
             b'"PlannerFreightProof"', b'"NetworkFreightProof"'
         )
@@ -463,7 +492,11 @@ def prepare(
     scenario=None,
     planning_budget=None,
     finance_only=False,
+    network_service_limit=2,
 ):
+    network_budgets(network_service_limit)
+    if network_service_limit != 2 and not network:
+        raise ValueError("larger service capacity requires --network")
     if scenario not in (None, "high-budget-500k"):
         raise ValueError("unsupported scenario preset")
     if scenario and (not demo or not planner):
@@ -563,7 +596,9 @@ def prepare(
             target = parent / name
             target.mkdir()
             if src == PACKAGE:
-                for name, data in staged_package(demo, planner, network, scenario).items():
+                for name, data in staged_package(
+                    demo, planner, network, scenario, network_service_limit
+                ).items():
                     (target / name).write_bytes(data)
             else:
                 for p in src.glob("*.nut"):
@@ -631,7 +666,9 @@ def prepare(
                 info.compress_type = zipfile.ZIP_DEFLATED
                 z.writestr(info, src.read_bytes())
             if planner:
-                for name, data in staged_package(demo, planner, network, scenario).items():
+                for name, data in staged_package(
+                    demo, planner, network, scenario, network_service_limit
+                ).items():
                     z.writestr("staged/" + name, data)
                 z.writestr("staged/openttd.cfg", workspace.config.read_bytes())
         frozen = source_freeze()
@@ -656,7 +693,9 @@ def prepare(
             demo=demo,
             planner=planner,
             network=network,
+            network_service_limit=network_service_limit,
             construction_readback_version=1 if planner else None,
+            game_time_metrics_version=1 if network else None,
             delivery_batch_limit=batch_limit if planner else None,
             delivery_predecessor=prior,
             workspace=str(workspace.root),
@@ -712,7 +751,7 @@ def prepare(
                 str(directory),
                 "--authorize-one-launch",
             ],
-            budgets=NETWORK_BUDGETS
+            budgets=network_budgets(network_service_limit)
             if network
             else PLANNER_BUDGETS
             if planner
@@ -819,6 +858,9 @@ def preflight(p):
     if (p.directory / "CLAIM.json").exists():
         raise ValueError("one attempt consumed")
     m = json.loads((p.directory / "PRELAUNCH.json").read_text())
+    from app.simulation.openttd.freight_native_network import validate_game_time_version
+
+    validate_game_time_version(m)
     if (
         sha256(p.directory / "PRELAUNCH.json")
         != (p.directory / "PRELAUNCH.sha256").read_text().strip()
@@ -826,7 +868,7 @@ def preflight(p):
         or m["attempt"] != attempt_number(p.directory)
         or m["budgets"]
         != (
-            NETWORK_BUDGETS
+            network_budgets(m.get("network_service_limit", 2))
             if m.get("network", False)
             else PLANNER_BUDGETS
             if m.get("planner", False)
@@ -853,7 +895,11 @@ def preflight(p):
     if m.get("network", False):
         validate_network_world_inputs(p, m)
     for name, data in staged_package(
-        m.get("demo", False), m.get("planner", False), m.get("network", False), m.get("scenario")
+        m.get("demo", False),
+        m.get("planner", False),
+        m.get("network", False),
+        m.get("scenario"),
+        m.get("network_service_limit", 2),
     ).items():
         if data != (p.spec.workspace.game / "RoadFreightProof" / name).read_bytes():
             raise ValueError("stale delivery package")
@@ -1306,7 +1352,11 @@ def verify_finance_receipt(directory):
         ):
             raise ValueError("finance frozen source mismatch")
     validate_capital_prelaunch(metadata, config)
-    if metadata["budgets"] != (NETWORK_BUDGETS if metadata["network"] else PLANNER_BUDGETS):
+    if metadata["budgets"] != (
+        network_budgets(metadata.get("network_service_limit", 2))
+        if metadata["network"]
+        else PLANNER_BUDGETS
+    ):
         raise ValueError("finance request budgets mismatch")
     if json.loads((directory / "CLAIM.json").read_bytes()) != dict(
         consumed=True, prelaunch_digest=seal, launches_allowed=1, retries=0
@@ -1438,7 +1488,7 @@ def verify_receipt(directory):
         not legacy
         and m["budgets"]
         != (
-            NETWORK_BUDGETS
+            network_budgets(m.get("network_service_limit", 2))
             if m.get("network", False)
             else PLANNER_BUDGETS
             if m.get("planner", False)
@@ -1602,8 +1652,9 @@ def main():
     parser.add_argument("--planning-budget", type=Decimal)
     parser.add_argument("--finance-only", action="store_true")
     parser.add_argument(
-        "--network", action="store_true", help="two P05-selected services in one session"
+        "--network", action="store_true", help="bounded P05-selected services in one session"
     )
+    parser.add_argument("--network-service-limit", type=int, choices=[2, 3], default=2)
     parser.add_argument(
         "--planner", action="store_true", help="qualify and plan in the same native world"
     )
@@ -1636,6 +1687,7 @@ def main():
             scenario=args.scenario,
             planning_budget=args.planning_budget,
             finance_only=args.finance_only,
+            network_service_limit=args.network_service_limit,
         )
         preflight(p)
         print("PRELAUNCH PASS")

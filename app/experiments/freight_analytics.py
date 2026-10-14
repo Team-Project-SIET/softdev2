@@ -183,6 +183,35 @@ def render_html(runs: tuple[FreightEvaluation, ...], summary: dict) -> str:
                 for key, color in (("planned", "#b66a08"), ("actual", "#176b86")):
                     rows.append((f"Service {index} " + key, m.get(key), color))
             service_charts.append(_bars(label, rows, unit))
+        for field, label in (
+            ("total_elapsed_economy_days", "Elapsed economy days from simulation start"),
+            ("elapsed_script_ticks", "Elapsed script ticks"),
+            ("elapsed_calendar_days", "Elapsed calendar days"),
+            ("elapsed_wall_clock_seconds", "Elapsed wall-clock seconds"),
+        ):
+            unit = (
+                "economy days"
+                if field == "total_elapsed_economy_days"
+                else "script ticks"
+                if field == "elapsed_script_ticks"
+                else "calendar days"
+                if field == "elapsed_calendar_days"
+                else "seconds"
+            )
+            service_charts.append(
+                _bars(
+                    label,
+                    [
+                        (f"Service {index}", service.get("game_time", {}).get(field), "#176b86")
+                        for index, service in enumerate(report["services"], 1)
+                    ],
+                    unit,
+                )
+            )
+        service_charts.append(
+            "<p>Economy date counters are separate from calendar dates. "
+            "Pickup observation dates bound the event; unknown durations remain unknown.</p>"
+        )
         capacity = []
         for index, service in enumerate(report["services"], 1):
             m = next((m for m in service["metrics"] if m["name"] == "capacity_utilization"), {})

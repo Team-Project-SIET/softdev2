@@ -1,4 +1,4 @@
-"""Two-service sequencing and receipt replay through the existing freight executor."""
+"""Bounded multi-service sequencing and receipt replay through the existing freight executor."""
 
 import asyncio
 import json
@@ -69,7 +69,7 @@ def bounded_relationships(world):
     return tuple(selected), rejected
 
 
-def network_from_facts(world, facts, source, policy):
+def network_from_facts(world, facts, source, policy, *, max_vehicles=2):
     # Each raw package is retained separately. The combined bracket encompasses
     # every read, without inventing simultaneous capture or upgrading its trust.
     before = min(f.capture_economy_date_before for f in facts)
@@ -93,7 +93,7 @@ def network_from_facts(world, facts, source, policy):
         )
         for f in facts
     )
-    return generate_freight_network(packages, max_vehicles=2)
+    return generate_freight_network(packages, max_vehicles=max_vehicles)
 
 
 async def plan_network_world(backend, prepared, session, accounting, before, batch_limit):
@@ -139,7 +139,10 @@ async def plan_network_world(backend, prepared, session, accounting, before, bat
         ),
         delivery_batch_limit=batch_limit,
     )
-    network = network_from_facts(world, facts, source, policy)
+    metadata = json.loads((prepared.directory / "PRELAUNCH.json").read_bytes())
+    network = network_from_facts(
+        world, facts, source, policy, max_vehicles=metadata.get("network_service_limit", 2)
+    )
     optimized = optimize_candidate_network(network.scenario)
     services = compile_freight_network(network, optimized.plan)
     write_json(prepared.directory / "world-planning-observation.json", json.loads(world.to_bytes()))
@@ -254,7 +257,7 @@ def asset_costs(plan, services, receipts):
 
 def aggregate_receipt(plan, services, receipts):
     if (
-        not 1 <= len(services) <= 2
+        not 1 <= len(services) <= 3
         or len(receipts) != len(services)
         or tuple(r["route_id"] for r in receipts) != tuple(i for i, _ in services)
     ):
@@ -289,7 +292,109 @@ def aggregate_receipt(plan, services, receipts):
     )
 
 
+def validate_game_time_version(metadata):
+    """Reject unsupported sealed receipt extensions; missing historical version is valid."""
+    version = metadata.get("game_time_metrics_version")
+    if version is not None and (type(version) is not int or version != 1):
+        raise ValueError("unsupported game-time metrics version")
+    return version
+
+
+def receipt_game_time(directory, index, *, capture_start=False, log_path=None):
+    """Replay correlated milestone readbacks; exact unsampled events remain unknown."""
+    fields = (
+        "simulation_start_date",
+        "planning_completion_date",
+        "construction_completion_date",
+        "first_cargo_pickup_date",
+        "final_cargo_delivery_date",
+        "pickup_observed_by_date",
+        "construction_observed_by_date",
+        "total_elapsed_economy_days",
+        "elapsed_calendar_days",
+        "elapsed_script_ticks",
+        "elapsed_wall_clock_seconds",
+    )
+    metrics = dict.fromkeys((*fields, "start_basis", "planning_completion_observed_by_date"))
+    refs = []
+    for stage, field, position in (
+        ("read-9", "construction_observed_by_date", 1),
+        ("observe-1", "pickup_observed_by_date", 1),
+        ("finish", "final_cargo_delivery_date", 21),
+    ):
+        name = f"s{index}-{stage}-response.json"
+        state = json.loads((directory / name).read_bytes())["s"]
+        metrics[field] = state[position] if state[position] >= 0 else None
+        refs.append(name)
+    if capture_start:
+        text = (log_path or directory / "stderr.log").read_text()
+        starts = re.findall(r"FREIGHT_GAME_TIME_START date=(\d+) tick=(\d+)", text)
+        plan_digest = DeliveryPlan.model_validate_json(
+            (directory / f"native-plan-{index}.json").read_bytes()
+        ).digest
+        constructions = re.findall(
+            r"FREIGHT_GAME_TIME_CONSTRUCTION plan="
+            + re.escape(plan_digest)
+            + r" date=(\d+) tick=(\d+)",
+            text,
+        )
+        if len(starts) != 1 or len(constructions) != 1:
+            raise ValueError("unique native game-time start/construction markers required")
+        start_date, start_tick = map(int, starts[0])
+        construction_date, construction_tick = map(int, constructions[0])
+        final = json.loads((directory / f"s{index}-finish-response.json").read_bytes())["s"]
+        if (
+            not start_date <= construction_date <= final[21] <= final[1]
+            or not start_tick <= construction_tick <= final[0]
+        ):
+            raise ValueError("native game-time marker chronology mismatch")
+        metrics["start_basis"] = "bridge_start_before_world_preparation"
+        metrics["planning_completion_observed_by_date"] = json.loads(
+            (directory / f"select-{index}-response.json").read_bytes()
+        )["s"][1]
+        metrics["simulation_start_date"] = start_date
+        metrics["construction_completion_date"] = construction_date
+        metrics["total_elapsed_economy_days"] = final[21] - start_date
+        refs.append("stderr.log")
+    return dict(date_basis="economy", **metrics, evidence_refs=refs)
+
+
+def aggregate_game_time(receipts):
+    metrics = dict(receipts[0]["game_time"])
+    for field in (
+        "construction_completion_date",
+        "construction_observed_by_date",
+        "final_cargo_delivery_date",
+    ):
+        values = [r["game_time"][field] for r in receipts]
+        metrics[field] = max(values) if all(v is not None for v in values) else None
+    values = [r["game_time"]["pickup_observed_by_date"] for r in receipts]
+    metrics["pickup_observed_by_date"] = min(values) if all(v is not None for v in values) else None
+    if (
+        metrics["simulation_start_date"] is not None
+        and metrics["final_cargo_delivery_date"] is not None
+    ):
+        if any(
+            r["game_time"]["simulation_start_date"] != metrics["simulation_start_date"]
+            for r in receipts
+        ):
+            raise ValueError("network simulation start marker mismatch")
+        metrics["total_elapsed_economy_days"] = (
+            metrics["final_cargo_delivery_date"] - metrics["simulation_start_date"]
+        )
+    metrics["evidence_refs"] = [ref for r in receipts for ref in r["game_time"]["evidence_refs"]]
+    return metrics
+
+
+def require_selected_service_count(metadata, services):
+    if metadata.get("network_service_limit", 2) == 3 and len(services) != 3:
+        raise ValueError(
+            f"THREE_SERVICE_ADMISSION_REQUIRES_EXACTLY_3_SELECTED: got {len(services)}"
+        )
+
+
 async def execute_network(backend, prepared, session, accounting, before, seal, metadata, result):
+    validate_game_time_version(metadata)
     from app.simulation.openttd.proof.freight_delivery import command_readback_evidence, exchange
     from app.simulation.openttd.proof.road_mutation import save
 
@@ -298,6 +403,7 @@ async def execute_network(backend, prepared, session, accounting, before, seal, 
     )
     result["supplemental_requests"] = backend.planning_read_count
     result["selected_services"] = [i for i, _ in services]
+    require_selected_service_count(metadata, services)
     result["qualification_requests"] = sum(
         v[0] for _, v in services[0][1].road.input.admitted.world.qualification.evidence.phase_usage
     )
@@ -388,9 +494,18 @@ async def execute_network(backend, prepared, session, accounting, before, seal, 
         ):
             raise ValueError(f"service {route_id} did not stop empty after delivery")
         receipt["parked_digests"] = [parked.digest, independent.digest]
+        if metadata.get("game_time_metrics_version") == 1:
+            receipt["game_time"] = receipt_game_time(
+                prepared.directory,
+                n,
+                capture_start=True,
+                log_path=prepared.spec.workspace.logs / "stderr.log",
+            )
         receipts.append(receipt)
         write_json(prepared.directory / f"service-receipt-{n}.json", receipt)
     aggregate = aggregate_receipt(execution, services, receipts)
+    if metadata.get("game_time_metrics_version") == 1:
+        aggregate["game_time"] = aggregate_game_time(receipts)
     aggregate.update(
         before_save_sha256=before,
         qualified_save_sha256=source_save,
@@ -399,7 +514,7 @@ async def execute_network(backend, prepared, session, accounting, before, seal, 
     write_json(prepared.directory / "receipt.json", aggregate)
 
 
-def verify_network_receipt(directory: Path):
+def verify_network_receipt(directory: Path, *, return_network=False):
     """Independent retained readback replay; never creates a process or connection."""
     from app.simulation.openttd.freight_planning_replay import replay_qualified_world
     from app.simulation.openttd.freight_runtime_planning import _ISSUER, NativeSaveCorrespondence
@@ -409,18 +524,19 @@ def verify_network_receipt(directory: Path):
     )
     from app.simulation.openttd.proof.endpoints import verify_retained_endpoints
     from app.simulation.openttd.proof.freight_delivery import (
-        NETWORK_BUDGETS,
         command_readback_evidence,
+        network_budgets,
     )
 
     directory = directory.resolve()
     if manifest(directory) != (directory / "artifact-manifest.sha256").read_text():
         raise ValueError("network artifact manifest mismatch")
     metadata = json.loads((directory / "PRELAUNCH.json").read_bytes())
+    validate_game_time_version(metadata)
     seal = sha256(directory / "PRELAUNCH.json")
     if (
         not metadata.get("network")
-        or metadata["budgets"] != NETWORK_BUDGETS
+        or metadata["budgets"] != network_budgets(metadata.get("network_service_limit", 2))
         or seal != (directory / "PRELAUNCH.sha256").read_text().strip()
     ):
         raise ValueError("network seal or budgets mismatch")
@@ -524,7 +640,9 @@ def verify_network_receipt(directory: Path):
         "delivery_batch_limit"
     ] or policy.budget_gbp != Decimal(metadata.get("planning_budget_gbp", "100000")):
         raise ValueError("network batch differs from prelaunch")
-    network = network_from_facts(world, facts, source, policy)
+    network = network_from_facts(
+        world, facts, source, policy, max_vehicles=metadata.get("network_service_limit", 2)
+    )
     plan = ExecutionPlan.model_validate_json((directory / "execution-plan.json").read_bytes())
     scenario = PlanningScenario.model_validate_json(
         (directory / "planning-scenario.json").read_bytes()
@@ -534,8 +652,9 @@ def verify_network_receipt(directory: Path):
     ):
         raise ValueError("network P08/P05 decision replay mismatch")
     services = compile_freight_network(network, plan)
+    require_selected_service_count(metadata, services)
     records, wire_ids = verified_exchanges(directory)
-    expected = ["select-0", "select-1"]
+    expected = [f"select-{n}" for n in range(len(services))]
     receipts = []
     bindings = []
     for n, (route_id, service) in enumerate(services):
@@ -601,6 +720,8 @@ def verify_network_receipt(directory: Path):
         ):
             raise ValueError("network independent stopped-vehicle readback mismatch")
         receipt["parked_digests"] = [parked.digest, independent.digest]
+        if metadata.get("game_time_metrics_version") == 1:
+            receipt["game_time"] = receipt_game_time(directory, n, capture_start=True)
         if receipt != json.loads((directory / f"service-receipt-{n}.json").read_bytes()):
             raise ValueError("network service receipt mismatch")
         receipts.append(receipt)
@@ -611,6 +732,8 @@ def verify_network_receipt(directory: Path):
     ):
         raise ValueError("network bounded deterministic sequence mismatch")
     aggregate = aggregate_receipt(plan, services, receipts)
+    if metadata.get("game_time_metrics_version") == 1:
+        aggregate["game_time"] = aggregate_game_time(receipts)
     aggregate.update(
         before_save_sha256=sha256(directory / "before.sav"),
         qualified_save_sha256=sha256(directory / "qualified.sav"),
@@ -648,7 +771,7 @@ def verify_network_receipt(directory: Path):
     for name in ("before", "qualified", "after"):
         if logs.count("Map successfully saved to '" + str(directory / (name + ".sav"))) != 1:
             raise ValueError("network unique native save completion missing")
-    return aggregate
+    return (aggregate, network) if return_network else aggregate
 
 
 def verified_exchanges(directory):

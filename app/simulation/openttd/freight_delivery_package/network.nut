@@ -27,7 +27,13 @@ class NetworkFreightProof extends PlannerFreightProof {
                 GSVehicle.GetCargoLoad(c.dvehicle,c.choice.a[2])!=0)return false;
         return GSVehicleList().Count()==ExpectedVehicleCount();
     }
+    function RecordConstruction(i,result,quoted,cost,funds) {
+        base.RecordConstruction(i,result,quoted,cost,funds);
+        if(i==6&&GSVehicle.IsValidVehicle(result))GSLog.Info("FREIGHT_GAME_TIME_CONSTRUCTION plan="+dplan+
+            " date="+GSDate.GetCurrentDate()+" tick="+GetTick());
+    }
     function PrepareDemo() {
+        GSLog.Info("FREIGHT_GAME_TIME_START date="+GSDate.GetCurrentDate()+" tick="+GetTick());
         if(GSIndustry.GetIndustryCount()!=0)throw "NETWORK_REQUIRES_EMPTY_WORLD";
         if(GSGameSettings.GetValue("economy.multiple_industry_per_town")!=1)
             throw "NETWORK_REQUIRES_MULTIPLE_INDUSTRY_PER_TOWN";

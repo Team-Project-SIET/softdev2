@@ -38,9 +38,9 @@ def test_native_compiler_preserves_p05_identities_and_controlled_trust(packages)
             service.selection_request()
 
 
-def network_vm():
+def network_vm(service_limit=2):
     vm = delivery_vm()
-    staged = staged_package(True, True, True)
+    staged = staged_package(True, True, True, network_service_limit=service_limit)
     for name in ("delivery.nut", "demo-world.nut", "network-parent.nut", "main.nut"):
         code = staged[name].decode()
         for line in code.splitlines():
@@ -85,13 +85,14 @@ def network_vm():
             static function GetQuarterlyIncome(c,q){return GetQuarterlyCargoDelivered(c,q)*25;}
         };
         ::GSIndustry = class extends GSIndustry {
-            static function IsValidIndustry(i){return i==7||i==8||i==9||i==10;}
+            static function IsValidIndustry(i){return i==7||i==8||i==9||i==10||i==11||i==12;}
             static function GetIndustryID(t){return t==650?7:(t==1300?8:
-                (t==2186?9:(t==2836?10:-1)));}
-            static function GetLocation(i){return i==7?650:(i==8?1300:(i==9?2186:2836));}
-            static function GetIndustryType(i){return i==7||i==9?3:4;}
-            static function GetLastMonthProduction(i,c){return (i==7||i==9)&&c==3?100:0;}
-            static function IsCargoAccepted(i,c){return (i==8||i==10)&&c==3?1:0;}
+                (t==2186?9:(t==2836?10:(t==1418?11:(t==2068?12:-1)))));}
+            static function GetLocation(i){return i==7?650:(i==8?1300:
+                (i==9?2186:(i==10?2836:(i==11?1418:2068))));}
+            static function GetIndustryType(i){return i==7||i==9||i==11?3:4;}
+            static function GetLastMonthProduction(i,c){return (i==7||i==9||i==11)&&c==3?100:0;}
+            static function IsCargoAccepted(i,c){return (i==8||i==10||i==12)&&c==3?1:0;}
             static function GetCargoLastAcceptedDate(i,c){return GSDate.GetCurrentDate();}
         };
         ::GSCargoMonitor = class {
@@ -104,11 +105,11 @@ def network_vm():
     return vm
 
 
-@pytest.mark.parametrize("service_count", [1, 2])
+@pytest.mark.parametrize("service_count", [1, 2, 3])
 def test_selected_services_deliver_and_stop_in_one_executor_session(service_count):
     from app.simulation.openttd.freight_planning import PlanningSelectionRequest
 
-    vm = network_vm()
+    vm = network_vm(3 if service_count == 3 else 2)
 
     def exchange(request):
         vm.execute("::bridge.Handle(" + request.to_bytes().decode() + ");")
@@ -130,7 +131,7 @@ def test_selected_services_deliver_and_stop_in_one_executor_session(service_coun
 
     selections = []
     for n in range(service_count):
-        shift = n * 1536
+        shift = (0, 1536, 768)[n]
         a = (
             7 + 2 * n,
             8 + 2 * n,

@@ -11,8 +11,8 @@ from app.simulation.openttd.proof import freight_delivery as proof
 HISTORICAL = proof.PROJECT / "artifacts/runtime/openttd-15.3-first-freight-delivery-attempt10"
 
 
-def world_vm(*, multiple=True, fail_at=-1):
-    vm = network_vm()
+def world_vm(*, multiple=True, fail_at=-1, service_limit=2):
+    vm = network_vm(service_limit)
     vm.execute(
         """
         ::world_industries <- [];
@@ -349,3 +349,74 @@ def test_native_effective_setting_is_validated_offline(tmp_path, config_text, ad
     else:
         with pytest.raises(ValueError):
             proof.validate_network_world_inputs(prepared, metadata)
+
+
+def test_larger_layout_builds_three_separate_bounded_pairs_without_native():
+    vm = world_vm(service_limit=3)
+    vm.execute("bridge.PrepareDemo();")
+    assert attempts(vm) == [(0, 532), (1, 1060), (0, 1684), (1, 2212), (0, 2836), (1, 3364)]
+    assert len(vm.get_roottable()["world_industries"]) == 6
+    # Every matching pair stays in the unchanged 256-tile supplemental region bound.
+    assert (16 + 4) * (8 + 4) <= 256
+    logs = vm.get_roottable()["prep_logs"]
+    assert int(str(logs[len(logs) - 1]).split("=")[-1]) <= 156
+
+
+def test_larger_capacity_is_explicitly_sealed_and_preflighted(tmp_path):
+    prepared = proof.prepare(
+        tmp_path / "openttd-15.3-first-freight-delivery-attempt1",
+        demo=True,
+        planner=True,
+        network=True,
+        network_service_limit=3,
+    )
+    try:
+        proof.preflight(prepared)
+        metadata = json.loads((prepared.directory / "PRELAUNCH.json").read_bytes())
+        assert metadata["network_service_limit"] == 3
+        assert metadata["budgets"] == proof.network_budgets(3)
+        assert metadata["budgets"]["requests"] == 87
+        with zipfile.ZipFile(prepared.directory / "frozen-source.zip") as archive:
+            assert b"[8,26,44]" in archive.read("staged/main.nut")
+            assert b"drequests>=87" in archive.read("staged/delivery.nut")
+        assert not (prepared.directory / "CLAIM.json").exists()
+    finally:
+        prepared.spec.workspace.close()
+
+
+def test_larger_layout_has_three_eligible_relationships_under_unchanged_capture_bound():
+    from types import SimpleNamespace as Record
+
+    from app.simulation.openttd.freight_native_network import bounded_relationships
+
+    industries = tuple(
+        Record(id=i, x=20 if i % 2 == 0 else 36, y=y + (8 if i % 2 else 0))
+        for i, y in enumerate((8, 8, 26, 26, 44, 44))
+    )
+    world = Record(
+        structural=Record(
+            capability=Record(
+                observation=Record(
+                    capabilities=tuple(
+                        Record(
+                            industry_id=i,
+                            produces=(1,) if i % 2 == 0 else (),
+                            accepts=(1,) if i % 2 else (),
+                        )
+                        for i in range(6)
+                    )
+                )
+            ),
+            inventory=Record(observation=Record(records=industries)),
+            catalog=Record(observation=Record(records=(Record(cargo_id=1, is_freight=True),))),
+        ),
+        production=Record(
+            records=tuple(
+                Record(industry_id=i, cargo_id=1, last_month_produced=100) for i in (0, 2, 4)
+            )
+        ),
+    )
+    admitted, rejected = bounded_relationships(world)
+    assert admitted == ((0, 1, 1), (2, 3, 1), (4, 5, 1))
+    assert len(rejected) == 6
+    assert {r["reason"] for r in rejected} == {"CAPTURE_REGION_BOUND"}

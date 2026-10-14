@@ -188,13 +188,13 @@ def compile_freight_service(road: ControlledRoadScenario, plan: ExecutionPlan):
 
 
 def compile_freight_network(network, plan: ExecutionPlan):
-    """Bind one or two selected routes to their original P08 packages without replanning."""
+    """Bind up to three selected routes to their original P08 packages without replanning."""
     validate_execution_plan(plan, network.scenario)
     if (
         plan.planner_inputs_digest != scenario_hash(network.scenario)
-        or not 1 <= len(plan.routes) <= 2
+        or not 1 <= len(plan.routes) <= 3
     ):
-        raise ValueError("one or two source-bound selected freight services required")
+        raise ValueError("one to three source-bound selected freight services required")
     roads = {r.scenario.cargo_demands[0].demand_id: r for r in network.services}
     groups = {g.fleet_group_id: g for g in plan.fleet.groups}
     actions = {a.construction_id: a for a in plan.infrastructure.actions}

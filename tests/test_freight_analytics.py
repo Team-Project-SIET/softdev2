@@ -371,3 +371,29 @@ def test_history_accepts_legacy_single_service_payload_without_optional_network_
         assert len(history.runs()) == 1
     finally:
         history.close()
+
+
+def test_three_service_game_time_charts_preserve_unknowns(controlled_evaluations):
+    run = controlled_evaluations[2]
+    services = [
+        dict(
+            route_id=f"route-{i}",
+            demand_id=f"demand-{i}",
+            metrics=[],
+            game_time=dict(
+                total_elapsed_economy_days=None,
+                elapsed_script_ticks=None,
+                elapsed_wall_clock_seconds=None,
+                elapsed_calendar_days=None,
+            ),
+        )
+        for i in range(3)
+    ]
+    run = run.model_copy(update={"network_report": dict(services=services, feedback=[])})
+    html = render_html((run,), summarize((run,)))
+    assert "Service 3" in html
+    assert "Elapsed economy days from simulation start" in html
+    assert "Elapsed calendar days" in html
+    assert "Elapsed script ticks" in html
+    assert "Elapsed wall-clock seconds" in html
+    assert 'class="unknown">unknown' in html
