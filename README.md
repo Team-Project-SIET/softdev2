@@ -656,6 +656,59 @@ Recommendations identify cost quote discrepancies and which further measurements
 P08/P05 need. They do not retrain anything or change optimizer parameters. Attempt
 12 selected no shared construction actions; a zero shared ledger does not prove
 paid reuse. Future native execution requires fresh authorization and a new attempt.
+
+### Compare optional feedback-informed planning scenarios
+
+P05 can use one verified P07 network history entry to compare controlled cost
+assumptions. Without feedback flags, the existing optimizer behavior is unchanged.
+Use the history generated above and the receipt hash as the selected history key:
+
+```bash
+FEEDBACK_RUN="$(sha256sum "$ATTEMPT/receipt.json" | cut -d ' ' -f 1)"
+uv run --no-sync python -m app.planning.network_cli \
+  tests/fixtures/multi_service/scenario.json \
+  --feedback-history artifacts/experiments/multi-service-history.sqlite \
+  --feedback-run "$FEEDBACK_RUN" \
+  --output artifacts/experiments/feedback-replanning
+```
+
+Open `feedback-replanning/charts.html` for the P07 history with its planning
+comparison. `planning-comparison.json` retains each full scenario and plan, their
+digests, the selected history key, and native receipt references with hashes.
+The ordinary `execution-plan.json`, `estimates.json`, and `evaluation.json` still
+describe the baseline. If the baseline is infeasible, the CLI writes the comparison
+and charts without these three baseline files; use a fresh output directory.
+
+Verified example with the checked-in scenario and retained Attempt 12 feedback:
+
+| Cost assumption | Selected services | Expected CAPEX (GBP) | Fleet capacity | Planned batch | Controlled feasible |
+| --- | --- | ---: | ---: | ---: | --- |
+| Baseline | `benchmark-2-1-17`, `benchmark-2-1-30` | 2,580.00 | 120 | 80 | Yes |
+| Observed error | Same two services | 2,715.14 | 120 | 80 | Yes |
+| Double error | Same two services | 2,850.24 | 120 | 80 | Yes |
+
+All three remain within the identical £4,000 budget. JSON also reports whether
+the baseline selection remains within budget under each alternative assumption.
+
+The comparison replays retained evidence before using the selected history entry.
+Baseline and alternatives use the same supplied P08 candidates, budget, fleet
+capacity, and qualified supply. Only candidate infrastructure estimates change.
+P05 still maximizes the selected historical cargo batch, then minimizes estimated
+CAPEX. Vehicle purchases and revenue assumptions remain unchanged.
+
+The alternatives apply the observed positive aggregate infrastructure error ratio
+uniformly, then twice that ratio. Attempt 12 underestimated infrastructure by
+£1,935 against an £8,308 estimate. Applying that ratio to another scenario is an
+explicit transfer assumption. One observation provides no statistically calibrated
+prediction or candidate-specific correction. Each adjusted candidate cost rounds
+upward to pennies.
+
+Waiting cargo of 54 and 42 units remains observed station backlog. It does not
+increase planned supply, measured demand, or guaranteed future revenue. Comparisons
+do not establish native feasibility or demonstrated optimization improvement.
+Full OPEX, ROI, and profitability remain unknown. No parameters change automatically,
+and no retraining or native execution occurs.
+
 To prepare a fresh multi-service attempt without launching it:
 
 ```bash
@@ -670,5 +723,6 @@ Preparation and preflight grant no launch permission. Never reuse consumed Attem
 10, 11 or 12 run commands. Focused offline checks:
 
 ```bash
-uv run --no-sync pytest -q tests/test_freight_analytics.py tests/test_freight_network.py
+uv run --no-sync pytest -q tests/test_planning_feedback.py \
+  tests/test_freight_analytics.py tests/test_freight_network.py
 ```

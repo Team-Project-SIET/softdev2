@@ -247,6 +247,11 @@ def render_html(runs: tuple[FreightEvaluation, ...], summary: dict) -> str:
             + "</ul><p>No automatic parameter updates; one network run establishes "
             "no trend.</p></section>"
         )
+    comparison_html = ""
+    if summary.get("planning_comparison") is not None:
+        from app.planning.feedback import render_comparison_html
+
+        comparison_html = render_comparison_html(summary["planning_comparison"])
     details = []
     for run in runs:
         rows = []
@@ -308,6 +313,7 @@ remain unknown. Standalone, planner-driven and serial network batches remain sep
 {_bars("Capacity and time", utilization, "percent", 100)}</section>
 <section><h2>5. Descriptive history across comparable runs</h2>{"".join(trends)}</section>
 {"".join(network_sections)}
+{comparison_html}
 <h2>Evidence, findings and limitations</h2>{"".join(details)}</main></html>"""
     )
 
