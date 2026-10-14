@@ -79,6 +79,8 @@ def write_comparison(
         feedback_minus_baseline=delta,
         limitations=LIMITATIONS,
     )
+    if "sensitivity" in planning_manifest:
+        report["sensitivity"] = planning_manifest["sensitivity"]
     output.mkdir(parents=True, exist_ok=True)
     (output / "comparison.json").write_text(json.dumps(report, indent=2) + "\n")
     (output / "charts.html").write_text(render_html(report))
@@ -139,6 +141,49 @@ def render_html(report: dict) -> str:
             "<p>Historical reference only; these actuals belong to neither experiment variant.</p>"
         )
         charts.append(_bars("Historical reference economics", reference_rows, "GBP"))
+    sensitivity = report.get("sensitivity")
+    if sensitivity:
+        charts.append(
+            "<h2>Controlled decision sensitivity</h2><p>Retrospective cost feedback; "
+            "no independent native validation. "
+            "Capacity is per load; served demand is the planning-horizon assignment.</p>"
+        )
+        charts.append(
+            "<p>Different feasible service sets: "
+            + str(len(sensitivity["decision_intervals"]))
+            + "; feasibility divergence intervals: "
+            + str(len(sensitivity["feasibility_intervals"]))
+            + ".</p>"
+        )
+        for row in sensitivity["rows"]:
+            charts.append(
+                _bars(
+                    "Budget GBP " + row["budget_gbp"] + " — served demand",
+                    [
+                        (name, variant.get("served_demand_units"), "#176b86")
+                        for name, variant in row["variants"].items()
+                    ],
+                    "cargo units",
+                )
+            )
+        charts.append(
+            "<h3>Exact decision breakpoints and bounds</h3><pre>"
+            + escape(
+                json.dumps(
+                    {
+                        key: sensitivity[key]
+                        for key in (
+                            "bounds",
+                            "decision_intervals",
+                            "feasibility_intervals",
+                            "assumptions",
+                        )
+                    },
+                    indent=2,
+                )
+            )
+            + "</pre>"
+        )
     limitations = "".join(f"<li>{escape(item)}</li>" for item in report["limitations"])
     return (
         '<!doctype html><html lang="en"><meta charset="utf-8">'

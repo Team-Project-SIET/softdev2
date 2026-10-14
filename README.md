@@ -761,3 +761,39 @@ If execution decisions differ, the command reports a blocker: the existing nativ
 network policy does not permit cloned retained saves. It does not launch or reuse
 a mutated world. A future native comparison requires both independently validated
 preflights and supported separate clones of the verified initial source.
+
+For exhaustive **controlled** budget sensitivity over the same supplied P08/P05
+candidates and baseline, observed-error and double-error policies:
+
+```bash
+uv run --no-sync python -m app.experiments.feedback_experiment "$ATTEMPT" \
+  --feedback-history artifacts/experiments/multi-service-mvp-feedback-2026-10-14/history.sqlite \
+  --feedback-run "$FEEDBACK_RUN" \
+  --output artifacts/experiments/feedback-budget-sensitivity --sensitivity
+uv run --no-sync pytest -q tests/test_feedback_sensitivity.py
+```
+
+This verified offline command adds `sensitivity` to `planning-manifest.json` and
+P07 `comparison.json`, plus budget charts and exact breakpoints in `charts.html`.
+It tests all eligible alternative combinations, including omitted services, under
+unchanged nonbudget constraints; enumeration above 100,000 combinations per
+policy fails explicitly. Exact Decimal affordability thresholds and intervening
+intervals are tested, including the original £100,000 budget. Shared candidate
+infrastructure is charged once. Each selected plan passes independent validation.
+Interval metrics describe the inclusive lower bound; budget slack rises inside
+each interval. Rows compare services, candidates, CAPEX, per-load fleet capacity, horizon demand,
+lexicographic objective values and budget/supply/resource/vehicle/capacity slack.
+
+On retained Attempt 12 inputs, both policies are feasible but choose different
+service sets at budgets **£17,166 ≤ budget < £19,101.04** (observed-error), and
+**£17,166 ≤ budget < £21,036.06** (double-error). Baseline serves two demands
+(40 units); feedback serves one (20 units). One-policy-only feasibility occurs
+separately below £9,550.52 and £10,518.03 respectively, starting at baseline's
+£8,583 threshold. Above the final threshold every eligible combination is
+already affordable, so further budget increases cannot change these decisions.
+At the original £100,000 budget selections remain identical.
+
+These are retrospective cost-feedback sensitivity results. Attempt 12 actual
+costs informed the uplift; the £19,101.04 revised estimate matching historical
+£19,101 is **not independent validation**. No launches or Admin connections occur;
+no profitability, native A/B improvement or automatic tuning is established.

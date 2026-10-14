@@ -26,7 +26,9 @@ def semantic_plan(plan: ExecutionPlan) -> dict:
     )
 
 
-def prepare_experiment(source: Path, history: Path, key: str, output: Path) -> dict:
+def prepare_experiment(
+    source: Path, history: Path, key: str, output: Path, *, sensitivity: bool = False
+) -> dict:
     source, history, output = source.resolve(), history.resolve(), output.resolve()
     if output.exists() or output.is_relative_to(source) or output == history:
         raise ValueError("output must be a fresh directory outside retained evidence")
@@ -70,7 +72,7 @@ def prepare_experiment(source: Path, history: Path, key: str, output: Path) -> d
     if before_digest != links["original_save_digest"]:
         raise ValueError("verified initial source save digest mismatch")
     differing = semantic_plan(plans["baseline"]) != semantic_plan(plans["feedback"])
-    manifest = dict(
+    manifest: dict = dict(
         schema_version=1,
         experiment_source_files={
             str(path.relative_to(Path(__file__).resolve().parents[2])): hashlib.sha256(
@@ -136,6 +138,21 @@ def prepare_experiment(source: Path, history: Path, key: str, output: Path) -> d
             "policy; no launch is authorized by this command.",
         ],
     )
+    if sensitivity:
+        from app.experiments.feedback_sensitivity import analyze_sensitivity
+
+        manifest["sensitivity"] = analyze_sensitivity(
+            {
+                row["name"]: PlanningScenario.model_validate_json(json.dumps(row["scenario"]))
+                for row in comparison["scenarios"]
+            }
+        )
+        manifest["experiment_source_files"]["app/experiments/feedback_sensitivity.py"] = (
+            hashlib.sha256(
+                Path(__file__).with_name("feedback_sensitivity.py").read_bytes()
+            ).hexdigest()
+        )
+
     from app.experiments.feedback_comparison import write_comparison
 
     if hashes != {name: hashlib.sha256((source / name).read_bytes()).hexdigest() for name in files}:
@@ -167,14 +184,23 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--feedback-history", type=Path, required=True)
     parser.add_argument("--feedback-run", required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument(
+        "--sensitivity",
+        action="store_true",
+        help="exhaustive controlled budget sensitivity; zero native launches",
+    )
     args = parser.parse_args(argv)
     try:
         manifest = prepare_experiment(
-            args.source, args.feedback_history, args.feedback_run, args.output
+            args.source,
+            args.feedback_history,
+            args.feedback_run,
+            args.output,
+            sensitivity=args.sensitivity,
         )
     except (ValueError, OSError) as error:
         parser.error(str(error))
-    print(manifest["status"])
+    print("FEEDBACK DECISION SENSITIVITY COMPLETE" if args.sensitivity else manifest["status"])
     return 1 if manifest["plans_differ"] else 0
 
 
