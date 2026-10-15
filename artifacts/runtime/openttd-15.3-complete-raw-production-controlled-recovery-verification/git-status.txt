@@ -1,0 +1,17 @@
+ M README.md
+ M app/simulation/openttd/production_session.py
+ M docs/specs/planning-executor-boundary.md
+ M docs/srs.md
+?? .env.example
+?? CONTEXT.md
+?? app/planning/preparation/
+?? app/simulation/openttd/raw_production_session.py
+?? docs/complete-raw-industry-production.md
+?? docs/specs/p08-world-preparation-design.md
+?? tests/fixtures/p08_api_13_4.json
+?? tests/fixtures/p08_query_api.nut
+?? tests/test_complete_raw_production.py
+?? tests/test_planning_preparation.py
+?? tests/test_preparation_lifecycle.py
+?? tests/test_preparation_probe.py
+?? ther.md

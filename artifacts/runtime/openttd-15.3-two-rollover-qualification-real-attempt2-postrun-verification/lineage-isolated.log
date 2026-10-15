@@ -1,0 +1,14 @@
+F                                                                        [100%]
+=================================== FAILURES ===================================
+__ test_new_lineage_requires_revision_two_attempt_two_and_runtime_predecessor __
+tests/test_qualification_dispatch_repair.py:241: in test_new_lineage_requires_revision_two_attempt_two_and_runtime_predecessor
+    value = capture_lineage(directory, REVISION, directory.with_name(ATTEMPT_DIRECTORY))
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+app/simulation/openttd/proof/qualification_lineage.py:254: in capture_lineage
+    validate_lineage(directory, value, revision, destination)
+app/simulation/openttd/proof/qualification_lineage.py:287: in validate_lineage
+    raise ValueError("Post-launch failure requires exact new attempt destination")
+E   ValueError: Post-launch failure requires exact new attempt destination
+=========================== short test summary info ============================
+FAILED tests/test_qualification_dispatch_repair.py::test_new_lineage_requires_revision_two_attempt_two_and_runtime_predecessor
+1 failed in 0.29s

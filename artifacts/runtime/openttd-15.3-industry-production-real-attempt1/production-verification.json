@@ -1,0 +1,37 @@
+{
+  "bridge_identity": {
+    "directory": "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-industry-production-real-prelaunch-v2/isolated/openttd-15.3-ucdpwyrj/game/NoMutationBridge",
+    "sha256": "cee002001d0a7a69c899e94c5c2cf77893a507e69686f4ac2e6d71effe94c58a"
+  },
+  "cargo_id": 1,
+  "complete_coverage": false,
+  "economy_window_bracket": [
+    712223,
+    712223
+  ],
+  "independent_production_source": null,
+  "industry_id": 0,
+  "payload_size": 283,
+  "qualified_for_planning": false,
+  "record": {
+    "cargo_id": 1,
+    "economy_date_after": 712223,
+    "economy_date_before": 712223,
+    "industry_id": 0,
+    "last_month_produced": 168,
+    "last_month_transported": 0,
+    "last_month_transported_pct": 0
+  },
+  "request_digest": "2ef8ec7084050cb0d40f108ca2700c091d52a6b1d8eec2dfe4b4d47d4428c670",
+  "request_id": "openttd15-industry-production-001",
+  "response_digest": "5d96681fa83e0082ab17316d5751edaf00b3e21f2b7cd71d94e7b8ca50c18e51",
+  "runtime_identity": {
+    "backend": "external",
+    "executable": "/home/fed/Downloads/openttd-15.3-linux-generic-amd64/openttd",
+    "sha256": "276d5b698a6b706154f3af588f6f885b3aebe518f4ecc8f869abf71383b1904c",
+    "version": "15.3"
+  },
+  "same_run_structural_provenance": "NOT PROVEN BY THIS SLICE",
+  "semantic_validation_result": "VALID_RAW_V1_RECORD",
+  "verified": true
+}

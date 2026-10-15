@@ -1,0 +1,35 @@
+{
+  "files": {
+    "tests/reference/industry_production_proof_15_3/industry_cmd.cpp": {
+      "sha256": "313c5a7a7104ed4cf89aa59f161d649f35f2784cd82ca2b889be077be79eeac7",
+      "source_path": "src/industry_cmd.cpp",
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/industry_cmd.cpp"
+    },
+    "tests/reference/industry_production_proof_15_3/math_func.hpp": {
+      "sha256": "bd245d927d319196692552de6d07b089a3803dd3aa1fedd50fb69eeb74ef5eec",
+      "source_path": "src/core/math_func.hpp",
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/core/math_func.hpp"
+    },
+    "tests/reference/industry_production_proof_15_3/script_admin.cpp": {
+      "sha256": "d3dce4d19dfd1e28d1f369db3a063ad4b471bae958c30b5eed1750ea124bbba3",
+      "source_path": "src/script/api/script_admin.cpp",
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/script/api/script_admin.cpp"
+    },
+    "tests/reference/industry_production_proof_15_3/script_admin.hpp": {
+      "sha256": "91679c504f2cc1781cae2ed57e75da318d6fec07bfc252a9fc85b0c01d39ddc6",
+      "source_path": "src/script/api/script_admin.hpp",
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/script/api/script_admin.hpp"
+    },
+    "tests/reference/industry_production_proof_15_3/script_log.hpp": {
+      "sha256": "71ab11d607de012e7c2ba1fc5048a8c05c1f616c53bb3a24b68f31d154663e1e",
+      "source_path": "src/script/api/script_log.hpp",
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/script/api/script_log.hpp"
+    },
+    "tests/reference/industry_production_proof_15_3/station_cmd.cpp": {
+      "sha256": "ef790fcff1aeae33bf6847e3253ca3f573c7ecacbc2d5bd95367ad0a9f85e141",
+      "source_path": "src/station_cmd.cpp",
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/station_cmd.cpp"
+    }
+  },
+  "version": "15.3"
+}

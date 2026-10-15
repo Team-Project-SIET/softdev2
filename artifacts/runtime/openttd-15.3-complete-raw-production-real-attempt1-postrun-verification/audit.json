@@ -1,0 +1,121 @@
+{
+  "status": "PASS",
+  "requests": {
+    "industry_page": 5,
+    "industry_cargo": 10,
+    "cargo_page": 6,
+    "industry_production": 10
+  },
+  "response_bytes": 7715,
+  "production_response_bytes": 2957,
+  "query_operations": 124,
+  "post_auth_frames": 130,
+  "initial_month": {
+    "year": 1950,
+    "month": 1,
+    "start_date": 712223,
+    "end_date": 712254
+  },
+  "equal_brackets": 10,
+  "structural_digest": "74e7e10c28c1fcc1461d57a15eddc88cced96ea7c9a11e7a778b9ea1c54d2ce5",
+  "production_digest": "f6486ab4c282e407cbe1f729baafa230308d975b140e761b03ce1f017ba17c30",
+  "source_identities_exact": 215,
+  "historical_public_identities_exact": 1258,
+  "archived_credentials_exact": 7,
+  "records": [
+    {
+      "industry_id": 0,
+      "cargo_id": 1,
+      "economy_date_before": 712223,
+      "economy_date_after": 712223,
+      "last_month_produced": 168,
+      "last_month_transported": 0,
+      "last_month_transported_pct": 0
+    },
+    {
+      "industry_id": 2,
+      "cargo_id": 5,
+      "economy_date_before": 712223,
+      "economy_date_after": 712223,
+      "last_month_produced": 0,
+      "last_month_transported": 0,
+      "last_month_transported_pct": 0
+    },
+    {
+      "industry_id": 3,
+      "cargo_id": 7,
+      "economy_date_before": 712223,
+      "economy_date_after": 712223,
+      "last_month_produced": 80,
+      "last_month_transported": 0,
+      "last_month_transported_pct": 0
+    },
+    {
+      "industry_id": 4,
+      "cargo_id": 5,
+      "economy_date_before": 712223,
+      "economy_date_after": 712223,
+      "last_month_produced": 0,
+      "last_month_transported": 0,
+      "last_month_transported_pct": 0
+    },
+    {
+      "industry_id": 5,
+      "cargo_id": 5,
+      "economy_date_before": 712223,
+      "economy_date_after": 712223,
+      "last_month_produced": 0,
+      "last_month_transported": 0,
+      "last_month_transported_pct": 0
+    },
+    {
+      "industry_id": 6,
+      "cargo_id": 9,
+      "economy_date_before": 712223,
+      "economy_date_after": 712223,
+      "last_month_produced": 0,
+      "last_month_transported": 0,
+      "last_month_transported_pct": 0
+    },
+    {
+      "industry_id": 7,
+      "cargo_id": 4,
+      "economy_date_before": 712223,
+      "economy_date_after": 712223,
+      "last_month_produced": 56,
+      "last_month_transported": 0,
+      "last_month_transported_pct": 0
+    },
+    {
+      "industry_id": 7,
+      "cargo_id": 6,
+      "economy_date_before": 712223,
+      "economy_date_after": 712223,
+      "last_month_produced": 88,
+      "last_month_transported": 0,
+      "last_month_transported_pct": 0
+    },
+    {
+      "industry_id": 8,
+      "cargo_id": 3,
+      "economy_date_before": 712223,
+      "economy_date_after": 712223,
+      "last_month_produced": 96,
+      "last_month_transported": 0,
+      "last_month_transported_pct": 0
+    },
+    {
+      "industry_id": 9,
+      "cargo_id": 8,
+      "economy_date_before": 712223,
+      "economy_date_after": 712223,
+      "last_month_produced": 88,
+      "last_month_transported": 0,
+      "last_month_transported_pct": 0
+    }
+  ],
+  "qualified_for_planning": false,
+  "rollovers_observed": 0,
+  "cleanup": "PASS",
+  "all_structural_receipts_and_evidence": "PASS"
+}

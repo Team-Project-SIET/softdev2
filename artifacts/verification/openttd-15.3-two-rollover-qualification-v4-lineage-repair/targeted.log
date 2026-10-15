@@ -1,0 +1,9 @@
+........................................................................ [ 57%]
+...................s..................................                   [100%]
+=========================== short test summary info ============================
+SKIPPED [1] tests/test_qualification_dispatch_repair.py:56: Set SQUIRREL_15_3_PROBE to the standalone tagged-source interpreter
+125 passed, 1 skipped in 5.51s
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]
+Time difference = 0[ms]

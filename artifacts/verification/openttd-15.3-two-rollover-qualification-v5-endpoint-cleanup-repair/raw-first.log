@@ -1,0 +1,31 @@
+F
+=================================== FAILURES ===================================
+_ test_complete_owned_encrypted_combined_session[industries0-produces0-cargoes0] _
+
+tmp_path = PosixPath('/tmp/pytest-of-fed/pytest-28/test_complete_owned_encrypted_0')
+industries = (), produces = (), cargoes = (1,)
+
+    @pytest.mark.parametrize(
+        "industries,produces,cargoes",
+        [
+            ((), (), (1,)),
+            ((17,), (), (1,)),
+            ((0,), (1,), (1, 9)),
+            ((2, 17), (1, 63), (1, 9, 63)),
+            (tuple(range(32)), tuple(range(16)), tuple(range(64))),
+        ],
+    )
+    def test_complete_owned_encrypted_combined_session(tmp_path, industries, produces, cargoes):
+        p, b, result = run_proof(tmp_path, industries=industries, produces=produces, cargoes=cargoes)
+>       assert result["status"] == "MOCK_SUCCESS", result["error"]
+E       AssertionError: Endpoint closure requires unambiguous owned process reap
+E       assert 'MOCK_FAILED' == 'MOCK_SUCCESS'
+E         
+E         - MOCK_SUCCESS
+E         + MOCK_FAILED
+
+tests/test_raw_production_proof.py:168: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_raw_production_proof.py::test_complete_owned_encrypted_combined_session[industries0-produces0-cargoes0]
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed in 4.79s

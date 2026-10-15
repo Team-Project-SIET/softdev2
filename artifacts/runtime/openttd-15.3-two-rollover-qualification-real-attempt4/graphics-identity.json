@@ -1,0 +1,84 @@
+{
+  "archive_path": "/home/fed/codes/softdev2/artifacts/runtime/verified-assets/opengfx-8.0-all.zip",
+  "archive_sha256": "43a0c1dabf39cb865394f3a6cc36d4da5c10ecfaaf55652043104806810903be",
+  "descriptor_sha256": "e3ce8169ea9cf0fab624ad8b9b940684f3dfdf189f88bc79bbe62064fd3496d0",
+  "descriptor_version": 9499,
+  "directory": "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-two-rollover-qualification-real-prelaunch-v5/isolated/openttd-15.3-je26bb2e/baseset/OpenGFX",
+  "files": [
+    [
+      "changelog.txt",
+      "809876a1746a2802634689efdb1f3a3c39e5497cbd962b1e17a2bb154370fce7"
+    ],
+    [
+      "license.txt",
+      "8177f97513213526df2cf6184d8ff986c675afb514d4e68a404010521b880643"
+    ],
+    [
+      "ogfx1_base.grf",
+      "f8201e87c7210493aaf525993013dc94dd4b7a801c4bb27df47544786bf8eaa9"
+    ],
+    [
+      "ogfxc_arctic.grf",
+      "17cf3be5a9410d6807347a13b5655cf534f3b10f19d1bb7a43080f7c226817ce"
+    ],
+    [
+      "ogfxe_extra.grf",
+      "6472d934f15210dc4ad03acaad12d1e2717f4f5f836495cdd78bfc45fcbb0adb"
+    ],
+    [
+      "ogfxh_tropical.grf",
+      "b9aa39877daccd417ee1b248010bc8891648accf1680d1443f58a8589189238c"
+    ],
+    [
+      "ogfxi_logos.grf",
+      "20644db32d97b2e1d7d7d9b73b0484b904a86f9e91752d9fc5f86bebb7706e5a"
+    ],
+    [
+      "ogfxt_toyland.grf",
+      "d01320fdcfc94cf4ef637ec72e892314dc5dc682b949e6957c3fb72cb9385986"
+    ],
+    [
+      "opengfx.obg",
+      "e3ce8169ea9cf0fab624ad8b9b940684f3dfdf189f88bc79bbe62064fd3496d0"
+    ],
+    [
+      "readme.txt",
+      "c3021f3fb1c9c0f5de501772d5fe099d4c483651f60ab253b2cb291b367de3d2"
+    ]
+  ],
+  "grfs": [
+    [
+      "ogfx1_base.grf",
+      "f8201e87c7210493aaf525993013dc94dd4b7a801c4bb27df47544786bf8eaa9",
+      "5d83f4f22307448b1083461ce15deac4"
+    ],
+    [
+      "ogfxc_arctic.grf",
+      "17cf3be5a9410d6807347a13b5655cf534f3b10f19d1bb7a43080f7c226817ce",
+      "e30b131412378e29f215e35dc878e6a6"
+    ],
+    [
+      "ogfxe_extra.grf",
+      "6472d934f15210dc4ad03acaad12d1e2717f4f5f836495cdd78bfc45fcbb0adb",
+      "b5506a3255a423e65a47114692fc48e7"
+    ],
+    [
+      "ogfxh_tropical.grf",
+      "b9aa39877daccd417ee1b248010bc8891648accf1680d1443f58a8589189238c",
+      "a430d61120ebdc9a290a272ec3fb3002"
+    ],
+    [
+      "ogfxi_logos.grf",
+      "20644db32d97b2e1d7d7d9b73b0484b904a86f9e91752d9fc5f86bebb7706e5a",
+      "53030590b9ff87b4cff119556d301d2c"
+    ],
+    [
+      "ogfxt_toyland.grf",
+      "d01320fdcfc94cf4ef637ec72e892314dc5dc682b949e6957c3fb72cb9385986",
+      "0f9667022bbeb83e0c10e13c428aba48"
+    ]
+  ],
+  "name": "OpenGFX",
+  "release": "8.0",
+  "source": "https://cdn.openttd.org/opengfx-releases/8.0/opengfx-8.0-all.zip"
+}

@@ -1,0 +1,51 @@
+{
+  "attempt_id": "two-rollover-qualification-v2-native-attempt2",
+  "attempt_number": 2,
+  "continuation": "NEW_RUNTIME_ATTEMPT",
+  "evidence_directory": "openttd-15.3-two-rollover-qualification-real-attempt2",
+  "freeze_revision": 2,
+  "fresh_explicit_authorization_required": true,
+  "lineage_digest": "867a3db40931e27471ce5434b7d8b423044c9cd35ce6957c25054b2a7444e5cb",
+  "policy": "two-rollover-qualification-attempt-lineage-v1",
+  "post_launch_predecessors": [
+    {
+      "attempt_id": "two-rollover-qualification-v1-runtime-b045142a46c304ba",
+      "classification": "RUNTIME",
+      "connections": 1,
+      "evidence_digest": "f7052b21fab77eb8ba3f4dc1624a8647fd489d8491a58303801a70350db65187",
+      "evidence_directory": "openttd-15.3-two-rollover-qualification-real-attempt1",
+      "evidence_manifest_digest": "09231fb4d548f67b3fe190222f562c584a5a0fa9cd8bef96c85868cebe96990c",
+      "failure_states": [
+        "PREPARED",
+        "LAUNCHED",
+        "ADMIN_ACTIVE",
+        "QUALIFICATION_SESSION_STARTED",
+        "BASELINE_MONTH_OBSERVED",
+        "FIRST_ROLLOVER_OBSERVED",
+        "ANCHOR_COLLECTION_STARTED",
+        "CLEANUP_STARTED",
+        "PROCESS_REAPED",
+        "ENDPOINTS_CLOSED",
+        "CREDENTIAL_REMOVED",
+        "WORKSPACE_DISPOSED",
+        "POSTRUN_INTEGRITY_VERIFIED",
+        "FAILED"
+      ],
+      "freeze_revision": 1,
+      "launches": 1,
+      "native_attempt_id": "two-rollover-qualification-v1-native-attempt1",
+      "parent_attempt_ids": [],
+      "post_launch_failure": true,
+      "proof_kind": "two-rollover-qualification",
+      "reconnects": 0,
+      "requests": 62,
+      "retries": 0,
+      "revision_authority_digest": "e970c0dc905c293b008bbbb04c78f3577c8d792db691fe725742e7cff422dd23",
+      "terminal_error": "TransportTimeout: structural-world phase deadline expired",
+      "terminal_status": "REAL_FAILED"
+    }
+  ],
+  "prelaunch_continuation_exception_used": false,
+  "proof_kind": "two-rollover-qualification",
+  "supersedes_prelaunch_attempts": []
+}

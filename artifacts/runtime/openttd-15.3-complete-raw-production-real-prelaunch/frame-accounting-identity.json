@@ -1,0 +1,13 @@
+{
+  "files": {
+    "app/simulation/openttd/admin_protocol.py": "82f6b0b31da0d5e9e20e8ecf8b1dd88995b56428df31d8f994b0e1e561bc1d00",
+    "app/simulation/openttd/admin_session.py": "e134308787424050fdaf0584e67e95f5ee07d472275436c8dfe56c30d5a8bc54",
+    "app/simulation/openttd/gamescript_transport.py": "51bfdb9472a4d719f639ac8edb159023ee408427c64655608add2cc81b00c21b",
+    "app/simulation/openttd/proof/raw_production_contract.py": "8554ff8135a17ad20f56f87319686a86c63d5906e08249b7e269596510796d88",
+    "app/simulation/openttd/proof/raw_production_native.py": "e8795bc7193d4eb9ebddbe010367dca17664b0f5392e0e83c7160e2b30c7823f",
+    "app/simulation/openttd/proof/structural_contract.py": "d7f086ad5538323f36353d6a47af643efebe10d2b9dcb1c101301ba787a9107d",
+    "app/simulation/openttd/proof/structural_native.py": "f76c422589e12d4a519804a5221c10e9b17257a5893729dac4714bcdd3207f1f",
+    "app/simulation/openttd/secure_admin.py": "f249f410502a0a6b608a18f2415c61b9691fd2e2b0c54b5c27ae71493f4f63ac"
+  },
+  "sha256": "b5d1e393de31069002940a662e42364c44861aa68898affd179b03d8e813422c"
+}

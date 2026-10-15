@@ -1,0 +1,25 @@
+{
+  "allowed_residual_state": "TCP_TIME_WAIT_ONLY",
+  "ambiguous_state": "FAIL_CLOSED",
+  "connection_probe": false,
+  "family": "AF_INET",
+  "host": "127.0.0.1",
+  "immediate_rebindability_required": false,
+  "ipv6_wildcard": "FAIL_CLOSED_UNLESS_COVERAGE_DISPROVED",
+  "kernel_tables": [
+    "tcp",
+    "tcp6",
+    "udp",
+    "udp6"
+  ],
+  "policy": "linux-kernel-endpoint-closure-v1",
+  "required": [
+    "owned_process_reaped",
+    "reservation_released",
+    "listener_closed",
+    "connection_closed",
+    "game_udp_closed"
+  ],
+  "retries": 0,
+  "sleeps": 0
+}

@@ -1,0 +1,10 @@
+{
+  "attempt_id": "industry-production-v2-native-attempt1",
+  "evidence_directory": "openttd-15.3-industry-production-real-attempt1",
+  "freeze_revision": 2,
+  "fresh_explicit_authorization_required": true,
+  "lineage_digest": "a9eaa960c96c2f082b091015a0bba84e2a18079d317b509fdc322202b9d0a056",
+  "policy": "industry-production-attempt-lineage-v1",
+  "proof_kind": "industry-production",
+  "supersedes_prelaunch_attempts": []
+}

@@ -1,0 +1,11 @@
+{
+  "source_inputs_exact": 254,
+  "protected_historical_files_exact": 1565,
+  "archived_credential_identities_exact": 7,
+  "v3_public_files_exact": 40,
+  "context_unchanged": true,
+  "whitespace": "PASS",
+  "import_boundary": "PASS",
+  "execution_blocked_after_prelaunch_failure": "Unknown, unacknowledged, or missing predecessor failure",
+  "native_destination_unused": true
+}

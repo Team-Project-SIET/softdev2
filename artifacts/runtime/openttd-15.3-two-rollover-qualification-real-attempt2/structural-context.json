@@ -1,0 +1,9 @@
+{
+  "configuration_digest": "64b64c536b4d28e2099b889f93581a9b1441e337cb0bc7909fbed8d39a090f13",
+  "stable_configuration": {
+    "bridge_sha256": "d8b263ec580fe4f0f4bd96007da168ddc4d96a2b1b5d502b912f335026d711b3",
+    "generation_profile": "\nmap_x = 6\nmap_y = 6\nlandscape = temperate\nstarting_year = 1950\nland_generator = 1\ngeneration_seed = 42\n[difficulty]\nmax_no_competitors = 0\n[misc]\ngraphicsset = OpenGFX\n[economy]\ntimekeeping_units = 0\n\n[game_scripts]\nNoMutationBridge = \n",
+    "graphics_sha256": "43a0c1dabf39cb865394f3a6cc36d4da5c10ecfaaf55652043104806810903be",
+    "runtime_sha256": "276d5b698a6b706154f3af588f6f885b3aebe518f4ecc8f869abf71383b1904c"
+  }
+}

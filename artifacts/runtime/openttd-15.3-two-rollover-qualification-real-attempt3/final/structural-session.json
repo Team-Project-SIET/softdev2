@@ -1,0 +1,18 @@
+{
+  "complete": true,
+  "events": [
+    "STRUCTURAL_WORLD_SESSION_STARTED",
+    "INDUSTRY_INVENTORY_COMPLETED",
+    "INDUSTRY_CAPABILITY_COMPLETED",
+    "CARGO_CATALOG_COMPLETED",
+    "REFERENTIAL_INTEGRITY_VALIDATED",
+    "STRUCTURAL_WORLD_ASSEMBLED",
+    "STRUCTURAL_WORLD_VERIFIED",
+    "STRUCTURAL_WORLD_SESSION_COMPLETED"
+  ],
+  "failure": null,
+  "query_operations": 84,
+  "request_attempts": 21,
+  "session_id": "openttd15-qualification-001-final",
+  "total_response_bytes": 4674
+}

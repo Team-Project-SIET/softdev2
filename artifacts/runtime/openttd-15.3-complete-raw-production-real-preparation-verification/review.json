@@ -1,0 +1,18 @@
+{
+  "scope": "candidate accounting contract only; combined native preparation incomplete",
+  "test_adequacy": {
+    "normal_cases": "PASS: exact bounds and synthetic encrypted observer",
+    "boundaries": "PASS: independent category and total limits",
+    "failure_cases": "PASS: overflow latch and bounded cleanup admission",
+    "invariants": "PASS: inherited shared observer, no phase restart, deterministic contract",
+    "integration": "PARTIAL: secure observer tested, public combined CLI/native lifecycle absent"
+  },
+  "historical_claims": "UNCHANGED",
+  "freeze_created": false,
+  "credential_created": false,
+  "preflight_run": false,
+  "launches": 0,
+  "connections": 0,
+  "real_requests": 0,
+  "candidate_contract_digest": "0ca79b9e0f38d994680a65200549539fd2e648b7724a3a085fed0679892ac528"
+}

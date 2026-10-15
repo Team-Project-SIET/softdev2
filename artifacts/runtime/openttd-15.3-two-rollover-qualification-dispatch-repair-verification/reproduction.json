@@ -1,0 +1,13 @@
+{
+  "native_engine": "OpenTTD 15.3 tagged modified Squirrel compiler and VM, standalone only",
+  "source_archive_sha256": "c8c54e3619d9ee347ac869b632500af4f6740b709a6a3a7cff508ca7d5cb6fb7",
+  "old_minimal": "the index base does not exist; exit1",
+  "fixed_minimal": "PASS; exit0",
+  "old_composed": "the index base does not exist; exit1",
+  "fixed_composed": "PASS; exit0",
+  "native_launches": 0,
+  "admin_connections": 0,
+  "real_requests": 0,
+  "compiler_sources_modified": false,
+  "integration": "standard malloc/realloc/free; error output stub; no OpenTTD engine code executed"
+}

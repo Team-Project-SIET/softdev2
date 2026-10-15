@@ -1,0 +1,19 @@
+{
+  "identity": "two-rollover-qualification-v3-native-attempt3",
+  "freeze": "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-two-rollover-qualification-real-prelaunch-v3",
+  "destination": "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-two-rollover-qualification-real-attempt3",
+  "head": "cc7f7479e3fbfa8c036901ba041dee1b97dc6b42",
+  "source_inputs": 254,
+  "protected_files": 1565,
+  "historical_attempt1": "PASS",
+  "historical_attempt2": "PASS",
+  "predecessors_reusable": false,
+  "next_attempt": 3,
+  "contracts": "PASS",
+  "credential_mode": "0600",
+  "fresh_credential": "PASS",
+  "private_bytes_excluded": "PASS",
+  "launches": 0,
+  "connections": 0,
+  "requests": 0
+}

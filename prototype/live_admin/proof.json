@@ -1,0 +1,311 @@
+{
+  "started_utc": "2026-09-24T13:42:05.550827+00:00",
+  "admin_port": 57231,
+  "game_port": 41639,
+  "seed": 17,
+  "duration_days": 120,
+  "lab_pid": 52,
+  "connected": true,
+  "protocol": {
+    "version": 2,
+    "frequencies": {
+      "0": 63,
+      "1": 65,
+      "2": 65,
+      "3": 61,
+      "4": 61,
+      "5": 64,
+      "6": 64,
+      "7": 1,
+      "8": 64,
+      "9": 64
+    }
+  },
+  "welcome": {
+    "name": "Live telemetry prototype",
+    "revision": "13.4",
+    "dedicated": true,
+    "map_name": "",
+    "seed": 17,
+    "landscape": 0,
+    "start_date": 712223,
+    "width": 256,
+    "height": 256
+  },
+  "companies": {
+    "0": {
+      "company_id": 0,
+      "name": "Unnamed",
+      "manager": "F. Baker",
+      "colour": 4,
+      "passworded": false,
+      "inaugurated_year": 1950,
+      "is_ai": true,
+      "bankruptcy_quarters": 0,
+      "share_owners": [
+        255,
+        255,
+        255,
+        255
+      ]
+    }
+  },
+  "samples": [
+    {
+      "date": "1950-01-01",
+      "company": 0,
+      "economy": {
+        "company_id": 0,
+        "money": 100000,
+        "loan": 100000,
+        "income": 0,
+        "delivered": 0,
+        "quarters": [
+          {
+            "value": 0,
+            "performance": 0,
+            "delivered": 0
+          },
+          {
+            "value": 0,
+            "performance": 0,
+            "delivered": 0
+          }
+        ]
+      },
+      "stats": {
+        "company_id": 0,
+        "vehicles": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "stations": [
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "date": "1950-02-01",
+      "company": 0,
+      "economy": {
+        "company_id": 0,
+        "money": 17390,
+        "loan": 50000,
+        "income": -32610,
+        "delivered": 0,
+        "quarters": [
+          {
+            "value": 0,
+            "performance": 0,
+            "delivered": 0
+          },
+          {
+            "value": 0,
+            "performance": 0,
+            "delivered": 0
+          }
+        ]
+      },
+      "stats": {
+        "company_id": 0,
+        "vehicles": [
+          0,
+          5,
+          0,
+          0,
+          0
+        ],
+        "stations": [
+          0,
+          2,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "date": "1950-03-01",
+      "company": 0,
+      "economy": {
+        "company_id": 0,
+        "money": 17533,
+        "loan": 50000,
+        "income": -32467,
+        "delivered": 21,
+        "quarters": [
+          {
+            "value": 0,
+            "performance": 0,
+            "delivered": 0
+          },
+          {
+            "value": 0,
+            "performance": 0,
+            "delivered": 0
+          }
+        ]
+      },
+      "stats": {
+        "company_id": 0,
+        "vehicles": [
+          0,
+          5,
+          0,
+          0,
+          0
+        ],
+        "stations": [
+          0,
+          2,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "date": "1950-04-01",
+      "company": 0,
+      "economy": {
+        "company_id": 0,
+        "money": 95908,
+        "loan": 130000,
+        "income": -34092,
+        "delivered": 0,
+        "quarters": [
+          {
+            "value": 8463,
+            "performance": 32,
+            "delivered": 84
+          },
+          {
+            "value": 0,
+            "performance": 0,
+            "delivered": 0
+          }
+        ]
+      },
+      "stats": {
+        "company_id": 0,
+        "vehicles": [
+          0,
+          5,
+          0,
+          0,
+          0
+        ],
+        "stations": [
+          0,
+          4,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "date": "1950-05-01",
+      "company": 0,
+      "economy": {
+        "company_id": 0,
+        "money": 96732,
+        "loan": 130000,
+        "income": -33268,
+        "delivered": 63,
+        "quarters": [
+          {
+            "value": 8463,
+            "performance": 32,
+            "delivered": 84
+          },
+          {
+            "value": 0,
+            "performance": 0,
+            "delivered": 0
+          }
+        ]
+      },
+      "stats": {
+        "company_id": 0,
+        "vehicles": [
+          0,
+          5,
+          0,
+          0,
+          0
+        ],
+        "stations": [
+          0,
+          4,
+          0,
+          0,
+          0
+        ]
+      }
+    }
+  ],
+  "stop_date": "1950-05-01",
+  "quit_requested_while_lab_running": true,
+  "end": "server_shutdown",
+  "packet_counts": {
+    "103": 1,
+    "104": 1,
+    "107": 121,
+    "114": 1,
+    "117": 5,
+    "118": 5,
+    "125": 1,
+    "106": 1
+  },
+  "socket_closed": true,
+  "final_result": {
+    "simulation_date": "1950-05-01",
+    "savegame_version": 302,
+    "metrics": [
+      {
+        "name": "company_money",
+        "value": 96732.0,
+        "unit": "GBP"
+      },
+      {
+        "name": "company_loan",
+        "value": 130000.0,
+        "unit": "GBP"
+      },
+      {
+        "name": "current_period_income",
+        "value": 1239.0,
+        "unit": "GBP"
+      },
+      {
+        "name": "current_period_expenses",
+        "value": -390.0,
+        "unit": "GBP"
+      },
+      {
+        "name": "current_period_cargo_delivered",
+        "value": 63.0,
+        "unit": "cargo_units"
+      }
+    ],
+    "raw_artifact_reference": "/home/fed/codes/softdev2/artifacts/live-admin-proof/experiment-1.json.gz"
+  },
+  "verdict": "FEASIBLE",
+  "elapsed_seconds": 277.215,
+  "lab_returncode": 0,
+  "process_group_gone": true,
+  "admin_port_closed": true,
+  "game_port_closed": true,
+  "all_typed_events_observed_while_lab_running": true,
+  "typed_event_count": 134,
+  "artifact_sha256": "ab84415bc004406f5592b7d4d6ebc1d561d38e258029e049e2e5eb97bdfc4980",
+  "telemetry_sha256": "afc289e155b7dd7d7c6a511b668216cbce7c66e90ec2bb2d3a7348b468ad42b1"
+}

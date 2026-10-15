@@ -1,0 +1,108 @@
+{
+  "clock": {
+    "C++": [
+      "ScriptDate::GetCurrentDate",
+      "ScriptDate::GetYear",
+      "ScriptDate::GetMonth",
+      "ScriptDate::GetDayOfMonth",
+      "ScriptDate::GetDate"
+    ],
+    "GameScript": [
+      "GSDate.GetCurrentDate",
+      "GSDate.GetYear",
+      "GSDate.GetMonth",
+      "GSDate.GetDayOfMonth",
+      "GSDate.GetDate"
+    ],
+    "adjacency": "exact next month, including December->January; observed day 1",
+    "api_types": {
+      "GetCurrentDate": "() -> ScriptDate::Date, GameScript integer",
+      "GetDate": "(SQInteger year, month, day) -> ScriptDate::Date integer",
+      "GetDayOfMonth": "(ScriptDate::Date) -> SQInteger, 1-based integer",
+      "GetMonth": "(ScriptDate::Date) -> SQInteger, 1-based integer",
+      "GetYear": "(ScriptDate::Date) -> SQInteger, GameScript integer"
+    },
+    "brackets": "current capture metadata; equal allowed; never qualified month boundaries",
+    "conversion": "TimerGameEconomy ConvertDateToYMD / ConvertYMDToDate",
+    "date_role": "current native economy state, not elapsed wall-clock evidence",
+    "day_range": [
+      1,
+      31
+    ],
+    "domain": "economy ordinal; Gregorian conversion only in synchronized generated calendar profile",
+    "invalid": "negative date components return -1; unavailable next-month date rejects sample",
+    "month_range": [
+      1,
+      12
+    ],
+    "year_range": [
+      0,
+      5000000
+    ],
+    "year_zero": "Gregorian leap year; December wraps to January of next year"
+  },
+  "date_domains": "construction CALENDAR identity; qualification ECONOMY; synchronized generated calendar profile only",
+  "files": {
+    "/home/fed/codes/softdev2/tests/reference/economy_clock_15_3/CMakeLists.txt": "a61d0fc3bd3482f502cbb1adefec91e11c1cb91c62e74d3bbf8c1524266135e5",
+    "/home/fed/codes/softdev2/tests/reference/economy_clock_15_3/SquirrelExport.cmake": "59a1372537c0895ee478543edaebccc961e7d62d7741599cdc1bf95e29f24a1b",
+    "/home/fed/codes/softdev2/tests/reference/economy_clock_15_3/economy_settings.ini": "3cb0e3f57f27a3df5683ad2df25cad03aee38d6c0ee54d469e1decc8cadc4155",
+    "/home/fed/codes/softdev2/tests/reference/economy_clock_15_3/genworld.cpp": "6d659b1857eb474f80ad4bac452a4c04f8d525aab59cb39f7cf170bec73d11de",
+    "/home/fed/codes/softdev2/tests/reference/economy_clock_15_3/manifest.json": "146ccf5e0f2dc284a045353ab0a4f73c5011b0c9f48918b4ae7cb97d5532fb87",
+    "/home/fed/codes/softdev2/tests/reference/economy_clock_15_3/misc.cpp": "50f648b85bf61118bd9f86f6399614067b9b51a34aa9a8f964b05f293e8f11f0",
+    "/home/fed/codes/softdev2/tests/reference/economy_clock_15_3/misc_sl.cpp": "a6fb1411e684e7e5e0faa17253d5813fa85b648a4fcd69dfcc0dc3c37deb1340",
+    "/home/fed/codes/softdev2/tests/reference/economy_clock_15_3/network_admin.cpp": "6c59f996f54ff9e3df740987fbb7adaa212af6eeca491adb1d29b7c70619dbb2",
+    "/home/fed/codes/softdev2/tests/reference/economy_clock_15_3/openttd.cpp": "319a27a31f1f241ab1e83853d0ec61cd0fa60adfaf5d4e3666a1dd74c57acba0",
+    "/home/fed/codes/softdev2/tests/reference/economy_clock_15_3/script_date.cpp": "d316e7d59e28dee26c082b18f3f793e0676bce8fdb4fbbb33884b992a237df67",
+    "/home/fed/codes/softdev2/tests/reference/economy_clock_15_3/script_date.hpp": "6e9d13c7ce57f47a4cb9eed02f47ded74b2068f1f51d05225ba61573e9320deb",
+    "/home/fed/codes/softdev2/tests/reference/economy_clock_15_3/script_industry.cpp": "95d0a6794b4aeb13d2e2d42e33fe8eb1e6c82bbe6af4cec290eb607c4aad5df9",
+    "/home/fed/codes/softdev2/tests/reference/economy_clock_15_3/script_industry.hpp": "65beb5d22bd6c0cb683fc5843512ff0fdfa951fe4d9e85f0b067746f32c51d38",
+    "/home/fed/codes/softdev2/tests/reference/economy_clock_15_3/settings_type.h": "0421fe99fa858c83ed84682cb72f8e385d24f5b03cb1ef8e464be9c9f5c96635",
+    "/home/fed/codes/softdev2/tests/reference/economy_clock_15_3/timer_game_calendar.cpp": "f8accac73640d4b9409e5c3d57a21db5e0fd6a01ab10669110b658f3f4a09261",
+    "/home/fed/codes/softdev2/tests/reference/economy_clock_15_3/timer_game_common.cpp": "28932f0cbdea9b0880fbcbf0cbfe0a3c9b225a33d2667603eedbcf12c0c1a555",
+    "/home/fed/codes/softdev2/tests/reference/economy_clock_15_3/timer_game_common.h": "d222301b3670650caba23932a6fe1eed430b1ea5814863568c1b6d269ad5a498",
+    "/home/fed/codes/softdev2/tests/reference/economy_clock_15_3/timer_game_economy.cpp": "10d68164d9e4a348d4457f7c2b8bbdd524c620edeb325d10dc74824680b69b57",
+    "/home/fed/codes/softdev2/tests/reference/economy_clock_15_3/timer_game_economy.h": "5a5eaabbdfce6eb7290240e053cc765c79e9a6076424f0e7e3a648ae97cec68a",
+    "/home/fed/codes/softdev2/tests/reference/qualification_15_3/industry.h": "f7a0c67c70daacf9ad1a80a85238fcd35201697081acea51f75e687f172cef8e",
+    "/home/fed/codes/softdev2/tests/reference/qualification_15_3/industry_cmd.cpp": "313c5a7a7104ed4cf89aa59f161d649f35f2784cd82ca2b889be077be79eeac7",
+    "/home/fed/codes/softdev2/tests/reference/qualification_15_3/manifest.json": "1eecface2733b7953bba0a5007142c2da109523ec08a3bfe782e8a78dd2891cd",
+    "/home/fed/codes/softdev2/tests/reference/qualification_15_3/timer_game_realtime.h": "efbbaa5ff7ba0abc1c1793ba8070e6b2f01a007f946d78c363a420c9cc983945",
+    "/home/fed/codes/softdev2/tests/reference/qualification_15_3/timer_game_tick.cpp": "917e7aea2420df38c679f4660d19cbca3d578b4e23ae19e3567d18d657503ebf",
+    "/home/fed/codes/softdev2/tests/reference/qualification_15_3/timer_game_tick.h": "b1997dc7b24a35e09a72a16f2197fab7bfaf773b95025328b89c1e6eae70e602",
+    "/home/fed/codes/softdev2/tests/reference/qualification_timing_15_3/dedicated.cpp": "36caae142f1307417160849e232f89b6b7f7d09524411570b98c0306806b0636",
+    "/home/fed/codes/softdev2/tests/reference/qualification_timing_15_3/dedicated_v.cpp": "e2526b701fbd6fd9d8af7fb1f786e2b777dcb34ec74d4464d8df09ba96fd609e",
+    "/home/fed/codes/softdev2/tests/reference/qualification_timing_15_3/gfx_type.h": "0058d288f7b458008044d30163d264f5f722cedbfc2f9e4709193ac45885c2b8",
+    "/home/fed/codes/softdev2/tests/reference/qualification_timing_15_3/manifest.json": "e0f49bb526f8246a81a81f85971e9402de7387d97b2ac8d3cb1014483563af12",
+    "/home/fed/codes/softdev2/tests/reference/qualification_timing_15_3/misc.cpp": "50f648b85bf61118bd9f86f6399614067b9b51a34aa9a8f964b05f293e8f11f0",
+    "/home/fed/codes/softdev2/tests/reference/qualification_timing_15_3/newgrf_act0_industries.cpp": "c71205bcc9350de679fd4d4ca959acda0e44c6226711ee68775650be88f1d9ea",
+    "/home/fed/codes/softdev2/tests/reference/qualification_timing_15_3/newgrf_industries.cpp": "14ba1d23bcca37fd6de0fae723af5d1ba44db689092c078d80d31be8903ca9d7",
+    "/home/fed/codes/softdev2/tests/reference/qualification_timing_15_3/newgrf_industrytiles.cpp": "19a016c6fb3417ba29019af3927a46907833618da43a12ffad91d3619cd5226f",
+    "/home/fed/codes/softdev2/tests/reference/qualification_timing_15_3/openttd.cpp": "319a27a31f1f241ab1e83853d0ec61cd0fa60adfaf5d4e3666a1dd74c57acba0",
+    "/home/fed/codes/softdev2/tests/reference/qualification_timing_15_3/timer_game_calendar.cpp": "f8accac73640d4b9409e5c3d57a21db5e0fd6a01ab10669110b658f3f4a09261",
+    "/home/fed/codes/softdev2/tests/reference/qualification_timing_15_3/video_driver.cpp": "00a6631762492699925c79f4899f17bb7d9f948cd80f0872e6913ad1856574dc"
+  },
+  "lifetime": {
+    "C++": "ScriptIndustry::GetConstructionDate",
+    "GameScript": "GSIndustry.GetConstructionDate",
+    "domain": "CALENDAR identity, -1 unavailable/invalid",
+    "rule": "exact identity and fingerprint equality; conservative pre-M1 calendar construction eligibility",
+    "target": "ascending unique industries in produces targets"
+  },
+  "profile": {
+    "calendar_synchronized": true,
+    "generated_world": true,
+    "no_load_save": true,
+    "no_newgrf": true,
+    "normal_network_speed": true,
+    "starting_year": 1950,
+    "timekeeping_units": 0
+  },
+  "sha256": "63f2b4bf7c2eb759ec991291b11d1cc82eb699292df1ba465919bd93c02f680e",
+  "timing": {
+    "hard_real_time_guarantee": false,
+    "nominal_day_seconds": 1.998,
+    "paused_economy_stops": true,
+    "tick_ms": 27,
+    "ticks_per_day": 74
+  },
+  "version": "15.3"
+}

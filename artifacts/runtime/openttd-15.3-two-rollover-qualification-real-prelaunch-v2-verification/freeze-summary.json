@@ -1,0 +1,16 @@
+{
+  "checkpoint_head": "cc7f7479e3fbfa8c036901ba041dee1b97dc6b42",
+  "prelaunch_revision": 2,
+  "attempt_id": "two-rollover-qualification-v2-native-attempt2",
+  "attempt_directory": "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-two-rollover-qualification-real-attempt2",
+  "source_input_count": 252,
+  "protected_unique_count": 1461,
+  "archived_credential_identity_count": 7,
+  "protected_manifest_sha256": "e8fceaf56ba3fb70ddee2542dc330fbf81aa5da5a5a00ca0fbb4619f1fb4f0ed",
+  "lineage_digest": "867a3db40931e27471ce5434b7d8b423044c9cd35ce6957c25054b2a7444e5cb",
+  "bridge_digest": "d8b263ec580fe4f0f4bd96007da168ddc4d96a2b1b5d502b912f335026d711b3",
+  "proof_config_sha256": "5d506eb25df75de6315f5c1014155d4bf948b18441da91288910b95e6ded5526",
+  "frame_accounting_identity": "99a36c5784603d772728af0659cd4dfb781ed2760df9b901d9d2aea1ae9b45d2",
+  "polling_policy_digest": "a56c1d383a90fe8827d68c15b830041a6111c385b81d93f0b10326a4e6b1faab",
+  "qualification_contract_digest": "5d506eb25df75de6315f5c1014155d4bf948b18441da91288910b95e6ded5526"
+}

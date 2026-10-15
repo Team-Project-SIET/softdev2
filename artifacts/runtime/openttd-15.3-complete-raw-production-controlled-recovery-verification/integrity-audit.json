@@ -1,0 +1,14 @@
+{
+  "protected_public_files": 1133,
+  "archived_credential_identities": 7,
+  "checkpoint_historical_files": 368,
+  "public_manifests_verified": 70,
+  "all_exact": true,
+  "CONTEXT_unchanged": true,
+  "structural_model_unchanged": true,
+  "production_protocol_unchanged": true,
+  "production_model_unchanged": true,
+  "unrelated_preserved": true,
+  "whitespace": "PASS",
+  "import_boundary": "PASS"
+}

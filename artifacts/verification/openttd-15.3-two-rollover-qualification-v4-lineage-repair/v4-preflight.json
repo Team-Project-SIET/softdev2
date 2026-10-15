@@ -1,0 +1,217 @@
+{
+  "accounting_loaded": true,
+  "accounting_wired": true,
+  "admin_connected": false,
+  "admission_frames": 0,
+  "application_payload": 512,
+  "atomic_snapshot": false,
+  "attempt_id": "two-rollover-qualification-v4-native-attempt3",
+  "baseline_request": {
+    "protocol": 1,
+    "request_id": "openttd15-qualification-001-clock-1",
+    "type": "economy_clock"
+  },
+  "bridge": "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-two-rollover-qualification-real-prelaunch-v4/isolated/openttd-15.3-ojf5uyr8/game/NoMutationBridge",
+  "canonical_evidence_policy_loaded": true,
+  "capability_phase_loaded": false,
+  "cargo_contract": null,
+  "cargo_page_contract": null,
+  "catalog_digest_loaded": false,
+  "catalog_session_loaded": false,
+  "clocks_semantic": true,
+  "config": "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-two-rollover-qualification-real-prelaunch-v4/isolated/openttd-15.3-ojf5uyr8/openttd.cfg",
+  "connections": 0,
+  "continuous_accounting": true,
+  "continuous_lineage": true,
+  "credential_mode": "0600",
+  "deadline_contract": {
+    "evidence": "fresh relative timeout at each callback, min(5, remaining overall)",
+    "overall": "300 seconds from collect entry, including polling and collections",
+    "polling": "same fixed overall deadline; no renewal after rollover",
+    "request": "fresh relative timeout at each query, min(5, remaining overall)",
+    "structural": "fresh single-use session constructed at phase entry; no absolute phase deadline"
+  },
+  "dispatch_contract": "15.3 Squirrel explicit RawObservationBridge.Handle.call(this, request)",
+  "endpoints_reserved": [
+    47319,
+    39807
+  ],
+  "enrichment_contract": null,
+  "evidence_destination": "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-two-rollover-qualification-real-attempt3",
+  "evidence_frames": 0,
+  "final_month": "M2",
+  "final_source": "fresh M2 structural digest",
+  "fresh_credential": true,
+  "future_destination": "openttd-15.3-two-rollover-qualification-real-attempt3",
+  "graphics": "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-two-rollover-qualification-real-prelaunch-v4/isolated/openttd-15.3-ojf5uyr8/baseset/OpenGFX",
+  "historical_attempt1_validates": true,
+  "historical_attempt2_validates": true,
+  "historical_integrity": true,
+  "initial_production_used": false,
+  "inventory_phase_loaded": false,
+  "inventory_session": null,
+  "key_path_resolved": true,
+  "launch_boundary_reached": true,
+  "launches": 0,
+  "lifetime": {
+    "C++": "ScriptIndustry::GetConstructionDate",
+    "GameScript": "GSIndustry.GetConstructionDate",
+    "domain": "CALENDAR identity, -1 unavailable/invalid",
+    "rule": "exact identity and fingerprint equality; conservative pre-M1 calendar construction eligibility",
+    "target": "ascending unique industries in produces targets"
+  },
+  "lineage_predecessor_count": 3,
+  "lineage_validated": true,
+  "max_query_operations": 9088,
+  "max_total_post_auth_frames": 9094,
+  "native_api_authority_loaded": false,
+  "native_attempt3_consumed": false,
+  "native_authority_loaded": true,
+  "native_clock": {
+    "C++": [
+      "ScriptDate::GetCurrentDate",
+      "ScriptDate::GetYear",
+      "ScriptDate::GetMonth",
+      "ScriptDate::GetDayOfMonth",
+      "ScriptDate::GetDate"
+    ],
+    "GameScript": [
+      "GSDate.GetCurrentDate",
+      "GSDate.GetYear",
+      "GSDate.GetMonth",
+      "GSDate.GetDayOfMonth",
+      "GSDate.GetDate"
+    ],
+    "adjacency": "exact next month, including December->January; observed day 1",
+    "api_types": {
+      "GetCurrentDate": "() -> ScriptDate::Date, GameScript integer",
+      "GetDate": "(SQInteger year, month, day) -> ScriptDate::Date integer",
+      "GetDayOfMonth": "(ScriptDate::Date) -> SQInteger, 1-based integer",
+      "GetMonth": "(ScriptDate::Date) -> SQInteger, 1-based integer",
+      "GetYear": "(ScriptDate::Date) -> SQInteger, GameScript integer"
+    },
+    "brackets": "current capture metadata; equal allowed; never qualified month boundaries",
+    "conversion": "TimerGameEconomy ConvertDateToYMD / ConvertYMDToDate",
+    "date_role": "current native economy state, not elapsed wall-clock evidence",
+    "day_range": [
+      1,
+      31
+    ],
+    "domain": "economy ordinal; Gregorian conversion only in synchronized generated calendar profile",
+    "invalid": "negative date components return -1; unavailable next-month date rejects sample",
+    "month_range": [
+      1,
+      12
+    ],
+    "year_range": [
+      0,
+      5000000
+    ],
+    "year_zero": "Gregorian leap year; December wraps to January of next year"
+  },
+  "native_payload_ceiling": 1450,
+  "next_native_attempt": 3,
+  "ownership_loaded": true,
+  "ownership_validated": true,
+  "p08_integration": false,
+  "persistent_cleanup_overlap": false,
+  "phase_order": [
+    "baseline",
+    "first_poll",
+    "anchor_structural",
+    "anchor_lifetime",
+    "second_poll",
+    "final_structural",
+    "final_lifetime",
+    "production",
+    "final_guard",
+    "qualification"
+  ],
+  "phase_transition_frames": 0,
+  "polling_loaded": true,
+  "pre_decision": true,
+  "private_bytes_excluded": true,
+  "process_creation_blocked": true,
+  "production_level": "DEFERRED / NOT INCLUDED",
+  "production_response_bound": 335,
+  "profile": {
+    "calendar_synchronized": true,
+    "generated_world": true,
+    "no_load_save": true,
+    "no_newgrf": true,
+    "normal_network_speed": true,
+    "starting_year": 1950,
+    "timekeeping_units": 0
+  },
+  "proof_kind": "two-rollover-qualification",
+  "proof_model": "two-rollover-qualification-correlated-channels-v1",
+  "protected_manifest_sha256": "ee1616548b0ce80b02371cbcf853e2c1d57e7cda7922078fdbc1de4843ab1270",
+  "protected_unique_count": 1627,
+  "qualification": "complete coverage + adjacent M0/M1/M2 + native evidence + stability + fresh M2 collection + final M2 guard + all budgets",
+  "qualification_coordinator_loaded": true,
+  "qualification_runner_loaded": true,
+  "qualified_month": "M1",
+  "reconnects": 0,
+  "request_id": "openttd15-qualification-001-clock-1",
+  "request_sent": false,
+  "requests": 0,
+  "resources": {
+    "application_requests": 1072,
+    "clock_requests": 304,
+    "lifecycle_frames": 6,
+    "phase_bounds": {
+      "anchor_lifetime": {
+        "query_operations": 256,
+        "requests": 32,
+        "response_bytes": 7936
+      },
+      "anchor_structural": {
+        "query_operations": 1024,
+        "requests": 96,
+        "response_bytes": 49152
+      },
+      "clock": {
+        "query_operations": 2432,
+        "requests": 304,
+        "response_bytes": 82384
+      },
+      "final_lifetime": {
+        "query_operations": 256,
+        "requests": 32,
+        "response_bytes": 7936
+      },
+      "final_structural": {
+        "query_operations": 1024,
+        "requests": 96,
+        "response_bytes": 49152
+      },
+      "production": {
+        "query_operations": 4096,
+        "requests": 512,
+        "response_bytes": 171520
+      }
+    },
+    "poll_interval": 1.0,
+    "post_auth_frames": 9094,
+    "query_operations": 9088,
+    "response_bytes": 368080,
+    "timeout": 300.0,
+    "wait_polls": 299
+  },
+  "resume": false,
+  "retries": 0,
+  "revision": 4,
+  "same_run_digest_wiring_loaded": false,
+  "semantic_contract": "two adjacent native rollovers; fresh complete M2 production; qualification admission; non-atomic pre-decision",
+  "session_id": "openttd15-qualification-001",
+  "source_freeze": true,
+  "stability": "T1 == T2 and L1 == L2; no intersection or omitted targets",
+  "state": "READY_TO_LAUNCH",
+  "subprocess_created": false,
+  "v3_prelaunch_validates": true,
+  "validator_loaded": true,
+  "wall_clock_role": "bounded operational liveness only",
+  "welcome_bounds_validator_wired": false,
+  "workspace": "/home/fed/codes/softdev2/artifacts/runtime/openttd-15.3-two-rollover-qualification-real-prelaunch-v4/isolated/openttd-15.3-ojf5uyr8",
+  "zero_targets_allowed": true
+}

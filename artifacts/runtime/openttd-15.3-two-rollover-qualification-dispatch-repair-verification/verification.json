@@ -1,0 +1,17 @@
+{
+  "new_repair_tests": 35,
+  "qualification_preparation_tests": 57,
+  "focused": "2105 passed, 4 skipped;239.85s",
+  "ordinary_final": "2641 passed,38 skipped;276.51s",
+  "historical_snapshot_exact": 1446,
+  "protected_exact": 1360,
+  "runtime": [
+    0,
+    0,
+    0
+  ],
+  "Ruff": "PASS",
+  "format": "PASS",
+  "diff": "PASS",
+  "whitespace_import": "PASS"
+}

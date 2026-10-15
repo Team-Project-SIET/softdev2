@@ -1,0 +1,11 @@
+{
+  "origin": "artifacts/runtime/openttd-15.3-industry-capability-enrichment-real-attempt1",
+  "claim": "Historical V4 successful native read-only transactions; not a real catalog proof",
+  "sha256": {
+    "capability-requests.jsonl": "261992e90ae9ee2a8da3e7dfdf69b3c3eb551063666cb455dcb5a3be58a027c4",
+    "capability-responses.jsonl": "5b11fc3e9650ee1a3d406a8d6a1d00195f0b0b846edaace9f6fd01238f14c5bb",
+    "page-requests.jsonl": "8ccf250c77cbfeb72f6a38312aec835d19fd69adea8e03f5263565ea968b6e3d",
+    "page-responses.jsonl": "e01a6bcee4c4557a46e21f727baaf785a5702fca0fdcbe2efaeeb49bf0af5ad6",
+    "stderr.log": "67eadfb479bac3185d6b663e77260b79c68078c52065f1f7e3330023d89e6b1c"
+  }
+}

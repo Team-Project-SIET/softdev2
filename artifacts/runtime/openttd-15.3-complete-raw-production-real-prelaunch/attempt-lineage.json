@@ -1,0 +1,14 @@
+{
+  "attempt_id": "complete-raw-production-v1-native-attempt1",
+  "attempt_number": 1,
+  "continuation": "PRELAUNCH_CONTINUATION",
+  "evidence_directory": "openttd-15.3-complete-raw-production-real-attempt1",
+  "freeze_revision": 1,
+  "fresh_explicit_authorization_required": true,
+  "lineage_digest": "89ce3e7ed931d73983704180ec04377f0e515b05e13dccb313e8f04f83eb0395",
+  "policy": "complete-raw-production-attempt-lineage-v1",
+  "post_launch_predecessors": [],
+  "prelaunch_continuation_exception_used": false,
+  "proof_kind": "complete-raw-production",
+  "supersedes_prelaunch_attempts": []
+}

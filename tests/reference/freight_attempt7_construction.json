@@ -1,0 +1,23 @@
+{
+  "save_sha256": "d6d1d2c1056a7dded87b0e3313c3205f08bf1ed8aff3d89806201c23ad648e5a",
+  "tiles": [
+    {
+      "tile": 1236,
+      "MAPT": 32,
+      "MAPO": 0,
+      "MAP5": 15,
+      "M3HI": 0
+    },
+    {
+      "tile": 1300,
+      "MAPT": 80,
+      "MAPO": 96,
+      "MAP5": 3,
+      "M3HI": 0
+    }
+  ],
+  "road_bit_cost": 71,
+  "stage_cost": 378,
+  "funds_before": 95549,
+  "funds_after": 95171
+}

@@ -1,0 +1,11 @@
+class FreightDeliveryInfo extends GSInfo {
+    function GetAuthor() { return "Team-Project-SIET"; }
+    function GetName() { return "RoadFreightProof"; }
+    function GetDescription() { return "One bounded native industry freight delivery"; }
+    function GetVersion() { return 1; }
+    function GetDate() { return "2026-10-11"; }
+    function CreateInstance() { return "FreightDeliveryProof"; }
+    function GetShortName() { return "RFP1"; }
+    function GetAPIVersion() { return "15"; }
+}
+RegisterGS(FreightDeliveryInfo());

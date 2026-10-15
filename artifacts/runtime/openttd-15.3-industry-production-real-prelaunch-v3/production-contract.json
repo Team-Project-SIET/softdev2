@@ -1,0 +1,68 @@
+{
+  "additional_command_types": 0,
+  "application_headroom": 177,
+  "application_limit": 512,
+  "complete_coverage": false,
+  "connections": 1,
+  "economy_bracket": "before/after economy-date readings; not qualified history",
+  "fields": [
+    "protocol",
+    "type",
+    "request_id",
+    "status",
+    "industry_id",
+    "cargo_id",
+    "economy_date_before",
+    "economy_date_after",
+    "last_month_produced",
+    "last_month_transported",
+    "last_month_transported_pct"
+  ],
+  "frame_budget_derivation": {
+    "encrypted_protocol_and_welcome": 2,
+    "graceful_quit": 1,
+    "query_send_response_ping_pong": 4,
+    "setup_update_frequency_ping_pong": 3
+  },
+  "frame_limits": {
+    "cleanup": 1,
+    "establishment": 2,
+    "production": 4,
+    "setup": 3
+  },
+  "independent_production_source": null,
+  "internal_chain": [
+    "BRIDGE_REQUEST_RECEIVED",
+    "INDUSTRY_PRODUCTION_READ",
+    "BRIDGE_RESPONSE_SENT",
+    "BRIDGE_POST_RESPONSE_ALIVE"
+  ],
+  "launches": 1,
+  "max_application_requests": 1,
+  "max_query_operations": 4,
+  "max_total_post_auth_frames": 10,
+  "native_ceiling": 1450,
+  "native_headroom": 1115,
+  "network_chain": [
+    "INDUSTRY_PRODUCTION_REQUEST_SENT",
+    "INDUSTRY_PRODUCTION_RESPONSE_RECEIVED",
+    "TRANSPORT_RECEIPT_CREATED",
+    "PRODUCTION_RECORD_VALIDATED"
+  ],
+  "p08_completion": false,
+  "percentage": "native quantized/clamped integer; no synthesized quotient",
+  "production_level": "DEFERRED / NOT INCLUDED",
+  "proof_kind": "industry-production",
+  "qualified_for_planning": false,
+  "qualified_real_production_history": "NOT YET PROVEN",
+  "raw_production": "native last-month counter; zero and seeded nonzero both valid",
+  "reconnects": 0,
+  "request_id": "openttd15-industry-production-001",
+  "request_type": "industry_production",
+  "response_type": "industry_production_result",
+  "retries": 0,
+  "rollover_waiting": false,
+  "same_run_structural_provenance": "NOT PROVEN BY THIS SLICE",
+  "transported": "OpenTTD station-allocation metric",
+  "worst_case_response_bytes": 335
+}

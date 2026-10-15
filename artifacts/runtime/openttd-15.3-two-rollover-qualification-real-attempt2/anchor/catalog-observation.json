@@ -1,0 +1,84 @@
+{
+  "complete": true,
+  "retained_transactions": 6,
+  "semantic_digest": "2859ff3ddac519e712a8513d14605a32313bc2a2f487abf632238258a64dffaa",
+  "semantic_observation": [
+    {
+      "cargo_classes": 1,
+      "cargo_id": 0,
+      "cargo_label": "50415353",
+      "is_freight": false,
+      "town_effect": 1
+    },
+    {
+      "cargo_classes": 16400,
+      "cargo_id": 1,
+      "cargo_label": "434F414C",
+      "is_freight": true,
+      "town_effect": 0
+    },
+    {
+      "cargo_classes": 2,
+      "cargo_id": 2,
+      "cargo_label": "4D41494C",
+      "is_freight": false,
+      "town_effect": 2
+    },
+    {
+      "cargo_classes": 16448,
+      "cargo_id": 3,
+      "cargo_label": "4F494C5F",
+      "is_freight": true,
+      "town_effect": 0
+    },
+    {
+      "cargo_classes": 16416,
+      "cargo_id": 4,
+      "cargo_label": "4C565354",
+      "is_freight": true,
+      "town_effect": 0
+    },
+    {
+      "cargo_classes": 4,
+      "cargo_id": 5,
+      "cargo_label": "474F4F44",
+      "is_freight": true,
+      "town_effect": 3
+    },
+    {
+      "cargo_classes": 8208,
+      "cargo_id": 6,
+      "cargo_label": "47524149",
+      "is_freight": true,
+      "town_effect": 0
+    },
+    {
+      "cargo_classes": 32,
+      "cargo_id": 7,
+      "cargo_label": "574F4F44",
+      "is_freight": true,
+      "town_effect": 0
+    },
+    {
+      "cargo_classes": 16400,
+      "cargo_id": 8,
+      "cargo_label": "494F5245",
+      "is_freight": true,
+      "town_effect": 0
+    },
+    {
+      "cargo_classes": 32,
+      "cargo_id": 9,
+      "cargo_label": "5354454C",
+      "is_freight": true,
+      "town_effect": 0
+    },
+    {
+      "cargo_classes": 8,
+      "cargo_id": 10,
+      "cargo_label": "56414C55",
+      "is_freight": true,
+      "town_effect": 0
+    }
+  ]
+}

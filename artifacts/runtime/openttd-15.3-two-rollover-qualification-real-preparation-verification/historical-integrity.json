@@ -1,0 +1,25 @@
+{
+  "baseline_files": 1891,
+  "intended_changed_paths": [
+    "app/simulation/openttd/proof/__main__.py",
+    "app/simulation/openttd/proof/harness.py",
+    "app/simulation/openttd/proof/native.py",
+    "app/simulation/openttd/proof/ownership.py",
+    "app/simulation/openttd/proof/preflight.py",
+    "app/simulation/openttd/proof/raw_production_attempt.py",
+    "app/simulation/openttd/proof/structural_native.py",
+    "app/simulation/openttd/proof/world_attempt.py"
+  ],
+  "unchanged_pre_task_files": 1883,
+  "historical_integrity": "PASS",
+  "CONTEXT.md": "UNCHANGED",
+  "whitespace": "PASS",
+  "import_boundary": "PASS",
+  "test_adequacy_review": "PASS: public gates, encrypted continuous stream, empty targets, independent phase accounting, ownership, failure cleanup and terminal persistence; existing 133 qualification tests retained",
+  "code_review": "PASS: no qualified acceptance before final guard or cleanup/postrun integrity; no native phase-transition I/O",
+  "runtime": {
+    "launches": 0,
+    "connections": 0,
+    "real_requests": 0
+  }
+}

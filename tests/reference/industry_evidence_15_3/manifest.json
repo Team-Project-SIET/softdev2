@@ -1,0 +1,20 @@
+{
+  "version": "15.3",
+  "files": {
+    "tests/reference/industry_evidence_15_3/sqvm.cpp": {
+      "source_path": "src/3rdparty/squirrel/squirrel/sqvm.cpp",
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/3rdparty/squirrel/squirrel/sqvm.cpp",
+      "sha256": "3ba7d708ddd80805505543f7f078a38c452624d77c90c9d9734e98d7bd0c414d"
+    },
+    "tests/reference/industry_evidence_15_3/sqbaselib.cpp": {
+      "source_path": "src/3rdparty/squirrel/squirrel/sqbaselib.cpp",
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/3rdparty/squirrel/squirrel/sqbaselib.cpp",
+      "sha256": "b6c8a981a196b70c2f14a782a340c38116ed66ab07b822223791a94a9129ddbc"
+    },
+    "tests/reference/industry_evidence_15_3/script_log.cpp": {
+      "source_path": "src/script/api/script_log.cpp",
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/script/api/script_log.cpp",
+      "sha256": "7cc22b58a3191426374f8b0c331c04f33d612312c55c5b57c73e4a8a102be02e"
+    }
+  }
+}

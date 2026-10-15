@@ -1,0 +1,45 @@
+{
+  "version": "15.3",
+  "files": {
+    "tests/reference/qualification_timing_15_3/gfx_type.h": {
+      "source_url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/gfx_type.h",
+      "sha256": "0058d288f7b458008044d30163d264f5f722cedbfc2f9e4709193ac45885c2b8"
+    },
+    "tests/reference/qualification_timing_15_3/openttd.cpp": {
+      "source_url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/openttd.cpp",
+      "sha256": "319a27a31f1f241ab1e83853d0ec61cd0fa60adfaf5d4e3666a1dd74c57acba0"
+    },
+    "tests/reference/qualification_timing_15_3/dedicated.cpp": {
+      "source_url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/dedicated.cpp",
+      "sha256": "36caae142f1307417160849e232f89b6b7f7d09524411570b98c0306806b0636"
+    },
+    "tests/reference/qualification_timing_15_3/dedicated_v.cpp": {
+      "source_url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/video/dedicated_v.cpp",
+      "sha256": "e2526b701fbd6fd9d8af7fb1f786e2b777dcb34ec74d4464d8df09ba96fd609e"
+    },
+    "tests/reference/qualification_timing_15_3/timer_game_calendar.cpp": {
+      "source_url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/timer/timer_game_calendar.cpp",
+      "sha256": "f8accac73640d4b9409e5c3d57a21db5e0fd6a01ab10669110b658f3f4a09261"
+    },
+    "tests/reference/qualification_timing_15_3/newgrf_act0_industries.cpp": {
+      "source_url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/newgrf/newgrf_act0_industries.cpp",
+      "sha256": "c71205bcc9350de679fd4d4ca959acda0e44c6226711ee68775650be88f1d9ea"
+    },
+    "tests/reference/qualification_timing_15_3/newgrf_industries.cpp": {
+      "source_url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/newgrf_industries.cpp",
+      "sha256": "14ba1d23bcca37fd6de0fae723af5d1ba44db689092c078d80d31be8903ca9d7"
+    },
+    "tests/reference/qualification_timing_15_3/newgrf_industrytiles.cpp": {
+      "source_url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/newgrf_industrytiles.cpp",
+      "sha256": "19a016c6fb3417ba29019af3927a46907833618da43a12ffad91d3619cd5226f"
+    },
+    "tests/reference/qualification_timing_15_3/video_driver.cpp": {
+      "source_url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/video/video_driver.cpp",
+      "sha256": "00a6631762492699925c79f4899f17bb7d9f948cd80f0872e6913ad1856574dc"
+    },
+    "tests/reference/qualification_timing_15_3/misc.cpp": {
+      "source_url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/misc.cpp",
+      "sha256": "50f648b85bf61118bd9f86f6399614067b9b51a34aa9a8f964b05f293e8f11f0"
+    }
+  }
+}

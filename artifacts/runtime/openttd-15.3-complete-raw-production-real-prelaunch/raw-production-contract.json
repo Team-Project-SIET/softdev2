@@ -1,0 +1,130 @@
+{
+  "additional_command_types": 0,
+  "application_limit": 512,
+  "connections": 1,
+  "continuous_accounting": true,
+  "continuous_connection": true,
+  "economy_clock": {
+    "additional_application_requests": 0,
+    "additional_gamescript_calls": 0,
+    "cpp_api": "ScriptDate::GetCurrentDate",
+    "equal_brackets_valid": true,
+    "fields": [
+      "economy_date_before",
+      "economy_date_after"
+    ],
+    "gamescript_binding": "GSDate.GetCurrentDate",
+    "initial_month_authority": "native WELCOME start_day + pinned new-world calendar conversion",
+    "load_save_authorized": false,
+    "native_storage": "TimerGameEconomy::Date, signed int32_t",
+    "ordering": "before <= after; both inside the initial economy month",
+    "qualified_for_planning": false,
+    "role": "current-state read bracket around last-month metrics, not historical boundaries",
+    "rollovers_observed": 0,
+    "script_return": "ScriptDate::Date enum, exported as GameScript integer",
+    "seeded_history_allowed": true,
+    "source_version": "15.3",
+    "starting_year": 1950,
+    "timekeeping_authority": "TKU_CALENDAR; economy/calendar identical Gregorian conversion",
+    "timekeeping_units": 0,
+    "unit": "economy days, zero-based ordinal from year 0",
+    "valid_v1_range": [
+      0,
+      2147483647
+    ],
+    "welcome_is_current_date": false
+  },
+  "frame_budget_derivation": {
+    "encrypted_protocol_and_welcome": 2,
+    "file_liveness_frames": 0,
+    "graceful_quit": 1,
+    "phase_transition_frames": 0,
+    "production_query_allowance": 4096,
+    "structural_query_allowance": 1024,
+    "subscription_update_frequency_ping_pong": 3
+  },
+  "frame_limits": {
+    "capability": 256,
+    "catalog": 512,
+    "cleanup": 1,
+    "establishment": 2,
+    "inventory": 256,
+    "production": 4096,
+    "setup": 3
+  },
+  "independent_production_source": null,
+  "launches": 1,
+  "max_application_requests": 608,
+  "max_production_records": 512,
+  "max_query_operations": 5120,
+  "max_response_bytes": 220672,
+  "max_total_post_auth_frames": 5126,
+  "native_ceiling": 1450,
+  "non_atomic": true,
+  "p08_completion": false,
+  "phase_limits": {
+    "capability": {
+      "query_operations": 256,
+      "records": 32,
+      "requests": 32,
+      "response_bytes": 16384
+    },
+    "catalog": {
+      "query_operations": 512,
+      "records": 64,
+      "requests": 32,
+      "response_bytes": 16384
+    },
+    "inventory": {
+      "query_operations": 256,
+      "records": 32,
+      "requests": 32,
+      "response_bytes": 16384
+    },
+    "production": {
+      "per_query_operations": 8,
+      "query_operations": 4096,
+      "records": 512,
+      "requests": 512,
+      "response_bytes": 171520
+    }
+  },
+  "phase_order": [
+    "inventory",
+    "capability",
+    "catalog",
+    "assembly",
+    "production"
+  ],
+  "pre_decision": true,
+  "production_level": "DEFERRED / NOT INCLUDED",
+  "production_response_fields": [
+    "protocol",
+    "type",
+    "request_id",
+    "status",
+    "industry_id",
+    "cargo_id",
+    "economy_date_before",
+    "economy_date_after",
+    "last_month_produced",
+    "last_month_transported",
+    "last_month_transported_pct"
+  ],
+  "proof_kind": "complete-raw-production",
+  "qualified_for_planning": false,
+  "reconnects": 0,
+  "resume": false,
+  "retries": 0,
+  "rollovers_observed": 0,
+  "session_id": "openttd15-complete-raw-production-001",
+  "source_structural_digest_exact": true,
+  "target_order": [
+    "industry_id",
+    "cargo_id"
+  ],
+  "target_source": "same-run complete structural capability.produces",
+  "transported": "OpenTTD station-allocation metric",
+  "worst_case_production_response_bytes": 335,
+  "zero_targets_allowed": true
+}

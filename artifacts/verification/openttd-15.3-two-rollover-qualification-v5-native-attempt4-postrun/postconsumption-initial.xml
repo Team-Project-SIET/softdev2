@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="3" time="0.717" timestamp="2026-10-08T14:50:17.969826+07:00" hostname="fedora"><testcase classname="test_attempt4_postconsumption" name="test_attempt4_historical_independent_of_current_derivation" time="0.355"><failure message="AttributeError: 'AttemptIdentity' object has no attribute 'native_attempt_id'. Did you mean: 'parent_attempt_ids'?">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7efec7238d60&gt;
+
+    def test_attempt4_historical_independent_of_current_derivation(monkeypatch):
+     def forbidden(*a,**k):raise AssertionError('historical validation consulted current history')
+     for name in ['derive_next_attempt','capture_lineage','relevant_failures']:monkeypatch.setattr(q,name,forbidden)
+     identity=q.validate_historical_attempt(FREEZE,DEST)
+&gt;    assert identity.native_attempt_id==META['attempt_id']
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+E    AttributeError: 'AttemptIdentity' object has no attribute 'native_attempt_id'. Did you mean: 'parent_attempt_ids'?
+
+/tmp/qualification-attempt4-v5-verification/test_attempt4_postconsumption.py:13: AttributeError</failure></testcase><testcase classname="test_attempt4_postconsumption" name="test_consumed_attempt4_reuse_rejected" time="0.000" /><testcase classname="test_attempt4_postconsumption" name="test_next_attempt5_does_not_modify_historical_identity" time="0.311" /></testsuite></testsuites>

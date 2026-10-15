@@ -1,0 +1,30 @@
+"""Import current research ORM models into the shared declarative registry.
+
+Import this module at application ORM boundaries before SQLAlchemy configures
+mappers.  Model modules use string-resolved annotations to avoid importing one
+another at runtime.
+"""
+
+from app.experiments.freight_history import FreightRunRecord
+from app.experiments.model import (
+    ExperimentMetricRecord,
+    ExperimentRunRecord,
+    ExperimentScenario,
+    LiveTelemetrySessionRecord,
+    PlanEvaluationRecord,
+    PlanningStrategyRecord,
+    SimulationRunRecord,
+    TelemetryObservationRecord,
+)
+
+__all__ = [
+    "FreightRunRecord",
+    "ExperimentMetricRecord",
+    "ExperimentRunRecord",
+    "ExperimentScenario",
+    "LiveTelemetrySessionRecord",
+    "PlanningStrategyRecord",
+    "PlanEvaluationRecord",
+    "SimulationRunRecord",
+    "TelemetryObservationRecord",
+]

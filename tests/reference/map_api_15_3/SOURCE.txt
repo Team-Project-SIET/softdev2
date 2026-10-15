@@ -1,0 +1,1 @@
+https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/script/api/script_map.hpp

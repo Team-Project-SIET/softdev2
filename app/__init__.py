@@ -1,0 +1,1 @@
+"""Logistics optimization application foundation."""

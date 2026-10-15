@@ -1,0 +1,27 @@
+{
+  "baseline_head": "278a3792b34fdb58085aff4e999dabac482cf21a",
+  "current_head": "278a3792b34fdb58085aff4e999dabac482cf21a",
+  "status": " M README.md\n M app/simulation/openttd/production_session.py\n M docs/specs/planning-executor-boundary.md\n M docs/srs.md\n?? .env.example\n?? CONTEXT.md\n?? app/planning/preparation/\n?? app/simulation/openttd/raw_production_session.py\n?? docs/complete-raw-industry-production.md\n?? docs/specs/p08-world-preparation-design.md\n?? tests/fixtures/p08_api_13_4.json\n?? tests/fixtures/p08_query_api.nut\n?? tests/test_complete_raw_production.py\n?? tests/test_planning_preparation.py\n?? tests/test_preparation_lifecycle.py\n?? tests/test_preparation_probe.py\n?? ther.md\n",
+  "task_inputs": {
+    "app/simulation/openttd/raw_production_session.py": "e267e8be24cadc69e34f38645394c2ef7bddf13518a9e7c97aae1fb10b8f91a1",
+    "app/simulation/openttd/production_session.py": "2aa3fbfc9300a099a3c76ef70ac96810b004db1a19258ffee51ac194a577bf94",
+    "tests/test_complete_raw_production.py": "bb44165b8a65f78f90613934b283808c65b2a7d3cabab78bf6e2b11953e88714",
+    "docs/complete-raw-industry-production.md": "d7c1c5df31f4621856220310596f8ef0b84e86f459376dc395f8142cb3b8f0d8"
+  },
+  "unrelated_preserved": {
+    "tests/test_preparation_lifecycle.py": "dbd809d63bcf15eb04694837487afc4cb53afca2967c58870a37871893ae92f7",
+    "tests/test_preparation_probe.py": "2870ddd36d58303ac9c246e06cf29da528d609cda1716abf057e6b18055d05cc",
+    "ther.md": "3982e86a25e3b870c70a25130799a708638fa818aa71bb51012b7161c8450950",
+    "CONTEXT.md": "b94b96649b466e73e25c9df9409bd745e311b84273bedfd9a111792869e3b7b3",
+    ".env.example": "18f36558689a30b0a1af492d7d92179c1166dfca3857c20a933eb51bfab9b7c5",
+    "README.md": "48e60963d61c160c6c96cba0091530719f8bd05b0ac6d106c3f4c4fc5f958508",
+    "docs/specs/planning-executor-boundary.md": "b86e18446726af826f4bf5aff07ab9f390a0b9ae07623bd242d20b537c001fd2",
+    "docs/srs.md": "116625d8bd6192542f7a94f5d7acb820ac5cc41f4301543ccc7c7da5fd41a7d5"
+  },
+  "runtime_activity": {
+    "launches": 0,
+    "connections": 0,
+    "real_requests": 0
+  },
+  "power_loss_effects": "Task sources/tests/docs survived; previous temporary verification is not used as final authority"
+}

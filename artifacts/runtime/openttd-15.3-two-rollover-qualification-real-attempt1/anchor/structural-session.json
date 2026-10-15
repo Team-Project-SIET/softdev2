@@ -1,0 +1,13 @@
+{
+  "complete": false,
+  "events": [
+    "STRUCTURAL_WORLD_SESSION_STARTED",
+    "STRUCTURAL_WORLD_SESSION_FAILED",
+    "STRUCTURAL_WORLD_SESSION_FAILED"
+  ],
+  "failure": "TransportTimeout: structural-world phase deadline expired",
+  "query_operations": 0,
+  "request_attempts": 1,
+  "session_id": "openttd15-qualification-001-anchor",
+  "total_response_bytes": 0
+}

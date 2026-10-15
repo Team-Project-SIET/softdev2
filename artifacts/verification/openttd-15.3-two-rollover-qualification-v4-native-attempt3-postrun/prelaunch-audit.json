@@ -1,0 +1,72 @@
+{
+  "attempt_id": "two-rollover-qualification-v4-native-attempt3",
+  "next_native_attempt": 3,
+  "consumed_before": false,
+  "historical": [
+    {
+      "proof_kind": "two-rollover-qualification",
+      "freeze_revision": 1,
+      "attempt_id": "two-rollover-qualification-v1-runtime-b045142a46c304ba",
+      "classification": "RUNTIME",
+      "launches": 1,
+      "connections": 1,
+      "requests": 62,
+      "terminal_status": "REAL_FAILED",
+      "evidence_directory": "openttd-15.3-two-rollover-qualification-real-attempt1",
+      "evidence_manifest_digest": "09231fb4d548f67b3fe190222f562c584a5a0fa9cd8bef96c85868cebe96990c",
+      "evidence_digest": "f7052b21fab77eb8ba3f4dc1624a8647fd489d8491a58303801a70350db65187",
+      "revision_authority_digest": "e970c0dc905c293b008bbbb04c78f3577c8d792db691fe725742e7cff422dd23",
+      "parent_attempt_ids": []
+    },
+    {
+      "proof_kind": "two-rollover-qualification",
+      "freeze_revision": 2,
+      "attempt_id": "two-rollover-qualification-v2-runtime-c2f8823bfa845c97",
+      "classification": "RUNTIME",
+      "launches": 1,
+      "connections": 1,
+      "requests": 185,
+      "terminal_status": "REAL_SUCCESS",
+      "evidence_directory": "openttd-15.3-two-rollover-qualification-real-attempt2",
+      "evidence_manifest_digest": "e0b94d8ca8d2e271a32aa57f569a2465f88cb3bc0f691128262f966f5a109df4",
+      "evidence_digest": "dbef1fd3f153e2964ddc168e240342eaeebeaac0867448f92b5b38969d67bc70",
+      "revision_authority_digest": "669fdb2e6042c481516f779a1ab0b2a92cbc6418e49da6e6258ae173adf838d0",
+      "parent_attempt_ids": [
+        "two-rollover-qualification-v1-runtime-b045142a46c304ba"
+      ]
+    }
+  ],
+  "prelaunch": [
+    {
+      "proof_kind": "two-rollover-qualification",
+      "freeze_revision": 3,
+      "attempt_id": "two-rollover-qualification-v3-prelaunch-b6c114daf6106fc7",
+      "classification": "PRELAUNCH",
+      "launches": 0,
+      "connections": 0,
+      "requests": 0,
+      "terminal_status": "PRELAUNCH_FAILED",
+      "evidence_directory": "openttd-15.3-two-rollover-qualification-real-prelaunch-v3-gate-failure",
+      "evidence_manifest_digest": "fe378550637cb6cd244d37f997cb20324d1df2de2fe5668924c54d7ea3e7af45",
+      "evidence_digest": "6eb645197fb9fae0412604f3854ccfab3656a09987641c6d1c316b707bff9d00",
+      "revision_authority_digest": "7d1903e87f48429a731c4d788c9f8bf33053565619a4625e80bdd6586017a5e5",
+      "parent_attempt_ids": [
+        "two-rollover-qualification-v1-runtime-b045142a46c304ba",
+        "two-rollover-qualification-v2-runtime-c2f8823bfa845c97"
+      ]
+    }
+  ],
+  "ceilings": {
+    "clock_requests": 304,
+    "application_requests": 1072,
+    "response_bytes": 368080,
+    "query_operations": 9088,
+    "lifecycle_frames": 6,
+    "post_auth_frames": 9094,
+    "poll_interval": 1.0,
+    "timeout": 300.0
+  },
+  "source_inputs": 254,
+  "protected_count": 1627,
+  "private_bytes_published": false
+}

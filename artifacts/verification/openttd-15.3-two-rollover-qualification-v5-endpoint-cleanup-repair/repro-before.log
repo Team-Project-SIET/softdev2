@@ -1,0 +1,6 @@
+{"server_port": 47651, "server_sockets_closed": true, "kernel_rows": ["  13: 0100007F:BA23 0100007F:CAE6 06 00000000:00000000 03:00001770 00000000     0        0 0 3 00000000d6dc7424                                      "], "naive_verdict": "EADDRINUSE"}
+Traceback (most recent call last):
+  File "/tmp/endpoint-v5-diagnosis/repro.py", line 13, in <module>
+    assert verdict=='PASS','closed listener falsely rejected by cleanup verifier'
+           ^^^^^^^^^^^^^^^
+AssertionError: closed listener falsely rejected by cleanup verifier

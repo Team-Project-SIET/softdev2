@@ -1,0 +1,8 @@
+{
+  "tag": "15.3",
+  "origin": "https://github.com/OpenTTD/OpenTTD/tree/15.3/src/3rdparty/squirrel/squirrel",
+  "files": {
+    "sqcompiler.cpp": "47064e7a72f230415cd37cbc9eb44586dfb1485bb3b47c7431ab77d3ec48d7d5",
+    "sqlexer.cpp": "bb0e850cc93bee5dd13ad5841170d149e24d9fa48ece91650944651ac7f38361"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "recorded_pre_existing_files": 1724,
+  "unchanged": 1715,
+  "intended_source_edits": [
+    "app/simulation/openttd/proof/__main__.py",
+    "app/simulation/openttd/proof/harness.py",
+    "app/simulation/openttd/proof/native.py",
+    "app/simulation/openttd/proof/preflight.py",
+    "app/simulation/openttd/proof/raw_production_contract.py",
+    "app/simulation/openttd/proof/structural_native.py",
+    "app/simulation/openttd/proof/world_attempt.py",
+    "app/simulation/openttd/raw_production_session.py",
+    "docs/complete-raw-industry-production-proof-preparation.md"
+  ],
+  "missing": [],
+  "unexpected_changes": [],
+  "historical_recorded": 1364,
+  "historical_changed": [],
+  "context_unchanged": true,
+  "whitespace": [],
+  "forbidden_imports": [],
+  "runtime": {
+    "launches": 0,
+    "connections": 0,
+    "requests": 0
+  }
+}

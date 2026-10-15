@@ -1,0 +1,51 @@
+{
+  "native_status": "REAL_SUCCESS",
+  "native_lifecycle": "COMPLETED",
+  "final_acceptance": "FAILED_POSTRUN_VERIFICATION",
+  "terminal_reason": "test_new_lineage_requires_revision_two_attempt_two_and_runtime_predecessor fails when recapturing consumed V2/Attempt 2 against current history",
+  "tests": {
+    "focused": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "1",
+      "skipped": "4",
+      "tests": "2109",
+      "time": "225.580",
+      "timestamp": "2026-10-08T09:16:04.375823+07:00",
+      "hostname": "fedora"
+    },
+    "ordinary": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "1",
+      "skipped": "38",
+      "tests": "2679",
+      "time": "241.685",
+      "timestamp": "2026-10-08T09:20:04.298804+07:00",
+      "hostname": "fedora"
+    },
+    "isolated_failure": "same lineage test failed, 0.29s"
+  },
+  "quality": {
+    "Ruff": "PASS",
+    "format": "PASS",
+    "typecheck": "PASS (scoped qualification proof modules and tests)",
+    "diff": "PASS",
+    "whitespace": "PASS",
+    "import_boundary": "PASS"
+  },
+  "runtime": {
+    "launches": 1,
+    "connections": 1,
+    "retries": 0,
+    "reconnects": 0,
+    "resume": false
+  },
+  "integrity": {
+    "source_inputs": 252,
+    "historical_files": 1461,
+    "archived_credentials": 7,
+    "integrity": "PASS"
+  },
+  "status": "OPENTTD 15.3 REAL TWO-ROLLOVER QUALIFICATION ATTEMPT 2 FAILED \u2014 NO RETRY PERFORMED \u2014 post-run lineage regression failed in focused and serial ordinary suites"
+}

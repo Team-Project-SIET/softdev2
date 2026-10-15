@@ -1,0 +1,89 @@
+{
+  "complete": true,
+  "retained_transactions": 10,
+  "semantic_digest": "b65dc04752fffcc3958dac6cb40aa5a8cd017a3f23fb2408d9122c6bfb8a94b3",
+  "semantic_observation": [
+    {
+      "accepts": [],
+      "industry_id": 0,
+      "produces": [
+        1
+      ]
+    },
+    {
+      "accepts": [
+        1
+      ],
+      "industry_id": 1,
+      "produces": []
+    },
+    {
+      "accepts": [
+        7
+      ],
+      "industry_id": 2,
+      "produces": [
+        5
+      ]
+    },
+    {
+      "accepts": [],
+      "industry_id": 3,
+      "produces": [
+        7
+      ]
+    },
+    {
+      "accepts": [
+        3
+      ],
+      "industry_id": 4,
+      "produces": [
+        5
+      ]
+    },
+    {
+      "accepts": [
+        4,
+        6,
+        9
+      ],
+      "industry_id": 5,
+      "produces": [
+        5
+      ]
+    },
+    {
+      "accepts": [
+        8
+      ],
+      "industry_id": 6,
+      "produces": [
+        9
+      ]
+    },
+    {
+      "accepts": [],
+      "industry_id": 7,
+      "produces": [
+        4,
+        6
+      ]
+    },
+    {
+      "accepts": [],
+      "industry_id": 8,
+      "produces": [
+        3
+      ]
+    },
+    {
+      "accepts": [],
+      "industry_id": 9,
+      "produces": [
+        8
+      ]
+    }
+  ],
+  "source_inventory_digest": "dce9b4d257af150776e679b09c74880b918163b86ae5e5f9f6e30e35d26c865a"
+}

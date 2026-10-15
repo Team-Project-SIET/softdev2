@@ -1,0 +1,43 @@
+{
+  "poll_interval": 1.0,
+  "timeout": 300.0,
+  "wait_polls": 299,
+  "clock_requests": 304,
+  "phase_bounds": {
+    "clock": {
+      "requests": 304,
+      "response_bytes": 82384,
+      "query_operations": 2432
+    },
+    "anchor_structural": {
+      "requests": 96,
+      "response_bytes": 49152,
+      "query_operations": 1024
+    },
+    "anchor_lifetime": {
+      "requests": 32,
+      "response_bytes": 7936,
+      "query_operations": 256
+    },
+    "final_structural": {
+      "requests": 96,
+      "response_bytes": 49152,
+      "query_operations": 1024
+    },
+    "final_lifetime": {
+      "requests": 32,
+      "response_bytes": 7936,
+      "query_operations": 256
+    },
+    "production": {
+      "requests": 512,
+      "response_bytes": 171520,
+      "query_operations": 4096
+    }
+  },
+  "application_requests": 1072,
+  "response_bytes": 368080,
+  "query_operations": 9088,
+  "lifecycle_frames": 6,
+  "post_auth_frames": 9094
+}

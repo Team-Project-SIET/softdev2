@@ -1,0 +1,26 @@
+{
+  "version": "15.3",
+  "authority": "Official OpenTTD release-tag source; generated online docs identified master, not used as 15.3 authority",
+  "files": {
+    "script_map.hpp": {
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/script/api/script_map.hpp",
+      "sha256": "5c0343c873dde461add158cd11cb2a65e70052569ea62b72be1d2c43ca0e7101"
+    },
+    "script_map.cpp": {
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/script/api/script_map.cpp",
+      "sha256": "d8a6ebb9840e59626245b90041dc6eef5056c5daf44982e8ca8656599bb8c36b"
+    },
+    "api-CMakeLists.txt": {
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/script/api/CMakeLists.txt",
+      "sha256": "a61d0fc3bd3482f502cbb1adefec91e11c1cb91c62e74d3bbf8c1524266135e5"
+    },
+    "map.cpp": {
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/map.cpp",
+      "sha256": "7d21558767ffeb55e8f7205d149df35a2a993c3d4d8d1a7ea72a1c2e9aa82b20"
+    },
+    "network_admin.cpp": {
+      "url": "https://raw.githubusercontent.com/OpenTTD/OpenTTD/15.3/src/network/network_admin.cpp",
+      "sha256": "6c59f996f54ff9e3df740987fbb7adaa212af6eeca491adb1d29b7c70619dbb2"
+    }
+  }
+}

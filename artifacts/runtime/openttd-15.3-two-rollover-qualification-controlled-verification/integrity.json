@@ -1,0 +1,21 @@
+{
+  "baseline_files": 1862,
+  "intended_changed_paths": [
+    "app/simulation/openttd/gamescript_transport.py",
+    "app/simulation/openttd/qualification_clock.py",
+    "app/simulation/openttd/qualification_stability.py",
+    "app/simulation/openttd/qualification_state.py",
+    "docs/industry-production-two-rollover-qualification.md",
+    "tests/test_two_rollover_qualification.py"
+  ],
+  "unchanged_pre_task_files": 1856,
+  "historical_integrity": "PASS",
+  "CONTEXT.md": "UNCHANGED",
+  "import_boundary": "PASS",
+  "whitespace": "PASS",
+  "runtime_activity": {
+    "launches": 0,
+    "connections": 0,
+    "real_requests": 0
+  }
+}

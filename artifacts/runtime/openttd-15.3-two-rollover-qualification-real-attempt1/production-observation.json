@@ -1,0 +1,8 @@
+{
+  "complete": false,
+  "failure": "TransportTimeout: structural-world phase deadline expired",
+  "production_digest": null,
+  "qualified_for_planning": false,
+  "records": [],
+  "source_structural_world_digest": null
+}

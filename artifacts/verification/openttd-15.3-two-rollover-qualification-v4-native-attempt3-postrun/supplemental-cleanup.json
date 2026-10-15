@@ -1,0 +1,13 @@
+{
+  "workspace_disposed": true,
+  "credential_removed": true,
+  "postrun_integrity_verified": true,
+  "public_cleanup_gate": "FAILED",
+  "public_failure_preserved": true,
+  "process_reaped": true,
+  "credential_removed_by_public_finally": true,
+  "no_owned_listener_or_established_connection": true,
+  "additional_launches": 0,
+  "additional_connections": 0,
+  "additional_requests": 0
+}

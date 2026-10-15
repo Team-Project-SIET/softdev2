@@ -1,0 +1,45 @@
+{
+  "historical_files_exact": 1742,
+  "historical_roots_exact": 102,
+  "v4_protected_exact": 1627,
+  "historical_attempts": "PASS",
+  "reuse": "REJECTED_ALL",
+  "v3_prelaunch": "PASS",
+  "next_native_attempt": 4,
+  "contract_changes": {
+    "revision": [
+      4,
+      5
+    ],
+    "future_destination": [
+      "openttd-15.3-two-rollover-qualification-real-attempt3",
+      "openttd-15.3-two-rollover-qualification-real-attempt4"
+    ]
+  },
+  "qualification_operational_semantics": "UNCHANGED",
+  "dispatch": "UNCHANGED",
+  "changed_source_files": [
+    "app/simulation/openttd/proof/qualification_contract.py",
+    "app/simulation/openttd/proof/cargo_attempt.py",
+    "app/simulation/openttd/proof/world_attempt.py",
+    "app/simulation/openttd/proof/cargo_page_attempt.py",
+    "app/simulation/openttd/proof/attempt.py",
+    "app/simulation/openttd/proof/qualification_preparation.py",
+    "app/simulation/openttd/proof/production_attempt.py",
+    "app/simulation/openttd/proof/raw_production_attempt.py",
+    "app/simulation/openttd/proof/catalog_attempt.py",
+    "app/simulation/openttd/proof/preflight.py",
+    "app/simulation/openttd/proof/structural_attempt.py",
+    "app/simulation/openttd/proof/industry_attempt.py",
+    "app/simulation/openttd/proof/enrichment_attempt.py",
+    "app/simulation/openttd/proof/inventory_attempt.py",
+    "tests/test_qualification_preparation.py"
+  ],
+  "whitespace": "PASS",
+  "import_boundary": "PASS",
+  "native_activity": {
+    "launches": 0,
+    "connections": 0,
+    "requests": 0
+  }
+}
