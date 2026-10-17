@@ -397,6 +397,9 @@ class PlannerDeliverySession(DeliverySession):
 
 
 def attempt_number(directory):
+    # Public demos use a separate namespace from consumed research attempts.
+    if re.fullmatch(r"playable-demo-[0-9a-f]{32}", directory.name):
+        return 1
     match = re.fullmatch(
         r"openttd-15\.3-first-freight-delivery-attempt([1-9][0-9]*)", directory.name
     )
@@ -1153,7 +1156,7 @@ def verify_capital_frames(directory, frames):
     return financing
 
 
-async def run(p):
+async def run(p, *, on_ready=None, on_delivered=None, on_closing=None):
     preflight(p)
     seal = sha256(p.directory / "PRELAUNCH.json")
     m = json.loads((p.directory / "PRELAUNCH.json").read_text())
@@ -1204,6 +1207,8 @@ async def run(p):
             if accounting is not None:
                 accounting.enter("setup")
             await GameScriptTransport(session, session.protocol).subscribe()
+            if on_ready is not None:
+                await on_ready(backend, p)
             if m.get("scenario"):
                 from app.simulation.openttd.scenario_capital import (
                     ScenarioCapitalReadback,
@@ -1264,6 +1269,8 @@ async def run(p):
                 from app.simulation.openttd.freight_native_network import execute_network
 
                 await execute_network(backend, p, session, accounting, before, seal, m, result)
+                if on_delivered is not None:
+                    await on_delivered(backend, p)
                 result["status"] = "NATIVE_MULTI_SERVICE_DELIVERY_VERIFIED"
                 return result
             service = None
@@ -1352,6 +1359,12 @@ async def run(p):
             except Exception as failure:
                 result["failure_save_error"] = str(failure)
     finally:
+        if on_closing is not None:
+            try:
+                await on_closing()
+            except Exception as error:
+                result["client_cleanup_error"] = str(error)
+                result["status"] = "FAILED_CLIENT_CLEANUP"
         result["launches"] = int(backend.process is not None)
         write_json(p.directory / "frames.json", frames)
         cleanup = await backend.cleanup(p)

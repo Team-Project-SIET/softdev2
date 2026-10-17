@@ -1,4 +1,49 @@
-# OpenTTD transport planning and freight demonstration
+# OpenTTD transport planning and playable freight demo
+
+Python selects freight services, builds them through OpenTTD 15.3's GameScript
+bridge, and verifies deliveries from native readbacks. P08 generates bounded road
+candidates; P05 uses OR-Tools CP-SAT to select services; P07 compares the plan with
+retained observations. Python communicates over one encrypted Admin connection.
+The graphical client joins a dedicated local server as a spectator.
+
+## Quick start
+
+Use Linux amd64, a graphical desktop, Python 3.14 or newer, and uv. Install the
+project dependencies with `uv sync --locked`. PostgreSQL and Docker are not needed
+for this demo. Install the pinned OpenTTD 15.3 distribution and OpenGFX 8.0 archive,
+then set the two runtime paths as described in the [demo guide](examples/openttd-demo/README.md).
+From the repository root:
+
+```bash
+.venv/bin/python -m app.openttd_demo check
+.venv/bin/python -m app.openttd_demo --view-seconds 300
+```
+
+**VERIFIED native MVP:** one server, one graphical spectator, one encrypted Admin
+connection; services 4→5, 2→3, 0→1; vehicles 4/5/6; 20 coal delivered per service,
+60 total and £1,022 revenue. Graphical joining and inspection, fresh P07 reporting,
+cleanup, and artifact integrity passed in the retained demo. These are short,
+serial delivery batches. Revenue can vary with timing; it is not profit.
+
+**Controlled/offline:** `python -m app.openttd_demo plan` selects services from the
+bundled deterministic scenario without launching OpenTTD. P07 replays retained
+native observations. Controlled tests do not establish additional native behavior.
+
+See the [demo guide](examples/openttd-demo/README.md) for installation, spectator
+controls, results, troubleshooting, and limits. Full OPEX and ROI remain UNKNOWN.
+Arbitrary-world planning and larger networks are not verified MVP capabilities.
+
+## Future milestone: Random World & Scalable Logistics
+
+Future work includes native random world generation, configurable seed and world
+size, generalized P08 industry/cargo discovery, feasible routes over varied terrain,
+dynamic service selection, larger fleets and networks, and P07 performance
+comparison. These enhancements are not implemented by this checkpoint.
+
+## Research reference and historical milestones
+
+The sections below retain research workflows and historical evidence. Their dated
+limitations describe those milestones; the current public demo scope is above.
 
 Python plans transport services and verifies their execution in **OpenTTD 15.3**.
 The native multi-service MVP selected and delivered two coal services in one world

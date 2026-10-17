@@ -1,0 +1,4050 @@
+{
+  "base_set_name": "OpenGFX",
+  "base_set_version": "8.0",
+  "cargo_demands": [
+    {
+      "cargo_type": "cargo-434F414C",
+      "demand_id": "benchmark-0-1-1",
+      "destination_id": "industry-1",
+      "earliest_day": 0,
+      "latest_delivery_day": 30,
+      "max_transit_days": null,
+      "origin_id": "industry-0",
+      "priority": null,
+      "quantity": 20,
+      "source": {
+        "source_digest": "20e18455093b3edc48563a2570bc0a518b42e6112c5c647a6f24a3aceb389b53",
+        "source_id": "qualified-batch",
+        "source_kind": "p08-network-facts",
+        "source_version": "1"
+      },
+      "unit": "cargo_units"
+    },
+    {
+      "cargo_type": "cargo-434F414C",
+      "demand_id": "benchmark-2-1-3",
+      "destination_id": "industry-3",
+      "earliest_day": 0,
+      "latest_delivery_day": 30,
+      "max_transit_days": null,
+      "origin_id": "industry-2",
+      "priority": null,
+      "quantity": 20,
+      "source": {
+        "source_digest": "20e18455093b3edc48563a2570bc0a518b42e6112c5c647a6f24a3aceb389b53",
+        "source_id": "qualified-batch",
+        "source_kind": "p08-network-facts",
+        "source_version": "1"
+      },
+      "unit": "cargo_units"
+    },
+    {
+      "cargo_type": "cargo-434F414C",
+      "demand_id": "benchmark-4-1-5",
+      "destination_id": "industry-5",
+      "earliest_day": 0,
+      "latest_delivery_day": 30,
+      "max_transit_days": null,
+      "origin_id": "industry-4",
+      "priority": null,
+      "quantity": 20,
+      "source": {
+        "source_digest": "20e18455093b3edc48563a2570bc0a518b42e6112c5c647a6f24a3aceb389b53",
+        "source_id": "qualified-batch",
+        "source_kind": "p08-network-facts",
+        "source_version": "1"
+      },
+      "unit": "cargo_units"
+    }
+  ],
+  "constraints": {
+    "budget_gbp": "500000",
+    "max_train_length_tiles": null,
+    "network_selection": {
+      "max_vehicles": 3,
+      "resource_limits": [],
+      "service_resources": [
+        {
+          "candidate_ids": [
+            "build-pickup-532",
+            "build-delivery-996",
+            "build-depot-404",
+            "corridor-77033a1bc401d8e83757cfdc"
+          ],
+          "demand_id": "benchmark-0-1-1"
+        },
+        {
+          "candidate_ids": [
+            "build-pickup-1620",
+            "build-delivery-2212",
+            "build-depot-1557",
+            "corridor-f22015f3b76594c43bbdca0d"
+          ],
+          "demand_id": "benchmark-2-1-3"
+        },
+        {
+          "candidate_ids": [
+            "build-pickup-2772",
+            "build-delivery-3300",
+            "build-depot-2709",
+            "corridor-105eccb741116fe46b332c61"
+          ],
+          "demand_id": "benchmark-4-1-5"
+        }
+      ],
+      "supplies": [
+        {
+          "cargo_type": "cargo-434F414C",
+          "origin_id": "industry-0",
+          "quantity": 96
+        },
+        {
+          "cargo_type": "cargo-434F414C",
+          "origin_id": "industry-2",
+          "quantity": 120
+        },
+        {
+          "cargo_type": "cargo-434F414C",
+          "origin_id": "industry-4",
+          "quantity": 104
+        }
+      ]
+    },
+    "permitted_modes": [
+      "road"
+    ]
+  },
+  "economic_assumptions": {
+    "currency": "GBP",
+    "finance_cost_gbp_per_day": null,
+    "late_penalty_gbp_per_cargo_unit_day": null,
+    "model_name": "controlled-road-batch",
+    "model_version": "1",
+    "revenue_gbp_per_cargo_unit": null,
+    "undelivered_penalty_gbp_per_cargo_unit": null
+  },
+  "fleet_options": [
+    {
+      "available_from_day": 0,
+      "available_through_day": 0,
+      "depot_class": "road",
+      "mode": "road",
+      "option_id": "fleet-123",
+      "road_vehicle_class": "road",
+      "source": {
+        "source_digest": "20e18455093b3edc48563a2570bc0a518b42e6112c5c647a6f24a3aceb389b53",
+        "source_id": "qualified-batch",
+        "source_kind": "p08-network-facts",
+        "source_version": "1"
+      },
+      "vehicle": {
+        "capacity_cargo_units": 20,
+        "compatible_cargo_types": [
+          "cargo-434F414C"
+        ],
+        "length_tiles": null,
+        "purchase_cost_gbp": "4429",
+        "running_cost_gbp_per_day": "1.153425",
+        "speed_km_per_hour": "48.28032",
+        "vehicle_type": "road-engine-123"
+      }
+    }
+  ],
+  "height_tiles": 64,
+  "horizon_days": 31,
+  "infrastructure_candidates": [
+    {
+      "candidate_id": "build-delivery-2212",
+      "destination_id": null,
+      "estimated_build_cost_gbp": "150",
+      "footprint_height_tiles": 1,
+      "footprint_width_tiles": 1,
+      "kind": "station",
+      "mode": "road",
+      "orientation": "north",
+      "origin_id": null,
+      "rail_type": null,
+      "site_id": "delivery-2212",
+      "source": {
+        "source_digest": "20e18455093b3edc48563a2570bc0a518b42e6112c5c647a6f24a3aceb389b53",
+        "source_id": "qualified-batch",
+        "source_kind": "p08-network-facts",
+        "source_version": "1"
+      },
+      "tiles": []
+    },
+    {
+      "candidate_id": "build-delivery-3300",
+      "destination_id": null,
+      "estimated_build_cost_gbp": "150",
+      "footprint_height_tiles": 1,
+      "footprint_width_tiles": 1,
+      "kind": "station",
+      "mode": "road",
+      "orientation": "north",
+      "origin_id": null,
+      "rail_type": null,
+      "site_id": "delivery-3300",
+      "source": {
+        "source_digest": "20e18455093b3edc48563a2570bc0a518b42e6112c5c647a6f24a3aceb389b53",
+        "source_id": "qualified-batch",
+        "source_kind": "p08-network-facts",
+        "source_version": "1"
+      },
+      "tiles": []
+    },
+    {
+      "candidate_id": "build-delivery-996",
+      "destination_id": null,
+      "estimated_build_cost_gbp": "150",
+      "footprint_height_tiles": 1,
+      "footprint_width_tiles": 1,
+      "kind": "station",
+      "mode": "road",
+      "orientation": "north",
+      "origin_id": null,
+      "rail_type": null,
+      "site_id": "delivery-996",
+      "source": {
+        "source_digest": "20e18455093b3edc48563a2570bc0a518b42e6112c5c647a6f24a3aceb389b53",
+        "source_id": "qualified-batch",
+        "source_kind": "p08-network-facts",
+        "source_version": "1"
+      },
+      "tiles": []
+    },
+    {
+      "candidate_id": "build-depot-1557",
+      "destination_id": null,
+      "estimated_build_cost_gbp": "375",
+      "footprint_height_tiles": 1,
+      "footprint_width_tiles": 1,
+      "kind": "depot",
+      "mode": "road",
+      "orientation": "south",
+      "origin_id": null,
+      "rail_type": null,
+      "site_id": "depot-1557",
+      "source": {
+        "source_digest": "20e18455093b3edc48563a2570bc0a518b42e6112c5c647a6f24a3aceb389b53",
+        "source_id": "qualified-batch",
+        "source_kind": "p08-network-facts",
+        "source_version": "1"
+      },
+      "tiles": []
+    },
+    {
+      "candidate_id": "build-depot-2709",
+      "destination_id": null,
+      "estimated_build_cost_gbp": "375",
+      "footprint_height_tiles": 1,
+      "footprint_width_tiles": 1,
+      "kind": "depot",
+      "mode": "road",
+      "orientation": "south",
+      "origin_id": null,
+      "rail_type": null,
+      "site_id": "depot-2709",
+      "source": {
+        "source_digest": "20e18455093b3edc48563a2570bc0a518b42e6112c5c647a6f24a3aceb389b53",
+        "source_id": "qualified-batch",
+        "source_kind": "p08-network-facts",
+        "source_version": "1"
+      },
+      "tiles": []
+    },
+    {
+      "candidate_id": "build-depot-404",
+      "destination_id": null,
+      "estimated_build_cost_gbp": "375",
+      "footprint_height_tiles": 1,
+      "footprint_width_tiles": 1,
+      "kind": "depot",
+      "mode": "road",
+      "orientation": "south",
+      "origin_id": null,
+      "rail_type": null,
+      "site_id": "depot-404",
+      "source": {
+        "source_digest": "20e18455093b3edc48563a2570bc0a518b42e6112c5c647a6f24a3aceb389b53",
+        "source_id": "qualified-batch",
+        "source_kind": "p08-network-facts",
+        "source_version": "1"
+      },
+      "tiles": []
+    },
+    {
+      "candidate_id": "build-pickup-1620",
+      "destination_id": null,
+      "estimated_build_cost_gbp": "150",
+      "footprint_height_tiles": 1,
+      "footprint_width_tiles": 1,
+      "kind": "station",
+      "mode": "road",
+      "orientation": "east",
+      "origin_id": null,
+      "rail_type": null,
+      "site_id": "pickup-1620",
+      "source": {
+        "source_digest": "20e18455093b3edc48563a2570bc0a518b42e6112c5c647a6f24a3aceb389b53",
+        "source_id": "qualified-batch",
+        "source_kind": "p08-network-facts",
+        "source_version": "1"
+      },
+      "tiles": []
+    },
+    {
+      "candidate_id": "build-pickup-2772",
+      "destination_id": null,
+      "estimated_build_cost_gbp": "150",
+      "footprint_height_tiles": 1,
+      "footprint_width_tiles": 1,
+      "kind": "station",
+      "mode": "road",
+      "orientation": "east",
+      "origin_id": null,
+      "rail_type": null,
+      "site_id": "pickup-2772",
+      "source": {
+        "source_digest": "20e18455093b3edc48563a2570bc0a518b42e6112c5c647a6f24a3aceb389b53",
+        "source_id": "qualified-batch",
+        "source_kind": "p08-network-facts",
+        "source_version": "1"
+      },
+      "tiles": []
+    },
+    {
+      "candidate_id": "build-pickup-532",
+      "destination_id": null,
+      "estimated_build_cost_gbp": "150",
+      "footprint_height_tiles": 1,
+      "footprint_width_tiles": 1,
+      "kind": "station",
+      "mode": "road",
+      "orientation": "north",
+      "origin_id": null,
+      "rail_type": null,
+      "site_id": "pickup-532",
+      "source": {
+        "source_digest": "20e18455093b3edc48563a2570bc0a518b42e6112c5c647a6f24a3aceb389b53",
+        "source_id": "qualified-batch",
+        "source_kind": "p08-network-facts",
+        "source_version": "1"
+      },
+      "tiles": []
+    },
+    {
+      "candidate_id": "corridor-105eccb741116fe46b332c61",
+      "destination_id": "delivery-3300",
+      "estimated_build_cost_gbp": "3337",
+      "footprint_height_tiles": null,
+      "footprint_width_tiles": null,
+      "kind": "segment",
+      "mode": "road",
+      "orientation": null,
+      "origin_id": "pickup-2772",
+      "rail_type": null,
+      "site_id": null,
+      "source": {
+        "source_digest": "20e18455093b3edc48563a2570bc0a518b42e6112c5c647a6f24a3aceb389b53",
+        "source_id": "qualified-batch",
+        "source_kind": "p08-network-facts",
+        "source_version": "1"
+      },
+      "tiles": [
+        {
+          "x": 20,
+          "y": 43
+        },
+        {
+          "x": 21,
+          "y": 43
+        },
+        {
+          "x": 22,
+          "y": 43
+        },
+        {
+          "x": 23,
+          "y": 43
+        },
+        {
+          "x": 24,
+          "y": 43
+        },
+        {
+          "x": 25,
+          "y": 43
+        },
+        {
+          "x": 26,
+          "y": 43
+        },
+        {
+          "x": 27,
+          "y": 43
+        },
+        {
+          "x": 28,
+          "y": 43
+        },
+        {
+          "x": 29,
+          "y": 43
+        },
+        {
+          "x": 30,
+          "y": 43
+        },
+        {
+          "x": 31,
+          "y": 43
+        },
+        {
+          "x": 32,
+          "y": 43
+        },
+        {
+          "x": 33,
+          "y": 43
+        },
+        {
+          "x": 34,
+          "y": 43
+        },
+        {
+          "x": 35,
+          "y": 43
+        },
+        {
+          "x": 36,
+          "y": 43
+        },
+        {
+          "x": 36,
+          "y": 44
+        },
+        {
+          "x": 36,
+          "y": 45
+        },
+        {
+          "x": 36,
+          "y": 46
+        },
+        {
+          "x": 36,
+          "y": 47
+        },
+        {
+          "x": 36,
+          "y": 48
+        },
+        {
+          "x": 36,
+          "y": 49
+        },
+        {
+          "x": 36,
+          "y": 50
+        },
+        {
+          "x": 36,
+          "y": 51
+        }
+      ]
+    },
+    {
+      "candidate_id": "corridor-77033a1bc401d8e83757cfdc",
+      "destination_id": "delivery-996",
+      "estimated_build_cost_gbp": "3479",
+      "footprint_height_tiles": null,
+      "footprint_width_tiles": null,
+      "kind": "segment",
+      "mode": "road",
+      "orientation": null,
+      "origin_id": "pickup-532",
+      "rail_type": null,
+      "site_id": null,
+      "source": {
+        "source_digest": "20e18455093b3edc48563a2570bc0a518b42e6112c5c647a6f24a3aceb389b53",
+        "source_id": "qualified-batch",
+        "source_kind": "p08-network-facts",
+        "source_version": "1"
+      },
+      "tiles": [
+        {
+          "x": 20,
+          "y": 8
+        },
+        {
+          "x": 20,
+          "y": 7
+        },
+        {
+          "x": 21,
+          "y": 7
+        },
+        {
+          "x": 22,
+          "y": 7
+        },
+        {
+          "x": 23,
+          "y": 7
+        },
+        {
+          "x": 24,
+          "y": 7
+        },
+        {
+          "x": 25,
+          "y": 7
+        },
+        {
+          "x": 26,
+          "y": 7
+        },
+        {
+          "x": 27,
+          "y": 7
+        },
+        {
+          "x": 28,
+          "y": 7
+        },
+        {
+          "x": 29,
+          "y": 7
+        },
+        {
+          "x": 30,
+          "y": 7
+        },
+        {
+          "x": 31,
+          "y": 7
+        },
+        {
+          "x": 32,
+          "y": 7
+        },
+        {
+          "x": 33,
+          "y": 7
+        },
+        {
+          "x": 34,
+          "y": 7
+        },
+        {
+          "x": 35,
+          "y": 7
+        },
+        {
+          "x": 36,
+          "y": 7
+        },
+        {
+          "x": 36,
+          "y": 8
+        },
+        {
+          "x": 36,
+          "y": 9
+        },
+        {
+          "x": 36,
+          "y": 10
+        },
+        {
+          "x": 36,
+          "y": 11
+        },
+        {
+          "x": 36,
+          "y": 12
+        },
+        {
+          "x": 36,
+          "y": 13
+        },
+        {
+          "x": 36,
+          "y": 14
+        },
+        {
+          "x": 36,
+          "y": 15
+        }
+      ]
+    },
+    {
+      "candidate_id": "corridor-f22015f3b76594c43bbdca0d",
+      "destination_id": "delivery-2212",
+      "estimated_build_cost_gbp": "3479",
+      "footprint_height_tiles": null,
+      "footprint_width_tiles": null,
+      "kind": "segment",
+      "mode": "road",
+      "orientation": null,
+      "origin_id": "pickup-1620",
+      "rail_type": null,
+      "site_id": null,
+      "source": {
+        "source_digest": "20e18455093b3edc48563a2570bc0a518b42e6112c5c647a6f24a3aceb389b53",
+        "source_id": "qualified-batch",
+        "source_kind": "p08-network-facts",
+        "source_version": "1"
+      },
+      "tiles": [
+        {
+          "x": 20,
+          "y": 25
+        },
+        {
+          "x": 21,
+          "y": 25
+        },
+        {
+          "x": 22,
+          "y": 25
+        },
+        {
+          "x": 23,
+          "y": 25
+        },
+        {
+          "x": 24,
+          "y": 25
+        },
+        {
+          "x": 25,
+          "y": 25
+        },
+        {
+          "x": 26,
+          "y": 25
+        },
+        {
+          "x": 27,
+          "y": 25
+        },
+        {
+          "x": 28,
+          "y": 25
+        },
+        {
+          "x": 29,
+          "y": 25
+        },
+        {
+          "x": 30,
+          "y": 25
+        },
+        {
+          "x": 31,
+          "y": 25
+        },
+        {
+          "x": 32,
+          "y": 25
+        },
+        {
+          "x": 33,
+          "y": 25
+        },
+        {
+          "x": 34,
+          "y": 25
+        },
+        {
+          "x": 35,
+          "y": 25
+        },
+        {
+          "x": 36,
+          "y": 25
+        },
+        {
+          "x": 36,
+          "y": 26
+        },
+        {
+          "x": 36,
+          "y": 27
+        },
+        {
+          "x": 36,
+          "y": 28
+        },
+        {
+          "x": 36,
+          "y": 29
+        },
+        {
+          "x": 36,
+          "y": 30
+        },
+        {
+          "x": 36,
+          "y": 31
+        },
+        {
+          "x": 36,
+          "y": 32
+        },
+        {
+          "x": 36,
+          "y": 33
+        },
+        {
+          "x": 36,
+          "y": 34
+        }
+      ]
+    }
+  ],
+  "locations": [
+    {
+      "facility_class": "truck",
+      "footprint_height_tiles": 1,
+      "footprint_width_tiles": 1,
+      "kind": "station_candidate",
+      "location_id": "delivery-2212",
+      "orientation": "north",
+      "permitted_modes": [
+        "road"
+      ],
+      "platform_length_tiles": null,
+      "serves_location_id": "industry-3",
+      "source": {
+        "source_digest": "20e18455093b3edc48563a2570bc0a518b42e6112c5c647a6f24a3aceb389b53",
+        "source_id": "qualified-batch",
+        "source_kind": "p08-network-facts",
+        "source_version": "1"
+      },
+      "tile": {
+        "x": 36,
+        "y": 34
+      },
+      "world_reference": null
+    },
+    {
+      "facility_class": "truck",
+      "footprint_height_tiles": 1,
+      "footprint_width_tiles": 1,
+      "kind": "station_candidate",
+      "location_id": "delivery-3300",
+      "orientation": "north",
+      "permitted_modes": [
+        "road"
+      ],
+      "platform_length_tiles": null,
+      "serves_location_id": "industry-5",
+      "source": {
+        "source_digest": "20e18455093b3edc48563a2570bc0a518b42e6112c5c647a6f24a3aceb389b53",
+        "source_id": "qualified-batch",
+        "source_kind": "p08-network-facts",
+        "source_version": "1"
+      },
+      "tile": {
+        "x": 36,
+        "y": 51
+      },
+      "world_reference": null
+    },
+    {
+      "facility_class": "truck",
+      "footprint_height_tiles": 1,
+      "footprint_width_tiles": 1,
+      "kind": "station_candidate",
+      "location_id": "delivery-996",
+      "orientation": "north",
+      "permitted_modes": [
+        "road"
+      ],
+      "platform_length_tiles": null,
+      "serves_location_id": "industry-1",
+      "source": {
+        "source_digest": "20e18455093b3edc48563a2570bc0a518b42e6112c5c647a6f24a3aceb389b53",
+        "source_id": "qualified-batch",
+        "source_kind": "p08-network-facts",
+        "source_version": "1"
+      },
+      "tile": {
+        "x": 36,
+        "y": 15
+      },
+      "world_reference": null
+    },
+    {
+      "facility_class": "road",
+      "footprint_height_tiles": 1,
+      "footprint_width_tiles": 1,
+      "kind": "depot_candidate",
+      "location_id": "depot-1557",
+      "orientation": "south",
+      "permitted_modes": [
+        "road"
+      ],
+      "platform_length_tiles": null,
+      "serves_location_id": null,
+      "source": {
+        "source_digest": "20e18455093b3edc48563a2570bc0a518b42e6112c5c647a6f24a3aceb389b53",
+        "source_id": "qualified-batch",
+        "source_kind": "p08-network-facts",
+        "source_version": "1"
+      },
+      "tile": {
+        "x": 21,
+        "y": 24
+      },
+      "world_reference": null
+    },
+    {
+      "facility_class": "road",
+      "footprint_height_tiles": 1,
+      "footprint_width_tiles": 1,
+      "kind": "depot_candidate",
+      "location_id": "depot-2709",
+      "orientation": "south",
+      "permitted_modes": [
+        "road"
+      ],
+      "platform_length_tiles": null,
+      "serves_location_id": null,
+      "source": {
+        "source_digest": "20e18455093b3edc48563a2570bc0a518b42e6112c5c647a6f24a3aceb389b53",
+        "source_id": "qualified-batch",
+        "source_kind": "p08-network-facts",
+        "source_version": "1"
+      },
+      "tile": {
+        "x": 21,
+        "y": 42
+      },
+      "world_reference": null
+    },
+    {
+      "facility_class": "road",
+      "footprint_height_tiles": 1,
+      "footprint_width_tiles": 1,
+      "kind": "depot_candidate",
+      "location_id": "depot-404",
+      "orientation": "south",
+      "permitted_modes": [
+        "road"
+      ],
+      "platform_length_tiles": null,
+      "serves_location_id": null,
+      "source": {
+        "source_digest": "20e18455093b3edc48563a2570bc0a518b42e6112c5c647a6f24a3aceb389b53",
+        "source_id": "qualified-batch",
+        "source_kind": "p08-network-facts",
+        "source_version": "1"
+      },
+      "tile": {
+        "x": 20,
+        "y": 6
+      },
+      "world_reference": null
+    },
+    {
+      "facility_class": null,
+      "footprint_height_tiles": null,
+      "footprint_width_tiles": null,
+      "kind": "industry_origin",
+      "location_id": "industry-0",
+      "orientation": null,
+      "permitted_modes": [
+        "road"
+      ],
+      "platform_length_tiles": null,
+      "serves_location_id": null,
+      "source": {
+        "source_digest": "20e18455093b3edc48563a2570bc0a518b42e6112c5c647a6f24a3aceb389b53",
+        "source_id": "qualified-batch",
+        "source_kind": "p08-network-facts",
+        "source_version": "1"
+      },
+      "tile": {
+        "x": 20,
+        "y": 8
+      },
+      "world_reference": {
+        "kind": "industry",
+        "world_fingerprint": "857414d49065e48bcbd8eb35802e321f21b8a318899ae5a0e56ab9aabf301cc1",
+        "world_id": 0
+      }
+    },
+    {
+      "facility_class": null,
+      "footprint_height_tiles": null,
+      "footprint_width_tiles": null,
+      "kind": "industry_destination",
+      "location_id": "industry-1",
+      "orientation": null,
+      "permitted_modes": [
+        "road"
+      ],
+      "platform_length_tiles": null,
+      "serves_location_id": null,
+      "source": {
+        "source_digest": "20e18455093b3edc48563a2570bc0a518b42e6112c5c647a6f24a3aceb389b53",
+        "source_id": "qualified-batch",
+        "source_kind": "p08-network-facts",
+        "source_version": "1"
+      },
+      "tile": {
+        "x": 36,
+        "y": 16
+      },
+      "world_reference": {
+        "kind": "industry",
+        "world_fingerprint": "857414d49065e48bcbd8eb35802e321f21b8a318899ae5a0e56ab9aabf301cc1",
+        "world_id": 1
+      }
+    },
+    {
+      "facility_class": null,
+      "footprint_height_tiles": null,
+      "footprint_width_tiles": null,
+      "kind": "industry_origin",
+      "location_id": "industry-2",
+      "orientation": null,
+      "permitted_modes": [
+        "road"
+      ],
+      "platform_length_tiles": null,
+      "serves_location_id": null,
+      "source": {
+        "source_digest": "20e18455093b3edc48563a2570bc0a518b42e6112c5c647a6f24a3aceb389b53",
+        "source_id": "qualified-batch",
+        "source_kind": "p08-network-facts",
+        "source_version": "1"
+      },
+      "tile": {
+        "x": 20,
+        "y": 26
+      },
+      "world_reference": {
+        "kind": "industry",
+        "world_fingerprint": "857414d49065e48bcbd8eb35802e321f21b8a318899ae5a0e56ab9aabf301cc1",
+        "world_id": 2
+      }
+    },
+    {
+      "facility_class": null,
+      "footprint_height_tiles": null,
+      "footprint_width_tiles": null,
+      "kind": "industry_destination",
+      "location_id": "industry-3",
+      "orientation": null,
+      "permitted_modes": [
+        "road"
+      ],
+      "platform_length_tiles": null,
+      "serves_location_id": null,
+      "source": {
+        "source_digest": "20e18455093b3edc48563a2570bc0a518b42e6112c5c647a6f24a3aceb389b53",
+        "source_id": "qualified-batch",
+        "source_kind": "p08-network-facts",
+        "source_version": "1"
+      },
+      "tile": {
+        "x": 36,
+        "y": 34
+      },
+      "world_reference": {
+        "kind": "industry",
+        "world_fingerprint": "857414d49065e48bcbd8eb35802e321f21b8a318899ae5a0e56ab9aabf301cc1",
+        "world_id": 3
+      }
+    },
+    {
+      "facility_class": null,
+      "footprint_height_tiles": null,
+      "footprint_width_tiles": null,
+      "kind": "industry_origin",
+      "location_id": "industry-4",
+      "orientation": null,
+      "permitted_modes": [
+        "road"
+      ],
+      "platform_length_tiles": null,
+      "serves_location_id": null,
+      "source": {
+        "source_digest": "20e18455093b3edc48563a2570bc0a518b42e6112c5c647a6f24a3aceb389b53",
+        "source_id": "qualified-batch",
+        "source_kind": "p08-network-facts",
+        "source_version": "1"
+      },
+      "tile": {
+        "x": 20,
+        "y": 44
+      },
+      "world_reference": {
+        "kind": "industry",
+        "world_fingerprint": "857414d49065e48bcbd8eb35802e321f21b8a318899ae5a0e56ab9aabf301cc1",
+        "world_id": 4
+      }
+    },
+    {
+      "facility_class": null,
+      "footprint_height_tiles": null,
+      "footprint_width_tiles": null,
+      "kind": "industry_destination",
+      "location_id": "industry-5",
+      "orientation": null,
+      "permitted_modes": [
+        "road"
+      ],
+      "platform_length_tiles": null,
+      "serves_location_id": null,
+      "source": {
+        "source_digest": "20e18455093b3edc48563a2570bc0a518b42e6112c5c647a6f24a3aceb389b53",
+        "source_id": "qualified-batch",
+        "source_kind": "p08-network-facts",
+        "source_version": "1"
+      },
+      "tile": {
+        "x": 36,
+        "y": 52
+      },
+      "world_reference": {
+        "kind": "industry",
+        "world_fingerprint": "857414d49065e48bcbd8eb35802e321f21b8a318899ae5a0e56ab9aabf301cc1",
+        "world_id": 5
+      }
+    },
+    {
+      "facility_class": "truck",
+      "footprint_height_tiles": 1,
+      "footprint_width_tiles": 1,
+      "kind": "station_candidate",
+      "location_id": "pickup-1620",
+      "orientation": "east",
+      "permitted_modes": [
+        "road"
+      ],
+      "platform_length_tiles": null,
+      "serves_location_id": "industry-2",
+      "source": {
+        "source_digest": "20e18455093b3edc48563a2570bc0a518b42e6112c5c647a6f24a3aceb389b53",
+        "source_id": "qualified-batch",
+        "source_kind": "p08-network-facts",
+        "source_version": "1"
+      },
+      "tile": {
+        "x": 20,
+        "y": 25
+      },
+      "world_reference": null
+    },
+    {
+      "facility_class": "truck",
+      "footprint_height_tiles": 1,
+      "footprint_width_tiles": 1,
+      "kind": "station_candidate",
+      "location_id": "pickup-2772",
+      "orientation": "east",
+      "permitted_modes": [
+        "road"
+      ],
+      "platform_length_tiles": null,
+      "serves_location_id": "industry-4",
+      "source": {
+        "source_digest": "20e18455093b3edc48563a2570bc0a518b42e6112c5c647a6f24a3aceb389b53",
+        "source_id": "qualified-batch",
+        "source_kind": "p08-network-facts",
+        "source_version": "1"
+      },
+      "tile": {
+        "x": 20,
+        "y": 43
+      },
+      "world_reference": null
+    },
+    {
+      "facility_class": "truck",
+      "footprint_height_tiles": 1,
+      "footprint_width_tiles": 1,
+      "kind": "station_candidate",
+      "location_id": "pickup-532",
+      "orientation": "north",
+      "permitted_modes": [
+        "road"
+      ],
+      "platform_length_tiles": null,
+      "serves_location_id": "industry-0",
+      "source": {
+        "source_digest": "20e18455093b3edc48563a2570bc0a518b42e6112c5c647a6f24a3aceb389b53",
+        "source_id": "qualified-batch",
+        "source_kind": "p08-network-facts",
+        "source_version": "1"
+      },
+      "tile": {
+        "x": 20,
+        "y": 8
+      },
+      "world_reference": null
+    }
+  ],
+  "openttd_version": "15.3",
+  "scenario_id": "controlled-p08-network",
+  "scenario_version": "qualified-batch-network-v1",
+  "schema_version": 1,
+  "seed": 42,
+  "start_date": "1950-01-01",
+  "supported_modes": [
+    "road"
+  ],
+  "width_tiles": 64,
+  "world_fingerprint": "857414d49065e48bcbd8eb35802e321f21b8a318899ae5a0e56ab9aabf301cc1",
+  "world_manifest": {
+    "base_set_name": "OpenGFX",
+    "base_set_version": "8.0",
+    "buildable_tiles": [
+      {
+        "x": 20,
+        "y": 6
+      },
+      {
+        "x": 21,
+        "y": 6
+      },
+      {
+        "x": 22,
+        "y": 6
+      },
+      {
+        "x": 23,
+        "y": 6
+      },
+      {
+        "x": 24,
+        "y": 6
+      },
+      {
+        "x": 25,
+        "y": 6
+      },
+      {
+        "x": 26,
+        "y": 6
+      },
+      {
+        "x": 27,
+        "y": 6
+      },
+      {
+        "x": 28,
+        "y": 6
+      },
+      {
+        "x": 29,
+        "y": 6
+      },
+      {
+        "x": 30,
+        "y": 6
+      },
+      {
+        "x": 31,
+        "y": 6
+      },
+      {
+        "x": 32,
+        "y": 6
+      },
+      {
+        "x": 33,
+        "y": 6
+      },
+      {
+        "x": 34,
+        "y": 6
+      },
+      {
+        "x": 35,
+        "y": 6
+      },
+      {
+        "x": 36,
+        "y": 6
+      },
+      {
+        "x": 37,
+        "y": 6
+      },
+      {
+        "x": 19,
+        "y": 7
+      },
+      {
+        "x": 20,
+        "y": 7
+      },
+      {
+        "x": 21,
+        "y": 7
+      },
+      {
+        "x": 22,
+        "y": 7
+      },
+      {
+        "x": 23,
+        "y": 7
+      },
+      {
+        "x": 24,
+        "y": 7
+      },
+      {
+        "x": 25,
+        "y": 7
+      },
+      {
+        "x": 26,
+        "y": 7
+      },
+      {
+        "x": 27,
+        "y": 7
+      },
+      {
+        "x": 28,
+        "y": 7
+      },
+      {
+        "x": 29,
+        "y": 7
+      },
+      {
+        "x": 30,
+        "y": 7
+      },
+      {
+        "x": 31,
+        "y": 7
+      },
+      {
+        "x": 32,
+        "y": 7
+      },
+      {
+        "x": 33,
+        "y": 7
+      },
+      {
+        "x": 34,
+        "y": 7
+      },
+      {
+        "x": 35,
+        "y": 7
+      },
+      {
+        "x": 36,
+        "y": 7
+      },
+      {
+        "x": 37,
+        "y": 7
+      },
+      {
+        "x": 20,
+        "y": 8
+      },
+      {
+        "x": 23,
+        "y": 8
+      },
+      {
+        "x": 24,
+        "y": 8
+      },
+      {
+        "x": 25,
+        "y": 8
+      },
+      {
+        "x": 26,
+        "y": 8
+      },
+      {
+        "x": 27,
+        "y": 8
+      },
+      {
+        "x": 28,
+        "y": 8
+      },
+      {
+        "x": 29,
+        "y": 8
+      },
+      {
+        "x": 30,
+        "y": 8
+      },
+      {
+        "x": 31,
+        "y": 8
+      },
+      {
+        "x": 32,
+        "y": 8
+      },
+      {
+        "x": 33,
+        "y": 8
+      },
+      {
+        "x": 34,
+        "y": 8
+      },
+      {
+        "x": 35,
+        "y": 8
+      },
+      {
+        "x": 36,
+        "y": 8
+      },
+      {
+        "x": 37,
+        "y": 8
+      },
+      {
+        "x": 23,
+        "y": 9
+      },
+      {
+        "x": 24,
+        "y": 9
+      },
+      {
+        "x": 25,
+        "y": 9
+      },
+      {
+        "x": 26,
+        "y": 9
+      },
+      {
+        "x": 27,
+        "y": 9
+      },
+      {
+        "x": 28,
+        "y": 9
+      },
+      {
+        "x": 29,
+        "y": 9
+      },
+      {
+        "x": 30,
+        "y": 9
+      },
+      {
+        "x": 31,
+        "y": 9
+      },
+      {
+        "x": 32,
+        "y": 9
+      },
+      {
+        "x": 33,
+        "y": 9
+      },
+      {
+        "x": 34,
+        "y": 9
+      },
+      {
+        "x": 35,
+        "y": 9
+      },
+      {
+        "x": 36,
+        "y": 9
+      },
+      {
+        "x": 37,
+        "y": 9
+      },
+      {
+        "x": 18,
+        "y": 10
+      },
+      {
+        "x": 23,
+        "y": 10
+      },
+      {
+        "x": 24,
+        "y": 10
+      },
+      {
+        "x": 25,
+        "y": 10
+      },
+      {
+        "x": 26,
+        "y": 10
+      },
+      {
+        "x": 27,
+        "y": 10
+      },
+      {
+        "x": 28,
+        "y": 10
+      },
+      {
+        "x": 29,
+        "y": 10
+      },
+      {
+        "x": 30,
+        "y": 10
+      },
+      {
+        "x": 31,
+        "y": 10
+      },
+      {
+        "x": 32,
+        "y": 10
+      },
+      {
+        "x": 33,
+        "y": 10
+      },
+      {
+        "x": 34,
+        "y": 10
+      },
+      {
+        "x": 35,
+        "y": 10
+      },
+      {
+        "x": 36,
+        "y": 10
+      },
+      {
+        "x": 37,
+        "y": 10
+      },
+      {
+        "x": 18,
+        "y": 11
+      },
+      {
+        "x": 22,
+        "y": 11
+      },
+      {
+        "x": 23,
+        "y": 11
+      },
+      {
+        "x": 24,
+        "y": 11
+      },
+      {
+        "x": 25,
+        "y": 11
+      },
+      {
+        "x": 26,
+        "y": 11
+      },
+      {
+        "x": 27,
+        "y": 11
+      },
+      {
+        "x": 28,
+        "y": 11
+      },
+      {
+        "x": 29,
+        "y": 11
+      },
+      {
+        "x": 30,
+        "y": 11
+      },
+      {
+        "x": 31,
+        "y": 11
+      },
+      {
+        "x": 32,
+        "y": 11
+      },
+      {
+        "x": 33,
+        "y": 11
+      },
+      {
+        "x": 34,
+        "y": 11
+      },
+      {
+        "x": 35,
+        "y": 11
+      },
+      {
+        "x": 36,
+        "y": 11
+      },
+      {
+        "x": 37,
+        "y": 11
+      },
+      {
+        "x": 22,
+        "y": 12
+      },
+      {
+        "x": 23,
+        "y": 12
+      },
+      {
+        "x": 24,
+        "y": 12
+      },
+      {
+        "x": 25,
+        "y": 12
+      },
+      {
+        "x": 26,
+        "y": 12
+      },
+      {
+        "x": 27,
+        "y": 12
+      },
+      {
+        "x": 28,
+        "y": 12
+      },
+      {
+        "x": 29,
+        "y": 12
+      },
+      {
+        "x": 30,
+        "y": 12
+      },
+      {
+        "x": 31,
+        "y": 12
+      },
+      {
+        "x": 32,
+        "y": 12
+      },
+      {
+        "x": 33,
+        "y": 12
+      },
+      {
+        "x": 34,
+        "y": 12
+      },
+      {
+        "x": 35,
+        "y": 12
+      },
+      {
+        "x": 36,
+        "y": 12
+      },
+      {
+        "x": 37,
+        "y": 12
+      },
+      {
+        "x": 22,
+        "y": 13
+      },
+      {
+        "x": 23,
+        "y": 13
+      },
+      {
+        "x": 24,
+        "y": 13
+      },
+      {
+        "x": 25,
+        "y": 13
+      },
+      {
+        "x": 26,
+        "y": 13
+      },
+      {
+        "x": 27,
+        "y": 13
+      },
+      {
+        "x": 28,
+        "y": 13
+      },
+      {
+        "x": 29,
+        "y": 13
+      },
+      {
+        "x": 30,
+        "y": 13
+      },
+      {
+        "x": 31,
+        "y": 13
+      },
+      {
+        "x": 32,
+        "y": 13
+      },
+      {
+        "x": 33,
+        "y": 13
+      },
+      {
+        "x": 34,
+        "y": 13
+      },
+      {
+        "x": 35,
+        "y": 13
+      },
+      {
+        "x": 36,
+        "y": 13
+      },
+      {
+        "x": 37,
+        "y": 13
+      },
+      {
+        "x": 18,
+        "y": 14
+      },
+      {
+        "x": 19,
+        "y": 14
+      },
+      {
+        "x": 20,
+        "y": 14
+      },
+      {
+        "x": 21,
+        "y": 14
+      },
+      {
+        "x": 22,
+        "y": 14
+      },
+      {
+        "x": 23,
+        "y": 14
+      },
+      {
+        "x": 24,
+        "y": 14
+      },
+      {
+        "x": 25,
+        "y": 14
+      },
+      {
+        "x": 26,
+        "y": 14
+      },
+      {
+        "x": 27,
+        "y": 14
+      },
+      {
+        "x": 28,
+        "y": 14
+      },
+      {
+        "x": 29,
+        "y": 14
+      },
+      {
+        "x": 30,
+        "y": 14
+      },
+      {
+        "x": 31,
+        "y": 14
+      },
+      {
+        "x": 32,
+        "y": 14
+      },
+      {
+        "x": 33,
+        "y": 14
+      },
+      {
+        "x": 34,
+        "y": 14
+      },
+      {
+        "x": 35,
+        "y": 14
+      },
+      {
+        "x": 36,
+        "y": 14
+      },
+      {
+        "x": 37,
+        "y": 14
+      },
+      {
+        "x": 18,
+        "y": 15
+      },
+      {
+        "x": 19,
+        "y": 15
+      },
+      {
+        "x": 20,
+        "y": 15
+      },
+      {
+        "x": 21,
+        "y": 15
+      },
+      {
+        "x": 22,
+        "y": 15
+      },
+      {
+        "x": 23,
+        "y": 15
+      },
+      {
+        "x": 24,
+        "y": 15
+      },
+      {
+        "x": 25,
+        "y": 15
+      },
+      {
+        "x": 26,
+        "y": 15
+      },
+      {
+        "x": 27,
+        "y": 15
+      },
+      {
+        "x": 28,
+        "y": 15
+      },
+      {
+        "x": 29,
+        "y": 15
+      },
+      {
+        "x": 30,
+        "y": 15
+      },
+      {
+        "x": 31,
+        "y": 15
+      },
+      {
+        "x": 32,
+        "y": 15
+      },
+      {
+        "x": 33,
+        "y": 15
+      },
+      {
+        "x": 34,
+        "y": 15
+      },
+      {
+        "x": 35,
+        "y": 15
+      },
+      {
+        "x": 36,
+        "y": 15
+      },
+      {
+        "x": 37,
+        "y": 15
+      },
+      {
+        "x": 19,
+        "y": 16
+      },
+      {
+        "x": 20,
+        "y": 16
+      },
+      {
+        "x": 21,
+        "y": 16
+      },
+      {
+        "x": 22,
+        "y": 16
+      },
+      {
+        "x": 23,
+        "y": 16
+      },
+      {
+        "x": 24,
+        "y": 16
+      },
+      {
+        "x": 25,
+        "y": 16
+      },
+      {
+        "x": 26,
+        "y": 16
+      },
+      {
+        "x": 27,
+        "y": 16
+      },
+      {
+        "x": 28,
+        "y": 16
+      },
+      {
+        "x": 29,
+        "y": 16
+      },
+      {
+        "x": 30,
+        "y": 16
+      },
+      {
+        "x": 31,
+        "y": 16
+      },
+      {
+        "x": 32,
+        "y": 16
+      },
+      {
+        "x": 33,
+        "y": 16
+      },
+      {
+        "x": 34,
+        "y": 16
+      },
+      {
+        "x": 35,
+        "y": 16
+      },
+      {
+        "x": 18,
+        "y": 17
+      },
+      {
+        "x": 19,
+        "y": 17
+      },
+      {
+        "x": 20,
+        "y": 17
+      },
+      {
+        "x": 21,
+        "y": 17
+      },
+      {
+        "x": 22,
+        "y": 17
+      },
+      {
+        "x": 23,
+        "y": 17
+      },
+      {
+        "x": 24,
+        "y": 17
+      },
+      {
+        "x": 25,
+        "y": 17
+      },
+      {
+        "x": 26,
+        "y": 17
+      },
+      {
+        "x": 27,
+        "y": 17
+      },
+      {
+        "x": 28,
+        "y": 17
+      },
+      {
+        "x": 29,
+        "y": 17
+      },
+      {
+        "x": 30,
+        "y": 17
+      },
+      {
+        "x": 31,
+        "y": 17
+      },
+      {
+        "x": 32,
+        "y": 17
+      },
+      {
+        "x": 33,
+        "y": 17
+      },
+      {
+        "x": 34,
+        "y": 17
+      },
+      {
+        "x": 35,
+        "y": 17
+      },
+      {
+        "x": 18,
+        "y": 24
+      },
+      {
+        "x": 19,
+        "y": 24
+      },
+      {
+        "x": 20,
+        "y": 24
+      },
+      {
+        "x": 21,
+        "y": 24
+      },
+      {
+        "x": 22,
+        "y": 24
+      },
+      {
+        "x": 23,
+        "y": 24
+      },
+      {
+        "x": 24,
+        "y": 24
+      },
+      {
+        "x": 25,
+        "y": 24
+      },
+      {
+        "x": 26,
+        "y": 24
+      },
+      {
+        "x": 27,
+        "y": 24
+      },
+      {
+        "x": 28,
+        "y": 24
+      },
+      {
+        "x": 29,
+        "y": 24
+      },
+      {
+        "x": 30,
+        "y": 24
+      },
+      {
+        "x": 31,
+        "y": 24
+      },
+      {
+        "x": 32,
+        "y": 24
+      },
+      {
+        "x": 33,
+        "y": 24
+      },
+      {
+        "x": 34,
+        "y": 24
+      },
+      {
+        "x": 35,
+        "y": 24
+      },
+      {
+        "x": 36,
+        "y": 24
+      },
+      {
+        "x": 37,
+        "y": 24
+      },
+      {
+        "x": 18,
+        "y": 25
+      },
+      {
+        "x": 19,
+        "y": 25
+      },
+      {
+        "x": 20,
+        "y": 25
+      },
+      {
+        "x": 21,
+        "y": 25
+      },
+      {
+        "x": 22,
+        "y": 25
+      },
+      {
+        "x": 23,
+        "y": 25
+      },
+      {
+        "x": 24,
+        "y": 25
+      },
+      {
+        "x": 25,
+        "y": 25
+      },
+      {
+        "x": 26,
+        "y": 25
+      },
+      {
+        "x": 27,
+        "y": 25
+      },
+      {
+        "x": 28,
+        "y": 25
+      },
+      {
+        "x": 29,
+        "y": 25
+      },
+      {
+        "x": 30,
+        "y": 25
+      },
+      {
+        "x": 31,
+        "y": 25
+      },
+      {
+        "x": 32,
+        "y": 25
+      },
+      {
+        "x": 33,
+        "y": 25
+      },
+      {
+        "x": 34,
+        "y": 25
+      },
+      {
+        "x": 35,
+        "y": 25
+      },
+      {
+        "x": 36,
+        "y": 25
+      },
+      {
+        "x": 37,
+        "y": 25
+      },
+      {
+        "x": 18,
+        "y": 26
+      },
+      {
+        "x": 19,
+        "y": 26
+      },
+      {
+        "x": 23,
+        "y": 26
+      },
+      {
+        "x": 24,
+        "y": 26
+      },
+      {
+        "x": 25,
+        "y": 26
+      },
+      {
+        "x": 26,
+        "y": 26
+      },
+      {
+        "x": 27,
+        "y": 26
+      },
+      {
+        "x": 28,
+        "y": 26
+      },
+      {
+        "x": 29,
+        "y": 26
+      },
+      {
+        "x": 30,
+        "y": 26
+      },
+      {
+        "x": 31,
+        "y": 26
+      },
+      {
+        "x": 32,
+        "y": 26
+      },
+      {
+        "x": 33,
+        "y": 26
+      },
+      {
+        "x": 34,
+        "y": 26
+      },
+      {
+        "x": 35,
+        "y": 26
+      },
+      {
+        "x": 36,
+        "y": 26
+      },
+      {
+        "x": 37,
+        "y": 26
+      },
+      {
+        "x": 18,
+        "y": 27
+      },
+      {
+        "x": 19,
+        "y": 27
+      },
+      {
+        "x": 20,
+        "y": 27
+      },
+      {
+        "x": 22,
+        "y": 27
+      },
+      {
+        "x": 23,
+        "y": 27
+      },
+      {
+        "x": 25,
+        "y": 27
+      },
+      {
+        "x": 26,
+        "y": 27
+      },
+      {
+        "x": 27,
+        "y": 27
+      },
+      {
+        "x": 28,
+        "y": 27
+      },
+      {
+        "x": 29,
+        "y": 27
+      },
+      {
+        "x": 30,
+        "y": 27
+      },
+      {
+        "x": 31,
+        "y": 27
+      },
+      {
+        "x": 32,
+        "y": 27
+      },
+      {
+        "x": 33,
+        "y": 27
+      },
+      {
+        "x": 34,
+        "y": 27
+      },
+      {
+        "x": 35,
+        "y": 27
+      },
+      {
+        "x": 36,
+        "y": 27
+      },
+      {
+        "x": 37,
+        "y": 27
+      },
+      {
+        "x": 18,
+        "y": 28
+      },
+      {
+        "x": 19,
+        "y": 28
+      },
+      {
+        "x": 20,
+        "y": 28
+      },
+      {
+        "x": 23,
+        "y": 28
+      },
+      {
+        "x": 24,
+        "y": 28
+      },
+      {
+        "x": 25,
+        "y": 28
+      },
+      {
+        "x": 26,
+        "y": 28
+      },
+      {
+        "x": 27,
+        "y": 28
+      },
+      {
+        "x": 28,
+        "y": 28
+      },
+      {
+        "x": 29,
+        "y": 28
+      },
+      {
+        "x": 30,
+        "y": 28
+      },
+      {
+        "x": 31,
+        "y": 28
+      },
+      {
+        "x": 32,
+        "y": 28
+      },
+      {
+        "x": 33,
+        "y": 28
+      },
+      {
+        "x": 34,
+        "y": 28
+      },
+      {
+        "x": 35,
+        "y": 28
+      },
+      {
+        "x": 36,
+        "y": 28
+      },
+      {
+        "x": 37,
+        "y": 28
+      },
+      {
+        "x": 18,
+        "y": 29
+      },
+      {
+        "x": 19,
+        "y": 29
+      },
+      {
+        "x": 20,
+        "y": 29
+      },
+      {
+        "x": 21,
+        "y": 29
+      },
+      {
+        "x": 22,
+        "y": 29
+      },
+      {
+        "x": 23,
+        "y": 29
+      },
+      {
+        "x": 24,
+        "y": 29
+      },
+      {
+        "x": 25,
+        "y": 29
+      },
+      {
+        "x": 27,
+        "y": 29
+      },
+      {
+        "x": 28,
+        "y": 29
+      },
+      {
+        "x": 29,
+        "y": 29
+      },
+      {
+        "x": 30,
+        "y": 29
+      },
+      {
+        "x": 31,
+        "y": 29
+      },
+      {
+        "x": 32,
+        "y": 29
+      },
+      {
+        "x": 33,
+        "y": 29
+      },
+      {
+        "x": 34,
+        "y": 29
+      },
+      {
+        "x": 35,
+        "y": 29
+      },
+      {
+        "x": 36,
+        "y": 29
+      },
+      {
+        "x": 37,
+        "y": 29
+      },
+      {
+        "x": 18,
+        "y": 30
+      },
+      {
+        "x": 19,
+        "y": 30
+      },
+      {
+        "x": 20,
+        "y": 30
+      },
+      {
+        "x": 21,
+        "y": 30
+      },
+      {
+        "x": 22,
+        "y": 30
+      },
+      {
+        "x": 23,
+        "y": 30
+      },
+      {
+        "x": 24,
+        "y": 30
+      },
+      {
+        "x": 25,
+        "y": 30
+      },
+      {
+        "x": 26,
+        "y": 30
+      },
+      {
+        "x": 27,
+        "y": 30
+      },
+      {
+        "x": 28,
+        "y": 30
+      },
+      {
+        "x": 29,
+        "y": 30
+      },
+      {
+        "x": 30,
+        "y": 30
+      },
+      {
+        "x": 31,
+        "y": 30
+      },
+      {
+        "x": 32,
+        "y": 30
+      },
+      {
+        "x": 33,
+        "y": 30
+      },
+      {
+        "x": 34,
+        "y": 30
+      },
+      {
+        "x": 35,
+        "y": 30
+      },
+      {
+        "x": 36,
+        "y": 30
+      },
+      {
+        "x": 37,
+        "y": 30
+      },
+      {
+        "x": 18,
+        "y": 31
+      },
+      {
+        "x": 19,
+        "y": 31
+      },
+      {
+        "x": 20,
+        "y": 31
+      },
+      {
+        "x": 21,
+        "y": 31
+      },
+      {
+        "x": 22,
+        "y": 31
+      },
+      {
+        "x": 23,
+        "y": 31
+      },
+      {
+        "x": 25,
+        "y": 31
+      },
+      {
+        "x": 26,
+        "y": 31
+      },
+      {
+        "x": 27,
+        "y": 31
+      },
+      {
+        "x": 28,
+        "y": 31
+      },
+      {
+        "x": 29,
+        "y": 31
+      },
+      {
+        "x": 30,
+        "y": 31
+      },
+      {
+        "x": 31,
+        "y": 31
+      },
+      {
+        "x": 32,
+        "y": 31
+      },
+      {
+        "x": 33,
+        "y": 31
+      },
+      {
+        "x": 34,
+        "y": 31
+      },
+      {
+        "x": 35,
+        "y": 31
+      },
+      {
+        "x": 36,
+        "y": 31
+      },
+      {
+        "x": 37,
+        "y": 31
+      },
+      {
+        "x": 18,
+        "y": 32
+      },
+      {
+        "x": 19,
+        "y": 32
+      },
+      {
+        "x": 20,
+        "y": 32
+      },
+      {
+        "x": 21,
+        "y": 32
+      },
+      {
+        "x": 22,
+        "y": 32
+      },
+      {
+        "x": 23,
+        "y": 32
+      },
+      {
+        "x": 24,
+        "y": 32
+      },
+      {
+        "x": 25,
+        "y": 32
+      },
+      {
+        "x": 26,
+        "y": 32
+      },
+      {
+        "x": 27,
+        "y": 32
+      },
+      {
+        "x": 28,
+        "y": 32
+      },
+      {
+        "x": 29,
+        "y": 32
+      },
+      {
+        "x": 30,
+        "y": 32
+      },
+      {
+        "x": 31,
+        "y": 32
+      },
+      {
+        "x": 32,
+        "y": 32
+      },
+      {
+        "x": 33,
+        "y": 32
+      },
+      {
+        "x": 34,
+        "y": 32
+      },
+      {
+        "x": 35,
+        "y": 32
+      },
+      {
+        "x": 36,
+        "y": 32
+      },
+      {
+        "x": 37,
+        "y": 32
+      },
+      {
+        "x": 18,
+        "y": 33
+      },
+      {
+        "x": 19,
+        "y": 33
+      },
+      {
+        "x": 20,
+        "y": 33
+      },
+      {
+        "x": 21,
+        "y": 33
+      },
+      {
+        "x": 22,
+        "y": 33
+      },
+      {
+        "x": 24,
+        "y": 33
+      },
+      {
+        "x": 25,
+        "y": 33
+      },
+      {
+        "x": 26,
+        "y": 33
+      },
+      {
+        "x": 27,
+        "y": 33
+      },
+      {
+        "x": 28,
+        "y": 33
+      },
+      {
+        "x": 29,
+        "y": 33
+      },
+      {
+        "x": 30,
+        "y": 33
+      },
+      {
+        "x": 31,
+        "y": 33
+      },
+      {
+        "x": 32,
+        "y": 33
+      },
+      {
+        "x": 33,
+        "y": 33
+      },
+      {
+        "x": 34,
+        "y": 33
+      },
+      {
+        "x": 35,
+        "y": 33
+      },
+      {
+        "x": 36,
+        "y": 33
+      },
+      {
+        "x": 37,
+        "y": 33
+      },
+      {
+        "x": 18,
+        "y": 34
+      },
+      {
+        "x": 19,
+        "y": 34
+      },
+      {
+        "x": 20,
+        "y": 34
+      },
+      {
+        "x": 21,
+        "y": 34
+      },
+      {
+        "x": 22,
+        "y": 34
+      },
+      {
+        "x": 23,
+        "y": 34
+      },
+      {
+        "x": 24,
+        "y": 34
+      },
+      {
+        "x": 25,
+        "y": 34
+      },
+      {
+        "x": 26,
+        "y": 34
+      },
+      {
+        "x": 27,
+        "y": 34
+      },
+      {
+        "x": 28,
+        "y": 34
+      },
+      {
+        "x": 29,
+        "y": 34
+      },
+      {
+        "x": 30,
+        "y": 34
+      },
+      {
+        "x": 31,
+        "y": 34
+      },
+      {
+        "x": 32,
+        "y": 34
+      },
+      {
+        "x": 33,
+        "y": 34
+      },
+      {
+        "x": 34,
+        "y": 34
+      },
+      {
+        "x": 35,
+        "y": 34
+      },
+      {
+        "x": 36,
+        "y": 34
+      },
+      {
+        "x": 18,
+        "y": 35
+      },
+      {
+        "x": 19,
+        "y": 35
+      },
+      {
+        "x": 20,
+        "y": 35
+      },
+      {
+        "x": 21,
+        "y": 35
+      },
+      {
+        "x": 22,
+        "y": 35
+      },
+      {
+        "x": 23,
+        "y": 35
+      },
+      {
+        "x": 24,
+        "y": 35
+      },
+      {
+        "x": 25,
+        "y": 35
+      },
+      {
+        "x": 26,
+        "y": 35
+      },
+      {
+        "x": 27,
+        "y": 35
+      },
+      {
+        "x": 28,
+        "y": 35
+      },
+      {
+        "x": 29,
+        "y": 35
+      },
+      {
+        "x": 30,
+        "y": 35
+      },
+      {
+        "x": 31,
+        "y": 35
+      },
+      {
+        "x": 32,
+        "y": 35
+      },
+      {
+        "x": 33,
+        "y": 35
+      },
+      {
+        "x": 34,
+        "y": 35
+      },
+      {
+        "x": 35,
+        "y": 35
+      },
+      {
+        "x": 18,
+        "y": 42
+      },
+      {
+        "x": 19,
+        "y": 42
+      },
+      {
+        "x": 20,
+        "y": 42
+      },
+      {
+        "x": 21,
+        "y": 42
+      },
+      {
+        "x": 22,
+        "y": 42
+      },
+      {
+        "x": 23,
+        "y": 42
+      },
+      {
+        "x": 24,
+        "y": 42
+      },
+      {
+        "x": 25,
+        "y": 42
+      },
+      {
+        "x": 26,
+        "y": 42
+      },
+      {
+        "x": 27,
+        "y": 42
+      },
+      {
+        "x": 28,
+        "y": 42
+      },
+      {
+        "x": 29,
+        "y": 42
+      },
+      {
+        "x": 30,
+        "y": 42
+      },
+      {
+        "x": 31,
+        "y": 42
+      },
+      {
+        "x": 32,
+        "y": 42
+      },
+      {
+        "x": 33,
+        "y": 42
+      },
+      {
+        "x": 34,
+        "y": 42
+      },
+      {
+        "x": 35,
+        "y": 42
+      },
+      {
+        "x": 36,
+        "y": 42
+      },
+      {
+        "x": 37,
+        "y": 42
+      },
+      {
+        "x": 18,
+        "y": 43
+      },
+      {
+        "x": 19,
+        "y": 43
+      },
+      {
+        "x": 20,
+        "y": 43
+      },
+      {
+        "x": 21,
+        "y": 43
+      },
+      {
+        "x": 22,
+        "y": 43
+      },
+      {
+        "x": 23,
+        "y": 43
+      },
+      {
+        "x": 24,
+        "y": 43
+      },
+      {
+        "x": 25,
+        "y": 43
+      },
+      {
+        "x": 26,
+        "y": 43
+      },
+      {
+        "x": 27,
+        "y": 43
+      },
+      {
+        "x": 28,
+        "y": 43
+      },
+      {
+        "x": 29,
+        "y": 43
+      },
+      {
+        "x": 30,
+        "y": 43
+      },
+      {
+        "x": 31,
+        "y": 43
+      },
+      {
+        "x": 32,
+        "y": 43
+      },
+      {
+        "x": 33,
+        "y": 43
+      },
+      {
+        "x": 34,
+        "y": 43
+      },
+      {
+        "x": 35,
+        "y": 43
+      },
+      {
+        "x": 36,
+        "y": 43
+      },
+      {
+        "x": 37,
+        "y": 43
+      },
+      {
+        "x": 18,
+        "y": 44
+      },
+      {
+        "x": 19,
+        "y": 44
+      },
+      {
+        "x": 23,
+        "y": 44
+      },
+      {
+        "x": 24,
+        "y": 44
+      },
+      {
+        "x": 25,
+        "y": 44
+      },
+      {
+        "x": 26,
+        "y": 44
+      },
+      {
+        "x": 27,
+        "y": 44
+      },
+      {
+        "x": 28,
+        "y": 44
+      },
+      {
+        "x": 29,
+        "y": 44
+      },
+      {
+        "x": 30,
+        "y": 44
+      },
+      {
+        "x": 31,
+        "y": 44
+      },
+      {
+        "x": 32,
+        "y": 44
+      },
+      {
+        "x": 33,
+        "y": 44
+      },
+      {
+        "x": 34,
+        "y": 44
+      },
+      {
+        "x": 35,
+        "y": 44
+      },
+      {
+        "x": 36,
+        "y": 44
+      },
+      {
+        "x": 37,
+        "y": 44
+      },
+      {
+        "x": 18,
+        "y": 45
+      },
+      {
+        "x": 19,
+        "y": 45
+      },
+      {
+        "x": 20,
+        "y": 45
+      },
+      {
+        "x": 22,
+        "y": 45
+      },
+      {
+        "x": 23,
+        "y": 45
+      },
+      {
+        "x": 24,
+        "y": 45
+      },
+      {
+        "x": 25,
+        "y": 45
+      },
+      {
+        "x": 26,
+        "y": 45
+      },
+      {
+        "x": 27,
+        "y": 45
+      },
+      {
+        "x": 28,
+        "y": 45
+      },
+      {
+        "x": 29,
+        "y": 45
+      },
+      {
+        "x": 30,
+        "y": 45
+      },
+      {
+        "x": 31,
+        "y": 45
+      },
+      {
+        "x": 32,
+        "y": 45
+      },
+      {
+        "x": 34,
+        "y": 45
+      },
+      {
+        "x": 35,
+        "y": 45
+      },
+      {
+        "x": 36,
+        "y": 45
+      },
+      {
+        "x": 37,
+        "y": 45
+      },
+      {
+        "x": 18,
+        "y": 46
+      },
+      {
+        "x": 19,
+        "y": 46
+      },
+      {
+        "x": 20,
+        "y": 46
+      },
+      {
+        "x": 24,
+        "y": 46
+      },
+      {
+        "x": 25,
+        "y": 46
+      },
+      {
+        "x": 26,
+        "y": 46
+      },
+      {
+        "x": 27,
+        "y": 46
+      },
+      {
+        "x": 28,
+        "y": 46
+      },
+      {
+        "x": 29,
+        "y": 46
+      },
+      {
+        "x": 30,
+        "y": 46
+      },
+      {
+        "x": 31,
+        "y": 46
+      },
+      {
+        "x": 32,
+        "y": 46
+      },
+      {
+        "x": 33,
+        "y": 46
+      },
+      {
+        "x": 34,
+        "y": 46
+      },
+      {
+        "x": 35,
+        "y": 46
+      },
+      {
+        "x": 36,
+        "y": 46
+      },
+      {
+        "x": 37,
+        "y": 46
+      },
+      {
+        "x": 18,
+        "y": 47
+      },
+      {
+        "x": 19,
+        "y": 47
+      },
+      {
+        "x": 20,
+        "y": 47
+      },
+      {
+        "x": 21,
+        "y": 47
+      },
+      {
+        "x": 22,
+        "y": 47
+      },
+      {
+        "x": 23,
+        "y": 47
+      },
+      {
+        "x": 24,
+        "y": 47
+      },
+      {
+        "x": 25,
+        "y": 47
+      },
+      {
+        "x": 26,
+        "y": 47
+      },
+      {
+        "x": 27,
+        "y": 47
+      },
+      {
+        "x": 28,
+        "y": 47
+      },
+      {
+        "x": 29,
+        "y": 47
+      },
+      {
+        "x": 30,
+        "y": 47
+      },
+      {
+        "x": 31,
+        "y": 47
+      },
+      {
+        "x": 32,
+        "y": 47
+      },
+      {
+        "x": 33,
+        "y": 47
+      },
+      {
+        "x": 34,
+        "y": 47
+      },
+      {
+        "x": 35,
+        "y": 47
+      },
+      {
+        "x": 36,
+        "y": 47
+      },
+      {
+        "x": 37,
+        "y": 47
+      },
+      {
+        "x": 18,
+        "y": 48
+      },
+      {
+        "x": 19,
+        "y": 48
+      },
+      {
+        "x": 20,
+        "y": 48
+      },
+      {
+        "x": 21,
+        "y": 48
+      },
+      {
+        "x": 22,
+        "y": 48
+      },
+      {
+        "x": 23,
+        "y": 48
+      },
+      {
+        "x": 24,
+        "y": 48
+      },
+      {
+        "x": 25,
+        "y": 48
+      },
+      {
+        "x": 26,
+        "y": 48
+      },
+      {
+        "x": 27,
+        "y": 48
+      },
+      {
+        "x": 28,
+        "y": 48
+      },
+      {
+        "x": 29,
+        "y": 48
+      },
+      {
+        "x": 30,
+        "y": 48
+      },
+      {
+        "x": 31,
+        "y": 48
+      },
+      {
+        "x": 32,
+        "y": 48
+      },
+      {
+        "x": 33,
+        "y": 48
+      },
+      {
+        "x": 34,
+        "y": 48
+      },
+      {
+        "x": 35,
+        "y": 48
+      },
+      {
+        "x": 36,
+        "y": 48
+      },
+      {
+        "x": 37,
+        "y": 48
+      },
+      {
+        "x": 18,
+        "y": 49
+      },
+      {
+        "x": 19,
+        "y": 49
+      },
+      {
+        "x": 20,
+        "y": 49
+      },
+      {
+        "x": 21,
+        "y": 49
+      },
+      {
+        "x": 22,
+        "y": 49
+      },
+      {
+        "x": 23,
+        "y": 49
+      },
+      {
+        "x": 24,
+        "y": 49
+      },
+      {
+        "x": 25,
+        "y": 49
+      },
+      {
+        "x": 26,
+        "y": 49
+      },
+      {
+        "x": 27,
+        "y": 49
+      },
+      {
+        "x": 28,
+        "y": 49
+      },
+      {
+        "x": 29,
+        "y": 49
+      },
+      {
+        "x": 30,
+        "y": 49
+      },
+      {
+        "x": 31,
+        "y": 49
+      },
+      {
+        "x": 33,
+        "y": 49
+      },
+      {
+        "x": 34,
+        "y": 49
+      },
+      {
+        "x": 35,
+        "y": 49
+      },
+      {
+        "x": 36,
+        "y": 49
+      },
+      {
+        "x": 37,
+        "y": 49
+      },
+      {
+        "x": 18,
+        "y": 50
+      },
+      {
+        "x": 19,
+        "y": 50
+      },
+      {
+        "x": 20,
+        "y": 50
+      },
+      {
+        "x": 21,
+        "y": 50
+      },
+      {
+        "x": 22,
+        "y": 50
+      },
+      {
+        "x": 23,
+        "y": 50
+      },
+      {
+        "x": 24,
+        "y": 50
+      },
+      {
+        "x": 25,
+        "y": 50
+      },
+      {
+        "x": 26,
+        "y": 50
+      },
+      {
+        "x": 27,
+        "y": 50
+      },
+      {
+        "x": 28,
+        "y": 50
+      },
+      {
+        "x": 29,
+        "y": 50
+      },
+      {
+        "x": 30,
+        "y": 50
+      },
+      {
+        "x": 31,
+        "y": 50
+      },
+      {
+        "x": 32,
+        "y": 50
+      },
+      {
+        "x": 33,
+        "y": 50
+      },
+      {
+        "x": 34,
+        "y": 50
+      },
+      {
+        "x": 35,
+        "y": 50
+      },
+      {
+        "x": 36,
+        "y": 50
+      },
+      {
+        "x": 37,
+        "y": 50
+      },
+      {
+        "x": 18,
+        "y": 51
+      },
+      {
+        "x": 19,
+        "y": 51
+      },
+      {
+        "x": 20,
+        "y": 51
+      },
+      {
+        "x": 21,
+        "y": 51
+      },
+      {
+        "x": 22,
+        "y": 51
+      },
+      {
+        "x": 23,
+        "y": 51
+      },
+      {
+        "x": 24,
+        "y": 51
+      },
+      {
+        "x": 25,
+        "y": 51
+      },
+      {
+        "x": 26,
+        "y": 51
+      },
+      {
+        "x": 27,
+        "y": 51
+      },
+      {
+        "x": 28,
+        "y": 51
+      },
+      {
+        "x": 29,
+        "y": 51
+      },
+      {
+        "x": 31,
+        "y": 51
+      },
+      {
+        "x": 32,
+        "y": 51
+      },
+      {
+        "x": 33,
+        "y": 51
+      },
+      {
+        "x": 34,
+        "y": 51
+      },
+      {
+        "x": 35,
+        "y": 51
+      },
+      {
+        "x": 36,
+        "y": 51
+      },
+      {
+        "x": 37,
+        "y": 51
+      },
+      {
+        "x": 18,
+        "y": 52
+      },
+      {
+        "x": 19,
+        "y": 52
+      },
+      {
+        "x": 20,
+        "y": 52
+      },
+      {
+        "x": 21,
+        "y": 52
+      },
+      {
+        "x": 22,
+        "y": 52
+      },
+      {
+        "x": 23,
+        "y": 52
+      },
+      {
+        "x": 24,
+        "y": 52
+      },
+      {
+        "x": 25,
+        "y": 52
+      },
+      {
+        "x": 26,
+        "y": 52
+      },
+      {
+        "x": 27,
+        "y": 52
+      },
+      {
+        "x": 28,
+        "y": 52
+      },
+      {
+        "x": 29,
+        "y": 52
+      },
+      {
+        "x": 30,
+        "y": 52
+      },
+      {
+        "x": 31,
+        "y": 52
+      },
+      {
+        "x": 32,
+        "y": 52
+      },
+      {
+        "x": 33,
+        "y": 52
+      },
+      {
+        "x": 34,
+        "y": 52
+      },
+      {
+        "x": 35,
+        "y": 52
+      },
+      {
+        "x": 18,
+        "y": 53
+      },
+      {
+        "x": 19,
+        "y": 53
+      },
+      {
+        "x": 20,
+        "y": 53
+      },
+      {
+        "x": 22,
+        "y": 53
+      },
+      {
+        "x": 23,
+        "y": 53
+      },
+      {
+        "x": 24,
+        "y": 53
+      },
+      {
+        "x": 25,
+        "y": 53
+      },
+      {
+        "x": 26,
+        "y": 53
+      },
+      {
+        "x": 27,
+        "y": 53
+      },
+      {
+        "x": 28,
+        "y": 53
+      },
+      {
+        "x": 29,
+        "y": 53
+      },
+      {
+        "x": 30,
+        "y": 53
+      },
+      {
+        "x": 31,
+        "y": 53
+      },
+      {
+        "x": 32,
+        "y": 53
+      },
+      {
+        "x": 33,
+        "y": 53
+      },
+      {
+        "x": 34,
+        "y": 53
+      },
+      {
+        "x": 35,
+        "y": 53
+      }
+    ],
+    "cargo_types": [
+      "cargo-434F414C"
+    ],
+    "height_tiles": 64,
+    "openttd_version": "15.3",
+    "resolved_sites": [
+      {
+        "facility_class": "truck",
+        "footprint_height_tiles": 1,
+        "footprint_width_tiles": 1,
+        "kind": "station_candidate",
+        "location_id": "delivery-2212",
+        "orientation": "north",
+        "permitted_modes": [
+          "road"
+        ],
+        "platform_length_tiles": null,
+        "serves_location_id": "industry-3",
+        "tile": {
+          "x": 36,
+          "y": 34
+        },
+        "world_id": null,
+        "world_kind": null
+      },
+      {
+        "facility_class": "truck",
+        "footprint_height_tiles": 1,
+        "footprint_width_tiles": 1,
+        "kind": "station_candidate",
+        "location_id": "delivery-3300",
+        "orientation": "north",
+        "permitted_modes": [
+          "road"
+        ],
+        "platform_length_tiles": null,
+        "serves_location_id": "industry-5",
+        "tile": {
+          "x": 36,
+          "y": 51
+        },
+        "world_id": null,
+        "world_kind": null
+      },
+      {
+        "facility_class": "truck",
+        "footprint_height_tiles": 1,
+        "footprint_width_tiles": 1,
+        "kind": "station_candidate",
+        "location_id": "delivery-996",
+        "orientation": "north",
+        "permitted_modes": [
+          "road"
+        ],
+        "platform_length_tiles": null,
+        "serves_location_id": "industry-1",
+        "tile": {
+          "x": 36,
+          "y": 15
+        },
+        "world_id": null,
+        "world_kind": null
+      },
+      {
+        "facility_class": "road",
+        "footprint_height_tiles": 1,
+        "footprint_width_tiles": 1,
+        "kind": "depot_candidate",
+        "location_id": "depot-1557",
+        "orientation": "south",
+        "permitted_modes": [
+          "road"
+        ],
+        "platform_length_tiles": null,
+        "serves_location_id": null,
+        "tile": {
+          "x": 21,
+          "y": 24
+        },
+        "world_id": null,
+        "world_kind": null
+      },
+      {
+        "facility_class": "road",
+        "footprint_height_tiles": 1,
+        "footprint_width_tiles": 1,
+        "kind": "depot_candidate",
+        "location_id": "depot-2709",
+        "orientation": "south",
+        "permitted_modes": [
+          "road"
+        ],
+        "platform_length_tiles": null,
+        "serves_location_id": null,
+        "tile": {
+          "x": 21,
+          "y": 42
+        },
+        "world_id": null,
+        "world_kind": null
+      },
+      {
+        "facility_class": "road",
+        "footprint_height_tiles": 1,
+        "footprint_width_tiles": 1,
+        "kind": "depot_candidate",
+        "location_id": "depot-404",
+        "orientation": "south",
+        "permitted_modes": [
+          "road"
+        ],
+        "platform_length_tiles": null,
+        "serves_location_id": null,
+        "tile": {
+          "x": 20,
+          "y": 6
+        },
+        "world_id": null,
+        "world_kind": null
+      },
+      {
+        "facility_class": null,
+        "footprint_height_tiles": null,
+        "footprint_width_tiles": null,
+        "kind": "industry_origin",
+        "location_id": "industry-0",
+        "orientation": null,
+        "permitted_modes": [
+          "road"
+        ],
+        "platform_length_tiles": null,
+        "serves_location_id": null,
+        "tile": {
+          "x": 20,
+          "y": 8
+        },
+        "world_id": 0,
+        "world_kind": "industry"
+      },
+      {
+        "facility_class": null,
+        "footprint_height_tiles": null,
+        "footprint_width_tiles": null,
+        "kind": "industry_destination",
+        "location_id": "industry-1",
+        "orientation": null,
+        "permitted_modes": [
+          "road"
+        ],
+        "platform_length_tiles": null,
+        "serves_location_id": null,
+        "tile": {
+          "x": 36,
+          "y": 16
+        },
+        "world_id": 1,
+        "world_kind": "industry"
+      },
+      {
+        "facility_class": null,
+        "footprint_height_tiles": null,
+        "footprint_width_tiles": null,
+        "kind": "industry_origin",
+        "location_id": "industry-2",
+        "orientation": null,
+        "permitted_modes": [
+          "road"
+        ],
+        "platform_length_tiles": null,
+        "serves_location_id": null,
+        "tile": {
+          "x": 20,
+          "y": 26
+        },
+        "world_id": 2,
+        "world_kind": "industry"
+      },
+      {
+        "facility_class": null,
+        "footprint_height_tiles": null,
+        "footprint_width_tiles": null,
+        "kind": "industry_destination",
+        "location_id": "industry-3",
+        "orientation": null,
+        "permitted_modes": [
+          "road"
+        ],
+        "platform_length_tiles": null,
+        "serves_location_id": null,
+        "tile": {
+          "x": 36,
+          "y": 34
+        },
+        "world_id": 3,
+        "world_kind": "industry"
+      },
+      {
+        "facility_class": null,
+        "footprint_height_tiles": null,
+        "footprint_width_tiles": null,
+        "kind": "industry_origin",
+        "location_id": "industry-4",
+        "orientation": null,
+        "permitted_modes": [
+          "road"
+        ],
+        "platform_length_tiles": null,
+        "serves_location_id": null,
+        "tile": {
+          "x": 20,
+          "y": 44
+        },
+        "world_id": 4,
+        "world_kind": "industry"
+      },
+      {
+        "facility_class": null,
+        "footprint_height_tiles": null,
+        "footprint_width_tiles": null,
+        "kind": "industry_destination",
+        "location_id": "industry-5",
+        "orientation": null,
+        "permitted_modes": [
+          "road"
+        ],
+        "platform_length_tiles": null,
+        "serves_location_id": null,
+        "tile": {
+          "x": 36,
+          "y": 52
+        },
+        "world_id": 5,
+        "world_kind": "industry"
+      },
+      {
+        "facility_class": "truck",
+        "footprint_height_tiles": 1,
+        "footprint_width_tiles": 1,
+        "kind": "station_candidate",
+        "location_id": "pickup-1620",
+        "orientation": "east",
+        "permitted_modes": [
+          "road"
+        ],
+        "platform_length_tiles": null,
+        "serves_location_id": "industry-2",
+        "tile": {
+          "x": 20,
+          "y": 25
+        },
+        "world_id": null,
+        "world_kind": null
+      },
+      {
+        "facility_class": "truck",
+        "footprint_height_tiles": 1,
+        "footprint_width_tiles": 1,
+        "kind": "station_candidate",
+        "location_id": "pickup-2772",
+        "orientation": "east",
+        "permitted_modes": [
+          "road"
+        ],
+        "platform_length_tiles": null,
+        "serves_location_id": "industry-4",
+        "tile": {
+          "x": 20,
+          "y": 43
+        },
+        "world_id": null,
+        "world_kind": null
+      },
+      {
+        "facility_class": "truck",
+        "footprint_height_tiles": 1,
+        "footprint_width_tiles": 1,
+        "kind": "station_candidate",
+        "location_id": "pickup-532",
+        "orientation": "north",
+        "permitted_modes": [
+          "road"
+        ],
+        "platform_length_tiles": null,
+        "serves_location_id": "industry-0",
+        "tile": {
+          "x": 20,
+          "y": 8
+        },
+        "world_id": null,
+        "world_kind": null
+      }
+    ],
+    "schema_version": 1,
+    "seed": 42,
+    "source_digest": "956fd32803343c08683632ee0a79f1228cc3d336a5ab44383da5a79555e53308",
+    "vehicle_types": [
+      "road-engine-123"
+    ],
+    "width_tiles": 64
+  }
+}
