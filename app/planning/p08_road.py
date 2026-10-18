@@ -1,7 +1,8 @@
 """Bounded controlled road candidates, independent of historical full-map extraction."""
 
+import heapq
 from collections import deque
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from decimal import ROUND_HALF_EVEN, Decimal, localcontext
 from hashlib import sha256
 from itertools import product
@@ -37,6 +38,11 @@ from app.planning.p08_adapter import (
     QualifiedSupply,
     RoadOutcome,
     adapt_planning_facts,
+)
+from app.planning.p08_terrain import (
+    FeasibilityDiagnosis,
+    TerrainOutcome,
+    assess_world_feasibility,
 )
 from app.planning.preparation.costs import validate_cost_units
 from app.planning.preparation.failures import PreparationError
@@ -95,6 +101,7 @@ class ControlledRoadScenario:
     station_pairs_examined: int
     road_pieces: int
     fleet_count: int
+    reachability_expansions: int = 0
     classification: str = "CONTROLLED_PLANNING_SCENARIO"
     trust: SourceTrust = SourceTrust.CONTROLLED_FIXTURE
 
@@ -107,6 +114,12 @@ class NoRoadScenario:
     code: RoadOutcome
     detail: str
     input: BoundedRoadInput
+    # Planning-only levelling proposal or structured infeasibility, attached
+    # after bounded corridor rejection; never an executable plan.
+    terrain_proposal: TerrainOutcome | None = None
+    # Bounded world-feasibility diagnosis (Task D): classification of what the
+    # corridor rejection would require; no construction authority implied.
+    feasibility: FeasibilityDiagnosis | None = None
 
 
 def vacant(t: TileFact) -> bool:
@@ -181,7 +194,9 @@ def select_benchmark(value: BoundedRoadInput) -> Benchmark | NoRoadScenario:
     return NoRoadScenario(RoadOutcome.NO_ELIGIBLE_BENCHMARK, "no compatible covered OD", value)
 
 
-def station_tiles(value: BoundedRoadInput, b: Benchmark, role: str) -> tuple[int, ...]:
+def station_tiles(
+    value: BoundedRoadInput, b: Benchmark, role: str, *, limit: int | None = MAX_STATIONS_PER_ROLE
+) -> tuple[int, ...]:
     industry = b.producer if role == "pickup" else b.acceptor
     covered = {
         c.tile_id
@@ -195,7 +210,7 @@ def station_tiles(value: BoundedRoadInput, b: Benchmark, role: str) -> tuple[int
     # Native industry-specific coverage is authoritative; anchor distance is only ranking.
     eligible = [t for t in value.facts.tiles if t.tile_id in covered and vacant(t)]
     eligible.sort(key=lambda t: (abs(t.x - industry.x) + abs(t.y - industry.y), t.tile_id))
-    return tuple(t.tile_id for t in eligible[:MAX_STATIONS_PER_ROLE])
+    return tuple(t.tile_id for t in eligible[:limit])
 
 
 def shortest_path(
@@ -222,6 +237,53 @@ def shortest_path(
     return (), expansions
 
 
+def corridor_reachability(
+    pickups: tuple[int, ...],
+    deliveries: tuple[int, ...],
+    tiles: dict[int, TileFact],
+    width: int,
+    *,
+    budget: int,
+) -> tuple[dict[int, tuple[int, ...]], int, bool]:
+    """Deterministic bounded uniform-cost reachability between supported stops.
+
+    One shared-super-source Dijkstra sweep over the complete covered-station
+    graph settles whether *any* supported corridor exists: a disconnected
+    result is a complete infeasibility proof, not a first-N-stop artifact,
+    and every reached delivery keeps a deterministic witness route ordered
+    by (cost, tile identity). Expansion work is bounded by ``budget``.
+    """
+    best = {p: 0 for p in pickups}
+    parents: dict[int, int | None] = {p: None for p in pickups}
+    pending = [(0, p) for p in pickups]
+    heapq.heapify(pending)
+    expansions = 0
+    while pending:
+        if expansions >= budget:
+            return {}, expansions, True
+        cost, i = heapq.heappop(pending)
+        if cost > best[i]:
+            continue
+        expansions += 1
+        for _, n in neighbors(tiles[i], tiles, width):
+            j = n.tile_id
+            if j not in best or cost + 1 < best[j]:
+                best[j] = cost + 1
+                parents[j] = i
+                heapq.heappush(pending, (cost + 1, j))
+    witnesses: dict[int, tuple[int, ...]] = {}
+    for z in deliveries:
+        if z not in best:
+            continue
+        path = [z]
+        while parents[path[-1]] is not None:
+            parent = parents[path[-1]]
+            assert parent is not None
+            path.append(parent)
+        witnesses[z] = tuple(reversed(path))
+    return witnesses, expansions, False
+
+
 def find_depot(path: tuple[int, ...], tiles: dict[int, TileFact], width: int) -> Facility | None:
     # Road must connect to a corridor interior, never a terminal station footprint.
     for i in sorted(tiles):
@@ -237,7 +299,23 @@ def facing(a: TileFact, b: TileFact) -> Literal["north", "east", "south", "west"
     return next(d for d, dx, dy in DIRECTIONS if (a.x + dx, a.y + dy) == (b.x, b.y))
 
 
-def generate_road_scenario(value: BoundedRoadInput) -> ControlledRoadScenario | NoRoadScenario:
+def witness_order(witnesses: dict[int, tuple[int, ...]]) -> list[tuple[int, ...]]:
+    """Deterministic candidate order for reachability witnesses.
+
+    Supported 2..47-interior corridors come first (shortest, then smallest tile
+    identity); over-long corridors follow so the native bound can reject them
+    explicitly. Trivial adjacent-stop routes can never host two stops.
+    """
+    routes = [witnesses[z] for z in sorted(witnesses) if len(witnesses[z]) >= 3]
+    return sorted(
+        routes,
+        key=lambda p: (len(p) - 2 not in range(2, 48), len(p), p[0], p[-1]),
+    )
+
+
+def generate_road_scenario(
+    value: BoundedRoadInput, *, full_load_batch: bool = False
+) -> ControlledRoadScenario | NoRoadScenario:
     """Return one candidate set or explicit bounded infeasibility; never invoke P05."""
     # Frozen dataclasses can still be manually constructed: verify adapter-issued mapping.
     if not isinstance(value, BoundedRoadInput):
@@ -261,6 +339,8 @@ def generate_road_scenario(value: BoundedRoadInput) -> ControlledRoadScenario | 
             "no available default-cargo road engine",
             value,
         )
+    if full_load_batch:
+        engines = [e for e in engines if e.capacity_cargo_units == b.quantity]
     # Choose first capacity-feasible engine, not an economically optimal engine.
     engines = [
         e
@@ -285,7 +365,36 @@ def generate_road_scenario(value: BoundedRoadInput) -> ControlledRoadScenario | 
             else RoadOutcome.MISSING_CATCHMENT
         )
         return NoRoadScenario(code, "no vacant industry-covered stop for both roles", value)
-    expansions, pairs, connected = 0, 0, False
+    # Complete supported-graph reachability over every eligible covered stop.
+    # A disconnected result proves corridor infeasibility; connected results only
+    # record witnesses and never change the incumbent selection below.
+    eligible_pickups = station_tiles(value, b, "pickup", limit=None)
+    eligible_deliveries = station_tiles(value, b, "delivery", limit=None)
+    witnesses, reach_expansions, exhausted = corridor_reachability(
+        eligible_pickups,
+        eligible_deliveries,
+        tiles,
+        value.manifest.width_tiles,
+        budget=MAX_PATH_EXPANSIONS,
+    )
+    if exhausted:
+        return NoRoadScenario(
+            RoadOutcome.SEARCH_LIMIT_EXCEEDED,
+            "aggregate path expansion bound exceeded",
+            value,
+        )
+    witnesses = {z: path for z, path in witnesses.items() if path[0] != z}
+    if not witnesses:
+        rejection = NoRoadScenario(
+            RoadOutcome.NO_BOUNDED_CORRIDOR,
+            "bounded corridor search exhausted; "
+            f"{len(eligible_pickups)} eligible pickup and {len(eligible_deliveries)} eligible "
+            "delivery stops are disconnected across all supported corridor tiles; "
+            "no feasibility outside this slice implied",
+            value,
+        )
+        return _with_terrain_proposal(rejection, value, eligible_pickups, eligible_deliveries)
+    expansions, pairs = 0, 0
     for a, z in product(pickups, deliveries):
         pairs += 1
         if a == z:
@@ -300,18 +409,79 @@ def generate_road_scenario(value: BoundedRoadInput) -> ControlledRoadScenario | 
             )
         if len(path) < 3:
             continue
-        connected = True
         depot = find_depot(path, tiles, value.manifest.width_tiles)
         if depot is None:
             continue
         pickup = Facility(a, path[1], facing(tiles[a], tiles[path[1]]))
         delivery = Facility(z, path[-2], facing(tiles[z], tiles[path[-2]]))
-        return assemble(value, b, engine, pickup, delivery, depot, path, expansions, pairs)
-    return NoRoadScenario(
-        RoadOutcome.NO_DEPOT_PLACEMENT if connected else RoadOutcome.NO_BOUNDED_CORRIDOR,
+        return assemble(
+            value,
+            b,
+            engine,
+            pickup,
+            delivery,
+            depot,
+            path,
+            expansions,
+            pairs,
+            reach_expansions,
+        )
+    # The incumbent first-four-stop selection found no candidate; recover complete
+    # supported-graph witness corridors outside that bounded stop set.
+    ordered = witness_order(witnesses)
+    for path in ordered:
+        depot = find_depot(path, tiles, value.manifest.width_tiles)
+        if depot is None:
+            continue
+        pickup = Facility(path[0], path[1], facing(tiles[path[0]], tiles[path[1]]))
+        delivery = Facility(path[-1], path[-2], facing(tiles[path[-1]], tiles[path[-2]]))
+        return assemble(
+            value,
+            b,
+            engine,
+            pickup,
+            delivery,
+            depot,
+            path,
+            expansions,
+            pairs,
+            reach_expansions,
+        )
+    if ordered:
+        return NoRoadScenario(
+            RoadOutcome.NO_DEPOT_PLACEMENT,
+            "bounded first-four-stop and eligible-stop witness searches exhausted; "
+            "connected supported corridors lack a depot-adjacent interior",
+            value,
+        )
+    rejected = NoRoadScenario(
+        RoadOutcome.NO_BOUNDED_CORRIDOR,
         "bounded first-four-stop search exhausted; no feasibility outside this slice implied",
         value,
     )
+    return _with_terrain_proposal(
+        rejected, value, station_tiles(value, b, "pickup", limit=None), eligible_deliveries
+    )
+
+
+def _with_terrain_proposal(
+    rejection: NoRoadScenario,
+    value: BoundedRoadInput,
+    eligible_pickups: tuple[int, ...],
+    eligible_deliveries: tuple[int, ...],
+) -> NoRoadScenario:
+    """Attach planning-only diagnostics to a corridor rejection.
+
+    The levelling proposal (or its structured infeasibility) and the bounded
+    world-feasibility diagnosis are planning records: native terrain execution
+    stays unsupported until separately validated, and the rejection code and
+    detail stay byte identical so pinned decision replays remain stable.
+    """
+    from app.planning.p08_terrain import plan_bounded_levelling
+
+    outcome = plan_bounded_levelling(value.facts, eligible_pickups, eligible_deliveries)
+    diagnosis = assess_world_feasibility(value.facts, eligible_pickups, eligible_deliveries)
+    return replace(rejection, terrain_proposal=outcome, feasibility=diagnosis)
 
 
 def assemble(
@@ -324,6 +494,7 @@ def assemble(
     path: tuple[int, ...],
     expansions: int,
     pairs: int,
+    reachability_expansions: int = 0,
 ) -> ControlledRoadScenario | NoRoadScenario:
     def tile(i: int) -> Tile:
         return Tile(x=i % value.manifest.width_tiles, y=i // value.manifest.width_tiles)
@@ -595,4 +766,5 @@ def assemble(
         pairs,
         pieces,
         count,
+        reachability_expansions,
     )
