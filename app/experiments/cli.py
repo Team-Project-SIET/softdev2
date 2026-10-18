@@ -64,7 +64,37 @@ def main(argv: list[str] | None = None) -> int:
     analytics_parser.add_argument(
         "--output", type=Path, default=Path("artifacts/experiments/p07-freight")
     )
+    insights_parser = commands.add_parser(
+        "analyze-performance-insights",
+        help=(
+            "agent-b-additive: derive offline performance insights, bottleneck "
+            "hypotheses and advisory recommendations from retained P07 reports"
+        ),
+    )
+    insights_parser.add_argument("SOURCE", type=Path)
+    insights_parser.add_argument("--output", type=Path, required=True)
+    insights_parser.add_argument(
+        "--compare",
+        type=Path,
+        nargs="*",
+        default=(),
+        help="additional retained P07 report directories to compare",
+    )
     args = parser.parse_args(argv)
+
+    if args.command == "analyze-performance-insights":
+        import json
+
+        from app.experiments.performance_insights import analyze_performance
+
+        try:
+            result = analyze_performance(args.SOURCE, args.output, compare=args.compare)
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            # Malformed retained documents also reject cleanly without output.
+            print(f"analysis rejected: {error}", file=sys.stderr)
+            return 1
+        print(json.dumps(result, sort_keys=True))
+        return 0
 
     if args.command == "analyze-freight":
         import json
