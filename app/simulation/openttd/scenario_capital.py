@@ -77,6 +77,16 @@ def validate_capital_response(request: dict, response: dict, *, independent: boo
         or response["vehicles"] != 0
     ):
         raise ValueError("scenario capital cash/loan/readback mismatch")
+    policy_fields = ("policy_version", "policy_company", "autorenew_set", "autorenew_enabled")
+    if any(response.get(key) is not None for key in policy_fields) and (
+        type(response.get("policy_version")) is not int
+        or response.get("policy_version") != 1
+        or type(response.get("policy_company")) is not int
+        or response.get("policy_company") != expected["company"]
+        or response.get("autorenew_set") is not True
+        or response.get("autorenew_enabled") is not False
+    ):
+        raise ValueError("scenario company policy readback mismatch")
     if independent and request["op"] != "read":
         raise ValueError("independent capital verification requires read operation")
     return response
@@ -119,11 +129,18 @@ class ScenarioCapitalReadback(Contract):
     expenses_after: StrictInt
     vehicles: StrictInt
 
+    policy_version: StrictInt | None = None
+    policy_company: StrictInt | None = None
+    autorenew_set: StrictBool | None = None
+    autorenew_enabled: StrictBool | None = None
+
     @classmethod
     def parse_for(cls, request: ScenarioCapitalRequest, raw: bytes):
         response = cls.model_validate_json(raw)
         validate_capital_response(
-            request.model_dump(), response.model_dump(), independent=request.op == "read"
+            request.model_dump(),
+            response.model_dump(exclude_none=True),
+            independent=request.op == "read",
         )
         return response
 
@@ -131,8 +148,42 @@ class ScenarioCapitalReadback(Contract):
 def verify_capital(initial: ScenarioCapitalReadback, check: ScenarioCapitalReadback) -> dict:
     for response, op in ((initial, "initialize"), (check, "read")):
         request = capital_request(response.request_id, op)
-        validate_capital_response(request, response.model_dump(), independent=op == "read")
-    initial_fields = initial.model_dump(exclude={"request_id", "status"})
-    if initial_fields != check.model_dump(exclude={"request_id", "status"}):
+        validate_capital_response(
+            request, response.model_dump(exclude_none=True), independent=op == "read"
+        )
+    initial_fields = initial.model_dump(exclude={"request_id", "status"}, exclude_none=True)
+    if initial_fields != check.model_dump(exclude={"request_id", "status"}, exclude_none=True):
         raise ValueError("independent capital read differs from initialization")
     return dict(**initial_fields, independently_verified=True)
+
+
+def fixed_fleet_policy() -> dict:
+    return dict(version=1, company=0, autorenew_enabled=False, fixed_vehicle_identities=True)
+
+
+def require_company_policy(financing: dict) -> None:
+    if (
+        financing.get("policy_version") != 1
+        or financing.get("policy_company") != 0
+        or financing.get("autorenew_set") is not True
+        or financing.get("autorenew_enabled") is not False
+        or financing.get("independently_verified") is not True
+    ):
+        raise ValueError("required native company policy missing")
+
+
+def company_policy_provenance(directory, financing: dict, *, complete: bool = False) -> dict:
+    """Bind native effective-policy readbacks to same-session saves; no native reload claim."""
+    import hashlib
+
+    require_company_policy(financing)
+    names = ("before", "qualified", "after") if complete else ("before",)
+    saves = {
+        name: hashlib.sha256((directory / f"{name}.sav").read_bytes()).hexdigest() for name in names
+    }
+    return dict(
+        policy=fixed_fleet_policy(),
+        financing=financing,
+        saves=saves,
+        save_load_validation="packaged Save/Load correspondence tested; no native reload",
+    )
