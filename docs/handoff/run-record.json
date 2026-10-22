@@ -1,0 +1,31 @@
+{
+  "date": "2026-10-16",
+  "checks": [
+    {
+      "command": ".venv/bin/pytest -q tests/test_native_save_path.py tests/test_canonical_fleet_driver.py",
+      "exit_code": 0,
+      "passed": 47,
+      "output": "docs/handoff/focused-tests.txt"
+    },
+    {
+      "command": "PYTHONPATH=. .venv/bin/python tests/validate_canonical_squirrel.py --source /tmp/canonical-squirrel-15.3 --report /tmp/handoff-suspension-20261016.json",
+      "exit_code": 0,
+      "expected_cases": 7,
+      "output": "docs/handoff/squirrel-validation.txt",
+      "report_copy": "docs/handoff/suspension-rerun.json",
+      "byte_identical_to_frozen_q2_report": true
+    },
+    {
+      "command": ".venv/bin/python docs/handoff/verify_snapshot.py",
+      "exit_code": 0,
+      "output": "docs/handoff/integrity-check.json"
+    },
+    {"command": "git diff --check", "exit_code": 0}
+  ],
+  "openttd_game_launches": 0,
+  "admin_connections": 0,
+  "full_suite_run": false,
+  "postgres_suite_run": false,
+  "implementation_changes_by_handoff": false,
+  "commits_created": false
+}

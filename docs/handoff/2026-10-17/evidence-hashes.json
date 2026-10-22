@@ -1,0 +1,22 @@
+{
+  "artifacts/demos/playable-demo-25d891bc9f3444aca73058165d10055a/result.json": "79fc41c6f4e3ce900b498449663b7d4cb428a7905b8f8b53d09e891e9485f4ec",
+  "artifacts/demos/playable-demo-25d891bc9f3444aca73058165d10055a/receipt.json": "53223ad9ad8172915095846f787cbfc3180605913175a32acc7d2785fc9f860b",
+  "artifacts/demos/playable-demo-25d891bc9f3444aca73058165d10055a/cleanup.json": "a0114fa7a6e0634bbbc1060e8e515f349e101cf6f21bb06d1e92c6df1ff9c3bf",
+  "artifacts/demos/playable-demo-25d891bc9f3444aca73058165d10055a-report/results.md": "9744b3889107a349a6b41187a01e8d666cd9bc4f8fbf2908cee713943a020443",
+  "artifacts/demos/playable-demo-25d891bc9f3444aca73058165d10055a-report/evaluation.json": "2e53178c0b3d405e8d847c5b9410706797cfa3726481f8dae98bbf8beb617aca",
+  "artifacts/demos/smoke-review-210cd759e9ef47228002514836bd8b46/verification.json": "a91211de8d00ba38bdd14fa90cf137025b9dd248fe12115eedcb0274289b1412",
+  "artifacts/runtime/canonical-fleet-create-q3/result.json": "9113f6d921154ea60de252dc37aa29ebe87c28e0e5943b5c6f27a72569489f76",
+  "artifacts/runtime/canonical-fleet-reload-q3/result.json": "7b26de643daa7a49c437987d4fc6ef656c76760df5c2507474ed78c6cfdea675",
+  "artifacts/runtime/canonical-fleet-reload-q3/reload-correspondence.json": "ce88f03fd2b5b4c79392bffc6b410fda5a2a191af2805cc861f24d233fced033",
+  "artifacts/runtime/openttd-15.3-first-freight-delivery-attempt19/result.json": "583584e679087552c9b2fe6811df4c5026baad90e3168e4c0e433daf680839ba",
+  "artifacts/experiments/attempt19-offline-recovery/derived-finalization.json": "025154c472a611af02f16feb341aa5789b8fb93814d87bf8920f26c39ecc5234",
+  "artifacts/experiments/attempt19-offline-recovery/verification.json": "c90a13e469e65022addec92ff85e983b85a64bd7fb6197db6929791fa1d3e162",
+  "artifacts/demos/playable-demo-b84b9bd854a342f1a86e4ba669d8e450/result.json": "fb6979c9d87876a3584f67b70101ca2e8901ea8c3fd7b18c6de6c885e096674d",
+  "artifacts/demos/random-smoke-correction-b84b9bd854a342f1a86e4ba669d8e450/native-smoke-summary.json": "02303edf492a59ca84a9dacab308f0916817b378bb08da12c2419ecfe3da2b6b",
+  "artifacts/demos/random-smoke-correction-b84b9bd854a342f1a86e4ba669d8e450/postrun-independent-review.json": "27c75881b5de13a7035cc446999c1cf8657a8a1dabe2f74a586c60c84bf737f4",
+  "artifacts/demos/random-distance-seed17-offline-20261017/seed17-admission-analysis.json": "7e1559be888df8291c4e2000987d7e4921fe7ea62f971e5c8f0cc737e8853458",
+  "artifacts/demos/random-distance-seed17-offline-20261017/controlled-pipeline-result.json": "f83aa9a621c4b7276945fbb77eff68e9ccb61ff215ac91b682fb452012e7fa73",
+  "artifacts/demos/random-distance-seed17-offline-20261017/independent-review.json": "a8f0c7524e1697d8b21d6e05791432c6ea7472aea931926c2d202caeb65da8e1",
+  "artifacts/demos/random-distance-seed17-offline-20261017/focused-tests.txt": "92a2b0df5147fad2fd59d0e1f603ed7e6dbe0f9138a452cb8717476f3a80fc10",
+  "artifacts/demos/random-distance-seed17-offline-20261017/compatibility-tests.txt": "b57634ddf9017fb81d1349b8120474c8d0cf02ce4d7b80351e924ac33eb447f6"
+}

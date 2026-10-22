@@ -1,0 +1,7 @@
+packaged-startup: suspended/resumed commands=7
+q1-boundary-regression: COMMAND_NOT_SUSPENDABLE
+command-false: NETWORK_INDUSTRY_BUILD_FAILED type=0 tile=532 built=0 error=17
+command-error: NATIVE_COMMAND_ERROR
+command-delegates: suspended/resumed commands=2
+execute-old-boundary: COMMAND_NOT_SUSPENDABLE
+handle-old-boundary: COMMAND_NOT_SUSPENDABLE

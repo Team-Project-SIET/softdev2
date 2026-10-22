@@ -1,0 +1,10 @@
+{
+  "date": "2026-10-16",
+  "cwd": "/home/fed/codes/softdev2",
+  "branch": "devmodule2",
+  "head": "ea8e92fe3912d034b1d33923c2e71a20b0b1438f",
+  "python": "Python 3.14.6",
+  "artifact_files": 29517,
+  "repository_files": 768,
+  "exclusions": "Secrets, credentials, symlinks, git internals, environments/caches; hashes are inventory, not proof acceptance."
+}
