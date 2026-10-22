@@ -1,0 +1,378 @@
+[
+  {
+    "class": "GSCargo",
+    "method": "GetCargoLabel",
+    "arity": 1,
+    "declaration": "static char *GetCargoLabel(CargoID cargo_type);",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_cargo.hpp",
+    "header_sha256": "bd1083e107c2d676aa2d5ee404ee3b1bdc3e529c364167ad5c82a374dd710a32"
+  },
+  {
+    "class": "GSCargo",
+    "method": "GetName",
+    "arity": 1,
+    "declaration": "static char *GetName(CargoID cargo_type);",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_cargo.hpp",
+    "header_sha256": "bd1083e107c2d676aa2d5ee404ee3b1bdc3e529c364167ad5c82a374dd710a32"
+  },
+  {
+    "class": "GSCargo",
+    "method": "IsFreight",
+    "arity": 1,
+    "declaration": "static bool IsFreight(CargoID cargo_type);",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_cargo.hpp",
+    "header_sha256": "bd1083e107c2d676aa2d5ee404ee3b1bdc3e529c364167ad5c82a374dd710a32"
+  },
+  {
+    "class": "GSCompany",
+    "method": "ResolveCompanyID",
+    "arity": 1,
+    "declaration": "static CompanyID ResolveCompanyID(CompanyID company);",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_company.hpp",
+    "header_sha256": "1759c453c2378d6e83bd754421b3b37a038fe4da749c364434437caeac0332f2"
+  },
+  {
+    "class": "GSDate",
+    "method": "GetCurrentDate",
+    "arity": 0,
+    "declaration": "static Date GetCurrentDate();",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_date.hpp",
+    "header_sha256": "4a4fb31d85610072748914c597d96b0e68b94d72e89ce4623656697dae55704d"
+  },
+  {
+    "class": "GSDate",
+    "method": "GetDayOfMonth",
+    "arity": 1,
+    "declaration": "static int32 GetDayOfMonth(Date date);",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_date.hpp",
+    "header_sha256": "4a4fb31d85610072748914c597d96b0e68b94d72e89ce4623656697dae55704d"
+  },
+  {
+    "class": "GSDate",
+    "method": "GetMonth",
+    "arity": 1,
+    "declaration": "static int32 GetMonth(Date date);",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_date.hpp",
+    "header_sha256": "4a4fb31d85610072748914c597d96b0e68b94d72e89ce4623656697dae55704d"
+  },
+  {
+    "class": "GSDate",
+    "method": "GetYear",
+    "arity": 1,
+    "declaration": "static int32 GetYear(Date date);",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_date.hpp",
+    "header_sha256": "4a4fb31d85610072748914c597d96b0e68b94d72e89ce4623656697dae55704d"
+  },
+  {
+    "class": "GSEngine",
+    "method": "GetCapacity",
+    "arity": 1,
+    "declaration": "static int32 GetCapacity(EngineID engine_id);",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_engine.hpp",
+    "header_sha256": "1ac805b60b6682e48fcc19b8082fd94e76e26308e150de3cd1c7ab097faeb3c1"
+  },
+  {
+    "class": "GSEngine",
+    "method": "GetCargoType",
+    "arity": 1,
+    "declaration": "static CargoID GetCargoType(EngineID engine_id);",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_engine.hpp",
+    "header_sha256": "1ac805b60b6682e48fcc19b8082fd94e76e26308e150de3cd1c7ab097faeb3c1"
+  },
+  {
+    "class": "GSEngine",
+    "method": "GetMaxSpeed",
+    "arity": 1,
+    "declaration": "static int32 GetMaxSpeed(EngineID engine_id);",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_engine.hpp",
+    "header_sha256": "1ac805b60b6682e48fcc19b8082fd94e76e26308e150de3cd1c7ab097faeb3c1"
+  },
+  {
+    "class": "GSEngine",
+    "method": "GetName",
+    "arity": 1,
+    "declaration": "static char *GetName(EngineID engine_id);",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_engine.hpp",
+    "header_sha256": "1ac805b60b6682e48fcc19b8082fd94e76e26308e150de3cd1c7ab097faeb3c1"
+  },
+  {
+    "class": "GSEngine",
+    "method": "GetPrice",
+    "arity": 1,
+    "declaration": "static Money GetPrice(EngineID engine_id);",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_engine.hpp",
+    "header_sha256": "1ac805b60b6682e48fcc19b8082fd94e76e26308e150de3cd1c7ab097faeb3c1"
+  },
+  {
+    "class": "GSEngine",
+    "method": "GetRoadType",
+    "arity": 1,
+    "declaration": "static ScriptRoad::RoadType GetRoadType(EngineID engine_id);",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_engine.hpp",
+    "header_sha256": "1ac805b60b6682e48fcc19b8082fd94e76e26308e150de3cd1c7ab097faeb3c1"
+  },
+  {
+    "class": "GSEngine",
+    "method": "GetRunningCost",
+    "arity": 1,
+    "declaration": "static Money GetRunningCost(EngineID engine_id);",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_engine.hpp",
+    "header_sha256": "1ac805b60b6682e48fcc19b8082fd94e76e26308e150de3cd1c7ab097faeb3c1"
+  },
+  {
+    "class": "GSEngine",
+    "method": "IsArticulated",
+    "arity": 1,
+    "declaration": "static bool IsArticulated(EngineID engine_id);",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_engine.hpp",
+    "header_sha256": "1ac805b60b6682e48fcc19b8082fd94e76e26308e150de3cd1c7ab097faeb3c1"
+  },
+  {
+    "class": "GSEngine",
+    "method": "IsBuildable",
+    "arity": 1,
+    "declaration": "static bool IsBuildable(EngineID engine_id);",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_engine.hpp",
+    "header_sha256": "1ac805b60b6682e48fcc19b8082fd94e76e26308e150de3cd1c7ab097faeb3c1"
+  },
+  {
+    "class": "GSGame",
+    "method": "GetLandscape",
+    "arity": 0,
+    "declaration": "static LandscapeType GetLandscape();",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_game.hpp",
+    "header_sha256": "d3dd8f23eb600e089b3121784c26da9ef241a37d77d51395fa8d778fd4511f88"
+  },
+  {
+    "class": "GSGame",
+    "method": "IsMultiplayer",
+    "arity": 0,
+    "declaration": "static bool IsMultiplayer();",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_game.hpp",
+    "header_sha256": "d3dd8f23eb600e089b3121784c26da9ef241a37d77d51395fa8d778fd4511f88"
+  },
+  {
+    "class": "GSGame",
+    "method": "IsPaused",
+    "arity": 0,
+    "declaration": "static bool IsPaused();",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_game.hpp",
+    "header_sha256": "d3dd8f23eb600e089b3121784c26da9ef241a37d77d51395fa8d778fd4511f88"
+  },
+  {
+    "class": "GSGameSettings",
+    "method": "GetValue",
+    "arity": 1,
+    "declaration": "static int32 GetValue(const char *setting);",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_gamesettings.hpp",
+    "header_sha256": "12c6cf8c3932d1317d88e2c553b2be061ee0b02fa6f8189604e8a810ca6ea7aa"
+  },
+  {
+    "class": "GSIndustry",
+    "method": "GetIndustryID",
+    "arity": 1,
+    "declaration": "static IndustryID GetIndustryID(TileIndex tile);",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_industry.hpp",
+    "header_sha256": "764ea6dd795d1642e09d45aef853704476b6732191f7f3be61485faa44ae3280"
+  },
+  {
+    "class": "GSIndustry",
+    "method": "GetLastMonthProduction",
+    "arity": 2,
+    "declaration": "static int32 GetLastMonthProduction(IndustryID industry_id, CargoID cargo_id);",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_industry.hpp",
+    "header_sha256": "764ea6dd795d1642e09d45aef853704476b6732191f7f3be61485faa44ae3280"
+  },
+  {
+    "class": "GSIndustry",
+    "method": "GetLocation",
+    "arity": 1,
+    "declaration": "static TileIndex GetLocation(IndustryID industry_id);",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_industry.hpp",
+    "header_sha256": "764ea6dd795d1642e09d45aef853704476b6732191f7f3be61485faa44ae3280"
+  },
+  {
+    "class": "GSIndustry",
+    "method": "GetName",
+    "arity": 1,
+    "declaration": "static char *GetName(IndustryID industry_id);",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_industry.hpp",
+    "header_sha256": "764ea6dd795d1642e09d45aef853704476b6732191f7f3be61485faa44ae3280"
+  },
+  {
+    "class": "GSIndustry",
+    "method": "IsCargoAccepted",
+    "arity": 2,
+    "declaration": "static CargoAcceptState IsCargoAccepted(IndustryID industry_id, CargoID cargo_id);",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_industry.hpp",
+    "header_sha256": "764ea6dd795d1642e09d45aef853704476b6732191f7f3be61485faa44ae3280"
+  },
+  {
+    "class": "GSIndustry",
+    "method": "IsValidIndustry",
+    "arity": 1,
+    "declaration": "static bool IsValidIndustry(IndustryID industry_id);",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_industry.hpp",
+    "header_sha256": "764ea6dd795d1642e09d45aef853704476b6732191f7f3be61485faa44ae3280"
+  },
+  {
+    "class": "GSLog",
+    "method": "Info",
+    "arity": 1,
+    "declaration": "static void Info(const char *message);",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_log.hpp",
+    "header_sha256": "fef52ea9059fc34dba5d82f99b9b982853d03f8d0325c5421e5335766d64b3ea"
+  },
+  {
+    "class": "GSMap",
+    "method": "GetMapSize",
+    "arity": 0,
+    "declaration": "static TileIndex GetMapSize();",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_map.hpp",
+    "header_sha256": "18e80675de5227eec563d8b708fbba6f40c26577b34d9afc35b5eef5b5740683"
+  },
+  {
+    "class": "GSMap",
+    "method": "GetMapSizeX",
+    "arity": 0,
+    "declaration": "static uint32 GetMapSizeX();",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_map.hpp",
+    "header_sha256": "18e80675de5227eec563d8b708fbba6f40c26577b34d9afc35b5eef5b5740683"
+  },
+  {
+    "class": "GSMap",
+    "method": "GetMapSizeY",
+    "arity": 0,
+    "declaration": "static uint32 GetMapSizeY();",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_map.hpp",
+    "header_sha256": "18e80675de5227eec563d8b708fbba6f40c26577b34d9afc35b5eef5b5740683"
+  },
+  {
+    "class": "GSMap",
+    "method": "GetTileX",
+    "arity": 1,
+    "declaration": "static int32 GetTileX(TileIndex tile);",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_map.hpp",
+    "header_sha256": "18e80675de5227eec563d8b708fbba6f40c26577b34d9afc35b5eef5b5740683"
+  },
+  {
+    "class": "GSMap",
+    "method": "GetTileY",
+    "arity": 1,
+    "declaration": "static int32 GetTileY(TileIndex tile);",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_map.hpp",
+    "header_sha256": "18e80675de5227eec563d8b708fbba6f40c26577b34d9afc35b5eef5b5740683"
+  },
+  {
+    "class": "GSMap",
+    "method": "IsValidTile",
+    "arity": 1,
+    "declaration": "static bool IsValidTile(TileIndex tile);",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_map.hpp",
+    "header_sha256": "18e80675de5227eec563d8b708fbba6f40c26577b34d9afc35b5eef5b5740683"
+  },
+  {
+    "class": "GSRoad",
+    "method": "GetBuildCost",
+    "arity": 2,
+    "declaration": "static Money GetBuildCost(RoadType roadtype, BuildType build_type);",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_road.hpp",
+    "header_sha256": "4883a2d51f08d878cf708a80b408250dc3c2249866f7e69b6a9e92a3aee75cbb"
+  },
+  {
+    "class": "GSTile",
+    "method": "GetCargoAcceptance",
+    "arity": 5,
+    "declaration": "static int32 GetCargoAcceptance(TileIndex tile, CargoID cargo_type, int width, int height, int radius);",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_tile.hpp",
+    "header_sha256": "12c58ebdb79a56ffe246595c1beb1609a9372159bb82fbe79efe16a8510a2c7f"
+  },
+  {
+    "class": "GSTile",
+    "method": "GetCargoProduction",
+    "arity": 5,
+    "declaration": "static int32 GetCargoProduction(TileIndex tile, CargoID cargo_type, int width, int height, int radius);",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_tile.hpp",
+    "header_sha256": "12c58ebdb79a56ffe246595c1beb1609a9372159bb82fbe79efe16a8510a2c7f"
+  },
+  {
+    "class": "GSTile",
+    "method": "GetMinHeight",
+    "arity": 1,
+    "declaration": "static int32 GetMinHeight(TileIndex tile);",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_tile.hpp",
+    "header_sha256": "12c58ebdb79a56ffe246595c1beb1609a9372159bb82fbe79efe16a8510a2c7f"
+  },
+  {
+    "class": "GSTile",
+    "method": "GetSlope",
+    "arity": 1,
+    "declaration": "static Slope GetSlope(TileIndex tile);",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_tile.hpp",
+    "header_sha256": "12c58ebdb79a56ffe246595c1beb1609a9372159bb82fbe79efe16a8510a2c7f"
+  },
+  {
+    "class": "GSTile",
+    "method": "HasTransportType",
+    "arity": 2,
+    "declaration": "static bool HasTransportType(TileIndex tile, TransportType transport_type);",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_tile.hpp",
+    "header_sha256": "12c58ebdb79a56ffe246595c1beb1609a9372159bb82fbe79efe16a8510a2c7f"
+  },
+  {
+    "class": "GSTile",
+    "method": "HasTreeOnTile",
+    "arity": 1,
+    "declaration": "static bool HasTreeOnTile(TileIndex tile);",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_tile.hpp",
+    "header_sha256": "12c58ebdb79a56ffe246595c1beb1609a9372159bb82fbe79efe16a8510a2c7f"
+  },
+  {
+    "class": "GSTile",
+    "method": "IsBuildable",
+    "arity": 1,
+    "declaration": "static bool IsBuildable(TileIndex tile);",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_tile.hpp",
+    "header_sha256": "12c58ebdb79a56ffe246595c1beb1609a9372159bb82fbe79efe16a8510a2c7f"
+  },
+  {
+    "class": "GSTile",
+    "method": "IsCoastTile",
+    "arity": 1,
+    "declaration": "static bool IsCoastTile(TileIndex tile);",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_tile.hpp",
+    "header_sha256": "12c58ebdb79a56ffe246595c1beb1609a9372159bb82fbe79efe16a8510a2c7f"
+  },
+  {
+    "class": "GSTile",
+    "method": "IsFarmTile",
+    "arity": 1,
+    "declaration": "static bool IsFarmTile(TileIndex tile);",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_tile.hpp",
+    "header_sha256": "12c58ebdb79a56ffe246595c1beb1609a9372159bb82fbe79efe16a8510a2c7f"
+  },
+  {
+    "class": "GSTile",
+    "method": "IsRockTile",
+    "arity": 1,
+    "declaration": "static bool IsRockTile(TileIndex tile);",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_tile.hpp",
+    "header_sha256": "12c58ebdb79a56ffe246595c1beb1609a9372159bb82fbe79efe16a8510a2c7f"
+  },
+  {
+    "class": "GSTile",
+    "method": "IsRoughTile",
+    "arity": 1,
+    "declaration": "static bool IsRoughTile(TileIndex tile);",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_tile.hpp",
+    "header_sha256": "12c58ebdb79a56ffe246595c1beb1609a9372159bb82fbe79efe16a8510a2c7f"
+  },
+  {
+    "class": "GSTile",
+    "method": "IsWaterTile",
+    "arity": 1,
+    "declaration": "static bool IsWaterTile(TileIndex tile);",
+    "source": "https://github.com/OpenTTD/OpenTTD/blob/13.4/src/script/api/script_tile.hpp",
+    "header_sha256": "12c58ebdb79a56ffe246595c1beb1609a9372159bb82fbe79efe16a8510a2c7f"
+  }
+]
