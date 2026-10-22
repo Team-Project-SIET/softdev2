@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from typing import Annotated, Literal
+from typing import Annotated, ClassVar, Literal
 
 from pydantic import Field, model_validator
 
@@ -13,7 +13,10 @@ from app.simulation.openttd.world_planning_observation import WorldPlanningObser
 
 MAX_TILES = 256
 MAX_ENGINES = 32
-MAX_COVERAGE = 512  # Two cargo coverage observations per bounded tile.
+# 256-tile profile ceiling (2 x MAX_TILES); the 512-tile profile pages scope facts
+# itself, capping at 2 x MAX_RANDOM_TILES in the record contract below.
+MAX_COVERAGE = 512
+MAX_RANDOM_TILES = 512
 UInt = Annotated[int, Field(ge=0, le=2**32 - 2)]
 CargoID = Annotated[int, Field(ge=0, le=63)]
 IndustryID = Annotated[int, Field(ge=0, le=63999)]
@@ -69,6 +72,7 @@ class FactSource(Contract):
 
 
 class Region(Contract):
+    tile_limit: ClassVar[int] = MAX_TILES
     x: UInt
     y: UInt
     width: Annotated[int, Field(ge=1, le=MAX_TILES)]
@@ -76,9 +80,18 @@ class Region(Contract):
 
     @model_validator(mode="after")
     def bounded(self) -> Region:
-        if self.width * self.height > MAX_TILES:
-            raise PlanningFactError("region exceeds 256 tiles")
+        if self.width * self.height > self.tile_limit:
+            raise PlanningFactError(f"region exceeds {self.tile_limit} tiles")
         return self
+
+
+class RandomCaptureRegion(Region):
+    """Explicit opt-in to a larger, still completely observed rectangle."""
+
+    tile_limit: ClassVar[int] = MAX_RANDOM_TILES
+    profile: Literal["random-rectangle-512-v1"]
+    width: Annotated[int, Field(ge=1, le=MAX_RANDOM_TILES)]
+    height: Annotated[int, Field(ge=1, le=MAX_RANDOM_TILES)]
 
 
 class TileFact(Contract):
@@ -164,12 +177,12 @@ class SupplementalPlanningFacts(Contract):
     schema_version: Literal[1]
     transport_mode: Literal["road"]
     source: FactSource
-    region: Region
+    region: Region | RandomCaptureRegion
     settings: ContentSettings
     road: RoadFacts
-    tiles: Annotated[tuple[TileFact, ...], Field(max_length=MAX_TILES)]
+    tiles: Annotated[tuple[TileFact, ...], Field(max_length=MAX_RANDOM_TILES)]
     coverage_scopes: Annotated[tuple[CoverageScope, ...], Field(max_length=2)]
-    coverage: Annotated[tuple[CoverageFact, ...], Field(max_length=MAX_COVERAGE)]
+    coverage: Annotated[tuple[CoverageFact, ...], Field(max_length=2 * MAX_RANDOM_TILES)]
     engines: Annotated[tuple[EngineFact, ...], Field(max_length=MAX_ENGINES)]
     capture_economy_date_before: Annotated[int, Field(ge=0, le=2**31 - 1)]
     capture_economy_date_after: Annotated[int, Field(ge=0, le=2**31 - 1)]

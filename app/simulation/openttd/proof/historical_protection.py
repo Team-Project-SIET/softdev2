@@ -20,6 +20,26 @@ def protection_base(project: Path, runtime: Path) -> Path:
     return project if runtime.resolve().is_relative_to(project.resolve()) else runtime
 
 
+def explicit_protection_base(manifest: dict, trusted_base: Path) -> Path:
+    """Resolve a captured authority, never an incidental package or working directory."""
+    value = manifest.get("provenance_base")
+    if not isinstance(value, str):
+        raise ValueError("Historical explicit provenance base absent")
+    base = Path(value)
+    if (
+        not base.is_absolute()
+        or str(base) != value
+        or base != base.resolve()
+        or base.is_symlink()
+        or not base.is_dir()
+        or not trusted_base.is_absolute()
+        or trusted_base != trusted_base.resolve()
+        or base != trusted_base
+    ):
+        raise ValueError("Historical provenance base mismatch or alias")
+    return base
+
+
 def protection_digest(manifest: dict) -> str:
     value = {k: v for k, v in manifest.items() if k != "sha256"}
     return hashlib.sha256(

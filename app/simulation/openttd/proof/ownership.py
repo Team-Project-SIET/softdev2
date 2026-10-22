@@ -59,7 +59,9 @@ def freeze_materializations(
     )
 
 
-def build_ownership(prepared_directory, root, key_path, destination, frozen, history):
+def build_ownership(
+    prepared_directory, root, key_path, destination, frozen, history, *, capture_outputs=()
+):
     from .harness import PROJECT
     from .historical_protection import protection_base
 
@@ -84,6 +86,10 @@ def build_ownership(prepared_directory, root, key_path, destination, frozen, his
             entries[str(p)] = PathOwnership(
                 p, PathClass.RUNTIME_CREDENTIAL if p == key_path else PathClass.RUNTIME_EPHEMERAL
             )
+    for path in capture_outputs:
+        if str(path) in entries:
+            raise ValueError("Capture/input ownership collision")
+        entries[str(path)] = PathOwnership(path, PathClass.RUNTIME_EPHEMERAL)
     entries[str(destination)] = PathOwnership(destination, PathClass.GENERATED_EVIDENCE)
     entries[str(prepared_directory / "path-ownership.json")] = PathOwnership(
         prepared_directory / "path-ownership.json", PathClass.IMMUTABLE_SOURCE
@@ -139,8 +145,12 @@ def validate_ownership(prepared, frozen, *, materializations=True):
 
 def dispose_and_verify(prepared, frozen):
     """All proof kinds can use this final acceptance gate after retaining runtime logs."""
-    from .harness import PROJECT, manifest, verify_freeze
-    from .historical_protection import protection_base, validate_protection
+    from .harness import PROJECT, manifest, sha256, verify_freeze
+    from .historical_protection import (
+        explicit_protection_base,
+        protection_base,
+        validate_protection,
+    )
 
     graph = validate_ownership(prepared, frozen, materializations=False)
     # Launch inputs were checked immediately before launch; OpenTTD may legitimately
@@ -161,7 +171,16 @@ def dispose_and_verify(prepared, frozen):
         raise ValueError("Persistent public freeze manifest changed after cleanup")
     history = json.loads((prepared.directory / "historical-integrity.json").read_text())
     if history.get("policy"):
-        validate_protection(protection_base(PROJECT, prepared.directory.parent), history)
+        metadata = json.loads((prepared.directory / "PRELAUNCH.json").read_text())
+        if metadata.get("canonical_inputs_sha256"):
+            if sha256(prepared.directory / "historical-integrity.json") != metadata.get(
+                "historical_integrity_sha256"
+            ):
+                raise ValueError("Historical protection differs from immutable seal")
+            base = explicit_protection_base(history, Path(metadata["historical_base"]))
+        else:
+            base = protection_base(PROJECT, prepared.directory.parent)
+        validate_protection(base, history)
     else:
         from .preflight import historical_snapshot
 

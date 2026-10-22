@@ -122,10 +122,49 @@ NETWORK_BUDGETS = PLANNER_BUDGETS | dict(
 )
 
 
-def network_budgets(service_limit=2):
+def network_budgets(
+    service_limit=2,
+    continuous_years=None,
+    *,
+    capacity_telemetry=None,
+    capacity_intervention=None,
+    random_budget=None,
+):
     """Keep the consumed two-service seals valid; larger capacity is explicit."""
+    if random_budget is not None:
+        from app.demo_random_native import random_budgets
+
+        if continuous_years is not None or capacity_telemetry or capacity_intervention:
+            raise ValueError("random demo excludes continuous/capacity experiments")
+        return random_budgets(random_budget, service_limit, NETWORK_BUDGETS)
     if type(service_limit) is not int or service_limit not in (2, 3):
         raise ValueError("network service limit must be 2 or 3")
+    if continuous_years is not None:
+        if continuous_years != 5 or service_limit != 3:
+            raise ValueError("continuous experiment requires five years and three services")
+        from app.simulation.openttd.freight_continuous import monitoring_budgets
+
+        count = 0
+        if capacity_telemetry is not None:
+            if capacity_telemetry.get("version") == 2:
+                count = capacity_telemetry["vehicle_count"]
+            elif capacity_telemetry.get("version") == 1:
+                count = len(capacity_telemetry["bindings"])
+            else:
+                raise ValueError("unsupported capacity telemetry version")
+        budgets = network_budgets(service_limit) | monitoring_budgets(count)
+        if capacity_intervention is not None:
+            from app.simulation.openttd.freight_native_network import capacity_intervention_options
+
+            capacity_intervention_options(dict(capacity_intervention=capacity_intervention))
+            if count != 4:
+                raise ValueError("fourth vehicle requires four-vehicle telemetry")
+            budgets |= dict(requests=budgets["requests"] + 2, mutations=budgets["mutations"] + 4)
+        elif count == 4:
+            raise ValueError("four-vehicle telemetry requires explicit intervention")
+        return budgets
+    if capacity_telemetry is not None or capacity_intervention is not None:
+        raise ValueError("capacity experiments require continuous three-service monitoring")
     if service_limit == 2:
         return NETWORK_BUDGETS
     return NETWORK_BUDGETS | dict(
@@ -185,13 +224,19 @@ class DemoBackend(vehicle.VehicleBackend):
         return value
 
     def validate_launch(self, prepared):
+        metadata = json.loads((prepared.directory / "PRELAUNCH.json").read_bytes())
         expected = vehicle.load_argv(
             BINARY.resolve(),
             prepared.spec.workspace.config,
             prepared.endpoints[0],
             prepared.spec.workspace.root / "heightmap.png",
         )
-        expected += ("-G", "42")
+        if metadata.get("random_world"):
+            from app.demo_random_native import generation_argv
+
+            expected = generation_argv(expected, metadata["world"]["seed"])
+        else:
+            expected += ("-G", "42")
         if (
             prepared.spec.argv != expected
             or sha256(BINARY) != BINARY_SHA256
@@ -209,11 +254,41 @@ def backend_for(metadata):
     return cls(authorized_one_launch=True)
 
 
-def staged_package(demo, planner=False, network=False, scenario=None, network_service_limit=2):
+def staged_package(
+    demo,
+    planner=False,
+    network=False,
+    scenario=None,
+    network_service_limit=2,
+    continuous_years=None,
+    *,
+    canonical=False,
+    random_budget=None,
+):
+    requested_limit = network_service_limit
+    if random_budget is not None:
+        network_service_limit = 3
+    if canonical and (
+        not demo
+        or not planner
+        or not network
+        or scenario != "high-budget-500k"
+        or network_service_limit != 3
+        or continuous_years is None
+    ):
+        raise ValueError("canonical package requires fixed three-service continuous bridge")
     out = {
         p.name: p.read_bytes()
         for p in PACKAGE.glob("*.nut")
-        if p.name not in ("demo.nut", "planner.nut", "network.nut")
+        if p.name
+        not in (
+            "demo.nut",
+            "planner.nut",
+            "network.nut",
+            "continuous.nut",
+            "canonical.nut",
+            "canonical-collector.nut",
+        )
     }
     if demo:
         out["delivery.nut"] = out["main.nut"]
@@ -325,6 +400,38 @@ def staged_package(demo, planner=False, network=False, scenario=None, network_se
             + b'\n    function Load(version,data){LoadScenarioCapital(typeof data=="table" && '
             + b'"scenario_capital" in data ? data.scenario_capital : null);}',
         )
+    if continuous_years is not None:
+        if scenario:
+            out["funding.nut"] = out["funding.nut"].replace(
+                b"require_fixed_fleet=false;", b"require_fixed_fleet=true;"
+            )
+        network_budgets(network_service_limit, continuous_years)
+        if not network:
+            raise ValueError("continuous operation requires network")
+        out["main.nut"] = (
+            out["main.nut"]
+            .replace(b"function Load(n)", b"function LoadService(n)")
+            .replace(b"Load(q.arg)", b"LoadService(q.arg)")
+        )
+        out["continuous-parent.nut"] = out["main.nut"].replace(
+            b"function Handle(q)", b"function NetworkHandle(q)"
+        )
+        out["main.nut"] = (PACKAGE / "continuous.nut").read_bytes()
+        out["info.nut"] = out["info.nut"].replace(
+            b'"NetworkFreightProof"', b'"ContinuousFreightProof"'
+        )
+    if canonical:
+        out["canonical-parent.nut"] = out["main.nut"]
+        out["canonical-collector.nut"] = (PACKAGE / "canonical-collector.nut").read_bytes()
+        out["main.nut"] = (PACKAGE / "canonical.nut").read_bytes()
+        out["info.nut"] = out["info.nut"].replace(
+            b'"ContinuousFreightProof"', b'"CanonicalFreightProof"'
+        )
+    if random_budget is not None:
+        from app.demo_random_native import stage_random
+
+        network_budgets(requested_limit, random_budget=random_budget)
+        out = stage_random(out, random_budget)
     return out
 
 
@@ -371,6 +478,47 @@ class PlannerDeliverySession(DeliverySession):
                 raise ValueError("active correctly framed planning request required")
             raw = decode_gamescript(frame[3:])
             value = json.loads(raw)
+            if str(value.get("type", "")).startswith("canonical-"):
+                if value.get("type") == "canonical-page":
+                    from app.simulation.openttd.freight_canonical_runtime import CanonicalRequest
+
+                    expected = CanonicalRequest(
+                        value["request_id"], value["section"], value["offset"]
+                    ).to_bytes()
+                else:
+                    from app.simulation.openttd.freight_canonical_dispatch import BoundaryRequest
+
+                    expected = BoundaryRequest(
+                        value["request_id"], value["type"], value["service"]
+                    ).to_bytes()
+                if raw != expected:
+                    raise ValueError("canonical request must match its strict canonical contract")
+                return
+            if value.get("type") in ("capacity-add", "capacity-read"):
+                from app.simulation.openttd.freight_capacity_execution import capacity_request
+
+                expected = capacity_request(
+                    value["request_id"],
+                    value["service"],
+                    value["max_cost"],
+                    read=value["type"] == "capacity-read",
+                )
+                if raw != expected:
+                    raise ValueError("capacity request must match its strict canonical contract")
+                return
+            if value.get("type") == "continuous-telemetry":
+                from app.simulation.openttd.freight_telemetry import telemetry_request
+
+                if raw != telemetry_request(
+                    value["request_id"], value["service"], value["vehicle"]
+                ):
+                    raise ValueError("telemetry request must match its strict canonical contract")
+                return
+            if str(value.get("type", "")).startswith("continuous-"):
+                from app.simulation.openttd.freight_finance import ContinuousRequest
+
+                ContinuousRequest.model_validate_json(raw).to_bytes()
+                return
             if value.get("type") == "scenario_capital":
                 from app.simulation.openttd.scenario_capital import ScenarioCapitalRequest
 
@@ -397,7 +545,7 @@ class PlannerDeliverySession(DeliverySession):
 
 
 def attempt_number(directory):
-    # Public demos use a separate namespace from consumed research attempts.
+    # Public demo runs have their own namespace, never a research attempt number.
     if re.fullmatch(r"playable-demo-[0-9a-f]{32}", directory.name):
         return 1
     match = re.fullmatch(
@@ -496,8 +644,27 @@ def prepare(
     planning_budget=None,
     finance_only=False,
     network_service_limit=2,
+    continuous_years=None,
+    random_world=None,
+    random_budget=None,
 ):
-    network_budgets(network_service_limit)
+    if random_world is not None:
+        from app.demo_random import DemoBudgets, RandomWorldSettings
+
+        random_world = RandomWorldSettings.model_validate_json(
+            json.dumps(random_world)
+        ).model_dump()
+        random_budget = DemoBudgets.model_validate_json(
+            json.dumps(random_budget or {})
+        ).model_dump()
+        if not demo or not planner or not network or continuous_years or finance_only:
+            raise ValueError("random world requires bounded demo planner network")
+        network_service_limit = min(random_budget["max_services"], random_budget["max_vehicles"])
+    elif random_budget is not None:
+        raise ValueError("random budgets require random world")
+    network_budgets(network_service_limit, continuous_years, random_budget=random_budget)
+    if continuous_years is not None and (not network or finance_only):
+        raise ValueError("continuous years requires three-service network operation")
     if network_service_limit != 2 and not network:
         raise ValueError("larger service capacity requires --network")
     if scenario not in (None, "high-budget-500k"):
@@ -561,7 +728,16 @@ def prepare(
             + "\n[misc]\ngraphicsset = OpenGFX\n[ai]\nai_in_multiplayer = true\n"
             "[game_scripts]\nRoadFreightProof = \n"
         )
-        if demo:
+        if random_world is not None:
+            from app.demo_random import RandomWorldSettings
+
+            workspace.config.write_text(
+                workspace.config.read_text()
+                + RandomWorldSettings.model_validate_json(json.dumps(random_world))
+                .config()
+                .split("[economy]")[0]
+            )
+        elif demo:
             workspace.config.write_text(
                 workspace.config.read_text()
                 + "\n[game_creation]\nmap_x = 6\nmap_y = 6\nlandscape = temperate\n"
@@ -579,6 +755,10 @@ def prepare(
                 + "\n[economy]\ntimekeeping_units = 0\n"
                 + ("multiple_industry_per_town = true\n" if network else "")
                 + "[newgrf]\n"
+            )
+        if continuous_years is not None:
+            workspace.config.write_text(
+                workspace.config.read_text() + "\n[company]\nengine_renew = false\n"
             )
         graphics = stage_opengfx(
             GRAPHICS_ARCHIVE,
@@ -600,7 +780,13 @@ def prepare(
             target.mkdir()
             if src == PACKAGE:
                 for name, data in staged_package(
-                    demo, planner, network, scenario, network_service_limit
+                    demo,
+                    planner,
+                    network,
+                    scenario,
+                    network_service_limit,
+                    continuous_years,
+                    random_budget=random_budget,
                 ).items():
                     (target / name).write_bytes(data)
             else:
@@ -614,7 +800,11 @@ def prepare(
             reservation.game_port,
             workspace.root / ("heightmap.png" if demo else "source.sav"),
         )
-        if demo:
+        if random_world is not None:
+            from app.demo_random_native import generation_argv
+
+            argv = generation_argv(argv, random_world["seed"])
+        elif demo:
             argv += ("-G", "42")
         spec = LaunchSpecification(
             workspace,
@@ -633,6 +823,10 @@ def prepare(
         ]
         if scenario:
             snapshot_paths += [PROJECT / "app/simulation/openttd/scenario_capital.py"]
+        if random_world is not None:
+            snapshot_paths += [
+                PROJECT / "app" / name for name in ("demo_random.py", "demo_random_native.py")
+            ]
         if planner:
             snapshot_paths += sorted((PROJECT / "app/planning").rglob("*.py"))
             snapshot_paths += [
@@ -656,6 +850,18 @@ def prepare(
                 PROJECT / "tests/reference/map_api_15_3/script_map.hpp",
                 PROJECT / "tests/reference/map_api_15_3/SOURCE.txt",
             ]
+        if continuous_years is not None:
+            snapshot_paths += [
+                PROJECT / "app/simulation/openttd/freight_continuous.py",
+                PROJECT / "app/simulation/openttd/freight_finance.py",
+                PROJECT / "app/simulation/openttd/freight_capacity_execution.py",
+                PROJECT / "app/simulation/openttd/freight_telemetry.py",
+                PROJECT / "app/simulation/openttd/freight_matched_state.py",
+                PROJECT / "app/experiments/freight_continuous_analytics.py",
+                PROJECT / "tests/test_freight_continuous.py",
+                PROJECT / "tests/test_freight_finance.py",
+                PROJECT / "tests/test_freight_continuous_analytics.py",
+            ]
         if network:
             snapshot_paths += [
                 PROJECT / "tests/test_native_freight_network.py",
@@ -670,7 +876,13 @@ def prepare(
                 z.writestr(info, src.read_bytes())
             if planner:
                 for name, data in staged_package(
-                    demo, planner, network, scenario, network_service_limit
+                    demo,
+                    planner,
+                    network,
+                    scenario,
+                    network_service_limit,
+                    continuous_years,
+                    random_budget=random_budget,
                 ).items():
                     z.writestr("staged/" + name, data)
                 z.writestr("staged/openttd.cfg", workspace.config.read_bytes())
@@ -697,6 +909,7 @@ def prepare(
             planner=planner,
             network=network,
             network_service_limit=network_service_limit,
+            **({"continuous_years": continuous_years} if continuous_years is not None else {}),
             construction_readback_version=1 if planner else None,
             game_time_metrics_version=1 if network else None,
             delivery_batch_limit=batch_limit if planner else None,
@@ -709,7 +922,11 @@ def prepare(
             game_port=reservation.game_port,
             admin_port=reservation.admin_port,
             source=(
-                dict(kind="NATIVE_FLAT_HEIGHTMAP", input_sha256=sha256(directory / "heightmap.png"))
+                dict(kind="NATIVE_RANDOM_WORLD", settings=random_world)
+                if random_world is not None
+                else dict(
+                    kind="NATIVE_FLAT_HEIGHTMAP", input_sha256=sha256(directory / "heightmap.png")
+                )
                 if demo
                 else dict(
                     save=str(original),
@@ -727,10 +944,16 @@ def prepare(
                 )
             ),
             world=dict(
-                source="NATIVE_GENERATED_DEMO" if demo else "COPIED_NATIVE_PROVEN_COMPANY_WORLD",
-                seed=42,
-                width=64,
-                height=64,
+                source=(
+                    "NATIVE_RANDOM_GENERATOR"
+                    if random_world
+                    else "NATIVE_GENERATED_DEMO"
+                    if demo
+                    else "COPIED_NATIVE_PROVEN_COMPANY_WORLD"
+                ),
+                seed=random_world["seed"] if random_world else 42,
+                width=256 if random_world else 64,
+                height=256 if random_world else 64,
             ),
             plan_policy=dict(
                 company=0,
@@ -754,7 +977,9 @@ def prepare(
                 str(directory),
                 "--authorize-one-launch",
             ],
-            budgets=network_budgets(network_service_limit)
+            budgets=network_budgets(
+                network_service_limit, continuous_years, random_budget=random_budget
+            )
             if network
             else PLANNER_BUDGETS
             if planner
@@ -774,6 +999,25 @@ def prepare(
             ),
             frozen=frozen,
         )
+        if random_world is not None:
+            from hashlib import sha256 as digest_bytes
+
+            experiment = dict(
+                world=random_world,
+                budgets=random_budget,
+                planner="p08-p05-bounded-full-load-v1",
+                scenario=scenario,
+                budget_gbp=str(planning_budget),
+            )
+            m.update(
+                random_world=random_world,
+                random_budget=random_budget,
+                random_profile_version=1,
+                experiment_key=digest_bytes(
+                    json.dumps(experiment, sort_keys=True).encode()
+                ).hexdigest(),
+                experiment=experiment,
+            )
         if scenario or planning_budget is not None:
             m.update(
                 scenario=scenario,
@@ -784,6 +1028,11 @@ def prepare(
                 from app.simulation.openttd.scenario_capital import financial_preset
 
                 m["financial_preset"] = financial_preset(scenario)
+        if continuous_years is not None:
+            from app.simulation.openttd.scenario_capital import fixed_fleet_policy
+
+            m["company_policy"] = fixed_fleet_policy()
+            m["company_policy_provenance_version"] = 2
         if network:
             m["financial_reconciliation_version"] = 1
         write_json(directory / "PRELAUNCH.json", m)
@@ -827,6 +1076,13 @@ def validate_network_world_inputs(prepared, metadata):
             raise ValueError("network requires multiple industries per town")
     except configparser.Error as error:
         raise ValueError("network preparation config is ambiguous or incomplete") from error
+    if metadata.get("random_world"):
+        from app.demo_random_native import validate_generation_config
+
+        validate_generation_config(metadata, prepared.spec.workspace.config.read_text())
+        if any(p.suffix.lower() in (".png", ".sav") for p in root.iterdir()):
+            raise ValueError("random world must not load heightmap/save")
+        return
     heightmap = root / "heightmap.png"
     retained = prepared.directory / "heightmap.png"
     if (
@@ -855,7 +1111,11 @@ def validate_capital_prelaunch(metadata, config_text):
     config.read_string(config_text)
     if config.getboolean("difficulty", "infinite_money"):
         raise ValueError("infinite money forbidden")
-    if metadata["world"]["seed"] != 42 or not metadata["demo"] or not metadata["planner"]:
+    if (
+        (metadata["world"]["seed"] != 42 and not metadata.get("random_world"))
+        or not metadata["demo"]
+        or not metadata["planner"]
+    ):
         raise ValueError("financial preset must preserve bounded deterministic generated world")
 
 
@@ -877,7 +1137,13 @@ def preflight(p):
         or m["attempt"] != attempt_number(p.directory)
         or m["budgets"]
         != (
-            network_budgets(m.get("network_service_limit", 2))
+            network_budgets(
+                m.get("network_service_limit", 2),
+                m.get("continuous_years"),
+                capacity_telemetry=m.get("capacity_telemetry"),
+                capacity_intervention=m.get("capacity_intervention"),
+                random_budget=m.get("random_budget"),
+            )
             if m.get("network", False)
             else PLANNER_BUDGETS
             if m.get("planner", False)
@@ -888,6 +1154,12 @@ def preflight(p):
     ):
         raise ValueError("sealed budgets mismatch")
     verify_freeze(m["frozen"])
+    if m.get("capacity_intervention") is not None or m.get("capacity_telemetry") is not None:
+        from app.simulation.openttd.freight_matched_state import MATCHED_STATE_BLOCKERS
+
+        # The existing launch path generates a fresh world; it cannot reload the
+        # canonical constructed fleet. Do not let metadata bypass that boundary.
+        raise ValueError("matched capacity launch blocked: " + "; ".join(MATCHED_STATE_BLOCKERS))
     if m.get("scenario"):
         validate_capital_prelaunch(m, p.spec.workspace.config.read_text())
     if m["attempt"] > 1 and m["delivery_predecessor"] != consumed_identity(
@@ -899,8 +1171,24 @@ def preflight(p):
         source = freight.verify_receipt(SOURCE)
         if sha256(p.spec.workspace.root / "source.sav") != source["before_save_sha256"]:
             raise ValueError("disposable source mismatch")
-    elif (p.spec.workspace.root / "heightmap.png").read_bytes() != flat_heightmap():
+    elif (
+        not m.get("random_world")
+        and (p.spec.workspace.root / "heightmap.png").read_bytes() != flat_heightmap()
+    ):
         raise ValueError("deterministic heightmap mismatch")
+    if m.get("continuous_years"):
+        from app.simulation.openttd.scenario_capital import fixed_fleet_policy
+
+        if (
+            m.get("company_policy") != fixed_fleet_policy()
+            or m.get("company_policy_provenance_version") != 2
+            or not m.get("scenario")
+        ):
+            raise ValueError("sealed continuous company policy mismatch")
+        effective_config = configparser.ConfigParser(interpolation=None)
+        effective_config.read_string(p.spec.workspace.config.read_text())
+        if effective_config.getboolean("company", "engine_renew"):
+            raise ValueError("continuous experiment forbids automatic vehicle renewal")
     if m.get("network", False):
         validate_network_world_inputs(p, m)
     for name, data in staged_package(
@@ -909,6 +1197,8 @@ def preflight(p):
         m.get("network", False),
         m.get("scenario"),
         m.get("network_service_limit", 2),
+        m.get("continuous_years"),
+        random_budget=m.get("random_budget"),
     ).items():
         if data != (p.spec.workspace.game / "RoadFreightProof" / name).read_bytes():
             raise ValueError("stale delivery package")
@@ -940,7 +1230,22 @@ async def exchange(session, q, directory, *, response_type=DeliveryReadback):
             for kind, body in decoder.feed_frames(chunk):
                 if kind != SERVER_GAMESCRIPT:
                     raise ValueError("unexpected packet")
-                response = decode_gamescript(body)
+                if getattr(q, "type", None) in ("capacity-add", "capacity-read"):
+                    from app.simulation.openttd.freight_capacity_execution import (
+                        decode_capacity_wire,
+                    )
+
+                    response = decode_capacity_wire(body)
+                elif str(getattr(q, "type", "")).startswith("canonical-"):
+                    if not 1 < len(body) <= 1451 or not body.endswith(b"\0"):
+                        raise ValueError("canonical response wire bound or terminator invalid")
+                    response = body[:-1]
+                elif str(getattr(q, "type", "")).startswith("continuous-"):
+                    from app.simulation.openttd.freight_continuous import decode_continuous_response
+
+                    response = decode_continuous_response(body)
+                else:
+                    response = decode_gamescript(body)
                 (directory / (q.request_id + "-response.json")).write_bytes(response)
                 return response_type.parse_for(getattr(q, "admission_request", q), response)
 
@@ -1116,7 +1421,7 @@ class ScenarioPlanningAccounting(QualificationFrameBudget):
         self.funding = False
 
 
-def verify_capital_frames(directory, frames):
+def verify_capital_frames(directory, frames, *, recovery=None):
     from app.simulation.openttd.gamescript_transport import decode_gamescript
     from app.simulation.openttd.scenario_capital import (
         ScenarioCapitalReadback,
@@ -1153,6 +1458,46 @@ def verify_capital_frames(directory, frames):
     financing = verify_capital(*readbacks)
     if financing != json.loads((directory / "scenario-capital.json").read_bytes()):
         raise ValueError("capital verified provenance mismatch")
+    metadata_path = directory / "PRELAUNCH.json"
+    metadata = json.loads(metadata_path.read_bytes()) if metadata_path.exists() else {}
+    if metadata.get("company_policy"):
+        from app.simulation.openttd.scenario_capital import (
+            company_policy_provenance,
+            fixed_fleet_policy,
+        )
+
+        if metadata["company_policy"] != fixed_fleet_policy():
+            raise ValueError("retained company policy intent mismatch")
+        if (
+            json.loads((directory / "result.json").read_bytes()).get("company_policy_mutations")
+            != 1
+        ):
+            raise ValueError("company policy mutation accounting mismatch")
+        complete = (directory / "after.sav").exists()
+        version = metadata.get("company_policy_provenance_version", 1)
+        if version == 1 and recovery is not None:
+            if json.loads(
+                (directory / "company-policy.json").read_bytes()
+            ) != company_policy_provenance(directory, financing) or recovery[
+                "company_policy_final"
+            ] != company_policy_provenance(directory, financing, complete=True):
+                raise ValueError("recovered company policy save correspondence mismatch")
+        elif version == 1:
+            if json.loads(
+                (directory / "company-policy.json").read_bytes()
+            ) != company_policy_provenance(directory, financing, complete=complete):
+                raise ValueError("company policy save correspondence mismatch")
+        elif version == 2:
+            if json.loads(
+                (directory / "company-policy.json").read_bytes()
+            ) != company_policy_provenance(directory, financing):
+                raise ValueError("initial company policy save correspondence mismatch")
+            if complete and json.loads(
+                (directory / "company-policy-final.json").read_bytes()
+            ) != company_policy_provenance(directory, financing, complete=True):
+                raise ValueError("final company policy save correspondence mismatch")
+        else:
+            raise ValueError("unsupported company policy provenance version")
     return financing
 
 
@@ -1195,8 +1540,10 @@ async def run(p, *, on_ready=None, on_delivered=None, on_closing=None):
             backend.session = session
             result["connections"] = 1
             await session.authenticate("Freight-delivery", "1", timeout=10)
+            from app.demo_random_native import expected_world
+
             w = session.welcome
-            if w is None or (w.revision, w.seed, w.width, w.height) != ("15.3", 42, 64, 64):
+            if w is None or (w.revision, w.seed, w.width, w.height) != expected_world(m):
                 raise ValueError("native runtime mismatch")
             write_json(
                 p.directory / "runtime-identity.json",
@@ -1233,10 +1580,23 @@ async def run(p, *, on_ready=None, on_delivered=None, on_closing=None):
                 )
                 accounting.end_funding()
                 financing = verify_capital(initial, check)
+                if m.get("company_policy"):
+                    from app.simulation.openttd.scenario_capital import require_company_policy
+
+                    require_company_policy(financing)
                 result["funding_requests"] = 2
                 result["funding_mutations"] = 1
+                if m.get("company_policy"):
+                    result["company_policy_mutations"] = 1
                 write_json(p.directory / "scenario-capital.json", financing)
             before = await save(backend, p, "before")
+            if m.get("company_policy"):
+                from app.simulation.openttd.scenario_capital import company_policy_provenance
+
+                write_json(
+                    p.directory / "company-policy.json",
+                    company_policy_provenance(p.directory, financing),
+                )
             if m.get("finance_only"):
                 receipt = dict(
                     classification="NATIVE_SCENARIO_FINANCE",
@@ -1269,9 +1629,18 @@ async def run(p, *, on_ready=None, on_delivered=None, on_closing=None):
                 from app.simulation.openttd.freight_native_network import execute_network
 
                 await execute_network(backend, p, session, accounting, before, seal, m, result)
+                if m.get("company_policy"):
+                    write_json(
+                        p.directory / "company-policy-final.json",
+                        company_policy_provenance(p.directory, financing, complete=True),
+                    )
                 if on_delivered is not None:
                     await on_delivered(backend, p)
-                result["status"] = "NATIVE_MULTI_SERVICE_DELIVERY_VERIFIED"
+                result["status"] = (
+                    "NATIVE_FIVE_YEAR_CONTINUOUS_VERIFIED"
+                    if m.get("continuous_years")
+                    else "NATIVE_MULTI_SERVICE_DELIVERY_VERIFIED"
+                )
                 return result
             service = None
             source_save = before
@@ -1416,7 +1785,13 @@ def verify_finance_receipt(directory):
             raise ValueError("finance frozen source mismatch")
     validate_capital_prelaunch(metadata, config)
     if metadata["budgets"] != (
-        network_budgets(metadata.get("network_service_limit", 2))
+        network_budgets(
+            metadata.get("network_service_limit", 2),
+            metadata.get("continuous_years"),
+            capacity_telemetry=metadata.get("capacity_telemetry"),
+            capacity_intervention=metadata.get("capacity_intervention"),
+            random_budget=metadata.get("random_budget"),
+        )
         if metadata["network"]
         else PLANNER_BUDGETS
     ):
@@ -1427,12 +1802,14 @@ def verify_finance_receipt(directory):
         raise ValueError("finance one-launch claim mismatch")
     runtime = json.loads((directory / "runtime-identity.json").read_bytes())
     welcome = runtime["welcome"]
+    from app.demo_random_native import expected_world
+
     if runtime["encrypted"] is not True or (
         welcome["revision"],
         welcome["seed"],
         welcome["width"],
         welcome["height"],
-    ) != ("15.3", 42, 64, 64):
+    ) != expected_world(metadata):
         raise ValueError("finance native identity mismatch")
     frames = json.loads((directory / "frames.json").read_bytes())
     verify_capital_frames(directory, frames[5:9])
@@ -1551,7 +1928,13 @@ def verify_receipt(directory):
         not legacy
         and m["budgets"]
         != (
-            network_budgets(m.get("network_service_limit", 2))
+            network_budgets(
+                m.get("network_service_limit", 2),
+                m.get("continuous_years"),
+                capacity_telemetry=m.get("capacity_telemetry"),
+                capacity_intervention=m.get("capacity_intervention"),
+                random_budget=m.get("random_budget"),
+            )
             if m.get("network", False)
             else PLANNER_BUDGETS
             if m.get("planner", False)
@@ -1718,6 +2101,7 @@ def main():
         "--network", action="store_true", help="bounded P05-selected services in one session"
     )
     parser.add_argument("--network-service-limit", type=int, choices=[2, 3], default=2)
+    parser.add_argument("--continuous-years", type=int, choices=[5])
     parser.add_argument(
         "--planner", action="store_true", help="qualify and plan in the same native world"
     )
@@ -1751,6 +2135,7 @@ def main():
             planning_budget=args.planning_budget,
             finance_only=args.finance_only,
             network_service_limit=args.network_service_limit,
+            continuous_years=args.continuous_years,
         )
         preflight(p)
         print("PRELAUNCH PASS")

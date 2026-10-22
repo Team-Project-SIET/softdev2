@@ -4,6 +4,7 @@ import argparse
 import asyncio
 import json
 import os
+import re
 import shutil
 import struct
 import time
@@ -306,19 +307,65 @@ def console(backend, command: str):
     backend.process.stdin.flush()
 
 
-async def save(backend, prepared, name):
-    path = prepared.directory / (name + ".sav")
-    # 15.3 ConSave always appends .sav to its argument.
-    console(backend, "save " + str(path.with_suffix("")))
+def owned_save_path(prepared, name: str) -> Path:
+    """Resolve a native console filename within the authorized artifact directory."""
+    if re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*", name) is None:
+        raise ValueError("invalid owned native save name")
+    directory = prepared.directory.absolute()
+    if ".." in directory.parts or any(p.is_symlink() for p in (directory, *directory.parents)):
+        raise ValueError("native save directory alias or symlink")
+    if not directory.is_dir() or any(c in str(directory) for c in '\n\r"\\'):
+        raise ValueError("invalid native save directory")
+    path = directory / (name + ".sav")
+    if path.exists() or path.is_symlink():
+        raise ValueError("refusing to overwrite or redirect protected native save")
+    return path
+
+
+async def save(backend, prepared, name, *, diagnostic=False):
+    def health():
+        if diagnostic:
+            # A known startup script error must not prevent retaining a diagnostic save.
+            # Never bypass process liveness or fresh save-command failures.
+            if backend.process is None or backend.process.poll() is not None:
+                raise RuntimeError("OpenTTD exited before diagnostic save")
+        else:
+            backend.health()
+
+    if diagnostic:
+        health()
+    path = owned_save_path(prepared, name)
+    logs = (prepared.spec.stdout_path, prepared.spec.stderr_path)
+    offsets = [log.stat().st_size for log in logs]
+    # OpenTTD 15.3 ConSave appends .sav and uses SAVE_DIR for relative names.
+    # Supply an absolute, quoted name; never infer the native directory from cwd.
+    console(backend, 'save "' + str(path.with_suffix("")) + '"')
+    marker = "Map successfully saved to '" + str(path) + "'."
     deadline = time.monotonic() + 15
-    while not path.is_file():
-        backend.health()
+    while True:
+        health()
+        fresh = []
+        for log, offset in zip(logs, offsets, strict=True):
+            with log.open("rb") as stream:
+                stream.seek(offset)
+                fresh.append(stream.read().decode(errors="replace"))
+        text = "\n".join(fresh)
+        count = text.count(marker)
+        if count > 1:
+            raise ValueError("duplicate native save completion acknowledgement")
+        if "Saving map failed." in text or "Game save failed" in text:
+            raise ValueError("native save command failed")
+        if count == 1:
+            if path.is_symlink() or not path.is_file():
+                raise ValueError("acknowledged native save missing or nonregular")
+            if any(p.is_symlink() for p in path.parents):
+                raise ValueError("native save directory redirected")
+            if path.stat().st_size == 0:
+                raise ValueError("acknowledged native save empty")
+            return sha256(path)
         if time.monotonic() >= deadline:
-            raise TimeoutError("owned native save missing")
+            raise TimeoutError("owned native save completion missing")
         await asyncio.sleep(0.05)
-    # threaded_saves=false; retain completion marker, not just file existence.
-    await wait_log(backend, prepared, "Map successfully saved to '" + str(path))
-    return sha256(path)
 
 
 async def exchange(session, request, directory, *, response_type=RoadReadback):

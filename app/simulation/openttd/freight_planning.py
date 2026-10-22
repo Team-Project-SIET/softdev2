@@ -28,7 +28,7 @@ class PlanningSelectionRequest(Contract):
     max_cost: Literal[100000] = 100000
     a: tuple[StrictInt, ...] = Field(min_length=10, max_length=10)
     path: tuple[StrictInt, ...] = Field(min_length=2, max_length=47)
-    depot_front: StrictInt = Field(ge=0, le=4095)
+    depot_front: StrictInt = Field(ge=0, le=65535)
 
     def to_bytes(self):
         from app.planning.canonical import canonical_bytes
@@ -37,7 +37,7 @@ class PlanningSelectionRequest(Contract):
         if (
             len(raw) > 1450
             or any(not 0 <= v <= 65534 for v in self.a)
-            or any(not 0 <= v < 4096 for v in self.path)
+            or any(not 0 <= v < 65536 for v in self.path)
         ):
             raise ValueError("bounded native planning selection required")
         return raw
@@ -129,7 +129,11 @@ class PlannedFreightService:
             or (road.pickup.tile_id, road.pickup.front_tile_id) != a[4:6]
             or (road.delivery.tile_id, road.delivery.front_tile_id) != a[6:8]
             or selection.a != a
-            or (road.scenario.width_tiles, road.scenario.height_tiles) != (64, 64)
+            or (road.scenario.width_tiles, road.scenario.height_tiles)
+            != (
+                road.input.admitted.world.context.world.map_width,
+                road.input.admitted.world.context.world.map_height,
+            )
             or road.scenario.world_manifest.source_digest != native.source_save_digest
         ):
             raise ValueError("P05 decisions differ from admitted native freight service")
@@ -188,13 +192,13 @@ def compile_freight_service(road: ControlledRoadScenario, plan: ExecutionPlan):
 
 
 def compile_freight_network(network, plan: ExecutionPlan):
-    """Bind up to three selected routes to their original P08 packages without replanning."""
+    """Bind up to eight selected routes to their original P08 packages without replanning."""
     validate_execution_plan(plan, network.scenario)
     if (
         plan.planner_inputs_digest != scenario_hash(network.scenario)
-        or not 1 <= len(plan.routes) <= 3
+        or not 1 <= len(plan.routes) <= 8
     ):
-        raise ValueError("one to three source-bound selected freight services required")
+        raise ValueError("one to eight source-bound selected freight services required")
     roads = {r.scenario.cargo_demands[0].demand_id: r for r in network.services}
     groups = {g.fleet_group_id: g for g in plan.fleet.groups}
     actions = {a.construction_id: a for a in plan.infrastructure.actions}

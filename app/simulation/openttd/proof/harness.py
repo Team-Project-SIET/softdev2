@@ -20,6 +20,7 @@ from app.simulation.openttd.qualification_clock import EconomyClockRequest
 from app.simulation.openttd.runtime.base import LaunchSpecification
 from app.simulation.openttd.runtime.config import AdminSettings, RuntimeWorkspace
 from app.simulation.openttd.runtime.identity import RuntimeIdentity
+from app.simulation.openttd.tile_facts import TileFactsRequest
 from app.simulation.openttd.world_info import WorldInfoRequest
 
 from .cargo_contract import CARGO_REQUEST
@@ -153,6 +154,7 @@ class PreparedProof:
         | CargoPageRequest
         | IndustryProductionRequest
         | EconomyClockRequest
+        | TileFactsRequest
     ) = REQUEST
 
     def dispose(self) -> None:

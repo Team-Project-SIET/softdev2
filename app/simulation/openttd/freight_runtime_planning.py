@@ -1,5 +1,6 @@
 """Same-session observation assembly for the existing freight proof runner."""
 
+import asyncio
 import hashlib
 import json
 import subprocess
@@ -39,8 +40,8 @@ class PlanningRead(Contract):
     protocol: Literal[1] = 1
     type: Literal["planning_read"] = "planning_read"
     request_id: str = Field(pattern=r"^[A-Za-z0-9-]{1,32}$")
-    kind: Literal["settings", "engines", "engine", "tile"]
-    arg: StrictInt = Field(ge=0, le=4095)
+    kind: Literal["settings", "engines", "engine", "tile", "generation"]
+    arg: StrictInt = Field(ge=0, le=65535)
     src: StrictInt = Field(ge=0, le=63999)
     dst: StrictInt = Field(ge=0, le=63999)
     cargo: StrictInt = Field(ge=0, le=63)
@@ -85,7 +86,7 @@ class PlanningReadback(Contract):
             or response.after < response.before
         ):
             raise ValueError("planning read identity/bracket mismatch")
-        size = dict(settings=8, engine=7, tile=19).get(request.kind)
+        size = dict(settings=8, engine=7, tile=19, generation=6).get(request.kind)
         if size is not None and len(response.data) != size:
             raise ValueError("planning read shape mismatch")
         return response
@@ -259,11 +260,21 @@ async def collect_qualified_world(backend, prepared, session, accounting):
 
 
 async def capture_planning_facts(
-    backend, prepared, world, *, read_exchange=None, retain=True, relationship=None, prefix=""
+    backend,
+    prepared,
+    world,
+    *,
+    read_exchange=None,
+    retain=True,
+    relationship=None,
+    prefix="",
+    capture_budget=None,
 ):
     from .proof.freight_delivery import exchange
     from .proof.harness import sha256, write_json
 
+    backend.planning_read_count = 0
+    backend.planning_read_attempts = 0
     # Discover relationships from qualified structure, not the demo's assumed IDs.
     caps = world.structural.capability.observation.capabilities
     positive = {
@@ -285,16 +296,24 @@ async def capture_planning_facts(
     if relationship is not None and relationship not in relationships:
         raise ValueError("unqualified freight relationship")
     src, dst, cargo = relationship or relationships[0]
-    records = {r.id: r for r in world.structural.inventory.observation.records}
-    a, b = records[src], records[dst]
-    x, y = min(a.x, b.x) - 2, min(a.y, b.y) - 2
-    width, height = abs(a.x - b.x) + 4, abs(a.y - b.y) + 4
-    if x < 1 or y < 1 or x + width >= 63 or y + height >= 63 or width * height > 256:
-        raise ValueError("qualified freight region exceeds bounded capture")
+    from app.demo_random import relationship_region
+
+    tile_limit = capture_budget.capture_tile_limit if capture_budget is not None else 256
+    region = relationship_region(world, (src, dst, cargo), tile_limit)
+    x, y, width, height = (region[k] for k in ("x", "y", "width", "height"))
+    map_width = world.context.world.map_width
+    map_height = world.context.world.map_height
+    deadline = (
+        asyncio.get_running_loop().time() + capture_budget.capture_seconds
+        if capture_budget is not None
+        else None
+    )
     responses = []
 
     async def read(kind, arg=0):
         backend.health()
+        if len(responses) >= tile_limit + 34:
+            raise ValueError("CAPTURE_REQUEST_BUDGET: planning reads exhausted")
         request = PlanningRead(
             request_id=f"planning-{prefix}{len(responses)}",
             kind=kind,
@@ -303,10 +322,16 @@ async def capture_planning_facts(
             dst=dst,
             cargo=cargo,
         )
-        response = await (read_exchange or exchange)(
-            backend.session, request, prepared.directory, response_type=PlanningReadback
-        )
+        backend.planning_read_attempts += 1
+        try:
+            async with asyncio.timeout_at(deadline):
+                response = await (read_exchange or exchange)(
+                    backend.session, request, prepared.directory, response_type=PlanningReadback
+                )
+        except TimeoutError as error:
+            raise ValueError("CAPTURE_TIME_BUDGET: planning capture deadline expired") from error
         responses.append(response)
+        backend.planning_read_count = len(responses)
         return response.data
 
     settings = await read("settings")
@@ -347,7 +372,7 @@ async def capture_planning_facts(
     )
     for ty in range(y, y + height):
         for tx in range(x, x + width):
-            row = await read("tile", ty * 64 + tx)
+            row = await read("tile", ty * map_width + tx)
             if any(v not in (0, 1) for v in row[3:14] + row[17:19]):
                 raise ValueError("nonboolean native planning fact")
             tiles.append(
@@ -389,13 +414,17 @@ async def capture_planning_facts(
                     configuration_digest=context.configuration_digest,
                     bridge_digest=context.bridge.sha256,
                     content_digest=content,
-                    map_width=64,
-                    map_height=64,
+                    map_width=map_width,
+                    map_height=map_height,
                 ),
-                region=dict(x=x, y=y, width=width, height=height),
+                region=region,
                 settings=dict(
                     content_digest=content,
-                    generation_seed=42,
+                    # Observed native seed only; a missing runtime identity fails
+                    # the capture instead of substituting a fabricated value.
+                    generation_seed=json.loads(
+                        (prepared.directory / "runtime-identity.json").read_bytes()
+                    )["welcome"]["seed"],
                     modified_catchment=bool(settings[0]),
                     serve_neutral_industries=bool(settings[1]),
                     timekeeping="calendar",
