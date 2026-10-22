@@ -428,6 +428,12 @@ def _validate_routes(plan: ExecutionPlan, scenario: PlanningScenario, index: _In
     )
     network = scenario.constraints.network_selection
     if network is not None:
+        for demand_id, minimum in network.minimum_vehicles_by_demand.items():
+            _require(
+                sum(g.count for g in plan.fleet.groups if demand_id in g.demand_ids) >= minimum,
+                PlanningFailureCode.INVALID_FLEET,
+                "explicit minimum vehicle allocation not satisfied",
+            )
         _require(
             all(a.candidate_id in candidates for a in plan.infrastructure.actions),
             PlanningFailureCode.UNSUPPORTED_CONSTRUCTION,

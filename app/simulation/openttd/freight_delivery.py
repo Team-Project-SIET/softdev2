@@ -153,9 +153,11 @@ def verify_snapshot(plan, r):
         raise ValueError("two native orders required")
 
 
-def observation_budget(plan):
+def observation_budget(plan, *, map_width=64):
     start, end = plan.a[4], plan.a[6]
-    distance = abs(start % 64 - end % 64) + abs(start // 64 - end // 64) + 2
+    distance = (
+        abs(start % map_width - end % map_width) + abs(start // map_width - end // map_width) + 2
+    )
     return min(OBS_TICKS, 2048 + 128 * distance)
 
 
@@ -182,13 +184,17 @@ def period_totals(r, baseline):
     return r.s[18] + r.e[4], r.s[19] + r.e[5]
 
 
-def verify_observation(plan, r, phase):
+def verify_observation(plan, r, phase, *, map_width=64):
     verify_snapshot(plan, r)
     if (
         r.status != "OBSERVED"
         or r.arg != phase
-        or not 0 <= r.s[0] - r.s[26] <= (2048 if r._legacy else observation_budget(plan))
-        or not 1 <= r.s[27] <= (2048 if r._legacy else observation_budget(plan)) + 1
+        or not 0
+        <= r.s[0] - r.s[26]
+        <= (2048 if r._legacy else observation_budget(plan, map_width=map_width))
+        or not 1
+        <= r.s[27]
+        <= (2048 if r._legacy else observation_budget(plan, map_width=map_width)) + 1
     ):
         raise ValueError("bounded native observation failed or inconclusive")
     if phase == 0 and r.s[15] <= 0:
@@ -201,7 +207,7 @@ def verify_observation(plan, r, phase):
         raise ValueError("unloading not observed")
 
 
-def verify_delivery(plan, baseline, observations, final):
+def verify_delivery(plan, baseline, observations, final, *, map_width=64):
     if len(observations) != 4:
         raise ValueError("four ordered native cargo observations required")
     verify_snapshot(plan, baseline)
@@ -224,7 +230,7 @@ def verify_delivery(plan, baseline, observations, final):
             raise ValueError("economy period lineage broken")
         previous = r
         previous_tick = r.s[0]
-        verify_observation(plan, r, phase)
+        verify_observation(plan, r, phase, map_width=map_width)
     verify_snapshot(plan, final)
     loaded = observations[1].s[11]
     cargo_total, income_total = period_totals(final, baseline)

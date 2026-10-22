@@ -328,6 +328,11 @@ def _alternatives(scenario: PlanningScenario) -> list[list[_Alternative]]:
                     count = (
                         demand.quantity + vehicle.capacity_cargo_units - 1
                     ) // vehicle.capacity_cargo_units
+                    network = scenario.constraints.network_selection
+                    if network is not None:
+                        count = max(
+                            count, network.minimum_vehicles_by_demand.get(demand.demand_id, 1)
+                        )
                     composition: Composition = RoadComposition(
                         mode=Mode.ROAD, vehicle_type=vehicle.vehicle_type
                     )
@@ -459,7 +464,9 @@ def _solve(
     )
     builds = {c.candidate_id: model.new_bool_var(f"c-{i}") for i, c in enumerate(candidates)}
     network = scenario.constraints.network_selection
-    for items, variables in zip(alternatives, choices, strict=True):
+    for demand, items, variables in zip(scenario.cargo_demands, alternatives, choices, strict=True):
+        if network is not None and demand.demand_id in network.minimum_vehicles_by_demand:
+            model.add(sum(variables) == 1)
         if network is None:
             model.add_exactly_one(variables)
         else:

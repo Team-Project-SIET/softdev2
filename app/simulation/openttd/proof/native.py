@@ -262,7 +262,16 @@ class NativeBackend:
         ):
             raise ValueError("Native launch identity/ownership mismatch")
 
-    async def launch(self, prepared: PreparedProof) -> None:
+    async def launch(self, prepared: PreparedProof, *, env: dict[str, str] | None = None) -> None:
+        """Spawn the pinned runtime exactly once.
+
+        When ``env`` is provided it is the exact authorized launch environment
+        and is passed to the process unchanged; the legacy path (``env=None``)
+        inherits ``os.environ`` plus the launch specification overrides, so
+        unrelated proofs keep their behavior. Authorization-bound backends are
+        expected to assemble the exact environment at their boundary and hand
+        it here.
+        """
         if self._launched:
             raise RuntimeError("No launch retry")
         self.validate_launch(prepared)
@@ -272,12 +281,13 @@ class NativeBackend:
         self._logs.append(stdout)
         stderr = prepared.spec.stderr_path.open("xb")
         self._logs.append(stderr)
-        env = os.environ.copy()
-        env.update(dict(prepared.spec.environment))
+        environment = dict(env) if env is not None else os.environ.copy()
+        if not env:
+            environment.update(dict(prepared.spec.environment))
         self.process = subprocess.Popen(
             prepared.spec.argv,
             cwd=prepared.spec.cwd,
-            env=env,
+            env=environment,
             stdin=subprocess.PIPE,
             stdout=stdout,
             stderr=stderr,

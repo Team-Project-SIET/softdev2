@@ -1,0 +1,9 @@
+{
+  "scope": "Captured public files only; additions and credentials excluded. CONTEXT checked against archived pre-edit copy.",
+  "counts": {
+    "repository-files-before.json": 768,
+    "local-artifacts-before.json": 29517
+  },
+  "errors": [],
+  "passed": true
+}

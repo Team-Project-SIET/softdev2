@@ -1,0 +1,11 @@
+{
+  "files": [
+    "CONTEXT.md",
+    "AI_HANDOFF.md",
+    "TASKS.md",
+    "EVIDENCE_INDEX.md",
+    "REPRODUCE.md"
+  ],
+  "broken_local_markdown_links": [],
+  "passed": true
+}

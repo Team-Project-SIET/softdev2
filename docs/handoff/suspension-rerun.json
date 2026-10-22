@@ -1,0 +1,85 @@
+{
+  "source_commit": "14ec60f248547d4d062a1160f0fc26d742319888",
+  "compiler": "g++ (GCC) 16.2.1 20260819 (Red Hat 16.2.1-2)\nCopyright (C) 2026 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n",
+  "host_sha256": "2cd29cd12ac4bac7b3b817baee73a122ba2d270fb6c185962b137b7d89c57bc6",
+  "compiled_source_sha256": {
+    "/home/fed/codes/softdev2/tests/support/openttd_squirrel_suspend.cpp": "0eb9552875d46950dd0919f22816c12948a562071fbfae860c0512406d3440ea",
+    "/tmp/canonical-squirrel-15.3/src/3rdparty/squirrel/squirrel/sqapi.cpp": "b6caeba4e033bce8443d817aff828fa18d42409417041739bb66e4f53b1de71b",
+    "/tmp/canonical-squirrel-15.3/src/3rdparty/squirrel/squirrel/sqbaselib.cpp": "b6c8a981a196b70c2f14a782a340c38116ed66ab07b822223791a94a9129ddbc",
+    "/tmp/canonical-squirrel-15.3/src/3rdparty/squirrel/squirrel/sqclass.cpp": "6b30ace242afdd814837092f7996aa2901ae2965423e3c7359c61e50047bf985",
+    "/tmp/canonical-squirrel-15.3/src/3rdparty/squirrel/squirrel/sqcompiler.cpp": "47064e7a72f230415cd37cbc9eb44586dfb1485bb3b47c7431ab77d3ec48d7d5",
+    "/tmp/canonical-squirrel-15.3/src/3rdparty/squirrel/squirrel/sqdebug.cpp": "379d9d251ea06120bfb4c6361272aecbbfff8c67fd50b2ab433c39725f2a7553",
+    "/tmp/canonical-squirrel-15.3/src/3rdparty/squirrel/squirrel/sqfuncstate.cpp": "78c8410ac2b81abc31a5bd205e20c2b9a66551c0862f282fb872bbe026f79c55",
+    "/tmp/canonical-squirrel-15.3/src/3rdparty/squirrel/squirrel/sqlexer.cpp": "bb0e850cc93bee5dd13ad5841170d149e24d9fa48ece91650944651ac7f38361",
+    "/tmp/canonical-squirrel-15.3/src/3rdparty/squirrel/squirrel/sqobject.cpp": "79416882a7c024089bb7b2e4585d422c36f2aa68a1ad63f79eda545938184893",
+    "/tmp/canonical-squirrel-15.3/src/3rdparty/squirrel/squirrel/sqstate.cpp": "eed8e30dae1a9876f523ba5df0656f3162db7fa9704fef2b72f745ea1626f12c",
+    "/tmp/canonical-squirrel-15.3/src/3rdparty/squirrel/squirrel/sqtable.cpp": "8cc58ad3ede81ae4384c34b57cbc1c778fc572117f60ee1640223a2077f77e5d",
+    "/tmp/canonical-squirrel-15.3/src/3rdparty/squirrel/squirrel/sqvm.cpp": "3ba7d708ddd80805505543f7f078a38c452624d77c90c9d9734e98d7bd0c414d",
+    "/tmp/canonical-squirrel-15.3/src/core/string_consumer.cpp": "996bae1d26114d303ebfad22f498f3847e818bdb819e466a38d04cecacb34cbc",
+    "/tmp/canonical-squirrel-15.3/src/core/utf8.cpp": "fe05dc7e6c4f2eb8b92874d367e0ec04f5c749866ce935873e5c521619555a98"
+  },
+  "scope": "VM suspension only; controlled game API peers; zero OpenTTD launches",
+  "package_sha256": {
+    "canonical-collector.nut": "c38b19055f8071dd586dc4435ad8a5ad0bbc58003af26ae279de7d0942553630",
+    "canonical-parent.nut": "2588362c70ab75e72c0ce4540e76788a72b7b40916e082a863ba3ae42afd315c",
+    "continuous-parent.nut": "01ff8026a6720d1a754bc84f5974a9b439bb0d236c879c2399915ef686562084",
+    "delivery.nut": "97730600396b78866251548804dd5a3f1ea2099a7347daa6808044349d460215",
+    "demo-world.nut": "50540420c1e5d6ddbc75f459af23085ef4133cc3dec3a373f97812a66bfd5bc7",
+    "funding.nut": "3247c64338d716d740b0013cc77ba758f1ba246d62b9becd8dcb1a44e4d7079a",
+    "info.nut": "6c0d529f1c96c123428d6dc726b9471697092861770982f4c4c2d236ecd87f12",
+    "infrastructure.nut": "b139cac3c748af2c733e641bb67ef0435acfc2f339a8effcc329d9a9830d098c",
+    "main.nut": "0dbbc9a76bcdfb96fcca38200f03764a3b3f5560143bbdc67b6ed47a2ed7ac96",
+    "network-parent.nut": "19b30f8b28f8dc2432e1610e73cd0d29c239e4e721b99019dff62e57d8a7d5e5",
+    "qualification.nut": "d73dc963c830fddde41ae653580b9187ad4eaadf33a49e1a63311a28f2bca899",
+    "vehicle.nut": "1c92fa275ffc17d87104748378c2346af5ce89f54dba7dae71af32d20fcacc42"
+  },
+  "helper_sha256": {
+    "/home/fed/codes/softdev2/tests/validate_canonical_squirrel.py": "0b6a8bfa8d22a4b216db71fe66c1ff660701412d752fb98cf587f06777fe2985",
+    "/home/fed/codes/softdev2/tests/support/openttd_squirrel_suspend.cpp": "0eb9552875d46950dd0919f22816c12948a562071fbfae860c0512406d3440ea",
+    "/home/fed/codes/softdev2/tests/support/canonical_startup_vm.nut": "eb130d78dcbb8076500e909bf2791b3f49ed3cd5e8e3b15c3e15f52b31e1c192"
+  },
+  "results": [
+    {
+      "case": "packaged-startup",
+      "returncode": 0,
+      "output": "suspended/resumed commands=7",
+      "script_sha256": "74ee1fc88cbb3200b511f8103d83a602524cf1c615b948650a446e6794b55225"
+    },
+    {
+      "case": "q1-boundary-regression",
+      "returncode": 1,
+      "output": "COMMAND_NOT_SUSPENDABLE",
+      "script_sha256": "960465d1e2ebac78f46f906ff3952b97b7366804b9f0873a63ac9165cbc9b557"
+    },
+    {
+      "case": "command-false",
+      "returncode": 1,
+      "output": "NETWORK_INDUSTRY_BUILD_FAILED type=0 tile=532 built=0 error=17",
+      "script_sha256": "965e7d75fb110615c8b23b10c65f042dffd1e2bd53f594f2ab6f722aa71cb3b6"
+    },
+    {
+      "case": "command-error",
+      "returncode": 1,
+      "output": "NATIVE_COMMAND_ERROR",
+      "script_sha256": "cc47eb836fbc81ab9720ff3c9554cecbc1a9d52daa0fb0d831e6b954e549aca8"
+    },
+    {
+      "case": "command-delegates",
+      "returncode": 0,
+      "output": "suspended/resumed commands=2",
+      "script_sha256": "757a421e0d4486e745b6763029da31c89dfd64fe3c48b19020bcedffbcee7341"
+    },
+    {
+      "case": "execute-old-boundary",
+      "returncode": 1,
+      "output": "COMMAND_NOT_SUSPENDABLE",
+      "script_sha256": "b8b324ea07e41d81f237d5ef5da11aecbeaaa3626ddc2f1527749ccc318aaa79"
+    },
+    {
+      "case": "handle-old-boundary",
+      "returncode": 1,
+      "output": "COMMAND_NOT_SUSPENDABLE",
+      "script_sha256": "7d6f9cd80c00c9b6769139a9a771251048b6b8ad7532a1700e72c7b6f62d2e88"
+    }
+  ]
+}

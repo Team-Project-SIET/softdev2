@@ -32,9 +32,9 @@ sys.path.insert(0, 'tests')
 from postgres_support import postgres_factory, upgrade_isolated
 from alembic.script import ScriptDirectory
 scripts = ScriptDirectory('alembic')
-assert scripts.get_heads() == ['0008']
+assert scripts.get_heads() == ['0009']
 assert [r.revision for r in scripts.walk_revisions()] == [
-    '0008', '0007', '0006', '0005', '0004', '0003', '0002', '0001',
+    '0009', '0008', '0007', '0006', '0005', '0004', '0003', '0002', '0001',
 ]
 from app.database import models
 from app.database.base import Base
@@ -45,7 +45,7 @@ from sqlalchemy.orm import Session, configure_mappers
 assert set(Base.metadata.tables) == {
     'experiment_scenarios', 'planning_strategies', 'experiment_runs',
     'simulation_runs', 'experiment_metrics', 'live_telemetry_sessions',
-    'telemetry_observations', 'plan_evaluations',
+    'telemetry_observations', 'plan_evaluations', 'freight_run_history',
 }
 configure_mappers()
 engine = create_engine('sqlite+pysqlite:///:memory:')

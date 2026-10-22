@@ -1,0 +1,152 @@
+ M README.md
+ M app/experiments/cli.py
+ M app/planning/canonical.py
+ M app/planning/domain.py
+ M app/planning/optimizer.py
+ M app/planning/validation.py
+ M app/simulation/openttd/freight_delivery_package/funding.nut
+ M app/simulation/openttd/freight_native_network.py
+ M app/simulation/openttd/freight_planning_replay.py
+ M app/simulation/openttd/gamescript_transport.py
+ M app/simulation/openttd/proof/freight_delivery.py
+ M app/simulation/openttd/proof/harness.py
+ M app/simulation/openttd/proof/historical_protection.py
+ M app/simulation/openttd/proof/ownership.py
+ M app/simulation/openttd/proof/road_mutation.py
+ M app/simulation/openttd/scenario_capital.py
+ M docs/specs/planning-executor-boundary.md
+ M docs/srs.md
+ M tests/test_scenario_capital.py
+?? --version
+?? .env.example
+?? app/experiments/capacity_experiment.py
+?? app/experiments/freight_alternatives.py
+?? app/experiments/freight_capacity_report.py
+?? app/experiments/freight_continuous_analytics.py
+?? app/experiments/paired_native.py
+?? app/experiments/paired_source.py
+?? app/planning/preparation/candidates.py
+?? app/planning/preparation/canonical.py
+?? app/planning/preparation/corridor.py
+?? app/planning/preparation/domain.py
+?? app/planning/preparation/lifecycle.py
+?? app/planning/preparation/probe.py
+?? app/planning/preparation/probe_package/info.nut
+?? app/planning/preparation/probe_package/main.nut
+?? app/planning/preparation/projection.py
+?? app/planning/preparation/safety.py
+?? app/simulation/openttd/freight_canonical.py
+?? app/simulation/openttd/freight_canonical_dispatch.py
+?? app/simulation/openttd/freight_canonical_runtime.py
+?? app/simulation/openttd/freight_canonical_save.py
+?? app/simulation/openttd/freight_capacity_execution.py
+?? app/simulation/openttd/freight_continuous.py
+?? app/simulation/openttd/freight_delivery_package/canonical-collector.nut
+?? app/simulation/openttd/freight_delivery_package/canonical.nut
+?? app/simulation/openttd/freight_delivery_package/continuous.nut
+?? app/simulation/openttd/freight_finance.py
+?? app/simulation/openttd/freight_matched_state.py
+?? app/simulation/openttd/freight_telemetry.py
+?? app/simulation/openttd/proof/canonical_fleet.py
+?? app/simulation/openttd/proof/terrain_attempt.py
+?? app/simulation/openttd/proof/terrain_authorization.py
+?? app/simulation/openttd/proof/terrain_capture.py
+?? app/simulation/openttd/proof/terrain_failure.py
+?? app/simulation/openttd/proof/terrain_logs.py
+?? app/simulation/openttd/proof/terrain_native.py
+?? app/simulation/openttd/proof/terrain_native_retention.py
+?? app/simulation/openttd/proof/terrain_operator.py
+?? app/simulation/openttd/proof/terrain_preparation.py
+?? app/simulation/openttd/proof/terrain_retention.py
+?? app/simulation/openttd/proof/terrain_seal.py
+?? app/simulation/openttd/terrain_accounting.py
+?? app/simulation/openttd/terrain_bridge.nut
+?? app/simulation/openttd/terrain_bridge.py
+?? app/simulation/openttd/terrain_collection.py
+?? app/simulation/openttd/terrain_native_integration.py
+?? app/simulation/openttd/terrain_native_paired_evidence.py
+?? app/simulation/openttd/terrain_native_records.py
+?? app/simulation/openttd/terrain_native_validation.py
+?? app/simulation/openttd/terrain_pagination.py
+?? app/simulation/openttd/terrain_paired_evidence.py
+?? app/simulation/openttd/terrain_sweeps.py
+?? app/simulation/openttd/tile_facts.py
+?? app/simulation/openttd/tile_facts_evidence.py
+?? docs/capacity-experiment.md
+?? docs/five-year-freight-controlled-alternatives.md
+?? docs/five-year-freight-financial-evidence.md
+?? docs/five-year-freight-performance-analysis.md
+?? docs/handoff/focused-tests.txt
+?? docs/minimum-freight-vertical-slice.md
+?? docs/p08-15-3-capture-output-validation-repair.md
+?? docs/p08-15-3-controlled-terrain-road-query.md
+?? docs/p08-15-3-native-terrain-road-acquisition-design.md
+?? docs/p08-15-3-offline-terrain-evidence-repair.md
+?? docs/p08-15-3-one-launch-authorization-contract.md
+?? docs/p08-15-3-operator-attended-local-proof.md
+?? docs/p08-15-3-prelaunch-lifecycle-repair.md
+?? docs/p08-15-3-road-selector-repair.md
+?? docs/p08-15-3-single-page-real-proof-preparation.md
+?? docs/p08-controlled-native-integration.md
+?? docs/specs/openttd-offline-evidence-baseline-1.json
+?? docs/specs/openttd-offline-evidence-baseline.md
+?? docs/specs/openttd-offline-evidence-freeze.md
+?? docs/specs/openttd-reconstructed-independent-audit-summary.md
+?? docs/specs/p08-multi-page-terrain-acquisition.md
+?? docs/specs/p08-native-multi-page-integration-design.md
+?? docs/specs/p08-two-sweep-equality-design.md
+?? docs/specs/p08-world-preparation-design.md
+?? docs/specs/terrain-native-paired-evidence-v1.md
+?? docs/specs/terrain-paired-evidence-v1.md
+?? tests/fixtures/p08_api_13_4.json
+?? tests/fixtures/p08_query_api.nut
+?? tests/fixtures/p08_terrain_road_design.json
+?? tests/fixtures/tile_facts_api_15.nut
+?? tests/support/canonical_startup_vm.nut
+?? tests/support/openttd_squirrel_suspend.cpp
+?? tests/test_canonical_fleet_driver.py
+?? tests/test_capacity_experiment.py
+?? tests/test_freight_alternatives.py
+?? tests/test_freight_canonical.py
+?? tests/test_freight_canonical_dispatch.py
+?? tests/test_freight_canonical_integration.py
+?? tests/test_freight_canonical_persistence.py
+?? tests/test_freight_canonical_runtime.py
+?? tests/test_freight_canonical_save.py
+?? tests/test_freight_canonical_transport.py
+?? tests/test_freight_capacity_analytics.py
+?? tests/test_freight_capacity_execution.py
+?? tests/test_freight_capacity_monitor.py
+?? tests/test_freight_capacity_report.py
+?? tests/test_freight_capacity_transport.py
+?? tests/test_freight_continuous.py
+?? tests/test_freight_continuous_analytics.py
+?? tests/test_freight_finance.py
+?? tests/test_freight_matched_state.py
+?? tests/test_freight_offline_recovery.py
+?? tests/test_freight_telemetry.py
+?? tests/test_native_save_path.py
+?? tests/test_p08_terrain_design_audit.py
+?? tests/test_paired_native.py
+?? tests/test_paired_source.py
+?? tests/test_planning_preparation.py
+?? tests/test_preparation_lifecycle.py
+?? tests/test_preparation_probe.py
+?? tests/test_terrain_capture.py
+?? tests/test_terrain_historical_root.py
+?? tests/test_terrain_model_a.py
+?? tests/test_terrain_native_integration.py
+?? tests/test_terrain_native_paired_evidence.py
+?? tests/test_terrain_native_records.py
+?? tests/test_terrain_native_retention.py
+?? tests/test_terrain_native_validation.py
+?? tests/test_terrain_offline_retention.py
+?? tests/test_terrain_pagination.py
+?? tests/test_terrain_paired_evidence.py
+?? tests/test_terrain_query.py
+?? tests/test_terrain_selector.py
+?? tests/test_terrain_single_page_preparation.py
+?? tests/test_terrain_sweeps.py
+?? tests/test_tile_facts_protocol.py
+?? tests/validate_canonical_squirrel.py
+?? ther.md

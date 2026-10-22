@@ -23,6 +23,10 @@ references retain the prior design context.
   plan-attributed evaluation responsibilities are not implemented by those slices.
 - [P03 runtime-world identity and proof coverage](planning-runtime-world-identity.md):
   current Attempt #6 status and its limits.
+- [P08 world preparation authority](specs/p08-world-preparation-design.md): supported
+  extraction profile, deterministic candidate generation, identity, limits and
+  controlled verification. One demand per prepared scenario is a P08 v1 limitation;
+  P05 supports multiple supplied demands. Real extraction proof remains pending.
 - [Production smoke evidence](live-production-smoke.md),
   [failure matrix](live-failure-matrix.md) and
   [outcome recovery](live-outcome-recovery.md): retained evidence and operational
@@ -30,4 +34,4 @@ references retain the prior design context.
 
 Use current code and completion history to determine implemented capabilities;
 use the specifications for requirements. This index defines no new roadmap,
-T-to-P mapping or P05.
+T-to-P mapping or a subsequent planning phase.

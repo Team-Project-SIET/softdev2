@@ -49,7 +49,8 @@ def _json_value(value: object) -> object:
             name: _json_field(name, getattr(value, name))
             for name in fields
             # Preserve frozen schema-v1 identities for the single-service workflow.
-            if name != "network_selection" or getattr(value, name) is not None
+            if (name != "network_selection" or getattr(value, name) is not None)
+            and (name != "minimum_vehicles_by_demand" or getattr(value, name))
         }
     if isinstance(value, Decimal):
         return _decimal_string(value)
@@ -59,6 +60,8 @@ def _json_value(value: object) -> object:
         return value.value
     if isinstance(value, tuple):
         return [_json_value(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _json_value(item) for key, item in value.items()}
     if isinstance(value, str):
         return unicodedata.normalize("NFC", value)
     if value is None or isinstance(value, (bool, int)):

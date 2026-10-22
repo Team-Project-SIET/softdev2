@@ -1,0 +1,112 @@
+{
+  "classification": "DESIGN_CALCULATION_ONLY",
+  "maximum_error_bytes": 227,
+  "maximum_records": 5,
+  "maximum_request_bytes": 159,
+  "maximum_response_bytes": 508,
+  "maximum_width_error": {
+    "cursor": 255,
+    "error_code": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+    "failed_tile": 16777215,
+    "protocol": 1,
+    "request_id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "status": "error",
+    "type": "tile_facts_page_result"
+  },
+  "maximum_width_request": {
+    "cursor": 250,
+    "protocol": 1,
+    "region": [
+      4000,
+      4000,
+      15,
+      17
+    ],
+    "request_id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "type": "tile_facts_page"
+  },
+  "maximum_width_response": {
+    "cursor": 250,
+    "date_after": 2147483647,
+    "date_before": 2147483647,
+    "has_more": false,
+    "map": [
+      4096,
+      4096
+    ],
+    "next_cursor": null,
+    "protocol": 1,
+    "region": [
+      4000,
+      4000,
+      15,
+      17
+    ],
+    "request_id": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+    "status": "ok",
+    "tiles": [
+      [
+        16773118,
+        255,
+        31,
+        8191,
+        63999,
+        -1,
+        1,
+        15,
+        15,
+        15
+      ],
+      [
+        16773118,
+        255,
+        31,
+        8191,
+        63999,
+        -1,
+        1,
+        15,
+        15,
+        15
+      ],
+      [
+        16773118,
+        255,
+        31,
+        8191,
+        63999,
+        -1,
+        1,
+        15,
+        15,
+        15
+      ],
+      [
+        16773118,
+        255,
+        31,
+        8191,
+        63999,
+        -1,
+        1,
+        15,
+        15,
+        15
+      ],
+      [
+        16773118,
+        255,
+        31,
+        8191,
+        63999,
+        -1,
+        1,
+        15,
+        15,
+        15
+      ]
+    ],
+    "type": "tile_facts_page_result"
+  },
+  "tag_commit": "14ec60f248547d4d062a1160f0fc26d742319888"
+}

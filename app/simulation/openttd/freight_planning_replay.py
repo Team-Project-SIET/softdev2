@@ -29,7 +29,7 @@ from .proof.qualification_native import QualificationNativeBackend, Qualificatio
 from .proof.structural_native import StructuralRecordedSession
 
 
-async def replay_qualified_world(directory, metadata, runtime):
+async def replay_qualified_world(directory, metadata, runtime, *, recovery=None):
     from .proof.freight_delivery import PlannerBackend
 
     prefix = json.loads((directory / "qualification-prefix-frames.json").read_bytes())
@@ -74,7 +74,7 @@ async def replay_qualified_world(directory, metadata, runtime):
     if metadata.get("scenario"):
         from .proof.freight_delivery import verify_capital_frames
 
-        verify_capital_frames(directory, prefix[5:9])
+        verify_capital_frames(directory, prefix[5:9], recovery=recovery)
         session.cursor = 9
     # Retained replay uses opaque ownership handles, never native process/socket handles.
     # Initialize only retained validator state. Native construction requires launch authority.

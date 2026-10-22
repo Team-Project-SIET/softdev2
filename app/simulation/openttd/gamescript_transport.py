@@ -55,6 +55,19 @@ from app.simulation.openttd.qualification_clock import (
     NativeReadExchange,
     NativeReadReceipt,
 )
+from app.simulation.openttd.tile_classification import (
+    TileClassificationExchange,
+    TileClassificationReceipt,
+    TileClassificationRequest,
+)
+from app.simulation.openttd.tile_facts import (
+    TileFactsExchange,
+    TileFactsReceipt,
+    TileFactsRequest,
+)
+from app.simulation.openttd.tile_facts import (
+    selector as tile_region_selector,
+)
 from app.simulation.openttd.world_info import (
     NETWORK_SEQUENCE,
     WorldInfoExchange,
@@ -145,7 +158,13 @@ class GameScriptSession(AdminStream):
                                     try:
                                         EconomyClockRequest.parse(payload)
                                     except BridgeProtocolError:
-                                        IndustryLifetimeRequest.parse(payload)
+                                        try:
+                                            IndustryLifetimeRequest.parse(payload)
+                                        except BridgeProtocolError:
+                                            try:
+                                                TileFactsRequest.parse(payload)
+                                            except BridgeProtocolError:
+                                                TileClassificationRequest.parse(payload)
         elif kind == AdminClientPacketType.PING and len(frame) == 7:
             pass  # Read-only ordering barrier after GameScript subscription.
         elif frame not in (gamescript_subscription(), encode_admin_quit()):
@@ -400,6 +419,49 @@ class GameScriptTransport:
         assert isinstance(result, NativeReadExchange)
         return result
 
+    async def tile_facts_page(
+        self,
+        request: TileFactsRequest,
+        *,
+        timeout: float = 5.0,
+        operation_budget: int | None = None,
+    ) -> TileFactsExchange:
+        result = await self._read_query(request, timeout=timeout, operation_budget=operation_budget)
+        assert isinstance(result, TileFactsExchange)
+        return result
+
+    async def tile_classification_page(
+        self,
+        request: TileClassificationRequest,
+        *,
+        timeout: float = 5.0,
+        operation_budget: int | None = None,
+    ) -> TileClassificationExchange:
+        result = await self._read_query(request, timeout=timeout, operation_budget=operation_budget)
+        assert isinstance(result, TileClassificationExchange)
+        return result
+
+    @staticmethod
+    def _used_key(request) -> str:
+        """Uniqueness key per request family on this connection.
+
+        Schema-2 classification re-uses one pinned request_id for every page of
+        the deterministic census plan (the frozen candidate's wire identity), so
+        its discriminator is the full (request_id, region, cursor) rather than
+        the id alone. Delayed-response replay is still rejected because each
+        query's receipt additionally forces (region, cursor, schema) equality
+        and the read barrier rejects any surplus response frame.
+        """
+        if isinstance(request, TileClassificationRequest):
+            return "\0".join(
+                (
+                    request.request_id,
+                    ",".join(map(str, tile_region_selector(request.region))),
+                    str(request.cursor),
+                )
+            )
+        return request.request_id
+
     async def _read_query(
         self,
         request: WorldInfoRequest
@@ -408,7 +470,9 @@ class GameScriptTransport:
         | CargoPageRequest
         | IndustryProductionRequest
         | EconomyClockRequest
-        | IndustryLifetimeRequest,
+        | IndustryLifetimeRequest
+        | TileFactsRequest
+        | TileClassificationRequest,
         *,
         world: WorldInfoResponse | None = None,
         timeout: float = 5.0,
@@ -420,6 +484,8 @@ class GameScriptTransport:
         | CargoPageExchange
         | IndustryProductionExchange
         | NativeReadExchange
+        | TileFactsExchange
+        | TileClassificationExchange
     ):
         """One bounded read-only query, with duplicate-response completion barrier.
 
@@ -433,8 +499,9 @@ class GameScriptTransport:
         production = isinstance(request, IndustryProductionRequest)
         # Structural96 + production512; each phase coordinator retains its own ceilings.
         capacity = self.MAX_PRODUCTION_SESSION_REQUESTS if production else self.MAX_REQUESTS
+        used_key = self._used_key(request)
         if (
-            request.request_id in self._used_ids
+            used_key in self._used_ids
             or len(self._used_ids) >= capacity
             or (production and self._production_requests >= 32 * MAX_INDUSTRY_CARGOES)
         ):
@@ -451,7 +518,7 @@ class GameScriptTransport:
                 if not self._registered:
                     await self.subscribe(timeout=timeout, _operations=operations)
                 self._pending = request.request_id
-                self._used_ids.add(request.request_id)
+                self._used_ids.add(used_key)
                 if production:
                     self._production_requests += 1
                 operations.consume(1)
@@ -472,7 +539,11 @@ class GameScriptTransport:
                             response = decode_gamescript(body)
                             self.response_payload = response
                             receipt = (
-                                NativeReadReceipt.correlate(payload, response)
+                                TileClassificationReceipt.correlate(payload, response)
+                                if isinstance(request, TileClassificationRequest)
+                                else TileFactsReceipt.correlate(payload, response)
+                                if isinstance(request, TileFactsRequest)
+                                else NativeReadReceipt.correlate(payload, response)
                                 if isinstance(
                                     request, (EconomyClockRequest, IndustryLifetimeRequest)
                                 )
@@ -516,7 +587,17 @@ class GameScriptTransport:
                             raise TransportDisconnected("server shutdown after query response")
                         elif kind in ServerLifecyclePacket:
                             raise TransportProtocolError("query runtime changed/error")
-                if isinstance(receipt, NativeReadReceipt):
+                if isinstance(receipt, TileClassificationReceipt):
+                    result = TileClassificationExchange(
+                        payload, response, receipt, protocol_operations=operations.used
+                    )
+                    result.validate()
+                elif isinstance(receipt, TileFactsReceipt):
+                    result = TileFactsExchange(
+                        payload, response, receipt, protocol_operations=operations.used
+                    )
+                    result.validate()
+                elif isinstance(receipt, NativeReadReceipt):
                     assert isinstance(request, (EconomyClockRequest, IndustryLifetimeRequest))
                     command = request.command.upper()
                     result = NativeReadExchange(

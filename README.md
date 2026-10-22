@@ -1,4 +1,60 @@
-# OpenTTD transport planning and freight demonstration
+# OpenTTD transport planning and playable freight demo
+
+Python selects freight services, builds them through OpenTTD 15.3's GameScript
+bridge, and verifies deliveries from native readbacks. P08 generates bounded road
+candidates; P05 uses OR-Tools CP-SAT to select services; P07 compares the plan with
+retained observations. Python communicates over one encrypted Admin connection.
+The graphical client joins a dedicated local server as a spectator.
+
+## Quick start
+
+Use Linux amd64, a graphical desktop, Python 3.14 or newer, and uv. Install the
+project dependencies with `uv sync --locked`. PostgreSQL and Docker are not needed
+for this demo. Install the pinned OpenTTD 15.3 distribution and OpenGFX 8.0 archive,
+then set the two runtime paths as described in the [demo guide](examples/openttd-demo/README.md).
+From the repository root:
+
+```bash
+.venv/bin/python -m app.openttd_demo check
+.venv/bin/python -m app.openttd_demo --view-seconds 300
+```
+
+**VERIFIED native MVP:** one server, one graphical spectator, one encrypted Admin
+connection; services 4→5, 2→3, 0→1; vehicles 4/5/6; 20 coal delivered per service,
+60 total and £1,022 revenue. Graphical joining and inspection, fresh P07 reporting,
+cleanup, and artifact integrity passed in the retained demo. These are short,
+serial delivery batches. Revenue can vary with timing; it is not profit.
+
+**Controlled/offline:** `python -m app.openttd_demo plan` selects services from the
+bundled deterministic scenario without launching OpenTTD. P07 replays retained
+native observations. Controlled tests do not establish additional native behavior.
+
+See the [demo guide](examples/openttd-demo/README.md) for installation, spectator
+controls, results, troubleshooting, and limits. Full OPEX and ROI remain UNKNOWN.
+Arbitrary-world planning and larger networks are not verified MVP capabilities.
+
+## Random World & Scalable Logistics
+
+An opt-in bounded 256×256 native random generator and dynamic P08/P05 planning,
+terminal monitoring and P07 charts/history/comparisons are implemented locally.
+Seed 17 verified native generation, discovery and spectator inspection, but its
+smoke remains FAILED: no services constructed/delivered and P05 did not run.
+The new 512-tile rectangular capture correction is controlled/offline only;
+actual Seed 17 route feasibility awaits fresh native facts and authorization.
+Its Tile Classification V2 census completed natively on 2026-10-18 (90/90
+pages, 450/450 tiles, schema-2 AdminPort, staged AI + GameScript startup,
+cleanup PASS), but the SOURCE_SAVE_FUSION correspondence verdict is REJECTED:
+83 projected-flag disagreements, nothing fused, the 19 historically UNKNOWN
+tiles stay UNKNOWN and the P08 diagnosis stays `INCOMPLETE_TILE_CLASSIFICATION`.
+Fixed Scenario remains the stable default. See [random-world documentation](docs/random-world-demo.md),
+[distance support](docs/random-world-distance-support.md),
+[the V2 completion record](docs/p08-classification-v2-native-capture-completion.md) and the
+[vendor-neutral AI handoff](AI_HANDOFF.md) for current dirty-worktree scope.
+
+## Research reference and historical milestones
+
+The sections below retain research workflows and historical evidence. Their dated
+limitations describe those milestones; the current public demo scope is above.
 
 Python plans transport services and verifies their execution in **OpenTTD 15.3**.
 The native multi-service MVP selected and delivered two coal services in one world
@@ -41,6 +97,8 @@ Historical runtime evidence is optional for a **new `--demo` run**.
 | Qualified observation → P08 → native delivery | Attempt 9, 20 coal units, attributed payment, plan-bound offline replay and cleanup |
 | P07 post-play evaluation, run history and charts | Offline replay of Attempts 4 and 9; native plan comparison for Attempt 9; failed Attempt 8 excluded from delivery averages |
 | Multiple candidate services, shared-constrained P05 selection and network P07 estimates | Attempt 12: two native P05-selected services delivered in one world; paid shared-asset reuse remains unproven |
+| Evidence-aware P07 performance analytics (bottlenecks, advisories, comparisons) | Offline implementation verified 2026-10-18 on retained Attempt 19/fixed-demo evidence; see [the analytics record](docs/p07-performance-analytics-extension.md); no native relabeling of FAILED terminals |
+| Tile classification census capture (schema-2 AdminPort) | Native 2026-10-18: 90/90 pages, 450/450 tiles with AI/GameScript startup and cleanup PASS; correspondence verdict REJECTED (83 disagreements), nothing fused — see [the completion record](docs/p08-classification-v2-native-capture-completion.md) |
 | Arbitrary maps, rail delivery, concurrent native vehicles, closed-loop optimization | Outside the demonstrated native MVP |
 
 The standalone `--demo` result uses native OD selection. `--demo --planner` instead
@@ -393,6 +451,14 @@ uv run --no-sync python -m app.experiments.cli analyze-freight \
   --history artifacts/experiments/freight-history.sqlite \
   --output artifacts/experiments/p07-freight
 ```
+
+The evidence-aware insights extension (2026-10-18) adds the offline subcommand
+`analyze-performance-insights SOURCE --output DIR [--compare DIR ...]`: declared
+metrics carrying OBSERVED/DERIVED/HYPOTHESIS/UNKNOWN status per metric,
+deterministic bottleneck hypotheses, advisory recommendation rows (advisory
+only — they never plan, purchase or execute), matched-world run comparisons and
+bounded SVG charts; see [the analytics record](docs/p07-performance-analytics-extension.md).
+It reads retained evidence read-only and keeps FAILED native terminals visible.
 
 The installed `transport-experiment analyze-freight` command accepts the same
 arguments. Open `artifacts/experiments/p07-freight/charts.html` in a browser. The
@@ -798,6 +864,44 @@ costs informed the uplift; the £19,101.04 revised estimate matching historical
 £19,101 is **not independent validation**. No launches or Admin connections occur;
 no profitability, native A/B improvement or automatic tuning is established.
 
+The bounded **matched native A/B preparation** workflow clones the verified
+`qualified.sav` initial planning state into separate baseline and feedback
+workspaces. It copies the archived settings and bridge bytes and verifies source,
+seed, content, settings and observation-policy identities offline. It launches no
+native process and opens no Admin connection:
+
+```bash
+uv run --no-sync python -m app.experiments.paired_native prepare "$ATTEMPT" \
+  --feedback-history artifacts/experiments/multi-service-mvp-feedback-2026-10-14/history.sqlite \
+  --feedback-run "$FEEDBACK_RUN" --budget 18000 \
+  --output artifacts/experiments/paired-native-prepared
+uv run --no-sync python -m app.experiments.paired_native validate \
+  artifacts/experiments/paired-native-prepared
+uv run --no-sync python -m app.experiments.paired_native compare \
+  artifacts/experiments/paired-native-prepared \
+  --output artifacts/experiments/paired-native-comparison
+uv run --no-sync pytest -q tests/test_paired_native.py
+```
+
+These commands retain their outputs and return exit code **1** for the verified
+`BLOCKED` readiness result. At the interior integer budget **£18,000**, unchanged
+P05 optimization selects two baseline services (estimated £17,166) and one
+feedback service (estimated £9,550.52). Both plans independently pass existing
+finance, infrastructure, supply, fleet and capacity checks and compile against
+retained P08 service provenance. Historical baseline CAPEX **£19,101** exceeds the
+cap by **£1,101**: that retrospective exposure rejects native readiness, without
+claiming a fresh cost measurement or relaxing the cap. Fresh native cost bounds,
+company-funds readback and feasibility admission remain unavailable. The existing
+launch policy also requires fresh heightmap preparation and cannot execute these
+save clones. Offline byte identity does not prove effective runtime reload identity.
+
+`paired-manifest.json` records clone provenance, independent plan validation and
+executor bindings. `validate` replays protected inputs and optimizer decisions;
+`compare` produces P07 planned metrics with unknown fresh actuals. Attempt 12
+remains separate historical feedback. Native receipt ingestion is rejected until
+supported cloned-save execution and independent admission exist; no real outcome
+improvement is established.
+
 The finite `high-budget-500k` scenario preset initializes company 0 once to
 **£500,000 cash**, retains its loan unchanged and keeps infinite money disabled.
 The planning spending cap defaults separately to £500,000; `--planning-budget
@@ -913,3 +1017,470 @@ windows differ; this is not a matched native A/B comparison or evidence that the
 higher budget improved performance. Receipts prove serial service batches, not
 concurrent throughput. Historical evidence was preserved; no optimizer tuning,
 retry, reconnect or push occurred. Consumed Attempt 14 must never be launched again.
+
+
+The larger controlled network uses explicit `--network-service-limit 3`; the
+existing default remains **2**. Attempt 14 had only two admitted OD candidates:
+`0 → 1` and `2 → 3`; both cross-pair candidates were rejected with
+`CAPTURE_REGION_BOUND`. Its `max_vehicles=2`, compiler and bridge also capped
+services at two. Cash was not the binding constraint. Larger preparation creates
+three separate coal-mine/power-station pairs at rows **8, 26, 44** on the same
+64×64 flat map. Each matching capture region is 240 tiles, within the unchanged
+256-tile limit. Eligibility still requires fresh production qualification,
+catchment, road and funds admission. Three-service construction and delivery
+have controlled coverage. Attempt 17 below also proves native delivery.
+
+Offline preparation command verified in this task (choose a fresh directory):
+
+```bash
+uv run --no-sync python -m app.simulation.openttd.proof.freight_delivery prepare "$FRESH_ATTEMPT" \
+  --demo --planner --network --scenario high-budget-500k --planning-budget 500000 \
+  --network-service-limit 3
+uv run --no-sync python -m app.simulation.openttd.proof.freight_delivery preflight "$FRESH_ATTEMPT"
+uv run --no-sync pytest -q tests/test_high_budget_network_scaling.py tests/test_game_time.py \
+  tests/test_native_freight_network.py tests/test_network_world_preparation.py
+```
+
+The three-service seal permits at most 87 execution requests, 33 mutations,
+162 preparation mutations and 192 construction commands. Supplemental reads
+remain bounded at 1,168; qualification and same-month capture rules are unchanged.
+P05 retains its objective and all constraints. The controlled regression selects
+three full-capacity services for 90 required units with three vehicles; a
+£500,000 budget with a two-vehicle constraint still selects only two. Services
+execute serially with independent identities and vehicles. Shared infrastructure
+is charged once through the existing unique-asset ledger.
+
+Attempt 14 cash reconciliation is
+**£500,000 − £19,101 CAPEX + £682 revenue − £480,748 final cash = £833**
+unexplained net outflow. Native admission cash £499,616 establishes **£384**
+before admission; the remaining **£449** occurred afterward. These balances
+reconcile the arithmetic, but retained evidence lacks an attributable expense
+ledger. Neither residual is classified as OPEX; OPEX and net return remain UNKNOWN.
+
+P07 now reports separate service/network game-time fields and charts. Future
+network receipts seal `game_time_metrics_version=1` and independently replay
+available milestone dates from correlated readbacks and unique native log markers.
+Future start dates use the explicit `bridge_start_before_world_preparation`
+boundary; elapsed economy days run from that boundary to final delivery. This
+does not timestamp process launch or world generation. Construction/purchase
+completion is logged after the final successful purchase; planning completion
+remains an observed-by bound from selection admission, and exact first pickup
+remains UNKNOWN without an event timestamp. Historical receipts remain unchanged. `GSDate.GetCurrentDate()` uses the **economy** counter in the pinned
+[OpenTTD 15.3 source](tests/reference/economy_clock_15_3/script_date.cpp).
+Calendar days, script ticks and wall-clock seconds are separate nullable metrics;
+no conversion from ticks or wall time supplies missing economy dates.
+
+| Attempt 14 network milestone | Retained economy-date evidence |
+| --- | --- |
+| Simulation start | UNKNOWN |
+| Planning completion | UNKNOWN |
+| Construction completion | UNKNOWN; all construction observed complete by 712319 |
+| First cargo pickup | UNKNOWN; first loaded observation by 712299 |
+| Final cargo delivery | 712349, native industry last-accepted date |
+| Total elapsed economy days | UNKNOWN; simulation start was not timestamped |
+
+Construction and pickup observation dates are bounds, not event timestamps.
+The serial services delivered on economy dates **712319** and **712349**;
+service construction was observed complete by **712291** and **712319**, and
+loaded cargo by **712299** and **712329**. Dates alone do not establish concurrent
+throughput or total simulation duration. No native launch, Admin connection or
+push occurred during this scaling work.
+
+### Three-service native Attempt 15: failed, consumed
+
+Scaling checkpoint **`219580c`** passed focused controlled tests and review.
+Fresh [Attempt 15](artifacts/runtime/openttd-15.3-first-freight-delivery-attempt15/result.json)
+passed preflight and used **one launch, one continuous encrypted Admin connection,
+zero retries and zero reconnects**. Native readbacks verified finite **£500,000**
+cash, an unchanged £100,000 loan, and all six required industries. Same-world
+qualification, P08 and P05 naturally selected **4→5, 2→3, 0→1**, each for 20 coal.
+
+The first road command logged success and **£2,512** spending, then the timing
+callback crashed: **`RecordConstruction: the index 'base' does not exist`**.
+The runner reported `TimeoutError` while awaiting its response. No vehicle,
+cargo loading, delivery or payment was verified. Aggregate CAPEX, infrastructure
+reuse, final cash, revenue, OPEX and net return remain **UNKNOWN**. The last
+independent pre-mutation cash readback was **£499,616**; it is not final cash.
+
+The bridge start economy date was **712223**. Planning was complete by the
+selection/readback economy date **712295** (script tick **5384**); its exact
+completion date is UNKNOWN. Construction completion, first pickup, final delivery,
+elapsed economy days and service quarter transitions are UNKNOWN. Calendar dates,
+script ticks and wall-clock time remain separate; no duration is inferred from them.
+
+Cleanup verified the process reaped, connection/listeners closed, credential
+removed and disposable workspace removed. The native manifest, frozen source,
+requests, readbacks, logs and failure save are retained. The failure-save helper
+reported a script/asset error, so retained bytes do not establish accepted save
+completion. **Do not launch consumed Attempt 15 again.**
+
+P07 analytics records this failure and excludes it from successful delivery
+statistics. Native network replay rejects the missing first-build response;
+there are **no verified service/network receipts** for Attempt 15.
+[Failure analysis](artifacts/experiments/attempt15-three-service/failure-analysis.json)
+links evidence hashes; [charts](artifacts/experiments/attempt15-three-service/analytics/charts.html)
+preserve the verified Attempt 14 results separately.
+
+Commands used for this consumed attempt and its offline analysis:
+
+```bash
+ATTEMPT=artifacts/runtime/openttd-15.3-first-freight-delivery-attempt15
+# Historical commands only: do not prepare or run this directory again.
+uv run --no-sync python -m app.simulation.openttd.proof.freight_delivery prepare "$ATTEMPT" \
+  --demo --planner --network --scenario high-budget-500k --planning-budget 500000 \
+  --network-service-limit 3
+uv run --no-sync python -m app.simulation.openttd.proof.freight_delivery preflight "$ATTEMPT"
+uv run --no-sync python -m app.simulation.openttd.proof.freight_delivery run "$ATTEMPT" \
+  --authorize-one-launch
+# Offline analysis can be repeated into a fresh output directory.
+uv run --no-sync python -m app.experiments.cli analyze-freight \
+  artifacts/runtime/openttd-15.3-first-freight-delivery-attempt14 "$ATTEMPT" \
+  --history artifacts/experiments/attempt15-three-service/history.sqlite \
+  --output artifacts/experiments/attempt15-three-service/analytics
+```
+
+The local correction replaces unsupported `base.RecordConstruction(...)` with
+`PlannerFreightProof.RecordConstruction.call(this,...)`. Focused offline tests
+reproduced the native error before the fix and verify both ancestor construction
+logs and timing markers afterward. Independent Codex review passed. The correction
+was uncommitted and had no native proof at that point. Attempt 17 below provides
+the fresh native proof. No second launch or push occurred during Attempt 15.
+
+### Native three-service freight proven in Attempt 17
+
+[Attempt 17](artifacts/runtime/openttd-15.3-first-freight-delivery-attempt17/result.json)
+completed one native OpenTTD 15.3 launch and one secure connection. P08/P05
+naturally selected `4 → 5`, `2 → 3`, and `0 → 1`. The existing executor used
+87 execution requests and 33 mutations, within the sealed limits.
+Independent offline replay verifies loading, delivery, payment, command costs,
+owned infrastructure, separate vehicles, receipts, and the complete network ledger.
+
+| Service | Coal delivered | Revenue | Command CAPEX | Construction economy date | Delivery economy date | Days from construction to delivery | Days from bridge start to delivery |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 4 → 5 | 20 | £340 | £9,358 | 712298 | 712328 | 30 | 105 |
+| 2 → 3 | 20 | £352 | £9,515 | 712329 | 712360 | 31 | 137 |
+| 0 → 1 | 20 | £326 | £9,586 | 712360 | 712393 | 33 | 170 |
+| Network | 60 | £1,018 | £28,459 | 712360 | 712393 | — | 170 |
+
+The bridge start date is 712223, before world preparation. Exact pickup dates,
+calendar duration, script-tick duration, and wall-clock duration remain UNKNOWN.
+These are serial batches. Paid shared-asset reuse and concurrent throughput remain unproven.
+
+[Financial reconciliation](artifacts/runtime/openttd-15.3-first-freight-delivery-attempt17/financial-reconciliation.json)
+separates £15,172 infrastructure CAPEX, £13,287 vehicle purchases, and £1,018 freight revenue.
+Funded cash reconciles as **£500,000 − £28,459 + £1,018 − £1,067 = £471,492**.
+The £1,067 unallocated decrease includes £384 before admission and £683 afterward.
+Expense categories, OPEX, and net return remain UNKNOWN. No construction interval
+had an unallocated cash change in Attempt 17.
+
+[Attempt 16 diagnosis](artifacts/experiments/attempt17-three-service/attempt16-diagnosis.json)
+proves an accounting defect: aggregate cash movement across ticks was required
+to equal command cost. Its second-service stage 4 spent exactly £307 on commands,
+while enclosing snapshots showed a £308 cash decrease. The extra £1 remains
+UNKNOWN. Command-local quote, accounting, and spending must still match exactly.
+The correction records separate cash intervals with snapshot provenance and
+requires advancing ticks. Fresh seals require the financial ledger during replay.
+
+[Three service receipts and the network receipt](artifacts/runtime/openttd-15.3-first-freight-delivery-attempt17/receipt.json)
+pass independent replay. [P07 network evaluation](artifacts/experiments/attempt17-three-service/analytics/network-reports.json)
+records all three verified services and economy-time metrics.
+[P07 charts](artifacts/experiments/attempt17-three-service/analytics/charts.html)
+preserve unknown OPEX and net return. Focused Codex review, 136 tests, Ruff,
+formatting, type checking, and preflight passed.
+
+[Cleanup](artifacts/runtime/openttd-15.3-first-freight-delivery-attempt17/cleanup.json)
+reaped the process, closed sockets, removed the credential, and disposed the workspace.
+All 8,522 protected files from Attempts 1–16 and `CONTEXT.md` are unchanged.
+Attempt 17 is consumed. No retry, second launch, commit, or push occurred.
+
+### Five complete economy years of continuous freight operation
+
+**Attempt 19: FIVE-YEAR EVIDENCE OFFLINE VERIFIED (2026-10-15).**
+Full offline replay now verifies the original native evidence plus explicitly
+identified derived finalization metadata. **The historical native terminal remains
+FAILED.** Recovery performed zero OpenTTD launches or Admin connections and changed
+none of Attempt 19's 14,611 original files. Source/staged archive hashes, qualified
+world and planner selection, construction/service receipts, fixed vehicles/orders,
+secure exchanges, five anniversaries, financial observations, saves, cleanup, and
+original artifact integrity pass the existing replay checks.
+
+[Derived finalization](artifacts/experiments/attempt19-offline-recovery/derived-finalization.json)
+and [offline verification](artifacts/experiments/attempt19-offline-recovery/verification.json)
+have SHA-256 sidecars and bind the original manifest, PRELAUNCH, source archive,
+FAILED result, native policy readbacks, and existing before/qualified/after saves.
+They reconstruct policy/save correspondence only; no native observations or reload
+evidence were recreated. The independently verified observations remain 1,826
+economy days, 1,605 snapshots, 60 monthly/20 quarterly/five annual reports, 2,980
+cargo, and £50,935 freight revenue, with £28,459 construction/purchase CAPEX.
+
+The apparent £385 cash gap belonged to setup before the operating baseline:
+£335 measured aggregate expenses plus £50 unattributed decrease. Setup reconciles
+as `500000 - 28459 - 335 - 50 = 471156`; the five-year operating window reconciles
+as `471156 + 50935 - 16312 - 1500 = 504279`. The £1,500 operating decrease remains
+unattributed. Loan principal stayed £100,000. CAPEX is counted once, outside the
+operating window; expense categories, actual vehicle OPEX, net profit, ROI, and
+net break-even remain UNKNOWN.
+
+P07 [JSON](artifacts/experiments/p07-attempt19-five-year-offline/summary.json),
+[CSV](artifacts/experiments/p07-attempt19-five-year-offline/metrics.csv), and
+[HTML charts](artifacts/experiments/p07-attempt19-five-year-offline/charts.html)
+retain the offline recovery label, original FAILED status, sampled periods,
+financial coverage audit, and native evidence references. Eleven charts use short
+service labels with a full route/vehicle legend. Derived metadata and P07 outputs
+each have an artifact manifest. Independent review, 101 focused tests (including
+write-once finalization, recovery/tampering, and finance-window regressions), Ruff,
+format, and scoped typecheck pass. Reproduce analysis:
+
+```bash
+.venv/bin/python -m app.experiments.cli analyze-continuous-freight \
+  artifacts/runtime/openttd-15.3-first-freight-delivery-attempt19 \
+  --recovery-directory artifacts/experiments/attempt19-offline-recovery \
+  --output artifacts/experiments/p07-attempt19-five-year-offline
+```
+
+#### Five-year performance findings
+
+The [performance analysis](docs/five-year-freight-performance-analysis.md)
+compares the services and separates observed constraints from hypotheses.
+Service labels follow the existing P07 chart legend, with vehicles 4, 5, and 6.
+
+| Economy year | Service 1 cargo | Service 2 cargo | Service 3 cargo | Network cargo | Network revenue |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 1 | 200 | 200 | 180 | 580 | £9,920 |
+| 2 | 200 | 200 | 200 | 600 | £10,259 |
+| 3 | 200 | 200 | 200 | 600 | £10,258 |
+| 4 | 220 | 180 | 200 | 600 | £10,241 |
+| 5 | 200 | 200 | 200 | 600 | £10,257 |
+
+Revenue per service remains UNKNOWN in every year. The 60 sampled monthly
+intervals cover 2,940 cargo and £50,267; the final 17-day tail adds 40 cargo
+and £668. Monthly boundaries are approximate observations, not accrual accounts.
+
+Closing waiting cargo is 305, 572, and 574 units, while each vehicle holds
+20 units. This supports testing fleet capacity and dispatch cadence. It does
+not establish road congestion, exact travel time, idle duration, or infrastructure
+saturation. Speed-zero samples include loading and unloading. Existing eleven
+P07 charts remain sufficient; use the offline command above to regenerate them.
+
+Prioritize a controlled comparison of one extra vehicle on Service 2 or 3
+against a capacity change, holding routes, orders, and funding constant.
+Any later native experiment needs separate authorization and telemetry for
+departure, arrival, load, waiting cargo, and incremental costs. No native gains,
+profit, or ROI are established. The existing P05 objective and defaults remain
+unchanged; one planning trip per vehicle does not model native service frequency.
+
+Compare explicit planning assumptions with the same offline CLI:
+
+```bash
+.venv/bin/python -m app.experiments.cli analyze-continuous-freight \
+  artifacts/runtime/openttd-15.3-first-freight-delivery-attempt19 \
+  --recovery-directory artifacts/experiments/attempt19-offline-recovery \
+  --compare-planning --output /tmp/attempt19-performance-comparison
+```
+
+`planning-alternatives.json` records validated P08/P05 comparisons alongside
+the existing P07 outputs. Raising the fleet limit from three to six leaves the
+60-unit planning selection unchanged. Supplying 40 units of demand per service
+and allowing six vehicles selects 120 planning units. These are one-trip model
+quantities, not forecasts of annual throughput. Hypothetical capacities and
+infrastructure cost sensitivity remain explicit assumptions; physical upgrades
+need new P08 candidates. See the [controlled comparison](docs/five-year-freight-controlled-alternatives.md).
+
+A recovery-only Git checkpoint was deferred because recovery depends on the
+uncommitted five-year foundation. No unrelated changes were staged and nothing
+was pushed. Historical Attempt 19 remains FAILED; offline verification passed.
+The combined CLI replay and ten validated planning comparisons passed. Independent
+review, 51 focused tests, Ruff, formatting, and whitespace checks passed.
+
+#### One additional vehicle: controlled experiment preparation
+
+[A/B/C preparation](docs/capacity-experiment.md) keeps original demand and
+services unchanged. Opt-in P05 `minimum_vehicles_by_demand` produces A: 1/1/1,
+B: 1/2/1, and C: 1/1/2 vehicles on S1/S2/S3. Routes, infrastructure and original
+fleet semantics remain fixed. Default planning behavior and canonical hashes
+remain unchanged.
+
+S2 is the first hypothesis to test: its mean monthly sampled queue is 651.42
+units versus S3's 557.10, with both delivering 980 units. The extra vehicle's
+historical purchase cost is £4,429. Its £421 annual running-cost rate is not
+measured OPEX. No throughput gain, per-service revenue, profit or ROI is forecast.
+
+```bash
+.venv/bin/python -m app.experiments.cli analyze-continuous-freight \
+  artifacts/runtime/openttd-15.3-first-freight-delivery-attempt19 \
+  --recovery-directory artifacts/experiments/attempt19-offline-recovery \
+  --prepare-capacity-experiment --output /tmp/attempt20-capacity-preparation
+```
+
+The existing P07 outputs are accompanied by `capacity-experiment.json`, containing
+input hashes, exact A/B/C plans, acceptance criteria and readiness blockers, and
+`capacity-comparison.html`, containing one queue comparison chart. Treatment
+performance remains UNKNOWN. The command performs offline preparation only.
+
+The opt-in telemetry producer and bounded decoder record point measurements and
+bracket possible arrivals, departures and loading events. Candidate cycles remain
+censored inferences. Zero speed does not establish idle time, and stopped-in-depot
+does not establish servicing time.
+
+Fourth-vehicle execution and independent receipt replay are now controlled-tested
+for any selected service. The existing continuous session collects bounded
+per-vehicle telemetry, preserving three logical service counters. Additional
+purchase CAPEX is recorded once; raw secure exchanges bind the physical vehicle
+to its logical service. Partial mutations fail closed.
+
+Native readiness remains **BLOCKED**: no retained canonical pre-intervention save
+contains the original constructed fleet, and no verified reload preserves its
+GameScript bindings and native state. The future loader must verify a paused
+purchase boundary and common dispatch state. See the [exact prerequisite and
+tests](docs/capacity-experiment.md). No Attempt 20 native seal, claim, launch or
+connection was created. Historical Attempt 19 remains FAILED. No commit or push.
+Validation: 180 focused tests, packaged GameScript checks, independent correction
+review, historical offline replay, Ruff, formatting and scoped typecheck pass.
+
+**Attempt 19 FAILED (2026-10-15): final policy provenance `FileExistsError`.**
+Auto-renew initialization succeeded in company 0: the native setter returned true
+and independent readback returned false. Preflight, 193 focused tests, packaged
+Squirrel/API checks, Ruff, formatting, typecheck, and historical Attempt 17 replay
+passed. One OpenTTD 15.3 process and one encrypted Admin connection observed all
+five anniversaries without retry, reconnect, or fleet expansion.
+
+Independent raw-wire/period replay verifies 1,605 snapshots over **1,826 economy
+days** (native dates 712299–714125; 3,648.43 monitoring seconds), 60 monthly,
+20 quarterly, and five annual observations. Original vehicles 4/5/6 delivered
+1,020/980/980 cargo units: **2,980 total**, with **£50,935 aggregate freight revenue**.
+Concurrent per-service revenue remains UNKNOWN. Command-recorded CAPEX is £28,459;
+measured aggregate expenses are £16,312, and a further £1,500 cash decrease remains
+unattributed. Operating-window cash rose from £471,156 to £504,279; loan principal
+remained £100,000. Actual vehicle OPEX, interest categories, net profitability,
+ROI, and net break-even remain UNKNOWN. Annual sampled-interval revenue/cargo:
+£9,920/580; £10,259/600; £10,258/600; £10,241/600; £10,257/600.
+Snapshot gaps reach three economy days; period observations are sampled boundaries,
+not exact monthly/quarterly accruals.
+
+Finalization attempted to update the existing immutable `company-policy.json`
+through the write-once JSON helper and failed after `after.sav` and `receipt.json`
+were retained. Without explicit derived recovery, full receipt replay rejects the
+incomplete policy/save provenance; initial P07 analysis likewise rejected it.
+Raw five-year observations do not override this failed acceptance gate.
+The corrected implementation writes a separate immutable `company-policy-final.json`
+and verifies both records. Its lifecycle regression and 75 related tests pass;
+this correction neither repairs nor changes Attempt 19's retained evidence/status.
+[Attempt 19 evidence](artifacts/runtime/openttd-15.3-first-freight-delivery-attempt19/)
+is retained with a matching artifact manifest. Cleanup independently passed:
+process reaped, connection/listeners closed, credential removed, workspace disposed,
+no remaining owned processes or runtime errors. Attempt 18's 1,687 files remain
+unchanged. Both attempts are consumed; no relaunch is permitted.
+
+**Attempt 18 FAILED (2026-10-15): `CONTINUOUS_AUTORENEW_ENABLED`.**
+Independent prelaunch checks passed: unconsumed claim, PRELAUNCH digest, all 263
+frozen file hashes, predecessor provenance, effective config, documented command,
+and unchanged resource/lifecycle budgets. The single authorized launch used
+OpenTTD 15.3 and one encrypted Admin connection; no retry or reconnect occurred.
+Three planner-selected services were constructed with £28,459 command-recorded
+CAPEX. The native GameScript rejected `continuous-begin` with
+`CONTINUOUS_AUTORENEW_ENABLED` despite frozen `company.engine_renew=false`.
+Python then reported `TimeoutError`; failure-save collection reported
+`Native script/asset error`.
+
+The operation-start baseline was never returned: zero snapshots and zero complete
+economy years are verified; elapsed operating days, deliveries, revenue, OPEX,
+interest, unknown cash movements, opening/closing operating cash and loan, annual
+throughput, ROI, and break-even are unavailable. Construction receipts do not
+establish continuous operations. Offline receipt verification and P07 analysis
+reject the missing `continuous-begin-response.json`; no five-year charts exist.
+
+[Attempt 18 retained evidence](artifacts/runtime/openttd-15.3-first-freight-delivery-attempt18/)
+includes the claim, construction receipts, raw exchanges, logs, partial status,
+result, cleanup, and matching artifact manifest. Cleanup confirms process reaping,
+closed connection/listeners, removed credential, and disposed workspace, with no
+remaining owned processes. The attempt is consumed and must never be relaunched.
+
+For fresh continuous attempts, scenario initialization disables auto-renew in
+`GSCompanyMode(0)`, checks the setter result, and independently reads the effective
+company setting before planning. The frozen company policy and native readbacks
+are retained with save digests in `company-policy.json`. Packaged Save/Load tests
+check policy consistency; this does not claim a native reload. The continuous
+observer still rejects enabled auto-renew and changed vehicle/order identities.
+Explicit continuous rejections return a correlated reason immediately, allowing
+failure-save collection without terminating the GameScript.
+
+The five-year mode reuses the three-service P05 plan, infrastructure, vehicles,
+orders, receipts and secure session. All selected services start before the
+observation baseline and remain active through repeated pickup/delivery cycles.
+It adds no vehicles and changes no planner decisions. Attempt 17 has ended;
+this experiment requires a fresh disposable world and separate launch authority.
+No launch or connection is authorized by preparation, preflight or offline analysis.
+
+Prepare and inspect a fresh attempt without starting OpenTTD:
+
+```bash
+FIVE_YEAR_ATTEMPT="$(.venv/bin/python -m app.simulation.openttd.proof.freight_delivery next)"
+.venv/bin/python -m app.simulation.openttd.proof.freight_delivery prepare "$FIVE_YEAR_ATTEMPT" \
+  --demo --planner --network --network-service-limit 3 --continuous-years 5 \
+  --scenario high-budget-500k --planning-budget 500000
+.venv/bin/python -m app.simulation.openttd.proof.freight_delivery preflight "$FIVE_YEAR_ATTEMPT"
+```
+
+Only after separate authorization, the existing one-launch command is:
+
+```bash
+.venv/bin/python -m app.simulation.openttd.proof.freight_delivery run "$FIVE_YEAR_ATTEMPT" \
+  --authorize-one-launch
+```
+
+Expect approximately one hour of real time. Native economy-date anniversaries
+set the five-year endpoint; leap years and wallclock economy years are handled
+by OpenTTD rather than assuming 365 days per year. Economy dates, calendar dates,
+script ticks and wall-clock seconds remain separate. The finite monitor permits
+3,600 polls, paced at two seconds, with a two-hour monitoring ceiling and a
+140-minute overall lifecycle ceiling. Request, secure-frame, artifact and log
+budgets are explicit; artifacts are capped at 64 MiB and runtime logs at 8 MiB.
+Paused or stalled simulation, changed vehicles/orders and stalled routes fail
+the run. No reconnection or automatic resume is performed.
+
+The durable journal `continuous-snapshots.jsonl` records bounded native observations.
+`continuous-periods.json` selects approximately 60 monthly, 20 quarterly and
+five annual reports without duplicate periods. Monthly and quarterly changes
+are sampled intervals around boundaries, not exact calendar-month accruals.
+`continuous-summary.json` records the final network summary;
+`continuous-partial.json` preserves interruption status. Correlated native request
+and response files, secure-frame evidence, existing service/network receipts,
+cleanup records and the artifact manifest retain independent replay provenance.
+
+Verify completed evidence and generate offline P07 charts outside the native package:
+
+```bash
+.venv/bin/python -m app.simulation.openttd.proof.freight_delivery verify "$FIVE_YEAR_ATTEMPT"
+.venv/bin/python -m app.experiments.cli analyze-continuous-freight "$FIVE_YEAR_ATTEMPT" \
+  --output artifacts/experiments/p07-five-year-freight
+```
+
+Open `artifacts/experiments/p07-five-year-freight/charts.html` in a browser; it is
+self-contained and needs no chart service. `summary.json` and `metrics.csv` retain
+metric provenance and sampled intervals. Charts compare all three services and
+the aggregate: monthly revenue, annual cargo, service revenue, cash, measured
+operating costs, station backlog, sampled load/capacity utilization, cumulative
+revenue against construction/purchase CAPEX, and break-even when supported.
+The network utilization ratio is total observed load divided by total capacity.
+
+Native company quarter income, signed total expenses, delivered cargo, cash,
+loan balance and vehicle annual profit are measured. Per-service delivered
+cargo is retained when its native destination-industry/commodity delivery monitor
+belongs exclusively to that service. Service revenue,
+completed cycle counts, actual vehicle OPEX, loan interest and expense categories
+remain UNKNOWN where the available APIs cannot establish them. Annual running-cost
+rates and vehicle profit do not establish actual OPEX. Cash reconciliation keeps
+unknown movements separate; the historical £1,067 discrepancy remains UNKNOWN
+without corresponding native category evidence. Operating profit, ROI and
+break-even stay UNKNOWN unless every necessary cost and movement is supported.
+Cumulative revenue exceeding CAPEX alone does not prove profitability.
+Partial evidence is reported as partial and cannot establish five-year completion.
+
+### Random-world demo milestone
+
+The fixed playable demo remains the default. Explicit `--random-world` adds native
+256×256 generation settings and bounded observed-world P08/P05 planning. Terminal
+status and P07 reports include operational history, expense/UNKNOWN labels and
+revenue/throughput charts. Offline `report` and `compare` commands reuse retained
+evidence. See [random mode, interfaces and limitations](docs/random-world-demo.md).
+Native random-world validation requires separate authorization.

@@ -189,6 +189,7 @@ class PlannerFreightProof extends FreightDemoProof {
             Linked(a[4],a[5])&&Linked(a[6],a[7])&&Linked(a[8],planner_selected.depot_front)&&
             GSStation.GetStationID(a[4])!=GSStation.GetStationID(a[6]);
     }
+    function SelectionFleetReady() {return GSVehicleList().Count()==0;}
     function Select() {
         if(planner_selected==null)return "PLANNER_SELECTION_REQUIRED";
         // The planner_selected geometry must be within the proven executor's exact footprint.
@@ -201,7 +202,7 @@ class PlannerFreightProof extends FreightDemoProof {
             GSMap.DistanceManhattan(a[8],planner_selected.depot_front)!=1)return "PLANNER_DEPOT_REJECTED";
         local front=false;foreach(t in tiles)if(t==planner_selected.depot_front)front=true;
         if(!front)return "PLANNER_DEPOT_REJECTED";
-        if(GSVehicleList().Count()!=0||GSGame.IsPaused()||tiles==null||
+        if(!SelectionFleetReady()||GSGame.IsPaused()||tiles==null||
             !GSIndustry.IsValidIndustry(a[0])||!GSIndustry.IsValidIndustry(a[1])||a[0]==a[1]||
             !Compatible(a[3])||GSEngine.GetCargoType(a[3])!=a[2])return "PLANNER_IDENTITY_REJECTED";
         local all=clone tiles;all.append(a[4]);all.append(a[6]);all.append(a[8]);
