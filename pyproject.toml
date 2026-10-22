@@ -6,6 +6,9 @@ readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     "alembic>=1.13",
+    # B2: maintained Ed25519 verification of operator launch authorizations
+    # (app.simulation.openttd.proof.ed25519_cryptography).
+    "cryptography==50.0.2",
     "openttdlab==0.0.75",
     # P05 candidate-network selection uses the CP-SAT solver.
     "ortools>=9.10",
