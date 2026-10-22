@@ -34,6 +34,7 @@ def generate_freight_network(
     *,
     max_vehicles: int,
     resource_limits: tuple[ResourceLimit, ...] = (),
+    allow_service_batches: bool = False,
 ) -> ControlledFreightNetwork:
     """One candidate OD per bounded package, all from the same qualified snapshot.
 
@@ -51,7 +52,16 @@ def generate_freight_network(
         if (
             value.admitted.world.composition_digest != first.admitted.world.composition_digest
             or value.manifest != first.manifest
-            or value.policy != first.policy
+            or (
+                value.policy != first.policy
+                and (
+                    not allow_service_batches
+                    or value.policy.model_copy(
+                        update={"delivery_batch_limit": first.policy.delivery_batch_limit}
+                    )
+                    != first.policy
+                )
+            )
             or value.facts.settings != first.facts.settings
             or value.facts.road != first.facts.road
             or value.facts.capture_economy_date_before != first.facts.capture_economy_date_before
@@ -74,7 +84,9 @@ def generate_freight_network(
                 if identity in store and store[identity] != record:
                     raise PlanningFactError("conflicting shared facts")
                 store[identity] = record
-    generated = tuple(generate_road_scenario(value) for value in values)
+    generated = tuple(
+        generate_road_scenario(value, full_load_batch=allow_service_batches) for value in values
+    )
     services = tuple(
         sorted(
             (r for r in generated if isinstance(r, ControlledRoadScenario)),

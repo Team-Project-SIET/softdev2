@@ -211,6 +211,9 @@ class NetworkSelection(Contract):
     max_vehicles: PositiveInt
     resource_limits: tuple[ResourceLimit, ...] = ()
     service_resources: tuple[ServiceResources, ...] = ()
+    minimum_vehicles_by_demand: dict[Identifier, PositiveInt] = Field(
+        default_factory=dict, exclude_if=lambda value: not value
+    )
 
 
 class PlanningConstraints(Contract):
@@ -281,6 +284,19 @@ class PlanningScenario(Contract):
     infrastructure_candidates: tuple[InfrastructureCandidate, ...] = Field(min_length=1)
     economic_assumptions: EconomicAssumptions
     constraints: PlanningConstraints
+
+    @model_validator(mode="after")
+    def explicit_vehicle_allocations(self) -> PlanningScenario:
+        network = self.constraints.network_selection
+        if network is not None:
+            allocations = network.minimum_vehicles_by_demand
+            if not allocations.keys() <= {d.demand_id for d in self.cargo_demands}:
+                raise ValueError("minimum vehicle allocation references unknown demand")
+            if sum(allocations.values()) > network.max_vehicles:
+                raise ValueError("minimum vehicle allocation exceeds fleet limit")
+            if allocations and any(option.mode is not Mode.ROAD for option in self.fleet_options):
+                raise ValueError("explicit minimum vehicle allocations currently support road only")
+        return self
 
 
 class RouteStop(Contract):
