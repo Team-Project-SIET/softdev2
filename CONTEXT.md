@@ -1,3 +1,45 @@
+> Current handoff, 2026-10-17, extended 2026-10-18: read [AI_HANDOFF.md](AI_HANDOFF.md),
+> [TASKS.md](TASKS.md), [EVIDENCE_INDEX.md](EVIDENCE_INDEX.md) and
+> [REPRODUCE.md](REPRODUCE.md). Stable playable demo at `a3480169dcbefefff7b1adfb060449643c8eb04c`
+> is VERIFIED: 3 services/vehicles, 60 coal, £1,022 revenue, spectator inspection,
+> P07 and cleanup. Canonical create/reload Q3 are PROVEN historical engineering.
+> Random World has local uncommitted implementation; Seed 17 generation/discovery/
+> spectator inspection passed, but the smoke terminal remains FAILED and P05 did
+> not run. The 512-tile random capture correction is controlled/offline only.
+> 2026-10-18: Tile Classification V2 completed natively for Seed 17 (90/90
+> pages, 450/450 tiles, AI+GameScript startup, cleanup PASS), but the
+> SOURCE_SAVE_FUSION verdict is REJECTED — 83 projected-flag disagreements,
+> nothing fused; the 19 historically UNKNOWN tiles were observed CLEAR fresh but
+> stay UNKNOWN, and P08 remains `INCOMPLETE_TILE_CLASSIFICATION`.
+> Fixed Scenario remains default. See [distance support](docs/random-world-distance-support.md)
+> and [the V2 completion record](docs/p08-classification-v2-native-capture-completion.md).
+> The dated older statuses below are historical. Preserve their evidence and rules.
+> This documentation update authorizes zero native launches/Admin connections.
+> Known baseline: retained authority manifests pin repo-root CONTEXT.md bytes
+> captured 2026-10-08 (sha256 b94b966...): the two historical-integrity.json
+> freezes and the structural-world-real-prelaunch source-freeze.json; they have
+> failed since commit bdbec43 (2026-10-11) moved this file past that capture,
+> for the two protected-authority tests and the industry-production
+> architecture check alike. This header addendum is prepend-only and preserves
+> every historical paragraph below unmodified.
+
+## Shared language for continuation
+
+**Canonical constructed fleet**: The common paused state containing the three
+original services and three stopped empty vehicles, before intervention or dispatch.
+A matching DTO alone is not native state correspondence.
+
+**Matched arm**: A separately authorized experimental branch of that same verified
+canonical state. Historical Attempt 19 is a contextual baseline, not matched arm A.
+
+**Native terminal result**: The immutable result of a consumed game-process attempt.
+Separate derived offline recovery does not change that result.
+
+**Prepared qualification**: Frozen inputs and controlled checks awaiting separate
+native authorization. It is not an accepted save, reload, or experiment.
+
+---
+
 # OpenTTD Integration Project Context
 
 ## 1. Project Goal

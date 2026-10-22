@@ -162,6 +162,38 @@ Canonical creation/reload Q3 are historical PROVEN milestones, not pending tasks
    success is not world correspondence; reconciling the fresh census with the
    historical projection is separately scoped future work. Read
    [the completion record](docs/p08-classification-v2-native-capture-completion.md).
+8. **Milestone D3 complete; Milestone D4 (native road + station construction)
+   attempt consumed 2026-10-22 — INCOMPLETE.** D3 closed 2026-10-22: the two bounded
+   clears (45999, 49326, £30/£45) and the 16-compiled-S-corner terraforming phase
+   (£3,382) all replay-`RECEIPT_VERIFIED`, finances reconciled to £496,543, and
+   the receipt-bound post-D3 world (`fbebef54…d59e`) proves the planned 24-tile
+   corridor flat min-height 2, slope 0, CLEAR, unowned on every tile. Read
+   [the D3 close-out record](docs/handoff/2026-10-22/d3-terraform-native-candidate-1-outcome.md).
+   D4 stages ONE candidate (`D4-CORRIDOR-1`, additive wire contract + package +
+   `proof/corridor_construction_native.py` reusing the shared D2/D3 machinery)
+   from that world: 2 straight `BuildRoadFull` runs, the 2-tile corner piece,
+   2 truck stops (pickup 45748 front 45747; delivery 50351 front 50095) and the
+   depot at 45487 facing 45743 — `PENDING_AUTHORIZATION`, no claim consumption,
+   strict offline validation, catchment/acceptance re-checked natively only at
+   construction admission. Staging completed 2026-10-22: the candidate is staged
+   with `PRELAUNCH PASS` + read-only `PREFLIGHT PASS` (19 planned protocol-4
+   exchanges, 640-B response bound, fail-closed never-consumed verify verdict;
+   superseded intermediate stages (pre-fix/pre-lint frozen bytes) were deleted
+   and re-staged fresh from the final reviewed bytes). Read [the D4 staging
+   record](docs/handoff/2026-10-22/d4-corridor-native-candidate-1-preparation.md).
+   **Update (2026-10-22, native):** the operator authorization was consumed by ONE
+   launch; the corridor ceremony ended `PHASE_HALTED_PREFIX_PRESERVED` with
+   `verified: false`, so Milestone D4 remains INCOMPLETE. Only `op-00` was
+   verified (5-tile road run at £785, independently re-read, funds £496,543 →
+   £495,758); `op-01` was refused at admission because its native quote £2,549
+   exceeded the £2,000 per-operation ceiling (no native command issued), and
+   `op-02`–`op-05` plus the route read were never executed — no receipt or
+   `after.sav` exists. The read-only replay verifier was repaired offline
+   (26 → 29 PASS; wire suite 21 PASS). The consumed candidate `D4-CORRIDOR-1` must
+   never be edited or reused; a future attempt requires a fresh staged candidate
+   plus fresh explicit operator authorization, and none has been staged or
+   authorized. Read
+   [the D4 close-out record](docs/handoff/2026-10-22/d4-corridor-native-candidate-1-outcome.md).
 
 A documentation-only handoff is complete when links and evidence references are
 valid, implementation bytes remain unchanged, the final diff is reviewed and fresh

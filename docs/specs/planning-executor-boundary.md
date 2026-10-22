@@ -1,11 +1,13 @@
 # P01 — Simulation-Ready Planning Contracts and OpenTTD Executor Boundary
 
 Status: P01 design specification, with current implementation context updated through
-P05 (worktree implementation). Planning schema: **v1**. P02 implements contracts and prelaunch
+P08 (uncommitted controlled implementation; real extraction proof pending). Planning schema: **v1**. P02 implements contracts and prelaunch
 validation; P03 implements plan transport and runtime acknowledgement; P04 completes
 Admin observation. P05 implements baseline selection over supplied candidate corridors.
-The construction/purchase/order executor and plan-attributed evaluation loop remain unimplemented. The target responsibilities
-below remain design requirements, not claims that the complete loop exists.
+P06 implements construction/purchase/orders; P07 implements controlled plan-attributed
+evaluation. P08 prepares supported world facts and road candidates. The target
+responsibilities below remain design requirements, not claims of arbitrary-world
+support or completed real P07/P08 proof.
 See [current architecture and project status](../../README.md#current-architecture-and-project-status).
 
 ## 1. Problem statement
@@ -461,3 +463,52 @@ OpenTTD launches: zero. The executor → simulation → observation → attribut
 chain exists structurally and is covered by controlled peers. A separately authorized
 real P07 evaluation proof is still required before claiming end-to-end realized
 evaluation. Closed-loop candidate improvement remains future work.
+
+## P08 — OpenTTD World Preparation and Candidate Graph Generation
+
+The [P08 authority](p08-world-preparation-design.md) owns supported-world extraction
+and deterministic candidate search-space generation. `prepare_world(request, snapshot)`
+uses strict, immutable extraction facts separately from planning schema v1 and
+publishes a canonical manifest, scenario, P06 bindings and provenance. The manifest's
+source digest is the prepared save SHA-256; the existing world-manifest hash remains
+the sole world fingerprint. Native industries feed the existing P03 runtime projection.
+
+P08 v1 supports pinned 13.4/OpenGFX temperate preparation-compatible worlds without
+NewGRFs or competing companies, flat vacant road geometry, 1x1 terminal truck stops,
+one common depot and immediately buildable non-articulated default-cargo freight
+engines. Slopes, clearing, water/coast construction, bridges/tunnels/crossings,
+demolition/terraforming, infrastructure reuse, refitted capacity and rail are rejected
+for generated construction. Unsupported world profiles fail explicitly.
+
+One mandatory fixed OD demand per P08 v1 scenario uses positive observed last-month
+production as historical benchmark quantity. It is not forecast or horizon supply.
+Destination choice is deterministic; supply is not duplicated into mandatory demands.
+P05 remains a multi-demand optimizer over supplied scenarios. The preparation deadline
+is `horizon_days - 1`, preserving P02 validation unchanged.
+
+Compass-sector sampling records eligible counts and chooses at most four stations
+per role from footprint-local catchment neighborhoods. A versioned depot policy
+requires all sampled fronts to remain connected after reserving the depot footprint.
+Every advertised corridor includes its front anchor. Bounded loopless Dijkstra orders
+construction estimates, tiles, turns and tile sequence. At most two alternatives per
+station pair are mutually exclusive choices for the one demand, not jointly feasible
+shared segments. Exhausted search and exceeded bounds have distinct typed failures.
+
+Before publication, P08 exhaustively creates structural witnesses for the selectable
+station/depot/corridor/fleet cross-product and checks existing P02/P06 public validation,
+native fleet identity, eligible geometry and P05 cost precision/range. Witnesses are
+internal proofs, not network selections or published execution plans. P05's objective,
+P06 execution and P07 metrics are unchanged.
+
+The read-only GameScript has a separate bounded sequenced console protocol, declared
+counts, terminal checksum or typed failure, paused/date checks and inert completion.
+SHA-256 identities remain separate from wire checksum. `prepare_with_runtime` stages
+it in an isolated workspace through an injected runtime seam; ordinary tests use
+fakes. It validates save/package identity, cleans up before publishing, and retains
+canonical artifacts using P07-compatible references plus a scenario/manifest-linked
+sidecar index. No persistence migration or P04 extraction transport is introduced.
+
+P08 does not select a winning network, execute infrastructure, evaluate realized
+outcomes, replace YAPF or yet prepare arbitrary OpenTTD terrain/content/saves.
+Status: controlled implementation; zero OpenTTD launches. A separately authorized
+real extraction proof is still required. P08 remains incomplete and uncommitted.
