@@ -107,10 +107,20 @@ Controlled/offline tests cover planning and reporting contracts. Continuous flee
 operation, shared dispatch, human takeover, rail, arbitrary maps, and full expense
 attribution are outside the verified MVP.
 
-**Random World & Scalable Logistics** is future work: native random generation,
-configurable seed/world size, generalized P08 industry/cargo discovery, feasible
-routes over varied terrain, dynamic service selection, larger fleets/networks,
-and P07 performance comparison. No such feature is introduced here.
+**Random World & Scalable Logistics** has a local opt-in implementation. Native
+Seed 17 generation/discovery/spectator inspection are verified; service execution
+and P05 selection are not verified by that failed smoke. The 512-tile capture
+correction is offline-tested. See [the handoff](../../AI_HANDOFF.md) and
+[distance support](../../docs/random-world-distance-support.md).
 
-Launch-free checks for this checkpoint are recorded in
-[validation](VALIDATION.md).
+## Random worlds and operational reports
+
+Use `plan --random-world --seed 17 --terrain 0` to prepare generation settings
+without launching a game. A separately authorized `run --random-world` uses native
+256×256 generation, observed industries/cargo and bounded P08/P05 selection;
+unsupported worlds may have zero feasible services. Fixed mode remains the default.
+Both modes display retained operational measurements; after completed verified
+delivery, P07 produces results, `operations.html` charts and
+`operational-history.json`. Failed random planning retains diagnostics. `report --source RUN` and
+`compare --source REPORT_A --compare-with REPORT_B` work offline. See the
+[full settings, interfaces and limitations](../../docs/random-world-demo.md).

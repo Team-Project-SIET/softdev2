@@ -8,7 +8,15 @@ import shutil
 import subprocess
 import sys
 import uuid
+from pathlib import Path
 
+from app.demo_operations import (
+    compare_operational_reports,
+    operational_snapshot,
+    terminal_status,
+    write_operational_report,
+)
+from app.demo_random import DemoBudgets, RandomWorldSettings, prepare_random
 from app.simulation.openttd.proof import freight_delivery as native
 from app.simulation.openttd.proof.harness import BINARY_SHA256, PROJECT, sha256
 from app.simulation.openttd.runtime.config import RuntimeWorkspace
@@ -129,6 +137,9 @@ class Viewer:
 
     async def progress(self, directory):
         shown = set()
+        service_count = 0
+        previous_status = None
+        last_status_time = 0.0
         while True:
             self.require_alive()
             if "plan" not in shown:
@@ -139,7 +150,8 @@ class Viewer:
                 else:
                     print("\nP08/P05 selected:\n  " + "\n  ".join(rows), flush=True)
                     shown.add("plan")
-            for n in range(3):
+                    service_count = len(rows)
+            for n in range(service_count):
                 path = directory / f"service-receipt-{n}.json"
                 if n not in shown and path.exists():
                     try:
@@ -152,6 +164,20 @@ class Viewer:
                         flush=True,
                     )
                     shown.add(n)
+            if service_count:
+                snapshot = operational_snapshot(directory, service_count)
+                status = terminal_status(snapshot)
+                now = asyncio.get_running_loop().time()
+                if status != previous_status or now - last_status_time >= 10:
+                    print(status, flush=True)
+                    previous_status = status
+                    last_status_time = now
+            elif asyncio.get_running_loop().time() - last_status_time >= 10:
+                print(
+                    "Waiting for qualified world and P08/P05 plan; operational samples UNKNOWN.",
+                    flush=True,
+                )
+                last_status_time = asyncio.get_running_loop().time()
             await asyncio.sleep(0.5)
 
     async def delivered(self, backend, prepared):
@@ -164,7 +190,7 @@ class Viewer:
         print(
             f"Deliveries complete. Game stays open for up to {self.view_seconds}s. "
             "Close the client or press Ctrl+C to finish. "
-            "Python's three trucks are parked after their delivery batches.",
+            "Python's selected trucks are parked after their delivery batches.",
             flush=True,
         )
         if self.process is None:
@@ -206,6 +232,8 @@ def report(directory, output):
             str(output),
         ]
     )
+    if result:
+        return result
     evaluation = json.loads((output / "evaluation.json").read_bytes())
     lines = [
         "# OpenTTD freight results",
@@ -230,14 +258,22 @@ def report(directory, output):
             "",
         ]
     )
+    write_operational_report(directory, output, len(selections(directory)))
+    lines.extend(["", "[Operational status and charts](operations.html)", ""])
     (output / "results.md").write_text("\n".join(lines))
     return result
 
 
-def run_demo(*, headless=False, view_seconds=120):
+def run_demo(*, headless=False, view_seconds=120, random_world=None, random_budget=None):
     check(graphical=not headless)
     root = RUNS / ("playable-demo-" + uuid.uuid4().hex)
-    print(f"Preparing deterministic seed-42, 64x64 freight world. Run: {root}", flush=True)
+    if random_world is not None:
+        print(
+            f"Preparing native random 256x256 seed-{random_world['seed']} world. Run: {root}",
+            flush=True,
+        )
+    else:
+        print(f"Preparing deterministic seed-42, 64x64 freight world. Run: {root}", flush=True)
     try:
         prepared = native.prepare(
             root,
@@ -246,6 +282,11 @@ def run_demo(*, headless=False, view_seconds=120):
             network=True,
             scenario="high-budget-500k",
             network_service_limit=3,
+            **(
+                dict(random_world=random_world, random_budget=random_budget)
+                if random_world is not None
+                else {}
+            ),
         )
         viewer = Viewer(root, headless=headless, view_seconds=view_seconds)
         result = asyncio.run(
@@ -270,30 +311,137 @@ def run_demo(*, headless=False, view_seconds=120):
         )
         return 1
     output = RUNS / (root.name + "-report")
-    report(root, output)
+    if report(root, output):
+        print(f"P07 report verification failed: {output}", file=sys.stderr)
+        return 1
     print(f"P07 results: {output / 'results.md'}\nGame save: {root / 'after.sav'}", flush=True)
     return 0
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=("check", "plan", "run"), nargs="?", default="run")
+    parser.add_argument(
+        "command", choices=("check", "plan", "run", "report", "compare"), nargs="?", default="run"
+    )
     parser.add_argument("--headless", action="store_true", help="Server only; no GUI validation")
     parser.add_argument(
         "--view-seconds",
         type=int,
         default=120,
-        help="Keep game open after all three deliveries (0..300 seconds)",
+        help="Keep game open after all selected deliveries (0..300 seconds)",
     )
     parser.add_argument(
         "--stop-on-delivery",
         action="store_true",
-        help="Close after all three services deliver; no viewing hold",
+        help="Close after all selected services deliver; no viewing hold",
+    )
+    parser.add_argument(
+        "--random-world",
+        action="store_true",
+        help="Use the bounded native 256x256 random-world profile",
+    )
+    parser.add_argument("--seed", type=int)
+    parser.add_argument("--map-size", type=int, choices=(256,))
+    parser.add_argument("--climate", choices=("temperate", "arctic", "tropic", "toyland"))
+    parser.add_argument("--terrain", type=int, choices=range(6))
+    parser.add_argument("--towns", type=int, choices=range(4))
+    parser.add_argument("--industries", type=int, choices=range(5))
+    parser.add_argument("--max-services", type=int)
+    parser.add_argument("--max-vehicles", type=int)
+    parser.add_argument("--max-candidates", type=int)
+    parser.add_argument("--planning-seconds", type=int)
+    parser.add_argument(
+        "--source", type=Path, help="Existing demo evidence directory, for offline report only"
+    )
+    parser.add_argument(
+        "--compare-with", type=Path, nargs="+", help="Additional P07 report directories"
     )
     args = parser.parse_args(argv)
     if not 0 <= args.view_seconds <= 300:
         parser.error("--view-seconds must be between 0 and 300")
+    random_values = (
+        args.seed,
+        args.map_size,
+        args.climate,
+        args.terrain,
+        args.towns,
+        args.industries,
+        args.max_services,
+        args.max_vehicles,
+        args.max_candidates,
+        args.planning_seconds,
+    )
+    if any(v is not None for v in random_values) and not args.random_world:
+        parser.error("world/planner settings require --random-world")
+    if args.source is not None and args.command not in ("report", "compare"):
+        parser.error("--source is only valid with report/compare")
+    if args.command == "report" and (args.source is None or args.random_world):
+        parser.error("report requires --source and cannot use --random-world")
+    if args.compare_with is not None and args.command != "compare":
+        parser.error("--compare-with is only valid with compare")
+    if args.command == "compare" and (
+        args.source is None or not args.compare_with or args.random_world
+    ):
+        parser.error("compare requires --source and --compare-with; no --random-world")
     try:
+        if args.command == "compare":
+            output = RUNS / ("comparison-" + uuid.uuid4().hex)
+            compare_operational_reports([args.source, *args.compare_with], output)
+            print(f"Comparison: {output / 'comparison.html'}")
+            return 0
+        if args.command == "report":
+            output = RUNS / ("offline-report-" + uuid.uuid4().hex)
+            result = report(args.source.resolve(), output)
+            print(f"Report: {output / 'results.md'}")
+            return result
+        if args.random_world:
+            settings = RandomWorldSettings(
+                **{
+                    k: v
+                    for k, v in dict(
+                        seed=args.seed,
+                        map_size=args.map_size,
+                        climate=args.climate,
+                        terrain=args.terrain,
+                        towns=args.towns,
+                        industries=args.industries,
+                    ).items()
+                    if v is not None
+                }
+            )
+            budgets = DemoBudgets(
+                **{
+                    k: v
+                    for k, v in dict(
+                        max_services=args.max_services,
+                        max_vehicles=args.max_vehicles,
+                        max_relationships=args.max_candidates,
+                        planning_seconds=args.planning_seconds,
+                    ).items()
+                    if v is not None
+                }
+            )
+            if args.command == "run":
+                return run_demo(
+                    headless=args.headless,
+                    view_seconds=0 if args.stop_on_delivery else args.view_seconds,
+                    random_world=settings.model_dump(),
+                    random_budget=budgets.model_dump(),
+                )
+            if args.command == "check":
+                check(graphical=not args.headless)
+                print(
+                    "Random settings and prerequisites validated; "
+                    "no world generated or game launched."
+                )
+                return 0
+            output = RUNS / ("random-preparation-" + uuid.uuid4().hex)
+            prepare_random(output, settings, budgets)
+            print(
+                f"PREPARED_RECIPE_ONLY: {output}; no world generated or plan selected. "
+                "Planning requires observed state from a separately authorized native run."
+            )
+            return 0
         if args.command == "check":
             check(graphical=not args.headless)
             print("Binary, assets and desktop prerequisites found; no game launched.")
