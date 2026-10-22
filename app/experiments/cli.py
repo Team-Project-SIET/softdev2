@@ -64,6 +64,23 @@ def main(argv: list[str] | None = None) -> int:
     analytics_parser.add_argument(
         "--output", type=Path, default=Path("artifacts/experiments/p07-freight")
     )
+    continuous_parser = commands.add_parser(
+        "analyze-continuous-freight",
+        help="replay continuous observations and export P07 charts offline",
+    )
+    continuous_parser.add_argument("attempt", type=Path)
+    continuous_parser.add_argument("--output", type=Path, required=True)
+    continuous_parser.add_argument("--recovery-directory", type=Path)
+    continuous_parser.add_argument(
+        "--compare-planning",
+        action="store_true",
+        help="also export opt-in controlled P08/P05 alternatives; no native predictions",
+    )
+    continuous_parser.add_argument(
+        "--prepare-capacity-experiment",
+        action="store_true",
+        help="prepare explicit A/B/C vehicle allocations offline; never launches OpenTTD",
+    )
     insights_parser = commands.add_parser(
         "analyze-performance-insights",
         help=(
@@ -91,6 +108,57 @@ def main(argv: list[str] | None = None) -> int:
             result = analyze_performance(args.SOURCE, args.output, compare=args.compare)
         except (OSError, ValueError, KeyError, TypeError) as error:
             # Malformed retained documents also reject cleanly without output.
+            print(f"analysis rejected: {error}", file=sys.stderr)
+            return 1
+        print(json.dumps(result, sort_keys=True))
+        return 0
+
+    if args.command == "analyze-continuous-freight":
+        import json
+
+        from app.experiments.freight_continuous_analytics import analyze_continuous
+
+        try:
+            extra_names = []
+            if args.compare_planning:
+                extra_names.append("planning-alternatives.json")
+            if args.prepare_capacity_experiment:
+                extra_names.extend(("capacity-experiment.json", "capacity-comparison.html"))
+            protected = [args.attempt, args.recovery_directory]
+            if any(
+                (args.output / name).resolve().is_relative_to(root.resolve())
+                for name in extra_names
+                for root in protected
+                if root is not None
+            ):
+                raise ValueError("planning comparison output must not modify retained evidence")
+            result = analyze_continuous(
+                args.attempt, args.output, recovery_directory=args.recovery_directory
+            )
+            if args.compare_planning:
+                from app.experiments.freight_alternatives import compare_freight_alternatives
+                from app.planning.domain import PlanningScenario
+
+                scenario = PlanningScenario.model_validate_json(
+                    (args.attempt / "planning-scenario.json").read_bytes()
+                )
+                comparison = compare_freight_alternatives(scenario)
+                destination = args.output / "planning-alternatives.json"
+                destination.write_text(json.dumps(comparison, indent=2) + "\n")
+                result["planning_alternatives"] = str(destination)
+            if args.prepare_capacity_experiment:
+                from app.experiments.capacity_experiment import prepare_capacity_experiment
+                from app.experiments.freight_capacity_report import render_capacity_report
+
+                report = json.loads((args.output / "summary.json").read_bytes())
+                comparison = prepare_capacity_experiment(args.attempt, report)
+                destination = args.output / "capacity-experiment.json"
+                destination.write_text(json.dumps(comparison, indent=2) + "\n")
+                (args.output / "capacity-comparison.html").write_text(
+                    render_capacity_report(comparison)
+                )
+                result["capacity_experiment"] = str(destination)
+        except (OSError, ValueError) as error:
             print(f"analysis rejected: {error}", file=sys.stderr)
             return 1
         print(json.dumps(result, sort_keys=True))

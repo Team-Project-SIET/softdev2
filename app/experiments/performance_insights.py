@@ -210,6 +210,7 @@ class PerformanceInsights(Contract):
     recommendations: list[AdvisoryRecommendation]
     limitations: list[str]
     comparisons: dict[str, Any] | None = None
+    financial_attribution: dict[str, Any] | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -1341,6 +1342,7 @@ def build_continuous_insights(
         limitations=list(_BASE_LIMITATIONS)
         + list(report.get("limitations") or [])
         + service_limits,
+        financial_attribution=_financial_attribution_status(report),
     )
 
 
@@ -1511,7 +1513,20 @@ def build_network_insights(
         bottlenecks=bottlenecks,
         recommendations=_sorted_recommendations(rows),
         limitations=list(_BASE_LIMITATIONS) + list(evaluation.get("limitations") or []),
+        financial_attribution=_financial_attribution_status(evaluation),
     )
+
+
+def _financial_attribution_status(document: dict) -> dict | None:
+    """Compact financial-attribution view of the passed document alone.
+
+    Reads no evidence directories (per-service amounts come from the document
+    itself); the deferred import avoids a module import cycle because the
+    attribution layer imports this module's helpers inside its pipeline.
+    """
+    from app.experiments.financial_attribution import compact_status
+
+    return compact_status(document)
 
 
 def build_performance_insights(
