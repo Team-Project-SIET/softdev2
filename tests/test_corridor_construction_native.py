@@ -148,6 +148,7 @@ def test_staged_plan_policy_binds_the_compiled_schedule(staged):
     schedule = d4.corridor_schedule()
     assert plan["schedule"] == schedule
     assert plan["plan_digest"] == d4.plan_digest_of(schedule)
+    assert plan["schedule_version"] == d4.SCHEDULE_VERSION == 3
     assert plan["company"] == 0
     assert plan["target_tile"] == int(schedule[0]["start"]) == 45747
     assert plan["max_cost"] == d4.MAX_CORRIDOR_COST
@@ -353,9 +354,98 @@ def test_corridor_tiles_read_post_d3_flat_cleared_ground():
         assert fact.industry_id is None
 
 
-def test_corridor_schedule_is_the_compiled_six_ops():
+def test_corridor_schedule_is_the_compiled_seven_ops():
     schedule = d4.corridor_schedule()
     assert [(entry["kind"], entry["index"]) for entry in schedule] == [
+        ("full", 0),
+        ("full", 1),
+        ("full", 2),
+        ("road", 3),
+        ("station", 4),
+        ("station", 5),
+        ("depot", 6),
+    ]
+    run_a, segment_a, segment_b = schedule[0], schedule[1], schedule[2]
+    assert (run_a["start"], run_a["end"], run_a["run_len"]) == (45747, 45743, 5)
+    assert tuple(run_a["tiles"]) == (45747, 45746, 45745, 45744, 45743)
+    assert (segment_a["start"], segment_a["end"], segment_a["run_len"]) == (
+        45999, 48047, 9)
+    assert tuple(segment_a["tiles"]) == tuple(45999 + 256 * step for step in range(9))
+    assert (segment_b["start"], segment_b["end"], segment_b["run_len"]) == (
+        48303, 50095, 8)
+    assert tuple(segment_b["tiles"]) == tuple(48303 + 256 * step for step in range(8))
+    corner = schedule[3]
+    assert (corner["start"], corner["end"], corner["run_len"]) == (45743, 45999, 2)
+    assert tuple(corner["tiles"]) == (45743, 45999)
+    pickup, delivery = schedule[4], schedule[5]
+    assert pickup == dict(kind="station", index=4, tile=45748, front=45747, stop_role="pickup")
+    assert delivery == dict(
+        kind="station", index=5, tile=50351, front=50095, stop_role="delivery"
+    )
+    depot = schedule[6]
+    assert depot == dict(
+        kind="depot", index=6, tile=45487, front=45743, orientation="south"
+    )
+    for entry in schedule:
+        if entry.get("run_len") is not None:
+            assert 1 <= entry["run_len"] - 1 <= SCHEDULE_SPAN_BOUND
+    # No interior join is scheduled: the collinear full-run endpoints already
+    # carry both straight road bits and auto-connect natively.
+    assert all(
+        (entry.get("start"), entry.get("end")) != (48047, 48303)
+        for entry in schedule
+    )
+
+
+def test_run_b_segments_reassemble_the_compiled_run_without_a_join_op():
+    """The staged segments are the compiled run B's own contiguous collinear
+    halves. Their shared edge is auto-connected by the full-build endpoint
+    bits, so the fresh schedule carries no interior join; both stay on the
+    run's compiled map axis and the witness route (24 tiles / 23 pairs) is
+    untouched by the staging decision."""
+    facts = d4.corridor_facts()
+    run_b = facts["run_b"]
+    schedule = d4.corridor_schedule()
+    split = (len(run_b) + 1) // 2
+    segment_a, segment_b = schedule[1]["tiles"], schedule[2]["tiles"]
+    assert segment_a == run_b[:split] and segment_b == run_b[split:]
+    assert segment_a + segment_b == run_b and len(run_b) == 17
+    for tiles in (segment_a, segment_b):
+        assert tiles == [tiles[0] + facts["width"] * step for step in range(len(tiles))]
+    assert segment_b[0] - segment_a[-1] == facts["width"]
+    assert (segment_a[-1], segment_b[0]) == (48047, 48303)
+    assert all(
+        (entry.get("start"), entry.get("end")) != (48047, 48303)
+        for entry in schedule
+    )
+    witness = d4.route_policy()["witness_path"]
+    assert witness == list(facts["corridor"])
+    assert d4.route_policy()["expected_pairs"] == 23
+
+
+def test_schedule_version_binding_selects_the_plan_derivation():
+    """The plan policy binds its schedule derivation by version: fresh staging
+    pins the split-run-B derivation without the redundant interior join
+    (schedule_version 3); v2 preserves consumed candidate-3 and v1 (the key
+    absent) preserves consumed candidate-1. Any other version is refused."""
+    plan = d4.plan_policy()
+    assert plan["schedule_version"] == d4.SCHEDULE_VERSION == 3
+    assert d4.staged_plan_schedule(plan) == d4.corridor_schedule()
+    consumed_3 = d4.staged_plan_schedule({"schedule_version": 2})
+    assert consumed_3 == d4.corridor_schedule_v2()
+    assert [(entry["kind"], entry["index"]) for entry in consumed_3] == [
+        ("full", 0),
+        ("full", 1),
+        ("full", 2),
+        ("road", 3),
+        ("road", 4),
+        ("station", 5),
+        ("station", 6),
+        ("depot", 7),
+    ]
+    historical = d4.staged_plan_schedule({})
+    assert historical == d4.corridor_schedule_v1()
+    assert [(entry["kind"], entry["index"]) for entry in historical] == [
         ("full", 0),
         ("full", 1),
         ("road", 2),
@@ -363,26 +453,16 @@ def test_corridor_schedule_is_the_compiled_six_ops():
         ("station", 4),
         ("depot", 5),
     ]
-    run_a, run_b = schedule[0], schedule[1]
-    assert (run_a["start"], run_a["end"], run_a["run_len"]) == (45747, 45743, 5)
-    assert tuple(run_a["tiles"]) == (45747, 45746, 45745, 45744, 45743)
-    assert (run_b["start"], run_b["end"], run_b["run_len"]) == (45999, 50095, 17)
-    assert run_b["tiles"][0] == 45999 and run_b["tiles"][-1] == 50095
-    corner = schedule[2]
-    assert (corner["start"], corner["end"], corner["run_len"]) == (45743, 45999, 2)
-    assert tuple(corner["tiles"]) == (45743, 45999)
-    pickup, delivery = schedule[3], schedule[4]
-    assert pickup == dict(kind="station", index=3, tile=45748, front=45747, stop_role="pickup")
-    assert delivery == dict(
-        kind="station", index=4, tile=50351, front=50095, stop_role="delivery"
+    assert (historical[1]["start"], historical[1]["end"], historical[1]["run_len"]) == (
+        45999, 50095, 17)
+    assert d4.plan_digest_of(d4.corridor_schedule()) != d4.plan_digest_of(
+        d4.corridor_schedule_v2()
     )
-    depot = schedule[5]
-    assert depot == dict(
-        kind="depot", index=5, tile=45487, front=45743, orientation="south"
+    assert d4.plan_digest_of(d4.corridor_schedule()) != d4.plan_digest_of(
+        d4.corridor_schedule_v1()
     )
-    for entry in schedule:
-        if entry.get("run_len") is not None:
-            assert 1 <= entry["run_len"] <= SCHEDULE_SPAN_BOUND
+    with pytest.raises(ValueError, match="unknown corridor schedule version"):
+        d4.staged_plan_schedule({"schedule_version": 4})
 
 
 def test_stop_coverage_pins_bind_the_sealed_census_anchors():
@@ -415,10 +495,10 @@ def test_budgets_match_the_staged_contract():
     assert d4.budgets() == {
         "launches": 1,
         "connection_attempts": 1,
-        "requests": 25,
+        "requests": 28,
         "real_clears": 0,
         "real_raises": 0,
-        "road_ops": 6,
+        "road_ops": 7,
         "gsadmin_bytes": 1450,
         "response_bytes": 640,
         "retries": 0,
@@ -427,8 +507,8 @@ def test_budgets_match_the_staged_contract():
         "request_seconds": 10,
         "total_seconds": 900,
     }
-    assert d4.PLANNED_CORRIDOR_REQUESTS == len(d4.corridor_schedule()) * 3 + 1 == 19
-    assert d4.CORRIDOR_REQUEST_BUDGET == d4.budgets()["requests"] == 19 + 6
+    assert d4.PLANNED_CORRIDOR_REQUESTS == len(d4.corridor_schedule()) * 3 + 1 == 22
+    assert d4.CORRIDOR_REQUEST_BUDGET == d4.budgets()["requests"] == 22 + 6
 
 
 def test_plan_policy_carries_the_shared_scope_and_identity():
@@ -440,6 +520,7 @@ def test_plan_policy_carries_the_shared_scope_and_identity():
     assert "re-observe" in plan["stale_rule"]
     assert "wire contract v4" in plan["identity"]
     assert "classified CLEAR unowned flat ground" in plan["prerequisite_world"]["statement"]
+    assert "no aggregate phase-spending budget" in d4.budgets.__doc__
 
 
 # --- authorization payload, planned exchanges and wire identities -------------
@@ -472,7 +553,7 @@ def test_planned_exchange_inventory_is_exactly_schedule_bound():
         expected.add(f"confirm-{position:02d}")
     expected.add("route-00")
     assert d4._scheduled_request_ids(schedule) == expected
-    assert len(expected) == d4.PLANNED_CORRIDOR_REQUESTS == 19
+    assert len(expected) == d4.PLANNED_CORRIDOR_REQUESTS == 22
 
 
 def test_wire_requests_map_the_planned_schedule_pins():
@@ -513,7 +594,7 @@ def test_wire_requests_map_the_planned_schedule_pins():
     assert route_request.plan == seal
     assert len(route_request.to_bytes()) <= 512
     planned.append(route_request)
-    assert len(planned) == d4.PLANNED_CORRIDOR_REQUESTS == 19
+    assert len(planned) == d4.PLANNED_CORRIDOR_REQUESTS == 22
 
 
 # --- launch lineage and never-consumed behavior -------------------------------
@@ -585,14 +666,14 @@ def _matching_admitted_intent(entry) -> d4.CorridorIntent:
         source_save_digest="1" * 64,
         company=0,
         kind=entry["kind"],
-        start=entry["start"],
-        end=entry["end"],
+        start=entry.get("start"),
+        end=entry.get("end"),
         tile=entry.get("tile"),
         front=entry.get("front"),
         max_cost=2000,
         native_test_cost=785,
         before_digest="2" * 64,
-        run_len=entry["run_len"],
+        run_len=entry.get("run_len"),
     )
 
 
@@ -612,6 +693,22 @@ def test_verify_inputs_pin_contract_is_staged_entry_versus_admitted_intent():
     assert d4._pins(entry) != d4._pins(entry, intent=drifted)
     with pytest.raises(TypeError):
         d4._pins(intent=intent)
+
+
+def test_site_ops_feed_the_entry_scoped_pins_with_their_intent():
+    """Cover the site branches of the verify comparison: the station and depot
+    ops bind through the same entry-vs-intent pins path as the road ops, with
+    no run pins anywhere, and a drifted intent companion mismatches them."""
+    for index in (4, 5, 6):
+        entry = d4.corridor_schedule()[index]
+        assert entry["kind"] in ("station", "depot")
+        assert "run_len" not in entry and "start" not in entry
+        intent = _matching_admitted_intent(entry)
+        assert intent.run_len is None and intent.start is None
+        assert d4._pins(entry) == d4._pins(entry, intent=intent)
+        assert d4._pins(entry) == dict(tile=entry["tile"], front=entry["front"])
+        drifted = intent.model_copy(update={"front": 45746})
+        assert d4._pins(entry) != d4._pins(entry, intent=drifted)
 
 
 @_requires_consumed_evidence

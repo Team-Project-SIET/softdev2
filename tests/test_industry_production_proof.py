@@ -547,6 +547,7 @@ def test_architecture_authority_unchanged():
     # Authority identity from the retained controlled milestone, never edited here.
     import json
 
+    from app.simulation.openttd.proof.authority_supersession import resolve_historical_pin
     from app.simulation.openttd.proof.harness import PROJECT
 
     frozen = json.loads(
@@ -555,9 +556,10 @@ def test_architecture_authority_unchanged():
             / "artifacts/runtime/openttd-15.3-structural-world-real-prelaunch/source-freeze.json"
         ).read_text()
     )
+    historical = frozen[str(PROJECT / "CONTEXT.md")]
     assert (
-        hashlib.sha256((PROJECT / "CONTEXT.md").read_bytes()).hexdigest()
-        == frozen[str(PROJECT / "CONTEXT.md")]
+        resolve_historical_pin(PROJECT, historical)
+        == hashlib.sha256((PROJECT / "CONTEXT.md").read_bytes()).hexdigest()
     )
 
 

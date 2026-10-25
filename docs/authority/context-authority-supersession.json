@@ -1,0 +1,11 @@
+{
+  "policy": "context-authority-supersession-v1",
+  "path": "CONTEXT.md",
+  "historical_sha256": "b94b96649b466e73e25c9df9409bd745e311b84273bedfd9a111792869e3b7b3",
+  "historical_bytes_retained": false,
+  "current_sha256": "36648f9c2fee4106efb35ae4ee8722983ebdfb482889e66ad53d759f6fa7cc29",
+  "recorded": "2026-10-25",
+  "authority": "Explicit operator authorization, session 2026-10-25",
+  "decision": "ADR-014",
+  "reason": "The 2026-10-08 pin refers to bytes that are not retained in Git history or repository artifacts. The retained manifests remain frozen and unmodified; this record scopes a byte-exact transition from the historical pin to the current canonical CONTEXT.md so every other protected entry can still be validated without weakening historical evidence."
+}

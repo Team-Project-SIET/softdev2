@@ -292,12 +292,16 @@ def test_retained_attempt3_is_failed_not_reclassified():
 
 
 def test_protected_history_and_context_exact():
-    from app.simulation.openttd.proof.historical_protection import validate_protection
+    from app.simulation.openttd.proof.authority_supersession import (
+        validate_protection_with_supersession,
+    )
 
     root = Path(__file__).resolve().parents[1]
     freeze = root / "artifacts/runtime/openttd-15.3-two-rollover-qualification-real-prelaunch-v4"
     assert (
-        validate_protection(root, json.loads((freeze / "historical-integrity.json").read_text()))
+        validate_protection_with_supersession(
+            root, json.loads((freeze / "historical-integrity.json").read_text())
+        )
         == 1627
     )
 

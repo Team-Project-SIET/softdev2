@@ -66,9 +66,10 @@ Local installation reference: `/home/fed/Downloads/openttd-15.3-linux-generic-am
 
 See [[00-Project/Current Status]] and [[00-Project/Roadmap]]. Short version: the fixed demo
 is VERIFIED natively; the canonical create/reload engineering is PROVEN; the P08→P05→execute
-planner path has native proofs (Attempts 9/12/17 with historical scope); Random World is
-blocked at `INCOMPLETE_TILE_CLASSIFICATION`; the D-chain of native construction ceremonies
-has D2/D3 PROVEN and D4 attempt-consumed — INCOMPLETE (E21).
+planner path has native proofs (Attempts 9/12/17 with historical scope); Random World
+native execution remains blocked, though ADR-012/ADR-013 now allow the derived P08
+planning classification (`p08_complete: false`, fusion gate closed); the D-chain of native construction ceremonies
+has D2/D3 PROVEN and D4 INCOMPLETE after two consumed attempts (E21, E28). The authority-pin conflict is resolved offline (E26/ADR-014). `D4-CORRIDOR-3` was consumed exactly once on 2026-10-25: `op-00`–`op-02` built and read back, `op-03` join refused at admission, no authoritative after-save/receipt. A fresh separately authorized candidate is required after correcting `op-03`.
 
 ## Related
 

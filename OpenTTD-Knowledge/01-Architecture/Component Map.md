@@ -38,9 +38,9 @@ tags:
 | Clearing planner candidates | `app/planning/p08_clearing.py` | Census-evidence-bound, `PLANNING_ONLY` |
 | Bounded terraform planning | `app/planning/p08_terrain.py` (+ hook in `p08_road.py`) | E10: typed budgets, planning-only proposals; insight into `NO_BOUNDED_CORRIDOR` branches |
 | Terraform native execution | `app/simulation/openttd/proof/terrain_terraform_native.py` | E18; one-shot candidate machinery reusing proven ceremony |
-| Corridor construction contract | `app/simulation/openttd/corridor_construction.py` | Wire contract v4 (E20); 19 planned exchanges |
-| Corridor GameScript | `app/simulation/openttd/d4_corridor_package/main.nut`, `info.nut` | `NetworkFreightProof extends D4CorridorProof` |
-| Corridor native runner | `app/simulation/openttd/proof/corridor_construction_native.py` | D4 execution entry (`run <candidate-dir>`) |
+| Corridor construction contract | `app/simulation/openttd/corridor_construction.py` | Wire contract v4 (E20, unchanged in E22); the staged schedule's planned exchanges are schedule-derived (E20 historical staging 19; E22 fresh staging 25) |
+| Corridor GameScript | `app/simulation/openttd/d4_corridor_package/main.nut`, `info.nut` | `NetworkFreightProof extends D4CorridorProof`; baked stage keys mirror the 8-op v2 derivation (E22) |
+| Corridor native runner | `app/simulation/openttd/proof/corridor_construction_native.py` | D4 execution entry (`run <candidate-dir>`); schedule derivation v2 + v1 replay selector (E22) |
 | Tile classification (schema-2) | `app/simulation/openttd/tile_classification.py`, `terrain_classification.nut`, `terrain_classification_bridge.py` | E11/E12; receipt/exchange/sweep + classification plan |
 | Classification staging/execution | `app/simulation/openttd/proof/classification_execution.py`, `classification_capture.py`, `world_correspondence.py` | E13/E15; health vocabulary, AI staging, fail-closed capture runner |
 | V1/V2 semantic reconciliation | `app/simulation/openttd/v2_semantic_reconciliation.py` (untracked) | [[05-Planning/Blockers]] |

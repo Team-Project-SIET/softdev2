@@ -33,11 +33,13 @@ claim ([[07-Reference/Status Definitions]]).
 | V2 capture preparation | Receipt/exchange/sweep; 90-page plan; refuse-on-missing-seam staging; 16+7+9(+1) tests | E12 |
 | V2 execution path | Staging/dispatch/runner/correspondence policy; 10+10+10+8 tests, offline | E13 |
 | V2 diagnosis/repair | 35 focused tests incl. consumed-log replay; AI staging sealed | E15 |
-| Offline V1/V2 semantic reconciliation | 450-tile replay: 77 definitional / 6 temporal / 0 contradictions / 0 unresolved → `SEMANTICALLY_RECONCILED_TEMPORAL_UNRESOLVED`; P08 binding not allowed; 15 focused tests | [[05-Planning/Blockers]] (uncommitted record) |
+| Offline V1/V2 semantic reconciliation | 450-tile replay: 77 definitional / 6 temporal / 0 contradictions / 0 unresolved → `SEMANTICALLY_RECONCILED_TEMPORAL_UNRESOLVED`. ADR-012 (6 temporal) + ADR-013 (19 definitional) active; combined P08 planning binding allowed (`p08_complete: false`), fusion gate CLOSED; focused/combined tests 41/83 | [[05-Planning/Blockers]] (uncommitted record) |
 | Controlled P08→P05 chain | Observation admission, supplemental facts, prepared-source correspondence, bounded generation, P05 optimization, execution-plan validation — controlled source bytes are not an executable save | CONTEXT §20 |
 | Synthetic flat fixture | 31-road-tile route, 1 selected service, £1,830 estimated construction/purchase | E5 (never a Seed 17 native result) |
 | P07 analytics extension | Offline implementation verified on retained Attempt 19/fixed-demo evidence; advisory-only; FAILED terminals stay visible | 2026-10-18 checkpoint; README §P07 |
 | Capacity experiment prep | A/B/C controlled plans (`minimum_vehicles_by_demand`); queue stats sampled | `docs/capacity-experiment.md` |
+| D4 Option C 8-op restage + review | Offline 8-op split-run-B schedule (per-op ceiling unchanged, versioned derivation, budget 31); independent review = **`PASS WITH CONCERNS`** — 55 tests re-run fresh and the read-only `verify` replay of the consumed candidate returned the E21 verdict byte-identically; E24 re-runs the same 55 tests green after the operator-approved `CORRIDOR_ATTEMPT` → `D4-CORRIDOR-2` identity edit and stages the fresh candidate (PRELAUNCH/PREFLIGHT PASS) | E22, E23, E24 |
+| D4 candidate-3 native run | **Consumed exactly once (native, partial):** 3/8 ops built and read back; `op-03` admission `NOT_BUILDABLE` (cost 0), runner refused unquoted dispatch; `PARTIAL_EXECUTION_EVIDENCE`, `verified: false`, `FAILED_CLEANUP`; no authoritative after-save/receipt; replay refuses incomplete cleanup; manifest 48/48. No retry or reuse. | E28 |
 
 ## Suite counts are dated, not additive
 

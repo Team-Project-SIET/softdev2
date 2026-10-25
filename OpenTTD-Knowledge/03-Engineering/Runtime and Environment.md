@@ -2,7 +2,7 @@
 title: "Runtime and Environment"
 type: engineering
 status: current
-updated: 2026-10-22
+updated: 2026-10-24
 tags:
   - openttd
   - engineering
@@ -54,6 +54,27 @@ without `OPENTTD_BINARY` set. Language/distribution assets stay beside the execu
 Export the asset variables in the shell; the proof CLI does not read them from `.env`.
 The repository keeps `.env` / account/cache folders out of transfers (credentials
 excluded; [[99-Source-Documents/AI_HANDOFF]] "Checkout and transfer").
+
+## Operator key material (operator-only; not runtime configuration)
+
+The operator's Ed25519 private key is operator-held material **outside Git**
+(`~/.local/share/openttd-operator/operator-private.pem` in the local development
+proof). It is not a configuration variable and never enters the repository, this
+vault, chat logs, screenshots or a candidate directory.
+
+- Provisioning/extraction procedure:
+  `docs/handoff/2026-10-17/operator-key-provisioning.md` §1 (corrected
+  2026-10-24; validated with **synthetic keys only**; the production key was
+  not accessed or tested).
+- The tested extraction pipeline requires a Bash-compatible shell, `pipefail`,
+  and `tail`/`od`/`tr`. In this environment `xxd` is absent, and
+  `openssl pkey ... -noout -outform DER` emitted **zero bytes** on OpenSSL
+  3.6.3; the corrected form omits `-noout` and formats with `od`/`tr`.
+- The seed must never be printed to a terminal, written to a file, or passed
+  as a command-line argument. It is captured only into a shell
+  variable/environment consumed by the signing process.
+- Documentation is **not** authorization. Signing, authorization consumption
+  and native launches each require their own explicit operator decision.
 
 ## Run commands (public surface)
 

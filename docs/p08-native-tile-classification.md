@@ -145,6 +145,54 @@ required-op inventory (tile-level only; grouped ops stay in
 is JSON-ready. No P07 delivery metrics are generated anywhere in the
 assessment.
 
+## Root-cause census of the 19 UNKNOWN tiles (2026-10-25, offline)
+
+`diagnose_unknown_occupancy` (`app/planning/p08_v2_snapshot.py`) now groups
+every retained `UNKNOWN_OCCUPANCY` tile by root cause without resolving it.
+On the sealed Seed 17 evidence the 19 tiles are **one group**:
+
+- Root cause `DEFINITIONAL_VACANT_VS_NATIVE_ISBUILDABLE_SLOPED_CLEAR`.
+- All 19 are census `CLEAR`, owner `-1` (unowned), retained slopes
+  `{8, 9, 12, 13}` (all non-flat), retained `buildable=False`.
+- All 19 are already `SEMANTIC_RECONCILED` in the V1/V2 ledger with exactly
+  one field outcome: `buildable` /
+  `SEMANTIC_V1_VACANT_VS_NATIVE_ISBUILDABLE`.
+- The retained-only legacy segmenter maps non-buildable bare ground to
+  `UNKNOWN_OCCUPANCY`; the census classifies the same tiles as sloped clear
+  ground, which the native-`IsBuildable` semantics would class as
+  `TERRAIN_MODIFICATION`, not unknown.
+
+This started as a **diagnosis, not a reclassification**, and remains
+diagnosis-only in the base ledger. The base reconciliation still records all
+19 as `UNKNOWN_OCCUPANCY`; its bytes, counts and evidence are unchanged.
+Derived evidence:
+`artifacts/experiments/v1v2-semantic-reconciliation/p08-unknown-occupancy-diagnosis.json`
+(sha256 `66ed07cc…7e459`).
+
+**ADR-013 is now accepted and active for exactly these 19 tiles**
+(`docs/handoff/2026-10-25/adr-013-p08-native-isbuildable-definitional-semantics.md`).
+The derived policy layer adopts native `IsBuildable` semantics and maps each
+tile to `TERRAIN_MODIFICATION` only when every fail-closed evidence check
+passes. Derived segmentation is now
+**339 ROAD_BUILDABLE / 63 SUPPORTED_CLEARING / 29 UNSUPPORTED_CONSTRUCTION /
+19 TERRAIN_MODIFICATION / 0 UNKNOWN_OCCUPANCY**, with the base ledger
+untouched. Reports:
+
+- `artifacts/experiments/v1v2-semantic-reconciliation/native-isbuildable-policy-report.json`
+  (sha256 `7616f626…a3a65d`);
+- `artifacts/experiments/v1v2-semantic-reconciliation/p08-native-isbuildable-rebinding-report.json`
+  (sha256 `079fce64…4adee62`).
+
+The separate combined rebinding with ADR-012 computes
+`p08_binding.allowed: true` for **planning classification only** and records
+`p08_complete: false`. No native evidence is claimed.
+
+The fusion gate's same-instant rule remains **independently closed**: these 19
+tiles are a definitional-semantics group (no temporal delta), while the gate
+is bound to the six sealed second-instant tiles against immutable capture
+windows. Resolving the 19 does not open it, and opening it is not required for
+the census-only snapshot assessment.
+
 ## Validation
 
 New suites (offline): `tests/test_tile_classification.py` (13: wire gates,
@@ -159,8 +207,11 @@ pinned strings, connected-scenario cleanliness, readiness registry,
 blockers). Pinned suites re-run green: bounded terrain, controlled road,
 controlled e2e, bounded routing, design audit, tile-facts protocol, terrain
 query, terrain historical-root/single-page/offline-retention and
-gamescript-bridge packages. Ruff check/format clean
-on touched files; compileall clean; `git diff --check` clean; typechecking
+gamescript-bridge packages. ADR-013 adds `TestNativeIsBuildablePolicy` in
+`tests/test_p08_policy_rebinding.py` (41 focused tests; broader
+reconciliation/snapshot group 83; feasibility 24), including refusal of wrong
+scope, count drift, contradictions, non-single-instant pages, tampered reports
+and a missing ADR-012 report. Ruff check and compileall clean on the changed Python files; `git diff --check` clean; typechecking
 unavailable offline (no mypy/ty/pyright installed), reported rather than
 skipped.
 

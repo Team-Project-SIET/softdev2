@@ -16,6 +16,7 @@ writes any native or save state: only the tests' own VM world is mutated.
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 from typing import Any
 
@@ -56,6 +57,7 @@ WORLD = """
 ::dims <- [256, 256];
 ::tiles <- {};
 ::road_links <- {};
+::road_axis <- {};
 ::stops <- {};
 ::depots <- {};
 ::station_types <- {};
@@ -107,16 +109,22 @@ function stub_clear_for_road(t) {
 function stub_link(t) {
     if (!(t in ::road_links)) ::road_links[t] <- {};
 }
-function stub_roadify(t) {
+function stub_roadify(t, axis=null) {
     local f = ::tiles[t];
     /* bit 7 = road transport (IsRoadTile/HasTransportType), bit 9 = the
      * ROADTYPE_ROAD road-type presence bit (HasRoadType(t, 0)). */
     f.flags = f.flags | 0x0080 | 0x0200;
     if (f.owner == -1) f.owner = ::cur_company;
+    if (axis != null) ::road_axis[t] <- axis;
     stub_link(t);
 }
+function stub_is_road(t) {
+    return (t in ::tiles) && (::tiles[t].flags & 0x0080) != 0;
+}
 /* BuildRoadFull: one straight span (axis-safe), each tile clear or already
- * this company's road; the built piece links its consecutive tiles both ways. */
+ * this company's road; the built piece links its consecutive tiles both ways.
+ * Real scripted BuildRoadFull builds both straight road bits at both span
+ * endpoints, so a collinear adjacent road tile auto-connects at either end. */
 function stub_build_road_full(a, b) {
     if (!(a in ::tiles) || !(b in ::tiles)) return false;
     local wx = ::dims[0];
@@ -125,6 +133,7 @@ function stub_build_road_full(a, b) {
     if ((dx != 0 && dy != 0) || stub_abs(dx) + stub_abs(dy) < 1 ||
         stub_abs(dx) + stub_abs(dy) > 36) return false;
     local step = dx == 0 ? wx * (dy < 0 ? -1 : 1) : (dx < 0 ? -1 : 1);
+    local axis = dx == 0 ? "y" : "x";
     local count = (dx == 0 ? stub_abs(dy) : stub_abs(dx)) + 1;
     local span = [];
     local tile = a;
@@ -133,10 +142,24 @@ function stub_build_road_full(a, b) {
         span.append(tile);
         tile += step;
     }
-    foreach (t in span) stub_roadify(t);
+    foreach (t in span) stub_roadify(t, axis);
     for (local i = 1; i < count; i++) {
         ::road_links[span[i - 1]][span[i]] <- true;
         ::road_links[span[i]][span[i - 1]] <- true;
+    }
+    /* The full-build endpoints carry both straight bits; connect a collinear
+     * adjacent road tile in the outward direction, exactly as native does. */
+    local outward_start = span[0] - step;
+    local outward_end = span[count - 1] + step;
+    if (stub_is_road(outward_start) && (outward_start in ::road_axis) &&
+        ::road_axis[outward_start] == axis) {
+        ::road_links[span[0]][outward_start] <- true;
+        ::road_links[outward_start][span[0]] <- true;
+    }
+    if (stub_is_road(outward_end) && (outward_end in ::road_axis) &&
+        ::road_axis[outward_end] == axis) {
+        ::road_links[span[count - 1]][outward_end] <- true;
+        ::road_links[outward_end][span[count - 1]] <- true;
     }
     ::funds -= ::exec_cost;
     return true;
@@ -478,7 +501,7 @@ def run_group(vm: SQVM, entry: dict, position: int) -> tuple:
 
 
 def run_phase(vm: SQVM) -> list[tuple[str, dict]]:
-    """The whole staged phase: 6 * 3 exchanges in the staged op order."""
+    """The whole staged phase: len(SCHEDULE) * 3 exchanges in the staged order."""
     attempts = []
     for position, entry in enumerate(SCHEDULE):
         _, evidence = run_group(vm, entry, position)
@@ -507,32 +530,38 @@ def route_read(vm: SQVM) -> dict:
     return receipt
 
 
-# --- the corridor happy path: six built ops and the route read ---------------
+# --- the corridor happy path: seven built ops and the route read --------------
 
 
 def test_setup_pins_stay_derived_not_retold():
     """The test world's pins equal the module's own staged derivation."""
     assert SCHEDULE[0]["start"] == 45747 and SCHEDULE[0]["end"] == 45743
     assert SCHEDULE[0]["run_len"] == 5
-    assert SCHEDULE[1]["start"] == 45999 and SCHEDULE[1]["end"] == 50095
-    assert SCHEDULE[1]["run_len"] == 17
-    assert (SCHEDULE[2]["start"], SCHEDULE[2]["end"]) == (45743, 45999)
-    assert (SCHEDULE[3]["tile"], SCHEDULE[3]["front"]) == (45748, 45747)
-    assert (SCHEDULE[4]["tile"], SCHEDULE[4]["front"]) == (50351, 50095)
+    assert SCHEDULE[1]["start"] == 45999 and SCHEDULE[1]["end"] == 48047
+    assert SCHEDULE[1]["run_len"] == 9
+    assert SCHEDULE[2]["start"] == 48303 and SCHEDULE[2]["end"] == 50095
+    assert SCHEDULE[2]["run_len"] == 8
+    assert (SCHEDULE[3]["start"], SCHEDULE[3]["end"]) == (45743, 45999)
+    assert (SCHEDULE[4]["tile"], SCHEDULE[4]["front"]) == (45748, 45747)
+    assert (SCHEDULE[5]["tile"], SCHEDULE[5]["front"]) == (50351, 50095)
     assert (DEPOT, DEPOT_FRONT) == (45487, 45743)
     assert ROUTE["expected_pairs"] == len(WITNESS) - 1 == 23
+    assert all(
+        (entry.get("start"), entry.get("end")) != (48047, 48303)
+        for entry in SCHEDULE
+    )
 
 
 def test_full_phase_reaches_a_connected_usable_route():
-    """Six ops admit, build and read in order through the production
+    """The staged ops admit, build and read in order through the production
     verifiers; the route read then proves the connected usable corridor."""
     vm = build_vm()
     attempts = run_phase(vm)
-    assert [label for label, _ in attempts] == [f"op-{i:02d}" for i in range(6)]
+    assert [label for label, _ in attempts] == [f"op-{i:02d}" for i in range(7)]
     phase = corridor_phase_outcome(attempts)
     assert phase["verification"] == "PHASE_COMPLETE"
     assert phase["failed"] is None and phase["pending"] == []
-    assert len(phase["completed"]) == 6
+    assert len(phase["completed"]) == 7
     for receipt in phase["completed"]:
         assert receipt["verification"] == "NATIVE_STATE_CHANGED"
         assert 0 < receipt["cost"] <= MAX_COST
@@ -565,24 +594,39 @@ def test_route_read_reports_the_observed_facts_precisely():
     assert readback.pickup_sid != readback.delivery_sid
     assert readback.depot_pin_ok is True
     assert readback.cost == 0
-    assert readback.funds == 100000 - 6 * FLAT_COST
+    assert readback.funds == 100000 - len(SCHEDULE) * FLAT_COST
 
 
-def test_road_pieces_never_auto_merge_in_the_stub():
-    """The corner pair is not connected until its own scheduled op runs: after
-    both full runs the pre-corner observation counts the pair unlinked."""
+def test_collinear_full_runs_auto_connect_but_the_corner_still_needs_its_join():
+    """Candidate-3 regression: scripted BuildRoadFull builds both straight
+    road bits at both span endpoints, so the collinear run-B segments are
+    already connected at the interior pair. The perpendicular corner is not
+    connected and remains a real join op; scheduling the interior pair is
+    redundant and makes admission return NOT_BUILDABLE."""
     vm = build_vm()
     run_group(vm, SCHEDULE[0], 0)
     run_group(vm, SCHEDULE[1], 1)
-    pre = drive(vm, inspect_of(SCHEDULE[2], 2))
+    later = drive(vm, command_of(SCHEDULE[4], 4))
+    assert later.status == "OUT_OF_ORDER"
+    run_group(vm, SCHEDULE[2], 2)
+    vm.execute("::linked_interior <- ::bridge.Linked(48047, 48303);")
+    assert vm_root(vm)["linked_interior"] is True
+    vm.execute(
+        "::interior_obs <- ::bridge.ObserveRoad(48047, 48303, 0);"
+        "::interior_eligible <- ::bridge.Eligible(\"road\", 0, ::interior_obs);"
+    )
+    interior_obs = vm_root(vm)["interior_obs"]
+    assert interior_obs["covered"] == 2 and interior_obs["pairs_ok"] == 1
+    assert vm_root(vm)["interior_eligible"] is False
+    pre = drive(vm, inspect_of(SCHEDULE[3], 3))
     assert pre.target == "road"
     assert pre.owner0 == 0 and pre.owner1 == 0
     assert pre.road0 is True and pre.road1 is True
     assert pre.covered == 2 and pre.pairs_ok == 0
     assert pre.pair_total == 1
-    intent = admit(SCHEDULE[2], 2, pre)
+    intent = admit(SCHEDULE[3], 3, pre)
     assert intent.run_len == 2
-    built = drive(vm, command_of(SCHEDULE[2], 2))
+    built = drive(vm, command_of(SCHEDULE[3], 3))
     assert built.status == "BUILT"
     assert built.pairs_ok == built.pair_total == 1
     assert built.cost == pre.cost
@@ -666,7 +710,7 @@ def test_halted_command_preserves_the_verified_prefix():
     phase = corridor_phase_outcome(attempts)
     assert phase["verification"] == "PARTIAL_EXECUTION_EVIDENCE"
     assert phase["failed"]["label"] == "op-00"
-    assert phase["pending"] == [f"op-{i:02d}" for i in range(1, 6)]
+    assert phase["pending"] == [f"op-{i:02d}" for i in range(1, len(SCHEDULE))]
     later = drive(vm, command_of(SCHEDULE[1], 1))
     assert later.status == "OUT_OF_ORDER"
     assert vm_root(vm)["real_calls"] == 1  # exactly the one failed build call
@@ -698,8 +742,8 @@ def test_out_of_order_commands_never_dispatch_before_their_stage():
     vm = build_vm()
     later = drive(vm, command_of(SCHEDULE[1], 1))
     assert later.status == "OUT_OF_ORDER"
-    site = drive(vm, command_of(SCHEDULE[4], 4))
-    assert site.status == "OUT_OF_ORDER"
+    corner = drive(vm, command_of(SCHEDULE[3], 3))
+    assert corner.status == "OUT_OF_ORDER"
     assert vm_root(vm)["real_calls"] == 0
 
 
@@ -743,9 +787,9 @@ def test_read_is_intent_scoped_observation():
     """The independent read carries the admitted intent digest and only ever
     reports the observed post-state of its staged pins."""
     vm = build_vm()
-    for position in (0, 1, 2):
+    for position in range(4):
         run_group(vm, SCHEDULE[position], position)
-    entry, position = SCHEDULE[3], 3
+    entry, position = SCHEDULE[4], 4
     before = drive(vm, inspect_of(entry, position))
     intent = admit(entry, position, before)
     built = drive(vm, command_of(entry, position))
@@ -767,9 +811,9 @@ def test_read_is_intent_scoped_observation():
 def test_station_post_state_and_front_ownership():
     """The truck stop reports its station id and its pinned front owner."""
     vm = build_vm()
-    for position in (0, 1, 2):
+    for position in range(4):
         run_group(vm, SCHEDULE[position], position)
-    intent, evidence = run_group(vm, SCHEDULE[3], 3)
+    intent, evidence = run_group(vm, SCHEDULE[4], 4)
     built = evidence["built"]
     assert built.stop is True and built.truck is True
     assert built.drive_through is False and built.depot is False
@@ -782,9 +826,9 @@ def test_station_post_state_and_front_ownership():
 def test_depot_post_state_binds_its_pinned_front():
     """The depot reports the exact front id and the front ownership rule."""
     vm = build_vm()
-    for position in (0, 1, 2, 3, 4):
+    for position in range(6):
         run_group(vm, SCHEDULE[position], position)
-    intent, evidence = run_group(vm, SCHEDULE[5], 5)
+    intent, evidence = run_group(vm, SCHEDULE[6], 6)
     built = evidence["built"]
     assert built.depot is True and built.depot_front_id == DEPOT_FRONT
     assert built.depot_linked is True and built.front_owner == 0
@@ -796,16 +840,16 @@ def test_depot_post_state_binds_its_pinned_front():
     )
 
 
-def test_delivery_stop_after_the_long_run():
+def test_delivery_stop_after_the_last_run_segment():
     """The delivery stop course (fronts run B's last road tile) verifies the
     same way as the pickup stop, over the module's own pins."""
     vm = build_vm()
-    for position in (0, 1, 2, 3):
+    for position in range(5):
         run_group(vm, SCHEDULE[position], position)
-    intent, evidence = run_group(vm, SCHEDULE[4], 4)
+    intent, evidence = run_group(vm, SCHEDULE[5], 5)
     built = evidence["built"]
     assert built.stop is True and built.stop_owner == 0
-    assert built.front == SCHEDULE[4]["front"] == 50095
+    assert built.front == SCHEDULE[5]["front"] == 50095
     assert built.front_owner == 0 and built.linked is True
     verify_corridor(intent, evidence["before"], built, evidence["independent"])
 
@@ -816,4 +860,51 @@ def test_responses_never_exceed_the_512_byte_bound():
     vm = build_vm()
     run_phase(vm)
     route_read(vm)
-    assert len(vm_root(vm)["replies"]) == 19
+    assert (
+        len(vm_root(vm)["replies"]) == d4.PLANNED_CORRIDOR_REQUESTS == 22
+    )
+
+
+def test_dispatcher_budget_refuses_the_request_after_the_cap():
+    """The 22 planned exchanges fill the planned budget; six slack reads use
+    up the 6-request slack and the next request after the 28-request cap is
+    dropped without any reply (never re-labelled or reordered), unique ids
+    only so the refusal is the dispatcher's cap, not the duplicate rule."""
+    vm = build_vm()
+    run_phase(vm)
+    route_read(vm)
+    for position in range(90, 96):
+        reply = drive(vm, read_of(SCHEDULE[0], position))
+        assert reply.status == "READ"
+    vm.execute("::sniffer.requests <- ::bridge.requests;")
+    assert vm_root(vm)["sniffer"]["requests"] == d4.CORRIDOR_REQUEST_BUDGET == 28
+    with pytest.raises(AssertionError, match="dropped request"):
+        drive(vm, read_of(SCHEDULE[0], 96))
+
+
+def test_gamescript_stage_keys_track_the_staged_schedule():
+    """The shipped package's baked StageIndex keys equal the schedule
+    derivation's own kind/pin keys in execution order: an offline read of the
+    package text catches any staged-op drift before any VM launch."""
+    text = (PACKAGE / "main.nut").read_text()
+    span = re.search(r"local stages = \[([^\]]*)\]", text)
+    assert span is not None
+    keys = []
+    entries = re.findall(
+        r'(ShapeKey|KindKey)\("(\w+)",\s*(\d+)(?:,\s*(\d+))?\)', span.group(1)
+    )
+    for fn, kind, first, second in entries:
+        if fn == "ShapeKey":
+            lo, hi = sorted((int(first), int(second)))
+            keys.append(f"{kind}-{lo}-{hi}")
+        else:
+            keys.append(f"{kind}-{first}")
+    expected = []
+    for entry in SCHEDULE:
+        if "tile" in entry:
+            expected.append(f"{entry['kind']}-{entry['tile']}")
+        else:
+            lo, hi = sorted((entry["start"], entry["end"]))
+            expected.append(f"{entry['kind']}-{lo}-{hi}")
+    assert keys == expected
+    assert len(keys) == 7 == d4.ROAD_OP_COUNT

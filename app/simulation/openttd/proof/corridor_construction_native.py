@@ -15,11 +15,15 @@ levelling lineage byte-exactly:
    consuming D3 terraforming candidate (``D3-TERRAFORMING-1``) — the corridor
    tiles' post-D3 geometry is the compiled final levelling projection whose
    native readbacks reconciled 27/27 at zero mismatch.
-2. Its schedule is six bounded native road ops (two straight ``BuildRoadFull``
-   runs joined by one corner ``BuildRoad`` piece, two ``BuildRoadStation``
-   truck stops fronting the run ends, one ``BuildRoadDepot`` depoting the run
-   A end) and one corridor ``route`` read. Road pieces built by separate
-   commands do not auto-merge: the corner piece is its own scheduled op.
+2. Its schedule is seven bounded native road ops: run A, the compiled 17-tile
+   run B split into its two contiguous collinear ``BuildRoadFull`` segments,
+   the historical perpendicular corner ``BuildRoad`` join, two
+   ``BuildRoadStation`` truck stops fronting the run ends and one
+   ``BuildRoadDepot`` depoting the run A end, plus one corridor ``route`` read.
+   OpenTTD's scripted ``BuildRoadFull`` builds both straight road bits at both
+   span endpoints, so the two collinear run-B segments auto-connect; the
+   perpendicular corner does not auto-connect and remains its own scheduled
+   op. The geometry stays two straight runs joined by one corner.
 3. Wire contract v4: every op runs inspect → command → independent read (the
    command presenting the prelaunch seal, the read the admitted intent
    digest), and the final route read is pure observation of the ordered
@@ -141,7 +145,7 @@ D4_CLOSURE_ROOT = "app.simulation.openttd.proof.corridor_construction_native"
 
 KIND = "corridor"
 MILESTONE_CONSTRUCTION = "D4-CONSTRUCTION"
-CORRIDOR_ATTEMPT = "D4-CORRIDOR-1"
+CORRIDOR_ATTEMPT = "D4-CORRIDOR-3"
 
 # Versioned prelaunch evidence for the D4 native candidate (additive sister
 # record of the shared prelaunch machinery; the claim, launch boundary, freeze
@@ -167,11 +171,28 @@ PINNED_PREREQUISITE_AFTER_SAVE = (
 # stop £150, depot £375) stay controlled references, never authorization.
 MAX_CORRIDOR_COST = 2000
 
+# Scheduled road ops for fresh staging: run A, the two compiled run-B segments,
+# the perpendicular corner join, both truck stops and the depot. The consumed
+# attempts' 17-tile run B is staged as two contiguous collinear ``BuildRoadFull``
+# segments so every op is quoted natively again at its own admission inside the
+# unchanged per-operation ceiling. Scripted full runs build both straight road
+# bits at both endpoints, so the collinear segments already connect; scheduling
+# an interior join was the candidate-3 defect.
+ROAD_OP_COUNT = 7
+
+# Schedule-derivation version of the staged corridor plan. Version 3 is the
+# current split-run-B derivation above; version 2 preserves the consumed
+# ``D4-CORRIDOR-3`` record (which still scheduled the redundant interior join)
+# and version 1 preserves the consumed ``D4-CORRIDOR-1`` record, both only so
+# their read-only replays stay re-derivable. No fresh candidate may be staged
+# from a v1/v2 derivation.
+SCHEDULE_VERSION = 3
+
 # Exchange accounting per scheduled op: inspect + command + independent read,
 # plus the one final route read purely after the phase completes.
-PLANNED_CORRIDOR_REQUESTS = 6 * 3 + 1
-# Dispatcher slack on top of the 19 planned exchanges (identical to the
-# package's own request cap of 25).
+PLANNED_CORRIDOR_REQUESTS = ROAD_OP_COUNT * 3 + 1
+# Dispatcher slack on top of the 22 planned exchanges; the package's own
+# request cap is the same 28.
 CORRIDOR_REQUEST_BUDGET = PLANNED_CORRIDOR_REQUESTS + 6
 
 # The staged running AI announces its own readiness marker (identical to D2/D3).
@@ -361,13 +382,225 @@ def corridor_facts() -> dict:
     )
 
 
-def corridor_schedule() -> list[dict]:
-    """The staged operation schedule: six bounded road ops in execution order.
+def corridor_schedule_v2() -> list[dict]:
+    """The consumed candidate-3 derivation: eight ops with an interior join.
 
-    Run A first, run B second, the corner piece third (road pieces built by
-    separate commands do not auto-merge), then both truck stops fronting the
-    run ends and the depot backing the run-A end. The route read is not an
-    op: it is pure observation of the ordered witness path after the phase.
+    This derivation is retained unchanged so the read-only replay of the
+    consumed, failed-cleanup ``D4-CORRIDOR-3`` record remains re-derivable. It
+    is not a fresh-staging derivation: its interior join is redundant because
+    the two collinear full-run endpoints already carry connecting road bits.
+    """
+    facts = corridor_facts()
+    corridor = facts["corridor"]
+    run_a, run_b = facts["run_a"], facts["run_b"]
+    corner = facts["corner"]
+    depot = facts["depot"]
+    split = (len(run_b) + 1) // 2
+    segment_a, segment_b = run_b[:split], run_b[split:]
+    if len(segment_a) < 2 or len(segment_b) < 2:
+        raise CorridorStagingError("a run-B segment is too short to schedule")
+    if segment_a + segment_b != run_b:
+        raise CorridorStagingError("the run-B segments do not reassemble the compiled run")
+    interior = (segment_a[-1], segment_b[0])
+    if segment_b[0] - segment_a[-1] not in (-1, 1, -CORRIDOR_WIDTH, CORRIDOR_WIDTH):
+        raise CorridorStagingError("the interior join endpoints are not adjacent")
+    if (run_a[-1], run_b[0]) != tuple(corner):
+        raise CorridorStagingError("the corner join drifted from the compiled corner")
+    schedule = [
+        dict(
+            kind="full",
+            index=0,
+            start=run_a[0],
+            end=run_a[-1],
+            run_len=len(run_a),
+            tiles=list(run_a),
+        ),
+        dict(
+            kind="full",
+            index=1,
+            start=segment_a[0],
+            end=segment_a[-1],
+            run_len=len(segment_a),
+            tiles=list(segment_a),
+        ),
+        dict(
+            kind="full",
+            index=2,
+            start=segment_b[0],
+            end=segment_b[-1],
+            run_len=len(segment_b),
+            tiles=list(segment_b),
+        ),
+        dict(
+            kind="road",
+            index=3,
+            start=interior[0],
+            end=interior[1],
+            run_len=2,
+            tiles=list(interior),
+        ),
+        dict(
+            kind="road",
+            index=4,
+            start=corner[0],
+            end=corner[1],
+            run_len=2,
+            tiles=list(corner),
+        ),
+        dict(
+            kind="station",
+            index=5,
+            tile=int(corridor[0]),
+            front=int(corridor[1]),
+            stop_role="pickup",
+        ),
+        dict(
+            kind="station",
+            index=6,
+            tile=int(corridor[-1]),
+            front=int(corridor[-2]),
+            stop_role="delivery",
+        ),
+        dict(
+            kind="depot",
+            index=7,
+            tile=depot["tile_id"],
+            front=depot["front_tile_id"],
+            orientation=depot["orientation"],
+        ),
+    ]
+    indexes = [entry["index"] for entry in schedule]
+    if indexes != list(range(8)):
+        raise CorridorStagingError("scheduled operation order drifted")
+    for entry in schedule:
+        run_len = entry.get("run_len")
+        if run_len is not None and not 1 <= run_len - 1 <= MAX_FULL_SPAN:
+            raise CorridorStagingError("a scheduled road op exceeds the bounded span")
+    for entry in schedule[:5]:
+        if (
+            entry["start"] is None
+            or entry["start"] < 0
+            or entry["end"] is None
+            or entry["end"] > 0xFFFF
+        ):
+            raise CorridorStagingError("scheduled road operation pins exceed the tile bound")
+    return schedule
+
+
+def corridor_schedule() -> list[dict]:
+    """The current staged operation schedule: seven bounded road ops.
+
+    Run A first, then the compiled run B split into two contiguous collinear
+    ``BuildRoadFull`` segments (the first carries ``ceil(n/2)`` tiles so a
+    fresh native quote prices a bounded span inside the per-op ceiling). The
+    scripted full build gives both straight road bits at both span endpoints,
+    so these collinear segments auto-connect; no interior join op is needed.
+    Only the perpendicular corner between run A and run B remains a separate
+    ``BuildRoad`` op. Then both truck stops front the run ends and the depot
+    backs the run-A end. The route read is pure observation after the phase.
+    """
+    facts = corridor_facts()
+    corridor = facts["corridor"]
+    run_a, run_b = facts["run_a"], facts["run_b"]
+    corner = facts["corner"]
+    depot = facts["depot"]
+    split = (len(run_b) + 1) // 2
+    segment_a, segment_b = run_b[:split], run_b[split:]
+    if len(segment_a) < 2 or len(segment_b) < 2:
+        raise CorridorStagingError("a run-B segment is too short to schedule")
+    if segment_a + segment_b != run_b:
+        raise CorridorStagingError("the run-B segments do not reassemble the compiled run")
+    if segment_b[0] - segment_a[-1] not in (
+        -1,
+        1,
+        -CORRIDOR_WIDTH,
+        CORRIDOR_WIDTH,
+    ):
+        raise CorridorStagingError("the run-B segments are not adjacent")
+    if (run_a[-1], run_b[0]) != tuple(corner):
+        raise CorridorStagingError("the corner join drifted from the compiled corner")
+    schedule = [
+        dict(
+            kind="full",
+            index=0,
+            start=run_a[0],
+            end=run_a[-1],
+            run_len=len(run_a),
+            tiles=list(run_a),
+        ),
+        dict(
+            kind="full",
+            index=1,
+            start=segment_a[0],
+            end=segment_a[-1],
+            run_len=len(segment_a),
+            tiles=list(segment_a),
+        ),
+        dict(
+            kind="full",
+            index=2,
+            start=segment_b[0],
+            end=segment_b[-1],
+            run_len=len(segment_b),
+            tiles=list(segment_b),
+        ),
+        dict(
+            kind="road",
+            index=3,
+            start=corner[0],
+            end=corner[1],
+            run_len=2,
+            tiles=list(corner),
+        ),
+        dict(
+            kind="station",
+            index=4,
+            tile=int(corridor[0]),
+            front=int(corridor[1]),
+            stop_role="pickup",
+        ),
+        dict(
+            kind="station",
+            index=5,
+            tile=int(corridor[-1]),
+            front=int(corridor[-2]),
+            stop_role="delivery",
+        ),
+        dict(
+            kind="depot",
+            index=6,
+            tile=depot["tile_id"],
+            front=depot["front_tile_id"],
+            orientation=depot["orientation"],
+        ),
+    ]
+    indexes = [entry["index"] for entry in schedule]
+    if indexes != list(range(ROAD_OP_COUNT)):
+        raise CorridorStagingError("scheduled operation order drifted")
+    for entry in schedule:
+        run_len = entry.get("run_len")
+        if run_len is not None and not 1 <= run_len - 1 <= MAX_FULL_SPAN:
+            raise CorridorStagingError("a scheduled road op exceeds the bounded span")
+    for entry in schedule[:4]:
+        if (
+            entry["start"] is None
+            or entry["start"] < 0
+            or entry["end"] is None
+            or entry["end"] > 0xFFFF
+        ):
+            raise CorridorStagingError("scheduled road operation pins exceed the tile bound")
+    return schedule
+
+
+def corridor_schedule_v1() -> list[dict]:
+    """The historical derivation of the consumed ``D4-CORRIDOR-1`` schedule.
+
+    The consumed candidate staged the compiled run B as ONE 17-tile full op
+    before its admission refusal; its retained record binds that v1 plan
+    digest. This derivation is compiled from the same pinned corridor facts —
+    never hand-retold — and exists only so ``verify_corridor_attempt`` keeps
+    re-deriving the consumed candidate's binding; fresh staging always carries
+    the current v3 schedule (``plan_policy()`` pins ``schedule_version``).
     """
     facts = corridor_facts()
     corridor = facts["corridor"]
@@ -428,6 +661,23 @@ def corridor_schedule() -> list[dict]:
     if first["start"] is None or first["start"] < 0 or first["end"] > 0xFFFF:
         raise CorridorStagingError("scheduled operation pins exceed the tile bound")
     return schedule
+
+
+def staged_plan_schedule(plan: dict) -> list[dict]:
+    """The staged schedule a plan record binds its schedule digest to.
+
+    Fresh v3 records bind the current split-run-B derivation; consumed v2 and
+    v1 records bind their historical derivations exactly. Any other versioning
+    is a refused plan record, never a best-effort guess.
+    """
+    version = plan.get("schedule_version", 1)
+    if version == SCHEDULE_VERSION:
+        return corridor_schedule()
+    if version == 2:
+        return corridor_schedule_v2()
+    if version == 1:
+        return corridor_schedule_v1()
+    raise ValueError(f"plan record names an unknown corridor schedule version: {version}")
 
 
 def route_policy() -> dict:
@@ -562,7 +812,10 @@ def plan_policy() -> dict:
     operation scope joins the payload additively through the same shared
     authorization builder keys the D3 levelling milestone uses
     (``schedule`` + ``plan_digest``; the ``route`` scope stays a staged
-    readback contract of its own).
+    readback contract of its own). ``schedule_version`` names the schedule
+    derivation the plan digest binds: the current split-run-B derivation for
+    fresh staging, with the consumed candidate's v1 derivation retained for
+    its read-only replay.
     """
     schedule = corridor_schedule()
     route = route_policy()
@@ -594,6 +847,7 @@ def plan_policy() -> dict:
         ),
         schedule=schedule,
         plan_digest=plan_digest_of(schedule),
+        schedule_version=SCHEDULE_VERSION,
         route=route,
         prerequisite_world=dict(
             schema=D4_PREREQUISITE_SCHEMA,
@@ -608,14 +862,19 @@ def plan_policy() -> dict:
 
 
 def budgets() -> dict:
-    """The staged budget table for the corridor candidate."""
+    """The staged budget table for the corridor candidate.
+
+    ``road_ops`` and the request accounting stay bound to the staged schedule
+    derivation; there is deliberately no aggregate phase-spending budget — the
+    per-operation ``max_cost`` ceiling remains the only cost contract.
+    """
     return dict(
         launches=1,
         connection_attempts=1,
         requests=CORRIDOR_REQUEST_BUDGET,
         real_clears=0,
         real_raises=0,
-        road_ops=6,
+        road_ops=len(corridor_schedule()),
         gsadmin_bytes=1450,
         response_bytes=640,
         retries=0,
@@ -631,9 +890,9 @@ def expected_readback_policy() -> dict:
     return dict(
         before=(
             "per op: inspect returns READY with the op's own admission "
-            "pre-state (roadless unowned run, or company-road corner "
-            "endpoints with no link, or unplanned footprint fronting the "
-            "company road) and a positive tested quote within the ceiling"
+            "pre-state (roadless unowned run, or company-road join endpoints "
+            "with no link, or unplanned footprint fronting the company road) "
+            "and a positive tested quote within the ceiling"
         ),
         execution=(
             "the command request presents the prelaunch seal; the handler "
@@ -683,7 +942,11 @@ def prepare_candidate(
             "the prerequisite chain does not bind the compiled clearing operations"
         )
     schedule = corridor_schedule()
-    if len(schedule) != 6 or [entry["index"] for entry in schedule] != list(range(6)):
+    if (
+        len(schedule) != ROAD_OP_COUNT
+        or [entry["index"] for entry in schedule] != list(range(ROAD_OP_COUNT))
+        or plan_policy()["schedule_version"] != SCHEDULE_VERSION
+    ):
         raise CorridorStagingError("the staged corridor schedule drifted")
     if sha256(BINARY) != BINARY_SHA256 or matching_processes(BINARY):
         raise CorridorStagingError("pinned binary / exclusive runtime gate failed")
@@ -1429,7 +1692,7 @@ def verify_corridor_attempt(directory: Path) -> dict:
             ),
         )
     plan = metadata["plan_policy"]
-    schedule = corridor_schedule()
+    schedule = staged_plan_schedule(plan)
     if plan["schedule"] != schedule or plan["plan_digest"] != plan_digest_of(schedule):
         raise ValueError("staged corridor schedule drifted from the compiled derivation")
     result = json.loads((directory / "result.json").read_text())

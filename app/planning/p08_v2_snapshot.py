@@ -67,8 +67,10 @@ from pathlib import Path
 from app.planning.p08_road import vacant
 from app.planning.p08_terrain import (
     FeasibilityDiagnosis,
+    SegmentClass,
     TerrainOutcome,
     TerrainProposal,
+    _legacy_segment,
     assess_world_feasibility,
     plan_bounded_levelling,
 )
@@ -91,13 +93,29 @@ from app.simulation.openttd.tile_classification import (
 )
 from app.simulation.openttd.v2_semantic_reconciliation import (
     OWNER_UNOWNED_SENTINEL,
+    RECONCILED,
+    SEMANTIC_BUILDABLE_ACCEPTANCE,
+    P08NativeIsBuildableRebinding,
+    P08PolicyRebinding,
+    SemanticReconciliation,
     bit,
+    rebind_p08_native_isbuildable,
+    rebind_p08_policy,
     replay_retained_census,
 )
 
 POLICY_ID = "p08-v2-snapshot-planning"
 POLICY_VERSION = "p08-v2-snapshot-planning/1"
 SNAPSHOT_WORLD_ID = "v2-snapshot-census-seed17"
+
+# Root cause of the historical 19-tile UNKNOWN_OCCUPANCY group. The retained
+# producer's ``buildable`` is planner ``Vacant`` (flat), so slope-only clear
+# ground looks non-buildable; the legacy-only segmenter maps that to UNKNOWN.
+# The census classifies all 19 as CLEAR and the reconciliation already accepts
+# their ``buildable`` difference as definitional. This is a diagnosis, never a
+# reclassification: adopting native ``IsBuildable`` semantics for P08 segment
+# classification is a separate reviewed policy decision.
+UNKNOWN_OCCUPANCY_ROOT_CAUSE = "DEFINITIONAL_VACANT_VS_NATIVE_ISBUILDABLE_SLOPED_CLEAR"
 
 # Census-side classification bridge pair consumed by the retained candidate;
 # hashed byte-exact and pinned in the derived report.
@@ -239,6 +257,9 @@ class SnapshotAssessment:
     facts_source: dict
     digest_semantics: dict
     facts_document_digest: str
+    policy_rebinding: P08PolicyRebinding | None = None
+    native_isbuildable_rebinding: P08NativeIsBuildableRebinding | None = None
+    unknown_occupancy: dict | None = None
 
     def report(self) -> dict:
         levelling_record: dict
@@ -275,6 +296,25 @@ class SnapshotAssessment:
             "policy_id": POLICY_ID,
             "policy_version": self.policy_version,
             "offline_only": True,
+            **(
+                {}
+                if self.policy_rebinding is None
+                else {"policy_rebinding": self.policy_rebinding.report()}
+            ),
+            **(
+                {}
+                if self.native_isbuildable_rebinding is None
+                else {
+                    "native_isbuildable_rebinding": (
+                        self.native_isbuildable_rebinding.report()
+                    )
+                }
+            ),
+            **(
+                {}
+                if self.unknown_occupancy is None
+                else {"unknown_occupancy_diagnosis": self.unknown_occupancy}
+            ),
             "gate": {
                 "reconciliation_verdict": self.gate.reconciliation_verdict,
                 "semantic_tiles": self.gate.semantic_tiles,
@@ -653,13 +693,131 @@ def _robustness(
     return cases
 
 
+def diagnose_unknown_occupancy(
+    retained: SupplementalPlanningFacts,
+    census: dict[int, CensusTile],
+    reconciliation: SemanticReconciliation,
+) -> dict:
+    """Group the retained-UNKNOWN tiles by root cause, without resolving them.
+
+    Diagnosis only. A tile is attributed to the definitional group only when
+    every piece of sealed evidence agrees: the retained-only classifier drops
+    it, the census observes unowned CLEAR ground, the retained slope is
+    non-flat, and the reconciliation already accepted exactly the
+    ``buildable`` transformation. Any other shape is reported as unexplained.
+    The caller must not turn this dict into a classification or a binding.
+    """
+
+    ledger = {tile.tile_id: tile for tile in reconciliation.tiles}
+    unknown = sorted(
+        fact.tile_id
+        for fact in retained.tiles
+        if _legacy_segment(fact)[0] is SegmentClass.UNKNOWN_OCCUPANCY
+    )
+    rows: list[dict] = []
+    for tile_id in unknown:
+        fact = next(f for f in retained.tiles if f.tile_id == tile_id)
+        observation = census.get(tile_id)
+        reconciliation_row = ledger.get(tile_id)
+        outcomes = (
+            ()
+            if reconciliation_row is None
+            else tuple(
+                (outcome.field, outcome.outcome)
+                for outcome in reconciliation_row.field_outcomes
+            )
+        )
+        definitional = (
+            reconciliation_row is not None
+            and reconciliation_row.status == RECONCILED
+            and outcomes
+            == (("buildable", SEMANTIC_BUILDABLE_ACCEPTANCE),)
+            and observation is not None
+            and observation.classification == TileClass.CLEAR.value
+            and observation.owner == OWNER_UNOWNED_SENTINEL
+            and fact.slope != 0
+        )
+        rows.append(
+            {
+                "tile_id": tile_id,
+                "root_cause": (
+                    UNKNOWN_OCCUPANCY_ROOT_CAUSE
+                    if definitional
+                    else "UNEXPLAINED_OR_CONTRADICTORY_EVIDENCE"
+                ),
+                "retained_slope": fact.slope,
+                "retained_buildable": fact.buildable,
+                "census_class": None if observation is None else observation.classification,
+                "census_owner": None if observation is None else observation.owner,
+                "reconciliation_status": (
+                    None if reconciliation_row is None else reconciliation_row.status
+                ),
+                "base_field_outcomes": [list(item) for item in outcomes],
+            }
+        )
+
+    groups: list[dict] = []
+    for root_cause in sorted({row["root_cause"] for row in rows}):
+        members = [row for row in rows if row["root_cause"] == root_cause]
+        groups.append(
+            {
+                "root_cause": root_cause,
+                "count": len(members),
+                "tiles": [row["tile_id"] for row in members],
+                "slopes": sorted({row["retained_slope"] for row in members}),
+                "census_classes": sorted(
+                    {str(row["census_class"]) for row in members}
+                ),
+                "reconciliation_statuses": sorted(
+                    {str(row["reconciliation_status"]) for row in members}
+                ),
+            }
+        )
+    all_consistent = all(
+        row["root_cause"] == UNKNOWN_OCCUPANCY_ROOT_CAUSE for row in rows
+    )
+    return {
+        "schema": "p08-unknown-occupancy-diagnosis/1",
+        "offline_only": True,
+        "count": len(rows),
+        "resolved": False,
+        "all_evidence_consistent": all_consistent,
+        "groups": groups,
+        "tiles": rows,
+        "resolution_requires": [
+            "a separate reviewed authorization to adopt native IsBuildable "
+            "semantics for P08 segment classification (explicit, versioned "
+            "policy decision; never incidental), or",
+            "fresh same-instant classification evidence for exactly these "
+            "tiles under a new authorized capture",
+        ],
+        "not_established": (
+            "the 19 tiles stay UNKNOWN_OCCUPANCY; P08 binding stays not "
+            "allowed; this diagnosis changes no count, class, ledger or gate"
+        ),
+    }
+
+
 def build_v2_snapshot_assessment(
     retained_path: Path,
     candidate_dir: Path,
     *,
     project_root: Path | None = None,
+    policy_report: Path | None = None,
+    native_isbuildable_report: Path | None = None,
 ) -> SnapshotAssessment:
-    """Run the full offline snapshot-scoped P08 readiness pipeline."""
+    """Run the full offline snapshot-scoped P08 readiness pipeline.
+
+    ``policy_report`` optionally supplies the derived ADR-012 census-authority
+    report produced by ``--apply-adr-012``. It is re-derived and byte-compared
+    against the sealed inputs; any drift refuses the whole assessment. The
+    ADR-012 rebinding never changes the planning input, never opens the fusion
+    gate, and by itself never resolves the retained-UNKNOWN tiles.
+
+    ``native_isbuildable_report`` optionally supplies the ADR-013 derived
+    report. It requires ``policy_report`` as well and is combined in a separate
+    P08 planning-binding section; the sealed fusion verdict stays untouched.
+    """
 
     root = project_root if project_root is not None else Path.cwd()
     replay = replay_retained_census(retained_path, candidate_dir)
@@ -685,7 +843,29 @@ def build_v2_snapshot_assessment(
     if problems:
         raise PlanningFactError(f"snapshot policy gate failed: {problems}")
 
+    rebinding: P08PolicyRebinding | None = None
+    if policy_report is not None:
+        rebinding = rebind_p08_policy(replay, Path(policy_report).read_bytes())
+
     retained, census, bracket, page_count = _load_census(retained_path, candidate_dir)
+    native_rebinding: P08NativeIsBuildableRebinding | None = None
+    if native_isbuildable_report is not None:
+        if policy_report is None:
+            raise PlanningFactError(
+                "ADR-013 rebinding requires the ADR-012 policy report as well"
+            )
+        native_rebinding = rebind_p08_native_isbuildable(
+            replay,
+            Path(native_isbuildable_report).read_bytes(),
+            retained,
+            census,
+            census_authority_report_bytes=Path(policy_report).read_bytes(),
+        )
+    unknown_occupancy = (
+        diagnose_unknown_occupancy(retained, census, replay)
+        if policy_report is not None
+        else None
+    )
     facts = {tid: tile.fact() for tid, tile in census.items()}
     disagreement_tiles = sorted(
         tid for tid, fact in facts.items() if projection_disagrees(fact, census[tid].flags)
@@ -863,6 +1043,9 @@ def build_v2_snapshot_assessment(
         facts_source=source,
         digest_semantics=DIGEST_SEMANTICS,
         facts_document_digest=facts_document_digest,
+        policy_rebinding=rebinding,
+        native_isbuildable_rebinding=native_rebinding,
+        unknown_occupancy=unknown_occupancy,
     )
 
 
@@ -889,11 +1072,33 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("candidate_dir")
     parser.add_argument("output_dir")
     parser.add_argument("--project-root", default=None)
+    parser.add_argument(
+        "--policy-report",
+        default=None,
+        help=(
+            "bind the derived ADR-012 census-authority policy report into the "
+            "assessment (re-derived and byte-compared; fail-closed)"
+        ),
+    )
+    parser.add_argument(
+        "--native-isbuildable-report",
+        default=None,
+        help=(
+            "also bind the derived ADR-013 native-IsBuildable policy report "
+            "(requires --policy-report; fail-closed)"
+        ),
+    )
     args = parser.parse_args(argv)
     assessment = build_v2_snapshot_assessment(
         Path(args.retained_facts),
         Path(args.candidate_dir),
         project_root=Path(args.project_root) if args.project_root else None,
+        policy_report=Path(args.policy_report) if args.policy_report else None,
+        native_isbuildable_report=(
+            Path(args.native_isbuildable_report)
+            if args.native_isbuildable_report
+            else None
+        ),
     )
     output = Path(args.output_dir)
     output.mkdir(parents=True, exist_ok=True)

@@ -78,7 +78,18 @@ git diff --check
 Recorded historical suite outcomes (per their own records; not fresh reruns): e.g. P06
 51 focused + 918 controlled; P07 990 controlled; E7 suites 90+297+216 (11 skipped); E9
 17 new + 124 P08 + 18 audit; E15 35 focused + 84 p08/dispatch + 90 REPRODUCE; classification
-suite list in REPRODUCE addendum "151 passed"; D4 21+26 PASS. These are per-record facts.
+suite list in REPRODUCE addendum "151 passed"; D4 21+26 PASS; E21 verifier repair
+29 + wire 21 PASS with the in-process Squirrel extension suppressing the summary line;
+E22 Option C re-stage 55 PASS (wire suite 23 + native suite 32, 0 skipped — the
+consumed-artifact tests ran against the read-only retained candidate) with
+compileall/ruff/`git diff --check` clean, 2026-10-22; the E23 independent review
+re-ran the same 55-test suite fresh that day (55 passed, 0 failed, 0 skipped, replay
+tests executed) plus scoped ruff/compileall/`git diff --check` and the production
+read-only `verify` replay of the consumed candidate — a fresh re-run, not a
+re-citation. E24 re-ran the same 55-test suite green after the operator-approved
+`CORRIDOR_ATTEMPT` → `D4-CORRIDOR-2` identity edit (55 tests, exit 0, 0 skipped;
+ruff/compileall/`git diff --check` clean) and then ran the documented staging
+(`prepare`) + standalone read-only `preflight` for candidate-2 — both PASS. These are per-record facts.
 
 ## What tests cannot establish
 
@@ -88,10 +99,13 @@ suite list in REPRODUCE addendum "151 passed"; D4 21+26 PASS. These are per-reco
 - Correspondence between fresh captures and historical evidence (fusion gates decide,
   not reviewers) — E16 REJECTED verdict stands until separately scoped reconciliation.
 
-## Known baseline failures (keep visible, do not "fix" silently)
+## Authority-pin repair (2026-10-25, E26 / ADR-014)
 
-- Two protected-authority tests + `test_industry_production_proof::test_architecture_authority_unchanged`
-  fail because retained authority manifests pin repo-root CONTEXT.md bytes captured
-  2026-10-08 (sha256 `b94b966…`); commit `bdbec43` moved the file past the capture. Any
-  resolution (pin-repair or re-capture) is a separate, explicitly authorized decision
-  ([[04-Evidence/Evidence Preservation]]).
+- The two protected-authority tests and
+  `test_industry_production_proof::test_architecture_authority_unchanged` were repaired
+  by an explicit, operator-authorized supersession record. The 2026-10-08 pin
+  (sha256 `b94b966…`) and every retained manifest stay frozen; the base validator is
+  unchanged and still rejects the diverged file without the record. Seven new focused
+  tests cover the fail-closed transition ([[04-Evidence/Evidence Preservation]]).
+- D4 candidate-3 staging added one source identity edit and the authority module; the
+  focused D4 suites re-ran 55/55 PASS.

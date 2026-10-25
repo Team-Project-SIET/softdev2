@@ -186,10 +186,25 @@ and no authorization file exists`.
    # expect: 0ca2cf7a12583d39c84c45673421cc60e8079e3a7e8ce8a03ffa229df481d4da
    PY
 
-   # (b) Sign — either option, then record:
-   # Option 1 (repository issuance tooling; the operator keeps the seed out
-   # of any file, prompt or log):
-   SEED_HEX=$(openssl pkey -in ~/.local/share/openttd-operator/operator-private.pem -noout -outform DER | tail -c 32 | xxd -p -c 64)
+   # (b) Sign — Option 1 only, then record. The seed must never be printed,
+   # written to a file, or passed as a command-line argument.
+   # Correction (2026-10-24, documentation only): the earlier seed command
+   # used `-noout` + `xxd`; on the tested environment (OpenSSL 3.6.3, no
+   # `xxd`) `-noout -outform DER` emitted zero bytes. The corrected Bash
+   # pipeline below was validated with synthetic keys only; the production
+   # key was not accessed or tested, and no production signature was produced.
+   # Stop if the extraction status is nonzero or the value is not exactly 64
+   # lowercase hex characters.
+   OPERATOR_PEM="$HOME/.local/share/openttd-operator/operator-private.pem"
+   if shopt -qo pipefail; then PIPE_FAIL_WAS_SET=1; else PIPE_FAIL_WAS_SET=0; fi
+   set -o pipefail
+   export SEED_HEX
+   SEED_HEX=$(openssl pkey -in "$OPERATOR_PEM" -outform DER | tail -c 32 | od -An -v -tx1 | tr -d ' \n')
+   EXTRACT_STATUS=$?
+   if [ "$PIPE_FAIL_WAS_SET" -eq 0 ]; then set +o pipefail; fi
+   if [ "$EXTRACT_STATUS" -ne 0 ] || ! printf '%s' "$SEED_HEX" | grep -Eq '^[0-9a-f]{64}$'; then
+     unset SEED_HEX; echo "REFUSED: extraction failed or malformed; do not sign." >&2
+   fi
    .venv/bin/python - <<'PY'
    import os
    from pathlib import Path
@@ -202,19 +217,26 @@ and no authorization file exists`.
    import json
    payload = json.loads(payload_bytes)
    assert canonical_authorization_bytes(payload) == payload_bytes
-   record = sign_authorization_record(payload, os.environ["SEED_HEX"].strip())
+   seed = os.environ.get("SEED_HEX", "").strip()
+   if not seed:
+       raise SystemExit("REFUSED: SEED_HEX is empty; no signature produced, no file written.")
+   record = sign_authorization_record(payload, seed)
    write_authorization_record(
        Path("/home/fed/codes/softdev2/artifacts/experiments/d2-clearing-native-candidate-3"),
        record,
    )
    PY
    unset SEED_HEX
-   # Option 2 (any audited RFC 8032 tool; -rawin gives the RFC 8032 signature):
-   #   openssl pkeyutl -sign -inkey ~/.local/share/openttd-operator/operator-private.pem \
-   #       -rawin -in /tmp/opencode/d2-candidate-3-payload.bin -out /tmp/opencode/d2-candidate-3-sig.bin
-   # then assemble AUTHORIZATION.json in the candidate directory as:
-   #   {"payload": <the payload object>, "signature": "<128-hex of the 64-byte signature>"}
-   # (canonical-JSON style, exactly as write_authorization_record writes it)
+   # Option 2 (external-tool signing via `openssl pkeyutl -rawin`) is NOT part
+   # of the approved checklist and is excluded unless separately reviewed and
+   # approved. It is not a substitute for Option 1 here. If it is ever
+   # re-admitted, the flow must stop before writing and verify the produced
+   # signature under the pinned anchor over the exact canonical payload bytes.
+   #
+   # The reviewed signing checklist additionally refuses when any of
+   # AUTHORIZATION.json, CLAIM.json or LAUNCH-CONSUMED.json already exists and
+   # verifies the signature before writing; this historical §6(b) is not that
+   # checklist and grants no authority to sign or execute.
 
    # (c) Optional read-only self-check before handing back (never
    #     `run`; that consumes the one-shot claim):

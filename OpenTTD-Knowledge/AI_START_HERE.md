@@ -2,7 +2,7 @@
 title: "AI Start Here"
 type: hub
 status: current
-updated: 2026-10-22
+updated: 2026-10-24
 tags:
   - openttd
   - entry-point
@@ -25,7 +25,7 @@ included in the project's own records; commit `5872689`).
 2. [[00-Project/Current Status|Current Status]] — evidence-backed state per area.
 3. [[99-Source-Documents/CONTEXT]] — canonical project context (see §2 authority).
 4. [[05-Planning/Task Board|Task Board]] and [[05-Planning/Next Actions|Next Actions]] — what work is authorized/planned next.
-5. [[04-Evidence/Evidence Index|Evidence Index]] — E1…E21 evidence records and their exact scopes.
+5. [[04-Evidence/Evidence Index|Evidence Index]] — E1…E24 evidence records and their exact scopes.
 6. [[03-Engineering/Reproduction Guide|Reproduction Guide]] — how to inspect, test, and (only when separately authorized) run natively.
 
 Do not rely on prior chat history, provider memory, or assumptions from older OpenTTD
@@ -60,17 +60,93 @@ Condensed. Full scope/boundaries: [[00-Project/Current Status]]. Status vocabula
 | Tile Classification V2 | Capture **DONE natively** (90/90 pages, 450/450 tiles) but SOURCE_SAVE_FUSION verdict **REJECTED** (83 disagreements); P08 stays `INCOMPLETE_TILE_CLASSIFICATION` | E14–E16 |
 | Milestone D2 native clearing (tile 46769) | **PROVED** | E17 |
 | Milestone D3 native clearing + terraforming | **PROVEN** (receipts `RECEIPT_VERIFIED`, £496,543 reconciliation) | E18, E19 |
-| Milestone D4 native road + station construction | **ATTEMPT CONSUMED — INCOMPLETE** (`PHASE_HALTED_PREFIX_PRESERVED`, `verified: false`): op-00 verified (£785), op-01 refused (£2,549 > £2,000), op-02–op-05 not executed | E21 |
-| Offline V1/V2 semantic reconciliation (uncommitted work) | Partial: `SEMANTICALLY_RECONCILED_TEMPORAL_UNRESOLVED`; 6 temporal tiles keep the fusion gate closed; P08 binding **not allowed** | [[05-Planning/Blockers]] |
+| Milestone D4 native road + station construction | **TWO ATTEMPTS CONSUMED — INCOMPLETE.** `D4-CORRIDOR-1` (E21) halted `PHASE_HALTED_PREFIX_PRESERVED` (`op-00` only, £785; `op-01` refused £2,549 > £2,000). The Option C 8-op restage was implemented offline (E22), reviewed `PASS WITH CONCERNS` (E23), and staged as candidate-2 (E24), which was later proved stale (never consumed, not edited). Fresh candidate **`D4-CORRIDOR-3`** was staged (E27), then signed, verified and **consumed exactly once** (E28): `op-00`–`op-02` built and read back (£496,543 → £493,209), `op-03` interior join refused at admission as `NOT_BUILDABLE` (cost 0), `op-04`–`op-07` and the route read never executed. Result `PARTIAL_EXECUTION_EVIDENCE`, `verified: false`, `FAILED_CLEANUP`; no authoritative after-save/receipt. **E29 (offline):** `op-03` was a redundant scheduled interior join, not an admission bug — scripted full-build endpoints already auto-connect the collinear segments (`pairs_ok 1`), while the perpendicular corner still needs its own join. Fresh schedule is v3, 7 ops, 22 planned exchanges / budget 28; v1/v2 retained for read-only replay. D4 still needs a fresh reviewed identity and separate authorization. The authority-pin conflict is repaired explicitly (E26/ADR-014). | E21, E22, E23, E24, E26, E27, E28, E29 |
+| Offline V1/V2 semantic reconciliation (uncommitted work) | ADR-012 + ADR-013 accepted: 6 temporal + 19 definitional tiles resolved in the derived layer; combined P08 **planning** binding allowed, `p08_complete: false`; fusion gate **CLOSED** | [[05-Planning/Blockers]] |
 | Full OPEX / net-profit / ROI | **UNKNOWN** — never invent | — |
 
 ## 4. Blockers and next action
 
-- **Recommended next engineering task:** the offline D4 restage decision — the previous
-  one-shot authorization on candidate **`D4-CORRIDOR-1`** was consumed 2026-10-22 and the
-  ceremony halted at `op-01` (E21, D4 INCOMPLETE); next step is the staging-time
-  ceiling/scope decision, then a fresh reviewed candidate; only a fresh explicit operator
-  authorization can ever run it. See [[05-Planning/Next Actions]], [[05-Planning/Blockers]] §8.
+- **Recommended next engineering task (updated 2026-10-25, E29):** review the
+  offline v3 correction that removes the redundant interior join
+  (`48047↔48303` was correctly `NOT_BUILDABLE` with `road0/road1 true`,
+  `pairs_ok 1`; `BuildRoadFull` endpoints auto-connect collinear spans). Then
+  choose a fresh candidate identity, stage from current reviewed source, review
+  it, and request separate explicit operator authorization for a new one-shot
+  run. `D4-CORRIDOR-3` was
+  consumed exactly once and must not be retried or reused: `op-00`–`op-02` built
+  and read back (£496,543 → £493,209), `op-04`–`op-07` and the route read never
+  executed, result `PARTIAL_EXECUTION_EVIDENCE` / `verified: false` /
+  `FAILED_CLEANUP`, no authoritative after-save/receipt. Records:
+  `docs/handoff/2026-10-25/d4-corridor-native-candidate-3-preparation.md` and
+  `…-outcome.md`.
+  Historical candidate-2 records remain valid for their own dated scope:
+  `docs/handoff/2026-10-22/d4-corridor-native-candidate-2-preparation.md` and
+  `…-payload-verification.md`.
+  **Operator-guidance correction (2026-10-24, documentation only):** the
+  operator-key extraction commands in
+  `docs/handoff/2026-10-17/operator-key-provisioning.md` §1 and
+  `docs/handoff/2026-10-21/d2-native-clearing-candidate-3-preflight.md` §6(b)
+  were corrected to the tested pipeline (`od`/`tr`, no `-noout` on the DER
+  seed extraction, `pipefail` state captured and restored). It was validated
+  with **synthetic keys only**; no production key was accessed and nothing
+  was signed. A follow-up 2026-10-24 documentation pass added explicit
+  extraction failure checks (exit status, `^[0-9a-f]{64}$` shape check,
+  immediate `unset` + refusal on failure) and workflow-ordered explicit
+  seed-cleanup commands (`unset SEED_HEX` only after the last legitimate
+  same-shell use) to provisioning §1/§2/§4, keeping them consistent with
+  the preflight §6(b) checks; same validation scope, still documentation
+  only. A follow-up deviation record (2026-10-24,
+  `docs/handoff/2026-10-24/operator-key-test-boundary-deviation.md`)
+  documents that the preceding session's failure-path check had accessed
+  the real operator PEM path (output discarded; key access acknowledged,
+  no disclosure or persistence established), and re-validated all
+  extraction/cleanup checks with **synthetic files only**. Still
+  documentation, not authorization. The candidate was later signed and consumed
+  under separate explicit authorization (E28); D4 remains **INCOMPLETE**.
+  **Random-World follow-up (2026-10-25, offline):** ADR-012 records the
+  delegated decision on the six temporal P08 tiles (save-instant census
+  authoritative for their tree-lifecycle deltas, **planning evidence only**);
+  the fail-closed application layer + tests are implemented (14/14 PASS),
+  nothing was relabeled, the fusion gate stays closed and P08 remains
+  `INCOMPLETE_TILE_CLASSIFICATION` (19 retained-UNKNOWN tiles outside the
+  policy). **Rebinding pass (2026-10-25):** `rebind_p08_policy` re-derives and
+  byte-compares the derived report against sealed inputs, accepting only the
+  exact six-tile scope with verbatim rows (stale/edited/out-of-scope evidence
+  refused; 24/24 tests PASS). At that point the computed binding was still
+  **not allowed**: the 19 `UNKNOWN_OCCUPANCY` tiles remained unresolved. See
+  [[06-Decisions/Decision Log]] ADR-012 and
+  `docs/random-world-six-tile-policy-decision.md` §5.
+  **19-tile root cause (2026-10-25):** all 19 retained `UNKNOWN_OCCUPANCY`
+  tiles were diagnosed as one definitional group (census `CLEAR`, unowned,
+  non-flat, already `SEMANTIC_RECONCILED` on `buildable`).
+  **ADR-013 accepted and active:** native `GSTile.IsBuildable` semantics now
+  map exactly those 19 tiles to `TERRAIN_MODIFICATION` in the derived layer
+  only; the base ledger keeps them `UNKNOWN_OCCUPANCY`. The separate combined
+  rebinding with ADR-012 computes `p08_binding.allowed: true` for **planning
+  classification only**, with derived counts 339/63/29/19/0 and **zero**
+  UNKNOWN. It records `p08_complete: false`; the sealed fusion gate remains
+  **CLOSED** by the six temporal tiles and was not opened. No signing,
+  candidate consumption, launch, AdminPort access or native evidence occurred.
+  See [[06-Decisions/Decision Log]] ADR-013,
+  `native-isbuildable-policy-report.json` and
+  `p08-native-isbuildable-rebinding-report.json`.
+- **Session addendum (2026-10-25, offline):** (1) the explicit operator-authorized
+  `CONTEXT.md` authority-pin repair (E26, ADR-014) preserves every retained manifest
+  byte-for-byte and scopes only the exact historical/current digest transition; the
+  three former baseline failures pass. (2) A read-only preflight proved
+  `D4-CORRIDOR-2` stale (`verify_freeze`) because its frozen closure predates the
+  accepted ADR-012/ADR-013 edits; the candidate was never consumed and was not edited.
+  (3) A fresh candidate `D4-CORRIDOR-3` was staged from the current reviewed
+  bytes and the verified D3 after-save (E27), then signed, verified and consumed
+  by exactly one authorized native run (E28): `op-00`–`op-02` built and read
+  back, `op-03` interior join refused at admission as `NOT_BUILDABLE` (cost 0),
+  and `op-04`–`op-07` plus the route read never executed. Result
+  `PARTIAL_EXECUTION_EVIDENCE`, `verified: false`, `FAILED_CLEANUP`; no
+  authoritative after-save/receipt. D4 remains INCOMPLETE (native); next is a
+  fresh separately authorized candidate after the offline v3 correction (E29:
+  redundant interior join removed; perpendicular corner join retained). Records: `docs/handoff/2026-10-25/context-authority-pin-repair.md`,
+  `…/d4-corridor-native-candidate-3-preparation.md` and `…-outcome.md`.
+
 - **No vault note grants runtime authority.** Native launches, AdminPort connections,
   authorization consumption, and one-shot attempts require **separate explicit operator
   authorization**. Never retry a consumed attempt identity.

@@ -17,10 +17,12 @@
  * road command may still have built pieces, and the phase evidence keeps the
  * world state explicitly uncertain.
  *
- * Road pieces built by separate commands do not auto-merge: the corner piece
- * between the two straight runs is its own scheduled op with its own run
- * summary (both endpoints already company road, pair not yet connected) -
- * never a free by-product of the two full runs.
+ * Scripted BuildRoadFull builds both straight road bits at both span
+ * endpoints, so the two collinear run-B segments auto-connect. Only the
+ * perpendicular corner between the two straight runs needs its own
+ * BuildRoad op, with both endpoints already company road and the pair not
+ * yet connected. The geometry stays two straight runs joined by one corner;
+ * that join is a build operation, not a second corner.
  *
  * Wire contract v4 mirrors the proven identity style: command requests carry
  * the prelaunch seal the inspect latched; independent reads are intent-scoped
@@ -31,7 +33,7 @@ class D4CorridorProof extends GSController {
     attempted = null
     admitted = null
     used = null
-    /* Progress state: the schedule has six staged ops; `stage` is the index
+    /* Progress state: the schedule has seven staged ops; `stage` is the index
      * of the one whose exchange group may run next. `halted` stops every op
      * after any command exchange failed to reach BUILT: schedule evidence is
      * prefix-preserving and no op is ever reordered or retried. */
@@ -40,11 +42,16 @@ class D4CorridorProof extends GSController {
     /* One-shot dispatcher budget accounting. */
     requests = 0
     /* Baked staged pins of the sealed D4 corridor schedule (mirrored by the
-     * Python staging module): pickup stop 45748 on the front run-A tile
-     * 45747, the run A end 45743 corners to the run B start 45999, delivery
-     * stop 50351 on the front run-B tile 50095, and the depot 45487 fronts
-     * the run A end 45743. Full runs are straight spans within the Python
-     * contract's MAX_FULL_SPAN bound of 36 delta steps. */
+     * Python staging module's split-run-B derivation): pickup stop 45748 on
+     * the front run-A tile 45747; run A 45747..45743, then the compiled run B
+     * staged as its two contiguous collinear segments 45999..48047 and
+     * 48303..50095 (x 175, y 179..195), which auto-connect at 48047-48303
+     * because BuildRoadFull gives both straight bits at span endpoints;
+     * then the run A end 45743 corners to the run B start 45999 (its own
+     * perpendicular join op); delivery stop 50351 on the front run-B tile
+     * 50095; and the depot 45487 fronts the run A end 45743. Full runs are
+     * straight spans within the Python contract's MAX_FULL_SPAN bound of 36
+     * delta steps. */
     PICKUP = 45748
     PICKUP_FRONT = 45747
     DELIVERY = 50351
@@ -52,9 +59,9 @@ class D4CorridorProof extends GSController {
     DEPOT_TILE = 45487
     DEPOT_FRONT = 45743
     MAX_RUN = 36
-    /* 6 x 3 planned exchanges + 1 route read = 19, plus 6 slack, so request
-     * 26 is the first one the dispatcher refuses. */
-    max_requests = 25
+    /* 7 x 3 planned exchanges + 1 route read = 22, plus 6 slack, so request
+     * 29 is the first one the dispatcher refuses. */
+    max_requests = 28
 
     function Classify(flags, industry) {
         /* Precedence mirrors tile_classification.classify_tile exactly:
@@ -110,16 +117,18 @@ class D4CorridorProof extends GSController {
         return kind + "-" + tile
     }
 
-    /* The baked staged schedule keys in execution order: run A, run B, the
-     * corner piece, both stops, the depot. */
+    /* The baked staged schedule keys in execution order: run A, both run-B
+     * segments (collinear, auto-connected by full-build endpoint bits), the
+     * perpendicular corner road join, both stops, the depot. */
     function StageIndex(key) {
         local stages = [ShapeKey("full", 45747, 45743),
-                        ShapeKey("full", 45999, 50095),
+                        ShapeKey("full", 45999, 48047),
+                        ShapeKey("full", 48303, 50095),
                         ShapeKey("road", 45743, 45999),
                         KindKey("station", 45748),
                         KindKey("station", 50351),
                         KindKey("depot", 45487)]
-        for (local i = 0; i < 6; i++)
+        for (local i = 0; i < 7; i++)
             if (key == stages[i]) return i
         return -1
     }

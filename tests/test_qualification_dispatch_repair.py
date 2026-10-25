@@ -224,11 +224,17 @@ def test_phase_limits_remain_independent(category):
     ],
 )
 def test_protected_historical_authority_remains_exact(group):
+    from app.simulation.openttd.proof.authority_supersession import resolve_historical_pin
+
+    root = Path(__file__).resolve().parents[1]
     history = json.loads((HISTORY / "historical-integrity.json").read_text())
     rows = [r for r in history["entries"] if group in r["path"]]
     assert rows
     for row in rows:
-        assert hashlib.sha256(Path(row["path"]).read_bytes()).hexdigest() == row["sha256"]
+        expected = row["sha256"]
+        if Path(row["path"]).name == "CONTEXT.md":
+            expected = resolve_historical_pin(root, expected)
+        assert hashlib.sha256(Path(row["path"]).read_bytes()).hexdigest() == expected
 
 
 def test_new_lineage_requires_revision_two_attempt_two_and_runtime_predecessor():

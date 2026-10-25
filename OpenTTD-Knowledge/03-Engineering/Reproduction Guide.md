@@ -2,7 +2,7 @@
 title: "Reproduction Guide"
 type: engineering
 status: current
-updated: 2026-10-22
+updated: 2026-10-24
 tags:
   - openttd
   - engineering
@@ -26,6 +26,11 @@ none of these lines may be re-run against consumed attempts.
   never execute them as reusable reproduction scripts.
 - Failure stops without retry/reconnect and retains partial evidence; cleanup does not
   delete historical saves/logs.
+- Operator key material is **operator-only**. Never access, extract, display or pass the
+  real private seed; never treat provisioning/signing documentation as authorization.
+  The corrected extraction pipeline is in
+  `docs/handoff/2026-10-17/operator-key-provisioning.md` §1 (synthetic-key validation
+  only; see [[03-Engineering/Runtime and Environment]]).
 
 ## 1. Inspect without native execution
 
@@ -56,7 +61,7 @@ anything; do not silently restore missing retained evidence with fixtures.
 git diff --check
 ```
 
-See [[03-Engineering/Testing Strategy]] for scope rules and known baseline failures.
+See [[03-Engineering/Testing Strategy]] for scope rules and the resolved authority-pin repair (E26).
 
 ## 3. Runtime assets (only for an authorized native run)
 

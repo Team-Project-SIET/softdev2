@@ -194,6 +194,110 @@ Canonical creation/reload Q3 are historical PROVEN milestones, not pending tasks
    plus fresh explicit operator authorization, and none has been staged or
    authorized. Read
    [the D4 close-out record](docs/handoff/2026-10-22/d4-corridor-native-candidate-1-outcome.md).
+   **Update (2026-10-22, offline — Option C restage decision implemented):** the
+   staging-time Option C decision was implemented offline as compiled code and
+   tests (no launch, no authorization, no candidate staging): the corridor
+   schedule is staged as **8 ops** — run A, the compiled 17-tile run B as its two
+   contiguous straight segments (45999→48047, 9 tiles; 48303→50095, 8 tiles) plus
+   a separate interior road join 48047↔48303 built after both segments, the
+   unchanged corner join, both truck stops and the depot — so every op is
+   individually re-quoted natively inside the **unchanged £2,000 per-operation
+   ceiling**; there is deliberately no aggregate phase budget (worst-case
+   theoretical exposure 8 × £2,000 = £16,000 is an exposure bound, not a budget).
+   A schedule-version selector (`schedule_version 2` for fresh staging; v1 kept
+   compiled from the same pinned facts) keeps the consumed attempt's read-only
+   replay re-derivable (`PHASE_HALTED_EVIDENCE_PRESERVED` unchanged); the witness
+   route, `corridor_facts()`, `route_policy()` and the wire contract are
+   untouched; 25 planned exchanges (budget 31). Controlled suites 55 PASS (wire
+   23 + native 32) with compileall/ruff/`git diff --check` clean; the two prior
+   review concerns are covered by new dispatcher-budget, GameScript-key,
+   segment-reassembly, version-binding and site-op `_pins()` tests. The
+   historical £2,549/£785 quotes are controlled references of the consumed
+   attempt — no native quote, command, receipt or authorization exists for the
+   new schedule, so **Milestone D4 stays INCOMPLETE (native)**; next steps are an
+   independent offline review of this implementation, then fresh candidate
+   staging and ONE fresh explicit operator authorization. Read
+   [the Option C implementation record](docs/handoff/2026-10-22/d4-corridor-option-c-implementation.md).
+   **Update (2026-10-22, offline — independent review):** an independent read-only
+   review of the Option C implementation returned **`PASS WITH CONCERNS`**
+   (E23): focused suites re-executed fresh 55/55 PASS (wire 23 + native 32,
+   0 skipped) with ruff/compileall/`git diff --check` clean; the eight-op
+   derivation, geometry, version selector (fail-closed on unknown versions),
+   25/31 request budgeting and dispatcher cap refusal were re-verified
+   independently; the production read-only replay of the consumed candidate
+   reproduced the E21 verdict byte-identically (v1 re-derivation bound by
+   digest); the consumed candidate's artifact manifest hash-verified 28/28
+   before and after the review's runs and D2/D3 evidence stayed unchanged.
+   Findings: one vault documentation defect fixed in review (a broken Markdown
+   table row), two non-blocking fail-safe observations recorded in the review
+   record (latent v1/v2 planned-count skew in the completed-receipt replay
+   branch, unreachable today; `schedule_version` not itself a signed payload
+   key). The old attempt remains halted; no native quote/command/receipt/
+   authorization exists for the new schedule and Milestone D4 stays INCOMPLETE
+   (native). The implementation is review-cleared for fresh-candidate
+   preparation, which remains a separate future step requiring ONE fresh
+   explicit operator authorization before any launch. Read
+   [the independent review record](docs/handoff/2026-10-22/d4-corridor-option-c-implementation-review.md).
+   **Update (2026-10-22, offline — staging done, then read-only payload
+   verification):** the fresh candidate **`D4-CORRIDOR-2`** is staged at
+   `artifacts/experiments/d4-corridor-native-candidate-2/` (E24; record:
+   [the candidate-2 staging record](docs/handoff/2026-10-22/d4-corridor-native-candidate-2-preparation.md))
+   after the operator-approved one-constant identity bump, with `PRELAUNCH
+   PASS` + read-only `PREFLIGHT PASS`, seal
+   `de0e16f7…04f00` (full
+   `de0e16f73d71efbad636271217a4981b4e6350412184bdbdfa17533e3d304f00`; an
+   earlier `…2bf00` shorthand in active notes was corrected 2026-10-22), plan
+   digest `2a30e95048e89ffa1420e0ae392b79f4d051f447d7a15a3edb896b4bbdcabb3a`
+   (v2, eight ops), 25 planned exchanges / budget 31, source world byte-bound
+   to the D3 after-save `fbebef54…d59e`, suites re-run 55/55 PASS. The staged
+   authorization payload was then re-verified read-only (record:
+   [the payload verification record](docs/handoff/2026-10-22/d4-corridor-native-candidate-2-payload-verification.md)):
+   the canonical payload rebuilt offline from the staged `PRELAUNCH.json`
+   equals the staged digest
+   `e85ea64ba8ec15c383e913a72df7d1e4bd13569496a83d297bf7ee2c1952ff17`
+   (2,393 bytes) and the frozen closure hash-verifies 3,447/3,447 (0 missing,
+   0 mismatches) — verification only: nothing signed, no
+   `AUTHORIZATION.json`/`CLAIM.json`, no launch, no Git staging; the
+   remaining step is unchanged. A documentation pass also corrected same-day
+   inconsistencies explicitly (seal shorthand, the staging record's §8
+   pointer and a duplicated clause, the overbroad "byte-for-byte" claim for
+   `Next Actions.md` — self-written by the review session, prior bytes
+   UNKNOWN) and vault copies were refreshed. **Milestone D4 stays INCOMPLETE
+   (native); candidate-2 stays `PENDING_AUTHORIZATION`; next: ONE fresh
+   explicit operator authorization.**
+
+   **Update (2026-10-25, offline — authority-pin repair + fresh candidate-3):**
+   the explicit operator-authorized `CONTEXT.md` pin repair (E26, ADR-014) keeps
+   every retained manifest byte-unchanged and scopes exactly one path/digest
+   transition through a fail-closed record; the three former baseline failures
+   now pass. A read-only preflight then proved `D4-CORRIDOR-2` stale
+   (`verify_freeze`) because its frozen closure predates the accepted
+   ADR-012/ADR-013 source edits; it was never consumed and was not edited. A
+   fresh never-consumed candidate **`D4-CORRIDOR-3`** was staged from the
+   current reviewed bytes and the verified D3 after-save (`fbebef54…d59e`):
+   `PRELAUNCH PASS` + read-only `PREFLIGHT PASS`, seal `8cc8c1f7…7d24`, plan
+   digest `2a30e950…cabb3a`, rebuildable payload `e1163d09…068d`, 3,448-entry
+   frozen closure, focused suites 55/55 PASS. No authorization, claim, launch,
+   AdminPort access or native quote exists; D4 remains INCOMPLETE (native). The
+   next step is ONE fresh explicit operator authorization for
+   `D4-CORRIDOR-3`. Records:
+   `docs/handoff/2026-10-25/context-authority-pin-repair.md` and
+   `docs/handoff/2026-10-25/d4-corridor-native-candidate-3-preparation.md`.
+
+   **Update (2026-10-25, native run consumed — E28):** `D4-CORRIDOR-3` was
+   signed, verified and then consumed by exactly one operator-authorized native
+   run. `op-00`–`op-02` built and read back (£785 + £1,398 + £1,151; funds
+   £496,543 → £493,209); `op-03` (interior join `48047↔48303`) was refused at
+   admission as `NOT_BUILDABLE` with cost 0, so the runner halted with
+   `ValueError: native READY admission with positive tested cost required`.
+   `op-04`–`op-07` and the route read never executed. Result:
+   `PARTIAL_EXECUTION_EVIDENCE`, `verified: false`, `status: FAILED_CLEANUP`;
+   `after-diagnostic.sav` is not an authoritative save, no `after.sav` or
+   `receipt.json` exists, and read-only replay refuses `halted attempt cleanup
+   incomplete` (a TCP state-5 observation aborted workspace/credential
+   disposal; no listener remains). No retry, re-sign or replacement candidate
+   was attempted. **Milestone D4 remains INCOMPLETE (native).** Record:
+   `docs/handoff/2026-10-25/d4-corridor-native-candidate-3-outcome.md`.
 
 A documentation-only handoff is complete when links and evidence references are
 valid, implementation bytes remain unchanged, the final diff is reviewed and fresh

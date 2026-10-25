@@ -63,7 +63,7 @@ This vault lives at **`<repo-root>/OpenTTD-Knowledge/`** where `<repo-root>` is 
 | Random world | `docs/random-world-demo.md`, `docs/random-world-distance-support.md`, `docs/random-world-observation-inventory.md` |
 | Seed 17 smoke | `docs/seed17-native-smoke-preparation.md` |
 | Classification lineage | `docs/p08-native-tile-classification.md`, `docs/p08-classification-v2-native-capture-*.md`, `docs/p08-classification-v2-execution-path.md`, `docs/p08-v1v2-semantic-*.md`, `docs/p08-v2-snapshot-p08-readiness.md` |
-| D-milestones | `docs/p08-bounded-clearing-construction.md`; `docs/handoff/2026-10-21/d2-native-clearing-candidate-3-outcome.md`; `docs/handoff/2026-10-21/d3-native-integration-preflight-preparation.md`; `docs/handoff/2026-10-22/d3-terraform-native-candidate-1-outcome.md`; `docs/handoff/2026-10-22/d4-corridor-native-candidate-1-preparation.md` |
+| D-milestones | `docs/p08-bounded-clearing-construction.md`; `docs/handoff/2026-10-21/d2-native-clearing-candidate-3-outcome.md`; `docs/handoff/2026-10-21/d3-native-integration-preflight-preparation.md`; `docs/handoff/2026-10-22/d3-terraform-native-candidate-1-outcome.md`; `docs/handoff/2026-10-22/d4-corridor-native-candidate-1-preparation.md`; `docs/handoff/2026-10-22/d4-corridor-native-candidate-2-preparation.md` |
 | Five-year analysis | `docs/five-year-freight-performance-analysis.md`, `docs/capacity-experiment.md` |
 | Demo guide | `examples/openttd-demo/README.md` |
 
@@ -75,7 +75,8 @@ This vault lives at **`<repo-root>/OpenTTD-Knowledge/`** where `<repo-root>` is 
 | `artifacts/demos/playable-demo-698799a2d…/`, `classification-exec-seed17-3a8f9e46/`, `classification-exec-seed17-e71c95a3/` | Seed 17 smoke (consumed/failed), V2 capture (consumed), first V2 attempt (failed) |
 | `artifacts/runtime/openttd-15.3-first-freight-delivery-attempt*/` | freight attempts 4…19 |
 | `artifacts/runtime/canonical-fleet-*q3/` | canonical create/reload (E2) |
-| `artifacts/experiments/d2-clearing-native-candidate-3/`, `d3-clearing-native-candidate-1/`, `d3-terraform-native-candidate-1/`, `d4-corridor-native-candidate-1/` | D-chain evidence + staged D4 candidate |
+| `artifacts/experiments/d2-clearing-native-candidate-3/`, `d3-clearing-native-candidate-1/`, `d3-terraform-native-candidate-1/`, `d4-corridor-native-candidate-1/` (consumed attempt), `d4-corridor-native-candidate-2/` (stale, never consumed), `d4-corridor-native-candidate-3/` (consumed attempt, partial/failed cleanup) | D-chain evidence + D4 candidates |
+| `artifacts/diagnostics/d4-corridor-native-candidate-3-2026-10-25/` | separate non-authoritative console/manifest diagnostic copies for the consumed candidate-3 run |
 | `artifacts/experiments/p07-attempt19-five-year-offline/` | five-year offline analytics |
 
 ## Environment paths

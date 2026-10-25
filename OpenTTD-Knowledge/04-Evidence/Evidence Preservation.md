@@ -2,7 +2,7 @@
 title: "Evidence Preservation"
 type: evidence
 status: current
-updated: 2026-10-22
+updated: 2026-10-25
 tags:
   - openttd
   - evidence
@@ -45,7 +45,7 @@ Demo/capture equivalents: `result.json`, `classification-completeness.json`,
   compare hashes after transfer. Exclude `.env`, private keys, account/cache folders,
   temporary credentials.
 
-## The CONTEXT.md authority-pin conflict (open, preserved)
+## The CONTEXT.md authority-pin conflict — resolved 2026-10-25 (E26, ADR-014)
 
 Retained authority manifests pin **repo-root `CONTEXT.md` bytes as captured 2026-10-08**
 (sha256 `b94b966…`): two `historical-integrity.json` freezes (attempt1, prelaunch-v4) and
@@ -58,8 +58,32 @@ the `structural-world-real-prelaunch` `source-freeze.json`. Since commit `bdbec4
 fail at baseline, independent of any new work. The 2026-10-18 header addendum to
 CONTEXT.md is prepend-only, lives in the working tree, is explicitly **not** part of any
 documentation commit, and is duplicate-recorded in [[99-Source-Documents/AI_HANDOFF]] so
-it is not lost. Resolving the conflict (pin-repair or re-capture) is a **separate,
-explicitly authorized decision** — do not "fix" it by editing bytes or tests.
+it is not lost. Resolution (explicitly operator-authorized 2026-10-25) keeps every retained
+manifest and historical byte frozen and unmodified. One record
+(`docs/authority/context-authority-supersession.json`) scopes exactly the
+historical/current `CONTEXT.md` digest transition; the fail-closed validator
+still delegates every other entry to the unchanged `validate_protection`
+contract, and the base validator continues to reject the diverged file without
+the record. The historical bytes are not retained, so no recovery is claimed.
+
+## Partial native attempt with failed cleanup — `D4-CORRIDOR-3` (E28)
+
+The 2026-10-25 one-shot D4 run was preserved exactly as executed even though its
+cleanup gate failed: `result.json` (`PARTIAL_EXECUTION_EVIDENCE`,
+`verified: false`, `FAILED_CLEANUP`), `cleanup.json` with its TCP state-5
+`verification_error`, all 10 exchange pairs, the three built-op readbacks, the
+diagnostic save and the 48-file manifest remain in the candidate directory.
+`after-diagnostic.sav` is retained but is **not** an authoritative after-save;
+no `after.sav` or `receipt.json` was fabricated. Read-only replay refusing
+`halted attempt cleanup incomplete` is itself retained as the honest verdict.
+
+Console logs and the manifest check are copied separately to
+`artifacts/diagnostics/d4-corridor-native-candidate-3-2026-10-25/` (not
+authoritative, not in the candidate manifest). Because cleanup aborted before
+workspace closure, the isolated operational credential remains under the
+`0700` candidate workspace (`isolated/openttd-15.3-aghwu0j0/secrets.cfg`); its
+value is never copied into records. Removing or rotating it is separate
+operator remediation and must not rewrite the retained cleanup evidence.
 
 ## Offline recovery rules
 
