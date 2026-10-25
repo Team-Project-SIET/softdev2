@@ -95,3 +95,13 @@ documented credential-removal/workspace-disposal path in
 `docs/handoff/2026-10-25/d4-corridor-native-candidate-3-outcome.md`), or rotate
 the credential under the documented procedure, before treating the workspace as
 clean. The secret value is not reproduced here.
+
+**Subsequent event (2026-10-25):** the operator subsequently reported the
+credential removal and workspace disposal complete. Read-only verification (E30)
+confirmed `credential_removed: true`, `workspace_disposed: true`, an absent
+workspace, an empty `isolated/` directory and no remaining candidate-3 secret or
+config file; the diagnostic `verification_error` remains in `cleanup.json`, so
+the historical `FAILED_CLEANUP` record and the read-only replay refusal are
+unchanged. See
+[the remediation verification record](d4-corridor-native-candidate-3-cleanup-remediation.md).
+Candidate-4 staging is a separate later record, not a result of this correction.

@@ -162,6 +162,16 @@ keep their original dates. Full indexing practice: [[06-Decisions/Architecture D
   The decision status is unchanged (accepted, offline); D4 stays INCOMPLETE
   (native).
 
+  **Final state (2026-10-26, E35):** this ADR's restage path was completed
+  natively — `D4-CORRIDOR-5` (v3, seven ops) was staged from the reviewed
+  sources (independent review PASS 20/20), signed under a fresh explicit
+  operator authorization and consumed exactly once: all seven ops verified
+  with quote-equal native costs, route `ROUTE_VERIFIED` 23/23, authoritative
+  `after.sav` retained, cleanup certified, manifest 90/90, read-only replay
+  `RECEIPT_VERIFIED`. Milestone D4 is COMPLETE for exactly the reviewed
+  scope; the decision record itself remains a historical staging-time
+  decision, never a live-construction rule.
+
 ---
 
 ## ADR-012 — Six temporal tiles: save-instant census authoritative for tree-lifecycle deltas (planning evidence only)

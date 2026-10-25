@@ -2,7 +2,7 @@
 title: "Project Overview"
 type: project
 status: current
-updated: 2026-10-22
+updated: 2026-10-26
 tags:
   - openttd
   - project
@@ -69,7 +69,9 @@ is VERIFIED natively; the canonical create/reload engineering is PROVEN; the P08
 planner path has native proofs (Attempts 9/12/17 with historical scope); Random World
 native execution remains blocked, though ADR-012/ADR-013 now allow the derived P08
 planning classification (`p08_complete: false`, fusion gate closed); the D-chain of native construction ceremonies
-has D2/D3 PROVEN and D4 INCOMPLETE after two consumed attempts (E21, E28). The authority-pin conflict is resolved offline (E26/ADR-014). `D4-CORRIDOR-3` was consumed exactly once on 2026-10-25: `op-00`–`op-02` built and read back, `op-03` join refused at admission, no authoritative after-save/receipt. A fresh separately authorized candidate is required after correcting `op-03`.
+has D2/D3 PROVEN and **D4 PROVEN for exactly the reviewed v3 scope** (four attempts
+consumed; the first three ended incomplete — E21, E28, E32 — and identity
+`D4-CORRIDOR-5` completed all seven v3 operations natively on 2026-10-26, E35). The authority-pin conflict is resolved offline (E26/ADR-014). `D4-CORRIDOR-4` was consumed exactly once on 2026-10-25: `op-00`–`op-05` built and read back (£4,004; £496,543 → £492,539), including the corner and both stops; `op-06` depot's 513-byte response exceeded the then-hard-coded 512-byte application limit and was rejected before parsing. Cleanup passed and the manifest is 80/80, but there is no `confirm-06`, receipt or authoritative after-save. Offline E33 corrects protocol 4's decode bound to 640 (version-one 512 unchanged); the retained frame now parses, but replay still refuses for missing durable confirmation. The follow-up identity `D4-CORRIDOR-5` — signed under the explicit 2026-10-26 operator authorization after every pre-signing gate was re-verified and the independent review returned PASS 20/20 — completed the same v3 schedule natively on 2026-10-26 (E35): all seven ops verified with quote-equal native costs (£496,543 → £492,149), `ROUTE_VERIFIED` 23/23, authoritative `after.sav` retained, cleanup certified, manifest 90/90, replay `RECEIPT_VERIFIED`. D4 is COMPLETE for exactly that scope; any next native step needs a fresh reviewed candidate and a fresh explicit operator authorization.
 
 ## Related
 

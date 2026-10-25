@@ -2,7 +2,7 @@
 title: "Pending Milestones"
 type: milestone
 status: current
-updated: 2026-10-25
+updated: 2026-10-26
 tags:
   - openttd
   - milestone
@@ -15,7 +15,12 @@ Nothing here is authorized. Pending ≠ prepared ≠ verified:
 [[07-Reference/Status Definitions]]. Confirm live state per
 [[05-Planning/Task Board]] before acting.
 
-## D4 — Native road & station construction → ATTEMPT CONSUMED, `INCOMPLETE` (E21, 2026-10-22)
+## D4 — Native road & station construction → closed 2026-10-26 as COMPLETE (native; E35; history E21, E28, E32, E33)
+
+D4 is no longer pending: identity `D4-CORRIDOR-5` completed the reviewed
+v3 schedule natively on 2026-10-26 (close-out at the end of this section;
+scoping and limits in [[02-Milestones/Completed Milestones]]). The material
+below is the retained history of identities 1–4 and stays exactly as recorded.
 
 The staged candidate `D4-CORRIDOR-1` was consumed by its ONE operator-authorized launch
 2026-10-22; the ceremony ended `PHASE_HALTED_PREFIX_PRESERVED` with `verified: false`:
@@ -102,10 +107,81 @@ disposal; no listener remains). Manifest 48/48 OK. No retry, re-sign or
 replacement candidate. **D4 remains INCOMPLETE (native).** Record:
 `docs/handoff/2026-10-25/d4-corridor-native-candidate-3-outcome.md`.
 
+**2026-10-25 cleanup remediation and fresh candidate-4 (E30/E31):** the reported
+candidate-3 credential removal and workspace disposal were verified read-only:
+`credential_removed: true`, `workspace_disposed: true`, workspace absent,
+`isolated/` empty, no candidate-3 secret/config file or remaining process. The
+historical `verification_error`, missing `sockets_closed`, `FAILED_CLEANUP`
+result and replay refusal are unchanged, and the 48/48 manifest now covers the
+remediated `cleanup.json` (earlier manifest bytes not retained). Separately,
+`D4-CORRIDOR-4` was staged from the reviewed v3 schedule: seal
+`88cd1ecc…fd22c3`, plan digest `b5b472ff…2283a78`, payload `4037c5d8…487c7f`,
+7 ops / 22 planned / cap 28 / £2,000 per-op, no redundant interior join, corner
+`45743↔45999` retained, source world `fbebef54…d59e`; focused suites 55/55 PASS,
+`PRELAUNCH PASS` + `PREFLIGHT PASS`. **D4 remains INCOMPLETE (native).** Records:
+`docs/handoff/2026-10-25/d4-corridor-native-candidate-3-cleanup-remediation.md`
+and `docs/handoff/2026-10-25/d4-corridor-native-candidate-4-preparation.md`.
+
+**2026-10-25 native candidate-4 outcome (E32):** the cleanup-certification
+issue was resolved as attempt-scoped. Candidate-3's historical `FAILED_CLEANUP`
+and missing `sockets_closed` stay unchanged and are not a hard prerequisite for
+a fresh candidate; current isolation was verified independently (no process,
+listener, workspace or staged secret). `D4-CORRIDOR-4` was signed
+(authorization `b069b484…5db6d`) and consumed exactly once. `op-00`–`op-05`
+built and read back (£4,004; £496,543 → £492,539), including the perpendicular
+corner `45743↔45999` and both stops. `op-06` (depot) was dispatched; the native
+log reports `D4_RESPONSE depot-06 BUILT` and the retained frame reports
+`BUILT`/£390/£492,149, but its 513-byte response exceeded the then-hard-coded
+512-byte application limit and was rejected before parsing. No `confirm-06`,
+receipt or authoritative `after.sav`; result `PARTIAL_EXECUTION_EVIDENCE`,
+`verified: false`, `status: PHASE_HALTED_PREFIX_PRESERVED`; cleanup PASS;
+manifest 80/80; replay raised the same `MalformedMessage` at the time. Offline
+E33 corrects protocol 4's decode bound to 640 (default 512 unchanged); the
+retained frame now parses, but replay still refuses for missing durable
+confirmation. No retry, re-sign, replacement or claim reuse. **D4 remains
+INCOMPLETE (native).** Records:
+`docs/handoff/2026-10-25/d4-corridor-native-candidate-4-outcome.md`,
+`docs/handoff/2026-10-25/d4-corridor-response-limit-fix.md`.
+
+**2026-10-26 close-out (E35):** under the explicit operator authorization
+covering signing plus exactly one native attempt, the same reviewed v3
+schedule was staged as `D4-CORRIDOR-5` (staging 2026-10-25; fresh-context
+independent review **PASS 20/20**), every pre-signing gate was re-verified
+fresh (seal `505b5d49…4a7c`, payload `77a965f0…0e4` over 2,307 canonical
+bytes, plan digest `b5b472ff…2283a78`, source world `fbebef54…d59e`,
+3,448-entry frozen closure, protocol 640/512/32763 statics + dynamics,
+focused suites 129/129, runtime isolation, never-consumed state), and the
+candidate was signed by the documented approved checklist (Option 1
+repository tooling; seed captured, never displayed, logged or persisted;
+signature verified under the pinned production anchor before writing; record
+`55486971…dec03`) and consumed exactly once: **1 launch / 1 X25519
+connection / 22 of 28 requests.** All seven v3 operations were dispatched
+with positive tested quotes equal to native costs within the £2,000 per-op
+ceiling (£785 + £1,398 + £1,151 + £71 + £307 + £292 + £390 = £4,394) and each
+was independently read back via its intent-scoped `confirm-XX`, including
+`confirm-06` — the depot readback on the durable 513-byte
+`depot-06-response.json` under the E33 640-byte bound. Phase
+`PHASE_COMPLETE`, `verified: true`, `NATIVE_CORRIDOR_VERIFIED`; funds
+£496,543 − £4,394 = **£492,149** verified twice (route read and depot
+readback path); route read `ROUTE_VERIFIED` 23/23 with `first_fail_index −1`;
+`receipt.json` binds before-save `a3e6b510…5c5c` and the authoritative
+`after.sav` `a81ac836…ef261` (distinct `after-diagnostic.sav` retained, never
+a substitute); cleanup certified (all four fields true, endpoints certified,
+workspace disposed, credential removed); manifest 90/90 OK; the independent
+read-only replay returns **`RECEIPT_VERIFIED`**. Historical evidence
+(candidate-1/2/3/4, D2/D3) was re-verified byte-unchanged (candidate-4
+manifest 80/80 before and after). **Milestone D4 is COMPLETE (native) for
+exactly the reviewed v3 scope and has moved to
+[[02-Milestones/Completed Milestones]].** Limits: no vehicle/order/delivery/
+OPEX/ROI claim; the claim is consumed and identity `D4-CORRIDOR-5` must not
+be retried. Record:
+`docs/handoff/2026-10-26/d4-corridor-native-candidate-5-outcome.md`.
+
 ## D5+ — Vehicle purchase, orders, delivery on the corridor — NOT DESIGNED
 
-After D4, separately scoped milestones would put a vehicle on the built corridor. No
-candidate exists; nothing here is prepared. Road/station admission does not imply
+After D4 (completed natively 2026-10-26, E35), separately scoped milestones would put a
+vehicle on the built corridor kept by candidate-5's authoritative `after.sav`
+`a81ac836…ef261`. No candidate exists; nothing here is prepared. Road/station admission does not imply
 purchase/run/verify capability.
 
 ## Random World native service execution — BLOCKED (infeasibility + open facts)

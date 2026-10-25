@@ -57,6 +57,7 @@ from app.planning.p08_road import find_depot
 from app.simulation.openttd.admin_crypto import AuthorizedKey
 from app.simulation.openttd.admin_protocol import AdminFrameDecoder, encode_admin_quit
 from app.simulation.openttd.corridor_construction import (
+    MAX_CORRIDOR_RESPONSE_BYTES,
     MAX_FULL_SPAN,
     CorridorIntent,
     CorridorReadback,
@@ -145,7 +146,7 @@ D4_CLOSURE_ROOT = "app.simulation.openttd.proof.corridor_construction_native"
 
 KIND = "corridor"
 MILESTONE_CONSTRUCTION = "D4-CONSTRUCTION"
-CORRIDOR_ATTEMPT = "D4-CORRIDOR-3"
+CORRIDOR_ATTEMPT = "D4-CORRIDOR-5"
 
 # Versioned prelaunch evidence for the D4 native candidate (additive sister
 # record of the shared prelaunch machinery; the claim, launch boundary, freeze
@@ -1263,7 +1264,7 @@ async def exchange(session, request: CorridorRequest, directory: Path) -> Corrid
             for kind, payload in decoder.feed_frames(chunk):
                 if kind != SERVER_GAMESCRIPT:
                     raise ValueError("unexpected corridor-proof packet")
-                response = decode_gamescript(payload)
+                response = decode_gamescript(payload, max_payload_bytes=MAX_CORRIDOR_RESPONSE_BYTES)
                 (directory / (request.request_id + "-response.json")).write_bytes(response)
                 return CorridorReadback.parse_for(request, response)
 
@@ -1632,7 +1633,7 @@ def _parse_phase_frames(directory: Path):
                 # material (the shared D2 chronology semantics).
                 if kind != SERVER_GAMESCRIPT:
                     continue
-                reply = decode_gamescript(body)
+                reply = decode_gamescript(body, max_payload_bytes=MAX_CORRIDOR_RESPONSE_BYTES)
                 if reply not in reply_positions:
                     reply_positions[reply] = index
                 replies.append(reply)

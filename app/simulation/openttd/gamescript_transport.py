@@ -80,6 +80,22 @@ ADMIN_GAMESCRIPT = 6
 SERVER_GAMESCRIPT = 124
 GAMESCRIPT_UPDATE = 9
 
+# The version-one application limit stays the default. A protocol contract may
+# pass its own documented, larger bound, but no decoded payload can exceed the
+# shared Admin frame ceiling: a GameScript frame spends 3 bytes on the header
+# and 1 on the terminating NUL, leaving 32763 bytes for the application string.
+MAX_GAMESCRIPT_PAYLOAD_BYTES = AdminFrameDecoder.MAX_FRAME_LENGTH - 4
+
+
+def _payload_limit(max_payload_bytes: int) -> int:
+    """Validate a caller-supplied application bound before using it."""
+    if (
+        type(max_payload_bytes) is not int
+        or not 0 < max_payload_bytes <= MAX_GAMESCRIPT_PAYLOAD_BYTES
+    ):
+        raise ValueError("invalid GameScript application payload limit")
+    return max_payload_bytes
+
 
 @dataclass
 class _ProtocolOperations:
@@ -102,18 +118,33 @@ class ServerLifecyclePacket(IntEnum):
     SHUTDOWN = 106
 
 
-def encode_gamescript(payload: bytes) -> bytes:
-    if not 0 < len(payload) <= MAX_PAYLOAD_BYTES or b"\0" in payload:
+def encode_gamescript(payload: bytes, *, max_payload_bytes: int = MAX_PAYLOAD_BYTES) -> bytes:
+    """Frame one UTF-8 GameScript string under its protocol's application bound.
+
+    The default is the version-one 512-byte contract. Protocols with a larger
+    documented bound pass it explicitly; the Admin frame ceiling is still
+    enforced by :func:`encode_admin_frame`.
+    """
+    limit = _payload_limit(max_payload_bytes)
+    if not 0 < len(payload) <= limit or b"\0" in payload:
         raise MalformedMessage("invalid GameScript payload size or NUL")
     payload.decode("utf-8")
     return encode_admin_frame(ADMIN_GAMESCRIPT, payload + b"\0")
 
 
-def decode_gamescript(payload: bytes) -> bytes:
+def decode_gamescript(payload: bytes, *, max_payload_bytes: int = MAX_PAYLOAD_BYTES) -> bytes:
+    """Decode one NUL-terminated GameScript body under its application bound.
+
+    The default remains the version-one 512-byte contract. Callers that decode
+    a larger documented protocol response (protocol 4's corridor contract is
+    640 bytes) pass that bound explicitly; malformed, non-UTF-8 and oversized
+    bodies still fail closed.
+    """
+    limit = _payload_limit(max_payload_bytes)
     if not payload.endswith(b"\0") or b"\0" in payload[:-1]:
         raise MalformedMessage("GameScript packet requires exactly one terminated string")
     result = payload[:-1]
-    if not 0 < len(result) <= MAX_PAYLOAD_BYTES:
+    if not 0 < len(result) <= limit:
         raise MalformedMessage("GameScript packet exceeds application limit")
     try:
         result.decode("utf-8")

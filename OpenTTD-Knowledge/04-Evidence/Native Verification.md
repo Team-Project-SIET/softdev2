@@ -2,7 +2,7 @@
 title: "Native Verification"
 type: evidence
 status: current
-updated: 2026-10-22
+updated: 2026-10-26
 tags:
   - openttd
   - evidence
@@ -36,6 +36,7 @@ What "VERIFIED"/"PROVEN" means and exactly which native behaviors are covered.
 | N6 | Encrypted schema-2 paginated tile-classification census (450 tiles/90 pages) | E14(failed→E15 repaired)/E16 (completed) | Capture only; SOURCE_SAVE_FUSION REJECTED; no fused world model |
 | N7 | Random world native generation, discovery, spectator navigation, GUI inspection | E4, E8 (Seed 17) | No service construction/delivery; P05 NOT_RUN in smoke; funding mutation separate |
 | N8 | Same-run qualification + production observation (two-rollover) | CONTEXT §20 Attempt 2 native phase | Overall attempt FAILED (post-run verification failed) — do not cite as passed qualification |
+| N9 | Corridor construction on the pre-defined post-D3 site: two road runs (5 + 9 + 8 tiles), perpendicular corner join, two truck stops, depot — every op with positive tested quote equal to native cost and its own independent readback, route observation of the 23-pair witness | E35 (D4, candidate-5) | Exactly the reviewed v3 schedule over the receipt-verified post-D3 Seed 17 world; stops/depot built, no vehicle, order or delivery claim; OPEX/ROI UNKNOWN |
 
 ## What native verification requires (the D-ceremony chain)
 
@@ -49,11 +50,13 @@ What "VERIFIED"/"PROVEN" means and exactly which native behaviors are covered.
    disposed) + artifact manifest.
 
 The record-writing sessions for D2/D3 observed claims already consumed and explicitly did
-not initiate launches — the authorization model is operator-owned (E17, E19).
+not initiate launches — the authorization model is operator-owned (E17, E19; for E35 the
+operator authorization itself covered signing plus the single authorized launch, which
+was then executed exactly once).
 
 ## Proof vs correspondence vs capture (three different things)
 
-- **Proof** (N1–N5): the executed action completed AND independent native readback agrees.
+- **Proof** (N1–N5, N9): the executed action completed AND independent native readback agrees.
 - **Capture** (N6): data collection completed — says nothing about agreeing with any
   historical projection.
 - **Correspondence/fusion**: binding a fresh capture to retained evidence — currently

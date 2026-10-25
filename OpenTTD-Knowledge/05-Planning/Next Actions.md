@@ -2,7 +2,7 @@
 title: "Next Actions"
 type: planning
 status: current
-updated: 2026-10-25
+updated: 2026-10-26
 tags:
   - openttd
   - planning
@@ -15,7 +15,29 @@ One recommended next engineering task plus alternatives, all permission-aware.
 Source order: [[99-Source-Documents/TASKS]] item 8 (2026-10-22) → [[99-Source-Documents/AI_HANDOFF]]
 "Preservation and next action" (2026-10-18 addendum) → [[99-Source-Documents/REPRODUCE]].
 
-## Recommended next task — review the offline v3 correction and prepare a fresh candidate (2026-10-25 update)
+## D4 chain closed COMPLETE (native) 2026-10-26 (E35); new recommended next task = design D5 offline
+
+**Close-out (2026-10-26, E35):** D4 is **COMPLETE (native, exactly the reviewed
+v3 scope)** and its authorization chain is exhausted — nothing remains pending
+on that chain. Under the explicit operator authorization covering signing plus
+exactly one attempt, `D4-CORRIDOR-5` was staged from the reviewed v3 sources
+(independent fresh-context review **PASS 20/20**, staging 2026-10-25), every
+pre-signing gate was re-verified fresh, it was signed by the documented
+approved checklist (record `55486971…dec03` verified under the pinned
+production anchor; seed captured, never displayed or logged, cleared after
+signing) and consumed exactly once: 1 launch / 1 X25519 connection / 22 of 28
+requests; all seven v3 ops dispatched with positive tested quotes equal to
+native costs within the £2,000 per-op ceiling (£785 + £1,398 + £1,151 + £71 +
+£307 + £292 + £390 = £4,394) and each independently read back, including
+`confirm-06` on the durable 513-byte depot response under the E33 640-byte
+bound; funds £496,543 → £492,149; route `ROUTE_VERIFIED` 23/23; authoritative
+receipt-bound `after.sav` `a81ac836…ef261`; cleanup certified; manifest 90/90;
+read-only replay `RECEIPT_VERIFIED`; historical evidence byte-unchanged
+(candidate-4 manifest 80/80). Full record:
+`docs/handoff/2026-10-26/d4-corridor-native-candidate-5-outcome.md`.
+**Everything below is the retained D4 history.**
+
+## Recommended next task — prepare a fresh D4 candidate after the offline response-limit fix (2026-10-25 update; superseded 2026-10-26 by the E35 close-out above)
 
 **Status update (2026-10-22, E24):** fresh-candidate preparation is **done**.
 `docs/handoff/2026-10-22/d4-corridor-native-candidate-2-preparation.md` records
@@ -63,9 +85,65 @@ planned exchanges / budget 28; v1/v2 replay derivations are preserved. Focused
 suites 55/55 PASS; ruff, compile and diff checks clean. Record:
 `docs/handoff/2026-10-25/d4-corridor-op03-root-cause.md`.
 
-**Next step:** review E29, choose and approve a fresh candidate identity, stage
-from the current reviewed source, review it, and request separate explicit
-operator authorization for a new one-shot run. Do not reuse `D4-CORRIDOR-3`.
+**Cleanup remediation and fresh candidate-4 (2026-10-25, E30/E31):** the
+reported candidate-3 credential removal and workspace disposal were verified
+read-only (`credential_removed: true`, `workspace_disposed: true`, workspace
+absent, `isolated/` empty, no secret/config file or process/listener). The
+historical TCP state-5 `verification_error`, missing `sockets_closed`,
+`FAILED_CLEANUP` result and replay refusal are unchanged; the 48/48 manifest now
+covers the remediated `cleanup.json`. Separately, `D4-CORRIDOR-4` is staged from
+v3: `PRELAUNCH PASS` + read-only `PREFLIGHT PASS`, seal `88cd1ecc…fd22c3`, plan
+digest `b5b472ff…2283a78`, payload `4037c5d8…487c7f`, 7 ops / 22 planned / cap
+28 / £2,000 per-op, no redundant interior join, corner retained, source world
+`fbebef54…d59e`; focused suites 55/55 PASS. At staging it was
+`PENDING_AUTHORIZATION`, with no claim, signing or launch; it was later signed
+and consumed exactly once (E32).
+
+**Outcome 2026-10-25 (E32):** `D4-CORRIDOR-4` was signed under the pinned
+anchor and consumed by exactly one native run. `op-00`–`op-05` built and read
+back (£4,004; funds £496,543 → £492,539), including the perpendicular corner
+`45743↔45999` and both stops. `op-06` (depot `45487`) was dispatched; the
+native log reports `D4_RESPONSE depot-06 BUILT`, but its 513-byte GameScript
+payload exceeded the 512-byte application limit and `decode_gamescript` raised
+`MalformedMessage` before parsing. There is no `confirm-06`, `receipt.json` or
+authoritative `after.sav`, and the route read did not run. Phase
+`PARTIAL_EXECUTION_EVIDENCE`, `verified: false`,
+`PHASE_HALTED_PREFIX_PRESERVED`; cleanup PASS (all four fields true), manifest
+80/80, and read-only replay raised the same `MalformedMessage` at the time. The
+attempt is closed: no retry, re-sign, replacement or claim reuse. Record:
+`docs/handoff/2026-10-25/d4-corridor-native-candidate-4-outcome.md`.
+
+**Offline fix 2026-10-25 (E33):** the depot defect was an application-bound
+mismatch: protocol 4 permits 640-byte responses, but `decode_gamescript`
+applied the version-one 512-byte limit to every protocol. Encode/decode now
+take a validated opt-in `max_payload_bytes` (default unchanged 512; absolute
+frame-body maximum 32763), and protocol 4 uses 640 in `parse_for`, the live
+exchange and retained-frame replay. The retained 517-byte depot frame now
+decodes to its 513-byte payload and parses to `BUILT`; exact 640 passes, 641
+fails, malformed/truncated/duplicate/invalid-UTF-8 bodies fail closed, and UTF-8
+is measured in bytes. Focused suites 129/129 PASS; `ruff check --ignore UP037`
+on the touched files passed, while full `ruff check` reports only four
+pre-existing `UP037` findings on unchanged lines; `py_compile` and
+`git diff --check` clean. This is regression evidence only: no receipt exists,
+replay now stops at the missing `depot-06-response.json`, and no candidate was
+staged. Record:
+`docs/handoff/2026-10-25/d4-corridor-response-limit-fix.md`.
+
+**Next step (2026-10-26):** the D4 path is exhausted — identity `D4-CORRIDOR-5`
+completed the v3 schedule (E35) and its one-shot claim is consumed, leaving
+`after.sav` `a81ac836…ef261` as the authoritative current world; identities
+`D4-CORRIDOR-1/3/4` (failed/partial) and stale `D4-CORRIDOR-2` are never
+retried. The recommended next engineering task is **offline design of D5 —
+vehicle purchase, orders, loading, delivery and delivery-economics readbacks
+on the built corridor over that world**: controlled contracts + tests first,
+then independent review, then a fresh staged never-consumed candidate, then
+ONE fresh explicit operator authorization before any signing or launch. D4's
+`NATIVE_CORRIDOR_VERIFIED` result is construction-scope only and implies no
+D5 capability. ⚠ No authorization exists for the D5 work listed here.
+Historical records of this chain:
+`docs/handoff/2026-10-25/d4-corridor-native-candidate-3-cleanup-remediation.md`,
+`…-candidate-4-preparation.md`, `…-candidate-4-outcome.md` and
+`…-response-limit-fix.md`.
 
 **Operator-guidance correction (2026-10-24, documentation only):** the key
 extraction commands that the operator would follow were corrected in

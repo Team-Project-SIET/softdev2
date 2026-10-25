@@ -5,8 +5,16 @@ import struct
 import pytest
 
 from app.simulation.openttd.admin_protocol import AdminFrameDecoder
-from app.simulation.openttd.gamescript_protocol import PingRequest, handle_ping
-from app.simulation.openttd.gamescript_transport import decode_gamescript, encode_gamescript
+from app.simulation.openttd.gamescript_protocol import (
+    MalformedMessage,
+    PingRequest,
+    handle_ping,
+)
+from app.simulation.openttd.gamescript_transport import (
+    MAX_GAMESCRIPT_PAYLOAD_BYTES,
+    decode_gamescript,
+    encode_gamescript,
+)
 
 
 def test_gamescript_packet_layout_and_fragmented_framing() -> None:
@@ -177,6 +185,61 @@ def test_packet_payload_size_boundary() -> None:
     assert len(encode_gamescript(request + b" " * (512 - len(request)))) == 516
     with pytest.raises(MalformedMessage):
         encode_gamescript(request + b" " * (513 - len(request)))
+
+
+def test_protocol_specific_decode_bound_keeps_the_512_default() -> None:
+    """A documented protocol bound is opt-in; the version-one default is 512."""
+    payload = b"x" * 513
+    with pytest.raises(MalformedMessage):
+        decode_gamescript(payload + b"\0")
+    with pytest.raises(MalformedMessage):
+        decode_gamescript(payload + b"\0", max_payload_bytes=512)
+    assert decode_gamescript(payload + b"\0", max_payload_bytes=640) == payload
+
+    at_limit = b"x" * 640
+    assert decode_gamescript(at_limit + b"\0", max_payload_bytes=640) == at_limit
+    with pytest.raises(MalformedMessage):
+        decode_gamescript(at_limit + b"x\0", max_payload_bytes=640)
+
+
+def test_application_bound_counts_utf8_bytes_not_characters() -> None:
+    """640 bytes of multibyte text pass; 642 bytes fail despite 321 chars."""
+    at_limit = ("é" * 320).encode()
+    assert len(at_limit) == 640 and len(at_limit.decode()) == 320
+    assert decode_gamescript(at_limit + b"\0", max_payload_bytes=640) == at_limit
+    over = ("é" * 321).encode()
+    assert len(over) == 642 and len(over.decode()) == 321
+    with pytest.raises(MalformedMessage):
+        decode_gamescript(over + b"\0", max_payload_bytes=640)
+
+
+def test_protocol_bound_encoding_stays_inside_the_admin_frame_ceiling() -> None:
+    """640 application bytes frame to 644 bytes, far below the 32767 frame cap."""
+    payload = b"x" * 640
+    frame = encode_gamescript(payload, max_payload_bytes=640)
+    assert len(frame) == 644
+    assert struct.unpack_from("<HB", frame) == (644, 6)
+    assert AdminFrameDecoder().feed_frames(frame) == [(6, payload + b"\0")]
+
+    # The absolute application bound leaves exactly one maximal frame.
+    largest = b"x" * MAX_GAMESCRIPT_PAYLOAD_BYTES
+    frame = encode_gamescript(largest, max_payload_bytes=MAX_GAMESCRIPT_PAYLOAD_BYTES)
+    assert len(frame) == AdminFrameDecoder.MAX_FRAME_LENGTH
+    assert AdminFrameDecoder().feed_frames(frame) == [(6, largest + b"\0")]
+
+
+@pytest.mark.parametrize("limit", [0, -1, True, 1.5, "640", None, MAX_GAMESCRIPT_PAYLOAD_BYTES + 1])
+def test_invalid_protocol_bounds_are_rejected(limit) -> None:
+    with pytest.raises(ValueError):
+        decode_gamescript(b"x\0", max_payload_bytes=limit)
+    with pytest.raises(ValueError):
+        encode_gamescript(b"x", max_payload_bytes=limit)
+
+
+@pytest.mark.parametrize("body", [b"x" * 640, b"x" * 641 + b"\0", b"\0", b"x\0\0", b"\xff\0"])
+def test_protocol_bound_still_rejects_malformed_bodies(body) -> None:
+    with pytest.raises(MalformedMessage):
+        decode_gamescript(body, max_payload_bytes=640)
 
 
 def test_subscription_barrier_is_packet_driven_and_precedes_request():

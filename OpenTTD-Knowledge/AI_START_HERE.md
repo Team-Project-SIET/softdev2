@@ -2,7 +2,7 @@
 title: "AI Start Here"
 type: hub
 status: current
-updated: 2026-10-24
+updated: 2026-10-26
 tags:
   - openttd
   - entry-point
@@ -25,7 +25,7 @@ included in the project's own records; commit `5872689`).
 2. [[00-Project/Current Status|Current Status]] — evidence-backed state per area.
 3. [[99-Source-Documents/CONTEXT]] — canonical project context (see §2 authority).
 4. [[05-Planning/Task Board|Task Board]] and [[05-Planning/Next Actions|Next Actions]] — what work is authorized/planned next.
-5. [[04-Evidence/Evidence Index|Evidence Index]] — E1…E24 evidence records and their exact scopes.
+5. [[04-Evidence/Evidence Index|Evidence Index]] — E1…E35 evidence records and their exact scopes.
 6. [[03-Engineering/Reproduction Guide|Reproduction Guide]] — how to inspect, test, and (only when separately authorized) run natively.
 
 Do not rely on prior chat history, provider memory, or assumptions from older OpenTTD
@@ -36,7 +36,7 @@ Do not rely on prior chat history, provider memory, or assumptions from older Op
 | Authority | Role |
 |---|---|
 | [[99-Source-Documents/CONTEXT]] | Canonical project context. Note: the repo-root `CONTEXT.md` bytes are pinned by retained authority manifests captured **2026-10-08** (sha256 `b94b966…`); the working-tree file has diverged past that pin since commit `bdbec43` (2026-10-11), so two protected-authority tests and one industry-production architecture check fail at baseline. The prepend-only 2026-10-18 addendum is working-tree-only and duplicate-recorded in [[99-Source-Documents/AI_HANDOFF]]. Resolving this requires a separate, explicitly authorized pin-repair/re-capture decision — do not silently reconcile. |
-| [[99-Source-Documents/EVIDENCE_INDEX]] | Evidence index (E1…E21). Existing attempts are immutable. |
+| [[99-Source-Documents/EVIDENCE_INDEX]] | Evidence index (E1…E35). Existing attempts are immutable. |
 | [[99-Source-Documents/AI_HANDOFF]] | Vendor-neutral continuation guide for the actual local worktree. |
 | [[99-Source-Documents/TASKS]] | Continuation task list (grants no runtime authority). |
 | [[99-Source-Documents/REPRODUCE]] | Inspection/test/native-authorization command reference. |
@@ -46,7 +46,7 @@ Do not rely on prior chat history, provider memory, or assumptions from older Op
 A source may be newer in *some* respects and older in others. Preserve dates, authority,
 scope, and conflicts; never silently reconcile contradictory records.
 
-## 3. Evidence-backed current state (snapshot, 2026-10-22)
+## 3. Evidence-backed current state (snapshot, 2026-10-26)
 
 Condensed. Full scope/boundaries: [[00-Project/Current Status]]. Status vocabulary:
 [[07-Reference/Status Definitions]].
@@ -60,25 +60,54 @@ Condensed. Full scope/boundaries: [[00-Project/Current Status]]. Status vocabula
 | Tile Classification V2 | Capture **DONE natively** (90/90 pages, 450/450 tiles) but SOURCE_SAVE_FUSION verdict **REJECTED** (83 disagreements); P08 stays `INCOMPLETE_TILE_CLASSIFICATION` | E14–E16 |
 | Milestone D2 native clearing (tile 46769) | **PROVED** | E17 |
 | Milestone D3 native clearing + terraforming | **PROVEN** (receipts `RECEIPT_VERIFIED`, £496,543 reconciliation) | E18, E19 |
-| Milestone D4 native road + station construction | **TWO ATTEMPTS CONSUMED — INCOMPLETE.** `D4-CORRIDOR-1` (E21) halted `PHASE_HALTED_PREFIX_PRESERVED` (`op-00` only, £785; `op-01` refused £2,549 > £2,000). The Option C 8-op restage was implemented offline (E22), reviewed `PASS WITH CONCERNS` (E23), and staged as candidate-2 (E24), which was later proved stale (never consumed, not edited). Fresh candidate **`D4-CORRIDOR-3`** was staged (E27), then signed, verified and **consumed exactly once** (E28): `op-00`–`op-02` built and read back (£496,543 → £493,209), `op-03` interior join refused at admission as `NOT_BUILDABLE` (cost 0), `op-04`–`op-07` and the route read never executed. Result `PARTIAL_EXECUTION_EVIDENCE`, `verified: false`, `FAILED_CLEANUP`; no authoritative after-save/receipt. **E29 (offline):** `op-03` was a redundant scheduled interior join, not an admission bug — scripted full-build endpoints already auto-connect the collinear segments (`pairs_ok 1`), while the perpendicular corner still needs its own join. Fresh schedule is v3, 7 ops, 22 planned exchanges / budget 28; v1/v2 retained for read-only replay. D4 still needs a fresh reviewed identity and separate authorization. The authority-pin conflict is repaired explicitly (E26/ADR-014). | E21, E22, E23, E24, E26, E27, E28, E29 |
+| Milestone D4 native road + station construction | **PROVEN 2026-10-26 — FOUR ATTEMPTS CONSUMED, the completing identity is `D4-CORRIDOR-5` (E35); the first three ended incomplete.** `D4-CORRIDOR-1` (E21) halted `PHASE_HALTED_PREFIX_PRESERVED` (`op-00` only, £785; `op-01` refused £2,549 > £2,000). The Option C 8-op restage was implemented offline (E22), reviewed `PASS WITH CONCERNS` (E23), and staged as candidate-2 (E24), which was later proved stale (never consumed, not edited). Fresh candidate **`D4-CORRIDOR-3`** was staged (E27), then signed, verified and **consumed exactly once** (E28): `op-00`–`op-02` built and read back (£496,543 → £493,209), `op-03` interior join refused at admission as `NOT_BUILDABLE` (cost 0), `op-04`–`op-07` and the route read never executed. Result `PARTIAL_EXECUTION_EVIDENCE`, `verified: false`, `FAILED_CLEANUP`; no authoritative after-save/receipt. **E29 (offline):** `op-03` was a redundant scheduled interior join, not an admission bug — scripted full-build endpoints already auto-connect the collinear segments (`pairs_ok 1`), while the perpendicular corner still needs its own join. Fresh schedule is v3, 7 ops, 22 planned exchanges / budget 28; v1/v2 retained for read-only replay. E30 separately verified candidate-3 credential removal and workspace disposal (`credential_removed: true`, `workspace_disposed: true`, workspace absent, no secret/config file); the historical `FAILED_CLEANUP`, absent `sockets_closed` and replay refusal remain, so this is not native success. E31 then staged fresh candidate **`D4-CORRIDOR-4`** from v3 (7 ops / 22 planned / cap 28 / £2,000 per-op, no interior join, corner retained, seal `88cd1ecc…fd22c3`, plan digest `b5b472ff…2283a78`, payload `4037c5d8…487c7f`). Candidate-4 was signed under the pinned anchor and **consumed exactly once** (E32): `op-00`–`op-05` built and read back (£4,004; £496,543 → £492,539), including the perpendicular corner and both stops; `op-06` depot was dispatched and the native log reports `BUILT`, but its 513-byte response exceeded the then-hard-coded 512-byte application limit and was rejected before parsing (`MalformedMessage`). No `confirm-06`, receipt or authoritative after-save; route read not reached. Phase `PARTIAL_EXECUTION_EVIDENCE`, `verified: false`, `PHASE_HALTED_PREFIX_PRESERVED`; cleanup PASS (all four fields true), manifest 80/80. Offline E33 corrects protocol 4's decode bound to 640 (default 512 unchanged); the retained frame parses, but replay still refuses for missing durable confirmation. No retry or reuse of consumed identities; finally `D4-CORRIDOR-5` was staged from the reviewed v3 sources (independent fresh-context review **PASS 20/20**), every pre-signing gate was re-verified, and under the explicit 2026-10-26 operator authorization it was signed by the approved checklist (record `55486971…dec03` under the pinned production anchor) and **consumed exactly once (E35)**: 1 launch / 1 X25519 connection / 22 of 28 requests; all seven v3 ops dispatched with positive tested quotes equal to native costs within the £2,000 per-op ceiling (£785 + £1,398 + £1,151 + £71 + £307 + £292 + £390 = £4,394), each independently read back including `confirm-06` on the durable 513-byte depot response under the E33 640-byte bound; funds £496,543 → £492,149; route `ROUTE_VERIFIED` 23/23; authoritative receipt-bound `after.sav` `a81ac836…ef261`; cleanup certified; manifest 90/90; read-only replay `RECEIPT_VERIFIED`; historical evidence byte-unchanged. **Milestone D4 is COMPLETE (native) for exactly the reviewed v3 scope**; the claim is consumed and no vehicle/delivery/OPEX/ROI claim is implied. The authority-pin conflict is repaired explicitly (E26/ADR-014). | E21, E22, E23, E24, E26, E27, E28, E29, E30, E31, E32, E33, E35 |
 | Offline V1/V2 semantic reconciliation (uncommitted work) | ADR-012 + ADR-013 accepted: 6 temporal + 19 definitional tiles resolved in the derived layer; combined P08 **planning** binding allowed, `p08_complete: false`; fusion gate **CLOSED** | [[05-Planning/Blockers]] |
 | Full OPEX / net-profit / ROI | **UNKNOWN** — never invent | — |
 
 ## 4. Blockers and next action
 
-- **Recommended next engineering task (updated 2026-10-25, E29):** review the
-  offline v3 correction that removes the redundant interior join
-  (`48047↔48303` was correctly `NOT_BUILDABLE` with `road0/road1 true`,
-  `pairs_ok 1`; `BuildRoadFull` endpoints auto-connect collinear spans). Then
-  choose a fresh candidate identity, stage from current reviewed source, review
-  it, and request separate explicit operator authorization for a new one-shot
-  run. `D4-CORRIDOR-3` was
-  consumed exactly once and must not be retried or reused: `op-00`–`op-02` built
-  and read back (£496,543 → £493,209), `op-04`–`op-07` and the route read never
-  executed, result `PARTIAL_EXECUTION_EVIDENCE` / `verified: false` /
-  `FAILED_CLEANUP`, no authoritative after-save/receipt. Records:
-  `docs/handoff/2026-10-25/d4-corridor-native-candidate-3-preparation.md` and
-  `…-outcome.md`.
+- **D4 closed COMPLETE (2026-10-26, E35):** under the explicit operator
+  authorization covering signing plus exactly one attempt, `D4-CORRIDOR-5` was
+  staged from the reviewed v3 sources (independent fresh-context review
+  **PASS 20/20**), every pre-signing gate re-verified fresh, signed by the
+  documented approved checklist (record `55486971…dec03` verified under the
+  pinned production anchor; the seed was captured, never displayed or logged,
+  and cleared after signing) and consumed exactly once: 1 launch / 1 X25519
+  connection / 22 of 28 requests; all seven v3 ops verified with quote-equal
+  native costs (£4,394; £496,543 → £492,149), route `ROUTE_VERIFIED` 23/23,
+  authoritative receipt-bound `after.sav` `a81ac836…ef261`, cleanup certified,
+  manifest 90/90, read-only replay `RECEIPT_VERIFIED`; historical evidence
+  (candidate-1/2/3/4, D2/D3) re-verified byte-unchanged. **Milestone D4 is
+  COMPLETE (native) for exactly the reviewed v3 scope** — construction only,
+  no vehicle/delivery/OPEX/ROI claim; the one-shot claim is consumed.
+  Record: `docs/handoff/2026-10-26/d4-corridor-native-candidate-5-outcome.md`.
+- **Recommended next engineering task (updated 2026-10-26):** offline design of
+  D5 — vehicle purchase, orders, loading, delivery and delivery-economics
+  readbacks on the built corridor over the candidate-5 `after.sav` world.
+  Nothing exists yet: controlled contracts + tests first, then independent
+  review, then a fresh staged never-consumed candidate, then ONE fresh explicit
+  operator authorization before any signing or launch. Neither this note nor
+  any vault page grants that authorization.
+- **Superseded recommendation (2026-10-25, E33), retained as history:** the depot
+  response-size defect is fixed offline: protocol 4 now uses its documented
+  640-byte decode bound (version-one 512 default unchanged), and the retained
+  513-byte payload parses. Next, stage a fresh, never-consumed candidate from
+  reviewed source and re-run the focused suites plus `PRELAUNCH`/`PREFLIGHT`.
+  After independent review, obtain ONE explicit operator authorization for
+  signing and a single native attempt; this note grants neither. `D4-CORRIDOR-4`
+  was consumed exactly once and must not be retried or reused: `op-00`–`op-05`
+  built and read back (£4,004; £496,543 → £492,539), `op-06` depot's 513-byte
+  response was rejected before parsing (native log says `BUILT`), no
+  authoritative after-save/receipt exists, and the route read was not reached;
+  result `PARTIAL_EXECUTION_EVIDENCE` / `verified: false` /
+  `PHASE_HALTED_PREFIX_PRESERVED`, cleanup PASS, manifest 80/80. Replay now
+  stops at the missing durable confirmation, not at the frame decoder.
+  Candidate-3's historical `FAILED_CLEANUP` and absent `sockets_closed` remain
+  unchanged and were judged attempt-scoped, not a prerequisite for candidate-4.
+  Records:
+  `docs/handoff/2026-10-25/d4-corridor-native-candidate-3-preparation.md`,
+  `…-outcome.md`, `…-cleanup-remediation.md`, `…-candidate-4-preparation.md` and
+  `…-candidate-4-outcome.md`.
   Historical candidate-2 records remain valid for their own dated scope:
   `docs/handoff/2026-10-22/d4-corridor-native-candidate-2-preparation.md` and
   `…-payload-verification.md`.
@@ -102,7 +131,9 @@ Condensed. Full scope/boundaries: [[00-Project/Current Status]]. Status vocabula
   no disclosure or persistence established), and re-validated all
   extraction/cleanup checks with **synthetic files only**. Still
   documentation, not authorization. The candidate was later signed and consumed
-  under separate explicit authorization (E28); D4 remains **INCOMPLETE**.
+  under separate explicit authorization (E28); D4 remains **INCOMPLETE**
+  *as of that dated correction — D4 was completed natively on 2026-10-26 by
+  E35; see the close-out bullet above.*
   **Random-World follow-up (2026-10-25, offline):** ADR-012 records the
   delegated decision on the six temporal P08 tiles (save-instant census
   authoritative for their tree-lifecycle deltas, **planning evidence only**);
@@ -130,7 +161,7 @@ Condensed. Full scope/boundaries: [[00-Project/Current Status]]. Status vocabula
   See [[06-Decisions/Decision Log]] ADR-013,
   `native-isbuildable-policy-report.json` and
   `p08-native-isbuildable-rebinding-report.json`.
-- **Session addendum (2026-10-25, offline):** (1) the explicit operator-authorized
+- **Session addendum (2026-10-25):** (1) the explicit operator-authorized
   `CONTEXT.md` authority-pin repair (E26, ADR-014) preserves every retained manifest
   byte-for-byte and scopes only the exact historical/current digest transition; the
   three former baseline failures pass. (2) A read-only preflight proved
@@ -142,10 +173,36 @@ Condensed. Full scope/boundaries: [[00-Project/Current Status]]. Status vocabula
   back, `op-03` interior join refused at admission as `NOT_BUILDABLE` (cost 0),
   and `op-04`–`op-07` plus the route read never executed. Result
   `PARTIAL_EXECUTION_EVIDENCE`, `verified: false`, `FAILED_CLEANUP`; no
-  authoritative after-save/receipt. D4 remains INCOMPLETE (native); next is a
-  fresh separately authorized candidate after the offline v3 correction (E29:
-  redundant interior join removed; perpendicular corner join retained). Records: `docs/handoff/2026-10-25/context-authority-pin-repair.md`,
-  `…/d4-corridor-native-candidate-3-preparation.md` and `…-outcome.md`.
+  authoritative after-save/receipt. (4) Candidate-4 was staged from v3
+  (`PRELAUNCH PASS` + `PREFLIGHT PASS`, E31), signed under the pinned anchor and
+  consumed exactly once (E32): `op-00`–`op-05` built and read back (£4,004;
+  £496,543 → £492,539), including the perpendicular corner and both stops;
+  `op-06` depot's 513-byte response exceeded the then-hard-coded 512-byte
+  application limit and was rejected before parsing, so no authoritative
+  after-save/receipt or route read exists. `PARTIAL_EXECUTION_EVIDENCE`,
+  `verified: false`, `PHASE_HALTED_PREFIX_PRESERVED`; cleanup PASS, manifest
+  80/80. Offline E33 corrects protocol 4's decode bound to 640; the retained
+  frame parses, but replay still refuses for missing durable confirmation. D4
+  remains INCOMPLETE (native); next is a fresh separately authorized candidate.
+  *(Closed 2026-10-26: E35 completed the chain — see the D4 close-out bullet
+  above.)*
+  Records: `docs/handoff/2026-10-25/context-authority-pin-repair.md`,
+  `…/d4-corridor-native-candidate-3-preparation.md`, `…-outcome.md`,
+  `…-candidate-4-preparation.md`, `…-candidate-4-outcome.md` and
+  `…-response-limit-fix.md`.
+  (5) Native attempt analytics (E34, offline, read-only) was implemented in a
+  parallel workstream, verified over the same base, and integrated into the
+  main checkout 2026-10-25: `app/experiments/native_attempt_analytics.py`,
+  additive CLI subcommand `analyze-native-attempts` and focused tests. It
+  reads retained attempt records only, copies statuses/verified flags
+  verbatim, never counts an unverified or partial attempt as a verified
+  success, keeps missing fields UNKNOWN, certifies cleanup fail-closed and
+  states schedule-revision contrasts without causal claims. Post-integration:
+  focused 34/34 + adjacent 84 PASS, deterministic outputs, the seven retained
+  attempt directories hash-verify byte-identical. No candidate staged, no
+  claim consumed, no native evidence created; D4 remains INCOMPLETE (native)
+  as of that record. *(2026-10-26: D4 was then completed natively by E35 —
+  see the D4 close-out bullet above.)*
 
 - **No vault note grants runtime authority.** Native launches, AdminPort connections,
   authorization consumption, and one-shot attempts require **separate explicit operator
@@ -209,5 +266,5 @@ repository state until synchronized. The repository itself is intentionally dirt
 uncommitted implementation, evidence excluded from Git, and instruction files whose
 commit state is governed by authority pins. Before acting on any fact here, verify it
 against the working tree and the dated handoff inventory
-(`docs/handoff/2026-10-17/`, plus newer records under `docs/handoff/2026-10-21/` and
-`docs/handoff/2026-10-22/`).
+(`docs/handoff/2026-10-17/`, plus newer records under `docs/handoff/2026-10-21/`,
+`docs/handoff/2026-10-22/` and `docs/handoff/2026-10-25/`).

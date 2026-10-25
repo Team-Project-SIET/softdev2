@@ -2,7 +2,7 @@
 title: "Blockers"
 type: planning
 status: current
-updated: 2026-10-24
+updated: 2026-10-26
 tags:
   - openttd
   - planning
@@ -38,6 +38,25 @@ separately authorized candidate. **Offline correction 2026-10-25 (E29):** the
 corner still needs its own join. Fresh schedule v3 has 7 ops / budget 28;
 v1/v2 replay derivations preserved. Record:
 `docs/handoff/2026-10-25/d4-corridor-op03-root-cause.md`.
+**Consumed 2026-10-25 (E32):** fresh `D4-CORRIDOR-4` (v3) was signed under the
+pinned anchor and consumed by exactly one authorized native run. `op-00`–`op-05`
+built and read back (£4,004; funds £496,543 → £492,539), including the
+perpendicular corner `45743↔45999` and both stops. `op-06` (depot `45487`) was
+dispatched; the native log reports `D4_RESPONSE depot-06 BUILT`, but its
+513-byte GameScript payload exceeded the then-hard-coded 512-byte application
+limit and `decode_gamescript` raised `MalformedMessage` before parsing. No
+`confirm-06`, `receipt.json` or authoritative `after.sav` exists; the route read
+did not run. Result `PARTIAL_EXECUTION_EVIDENCE`, `verified: false`,
+`PHASE_HALTED_PREFIX_PRESERVED`; cleanup PASS (all four fields true), manifest
+80/80, and read-only replay raised the same `MalformedMessage` at the time.
+Offline E33 corrects protocol 4's decode bound to 640 (version-one 512
+unchanged); the retained frame now parses, but replay still refuses for missing
+durable confirmation. **D4 remains INCOMPLETE (native).** No retry, re-sign,
+replacement candidate or claim reuse is permitted. Candidate-3's historical
+`FAILED_CLEANUP` remains unchanged; cleanup certification was resolved as
+attempt-scoped, not a cross-candidate prerequisite. *(Chain close 2026-10-26,
+E35: `D4-CORRIDOR-5` completed the v3 schedule natively — D4 is no longer
+incomplete; see §8 below.)*
 **Operator-guidance correction 2026-10-24 (documentation only):** the extraction
 commands in the provisioning doc §1 and D2-3 §6(b) were corrected to the tested
 `od`/`tr` pipeline with `pipefail` state preserved; validation used synthetic keys
@@ -179,7 +198,7 @@ availability is unverified (CONTEXT §4) — OpenTTD-specific behavior must be v
 against official 15.3 docs and/or 15.3 sources when project-local docs are incomplete
 ([[01-Architecture/OpenTTD Integration]]).
 
-## 8. D4 restage decision — TAKEN (Option C); execution still gated
+## 8. D4 restage decision — TAKEN (Option C); chain closed COMPLETE 2026-10-26 (E35)
 
 **Type: decision, staging-time (no live override) — RESOLVED 2026-10-22 (E22, ADR-011);
 implementation review-cleared 2026-10-22 (E23).** The consumed attempt's 17-tile run `op-01` was refused at
@@ -241,10 +260,45 @@ no listener remains). D4 remains INCOMPLETE (native). **Offline correction
 full-build endpoints auto-connect the collinear run-B segments; admission
 correctly rejected the already-connected pair. The perpendicular corner remains
 a required join. Fresh schedule v3 has 7 ops / budget 28; v1/v2 replay
-derivations preserved. Remaining gate: code review, fresh identity and separate
-authorization. Record:
-`docs/handoff/2026-10-25/d4-corridor-native-candidate-3-outcome.md` and
-`docs/handoff/2026-10-25/d4-corridor-op03-root-cause.md`.
+derivations preserved. **Cleanup remediation verified 2026-10-25 (E30):**
+candidate-3 workspace disposal and credential removal are confirmed
+(`credential_removed: true`, `workspace_disposed: true`, workspace absent, no
+secret/config file or process/listener). The historical state-5
+`verification_error`, missing `sockets_closed`, `FAILED_CLEANUP` result and
+replay refusal remain, so this is not native success. **Fresh candidate-4 staged and consumed 2026-10-25 (E31/E32):**
+`D4-CORRIDOR-4` uses v3 (7 ops, 22 planned, cap 28, £2,000 per-op, no redundant
+interior join, corner retained), seal `88cd1ecc…fd22c3`, plan digest
+`b5b472ff…2283a78`, payload `4037c5d8…487c7f`, source world `fbebef54…d59e`;
+`PRELAUNCH PASS` + `PREFLIGHT PASS`, focused suites 55/55. It was then signed
+under the pinned anchor and consumed by exactly one native run: `op-00`–`op-05`
+built and read back (£4,004; funds £496,543 → £492,539), including the corner
+and both stops; `op-06` depot was dispatched and the native log reports
+`BUILT`, but its 513-byte GameScript payload exceeded the 512-byte application
+limit and was rejected before parsing (`MalformedMessage`). No `confirm-06`,
+receipt or authoritative after-save exists; the route read did not run. Phase
+`PARTIAL_EXECUTION_EVIDENCE`, `verified: false`,
+`PHASE_HALTED_PREFIX_PRESERVED`; cleanup PASS, manifest 80/80, replay raised the
+same `MalformedMessage` at the time. Offline E33 now corrects the protocol-4
+decode bound to 640 while preserving the version-one 512 default; the retained
+513-byte depot payload parses, but replay still refuses for the missing durable
+response/confirmation. The attempt is closed and must not be retried or reused.
+**Closed 2026-10-26 (E35):** the remaining gate was met and spent —
+`D4-CORRIDOR-5` was staged from the reviewed v3 sources (independent fresh-context
+review **PASS 20/20**), every pre-signing gate re-verified fresh, signed under a
+fresh explicit operator authorization covering signing plus one attempt, and
+consumed exactly once: 1 launch / 1 connection / 22 of 28 requests; all seven
+v3 ops verified with quote-equal native costs (£785 + £1,398 + £1,151 + £71 +
+£307 + £292 + £390 = £4,394; funds £496,543 → £492,149), `ROUTE_VERIFIED` 23/23,
+authoritative receipt-bound `after.sav` `a81ac836…ef261`, cleanup certified,
+manifest 90/90, read-only replay `RECEIPT_VERIFIED`. **D4 is COMPLETE (native)
+for exactly the reviewed v3 scope — this blocker is resolved. The next
+authorization gate is D5 vehicle work, which does not exist yet and is not
+authorized.** Records:
+`docs/handoff/2026-10-25/d4-corridor-native-candidate-3-outcome.md`,
+`…-cleanup-remediation.md`, `…-candidate-4-preparation.md`,
+`…-candidate-4-outcome.md`, `…-response-limit-fix.md`,
+`docs/handoff/2026-10-25/d4-corridor-op03-root-cause.md` and
+`docs/handoff/2026-10-26/d4-corridor-native-candidate-5-outcome.md`.
 
 ## Consequence summary for the next agent
 
@@ -253,9 +307,27 @@ offline, E22/ADR-011), its implementation independently reviewed offline (`PASS 
 CONCERNS`, E23), and candidate-3 staged, signed and consumed exactly once (E27,
 E28). It halted at `op-03`: the interior join was refused at admission because
 collinear full-run endpoints already connect. The offline v3 correction (E29)
-removes only that redundant join and retains the perpendicular corner. The
-remaining blocker is a fresh reviewed candidate identity and separate
-authorization before staging or launch (E21, E22, E23, E24, E28, E29). The
-Random World path is evidence-gated: it needs new authorized native facts
+removed only that redundant join and retained the perpendicular corner.
+Candidate-3 cleanup remediation was verified as a separate later event (E30)
+without changing its failed outcome. Fresh candidate `D4-CORRIDOR-4` was then
+staged `PRELAUNCH PASS` + `PREFLIGHT PASS` (E31), signed under the pinned anchor
+and consumed by exactly one native run (E32): `op-00`–`op-05` built and read
+back (£4,004; funds £496,543 → £492,539), including the corner and both stops,
+and `op-06` depot was dispatched but its 513-byte response exceeded the
+then-hard-coded 512-byte application limit and was rejected before parsing. The
+attempt ended `PARTIAL_EXECUTION_EVIDENCE`, `verified: false`,
+`PHASE_HALTED_PREFIX_PRESERVED`, with cleanup PASS, 80/80 manifest. Offline E33
+corrects protocol 4's decode bound to 640 (default 512 unchanged); the retained
+frame now parses, but replay still refuses for missing durable confirmation.
+The chain then closed successfully on 2026-10-26 (E35): `D4-CORRIDOR-5` — staged
+from the reviewed v3 sources (review PASS 20/20) and signed under a fresh
+explicit operator authorization — was consumed exactly once with all seven v3
+ops verified (quote-equal native costs, £4,394; £496,543 → £492,149),
+`ROUTE_VERIFIED` 23/23, authoritative `after.sav` `a81ac836…ef261`, certified
+cleanup, 90/90 manifest and read-only replay `RECEIPT_VERIFIED`. **D4 is
+COMPLETE (native) for exactly the reviewed v3 scope; the D4 authorization
+chain is exhausted and must not be retried.** The next authorization gate is
+D5 vehicle work (not designed, not staged, not authorized). The Random World
+path is evidence-gated: it needs new authorized native facts
 (same-instant tiles) or an operator decision before any feasibility verdict
 changes. Do not soften either gate.

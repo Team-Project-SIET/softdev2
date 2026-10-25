@@ -2,7 +2,7 @@
 title: "Roadmap"
 type: project
 status: current
-updated: 2026-10-22
+updated: 2026-10-26
 tags:
   - openttd
   - roadmap
@@ -34,6 +34,13 @@ timeline
     2026-10-25 : CONTEXT.md authority-pin repair, three baseline failures resolved (E26, ADR-014)
     2026-10-25 : candidate-2 proved stale; fresh D4-CORRIDOR-3 staged — PRELAUNCH/PREFLIGHT PASS (E27)
     2026-10-25 : D4-CORRIDOR-3 consumed once; op-00–op-02 built, op-03 refused, D4 INCOMPLETE (E28)
+    2026-10-25 : offline v3 correction removes the redundant interior join (E29)
+    2026-10-25 : candidate-3 cleanup remediation verified; historical failure unchanged (E30)
+    2026-10-25 : fresh D4-CORRIDOR-4 staged — PRELAUNCH/PREFLIGHT PASS (E31)
+    2026-10-25 : D4-CORRIDOR-4 consumed once; six ops verified, op-06 response-size halt, D4 INCOMPLETE (E32)
+    2026-10-25 : offline protocol-4 response-bound fix; retained depot frame parses, no native rerun (E33)
+    2026-10-25 : run-level native-attempt analytics integrated offline; D4 still INCOMPLETE (E34)
+    2026-10-26 : D4-CORRIDOR-5 signed + consumed exactly once; all seven v3 ops verified; D4 PROVEN for the reviewed v3 scope (E35)
 ```
 
 ## Layer 1 — P-numbered architecture stations
@@ -62,8 +69,8 @@ cleanup). Commitments live in evidence; this table only links them.
 | D1 | Reusable-contract mapping: verified road pipeline → clearing counterpart | Offline implementation/controlled validation complete | `docs/p08-bounded-clearing-construction.md` |
 | D2 | One tile native clearing | **PROVED** (tile 46769, £15) | E17 |
 | D3 | Two bounded clears + 16 compiled S-corner raises | **PROVEN** (`RECEIPT_VERIFIED`; £496,543 reconciliation) | E18, E19 |
-| D4 | Native road + truck stops + depot on receipt-verified post-D3 world | **ATTEMPT CONSUMED — INCOMPLETE** (`PHASE_HALTED_PREFIX_PRESERVED`; op-01 refused £2,549 > £2,000; Option C restage decision implemented offline 2026-10-22 (E22, ADR-011) — 8-op split-run-B schedule inside the unchanged per-op ceiling, no native quote/authorization yet; independent offline review of the implementation: `PASS WITH CONCERNS` (E23); candidate `D4-CORRIDOR-2` (E24) is **stale/superseded** — never consumed, not edited, frozen closure predates ADR-012/ADR-013 edits; **fresh candidate `D4-CORRIDOR-3` staged 2026-10-25 (E27) and consumed exactly once (E28): `op-00`–`op-02` built and read back (£496,543 → £493,209), `op-03` interior join refused `NOT_BUILDABLE` at admission, `op-04`–`op-07` and route read not executed; `PARTIAL_EXECUTION_EVIDENCE`, `verified: false`, `FAILED_CLEANUP`, no authoritative after-save/receipt — D4 needs a fresh separately authorized candidate with the `op-03` defect corrected**) | E21, E22, E23, E24, E27, E28 |
-| D5+ | Vehicle purchase, orders, delivery on the built corridor | Not designed yet — after D4, separately scoped | — |
+| D4 | Native road + truck stops + depot on receipt-verified post-D3 world | **FOUR ATTEMPTS CONSUMED — PROVEN, 2026-10-26 (candidate-5)** for exactly the reviewed v3 scope. The failed/partial/stale history stays immutable (E21, E28, E30, E32; E23/E29/E31/E33 the offline implementation/review/correction path). `D4-CORRIDOR-5`: signed under the explicit operator authorization after every pre-signing gate was re-verified fresh and the independent review returned PASS 20/20; consumed once — 1 launch / 1 connection / 22 of 28 requests; all seven v3 ops dispatched with positive tested quotes equal to native costs within the £2,000 per-op ceiling (£785 + £1,398 + £1,151 + £71 + £307 + £292 + £390 = £4,394) and each independently read back including `confirm-06` under the E33 640-byte bound; funds £496,543 → £492,149; route `ROUTE_VERIFIED` 23/23; authoritative receipt-bound `after.sav` `a81ac836…ef261`; cleanup certified; manifest 90/90; read-only replay `RECEIPT_VERIFIED`; `PHASE_COMPLETE`, `verified: true`, `NATIVE_CORRIDOR_VERIFIED`. The claim is consumed; no vehicle/delivery/OPEX/ROI claim is implied | E21, E22, E23, E24, E27, E28, E29, E30, E31, E32, E33, E35 |
+| D5+ | Vehicle purchase, orders, delivery on the built corridor | Not designed yet — next in sequence now that D4 is proved; requires a fresh reviewed candidate and a fresh explicit operator authorization (D4's one-shot claim consumed 2026-10-26) | E35 |
 
 ## Layer 3 — Product work (current priorities per TASKS)
 

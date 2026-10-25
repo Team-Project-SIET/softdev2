@@ -2,7 +2,7 @@
 title: "Important Paths"
 type: reference
 status: current
-updated: 2026-10-22
+updated: 2026-10-25
 tags:
   - openttd
   - reference
@@ -53,6 +53,7 @@ This vault lives at **`<repo-root>/OpenTTD-Knowledge/`** where `<repo-root>` is 
 | Canonical fleet | `proof/canonical_fleet.py`, `freight_canonical*.py`, `freight_delivery_package/canonical*` |
 | Reconciliation (untracked) | `app/simulation/openttd/v2_semantic_reconciliation.py` |
 | P07 analytics | `app/experiments/cli.py`, `performance_insights.py`, `freight_network.py`, `app/demo_operations.py` |
+| Native attempt analytics | `app/experiments/native_attempt_analytics.py`, `tests/test_native_attempt_analytics.py`, `docs/native-attempt-analytics.md`; CLI `analyze-native-attempts` |
 
 ## Key documentation
 
@@ -78,6 +79,7 @@ This vault lives at **`<repo-root>/OpenTTD-Knowledge/`** where `<repo-root>` is 
 | `artifacts/experiments/d2-clearing-native-candidate-3/`, `d3-clearing-native-candidate-1/`, `d3-terraform-native-candidate-1/`, `d4-corridor-native-candidate-1/` (consumed attempt), `d4-corridor-native-candidate-2/` (stale, never consumed), `d4-corridor-native-candidate-3/` (consumed attempt, partial/failed cleanup) | D-chain evidence + D4 candidates |
 | `artifacts/diagnostics/d4-corridor-native-candidate-3-2026-10-25/` | separate non-authoritative console/manifest diagnostic copies for the consumed candidate-3 run |
 | `artifacts/experiments/p07-attempt19-five-year-offline/` | five-year offline analytics |
+| `artifacts/experiments/native-attempt-analytics-example/` | regenerated deterministic native-attempt analytics example (gitignored; two runs byte-identical) |
 
 ## Environment paths
 

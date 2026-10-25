@@ -97,7 +97,36 @@ def main(argv: list[str] | None = None) -> int:
         default=(),
         help="additional retained P07 report directories to compare",
     )
+    attempts_parser = commands.add_parser(
+        "analyze-native-attempts",
+        help=(
+            "analyze-native-attempts: derive offline run-level metrics, "
+            "outcome comparisons and schedule-revision observations from "
+            "retained native execution attempt records (read-only)"
+        ),
+    )
+    attempts_parser.add_argument(
+        "SOURCE",
+        type=Path,
+        nargs="+",
+        help="retained native attempt directories (PRELAUNCH.json required)",
+    )
+    attempts_parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args(argv)
+
+    if args.command == "analyze-native-attempts":
+        import json as _json
+
+        from app.experiments.native_attempt_analytics import analyze_attempts
+
+        try:
+            result = analyze_attempts(args.SOURCE, args.output)
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            # Malformed retained documents reject cleanly without output.
+            print(f"analysis rejected: {error}", file=sys.stderr)
+            return 1
+        print(_json.dumps(result, sort_keys=True))
+        return 0
 
     if args.command == "analyze-performance-insights":
         import json

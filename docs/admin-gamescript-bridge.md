@@ -30,12 +30,19 @@ IDs are 1–64 ASCII characters matching
 duplicate keys, missing/extra fields, unsupported versions/types/statuses, and
 oversized payloads. Canonical serialization sorts keys without extra whitespace.
 
-The application byte limit is **512**, inclusive, in each direction before the
-Admin string's NUL terminator. The bridge returns only a fixed ACK envelope and
-the validated ID. Its maximum compact output is **121 bytes**, safely below the
-documented `GSAdmin.Send` 1450-byte constraint. The 15.3 API header documents
-rejection above 1450; the inspected `script_admin.cpp` does not contain that
-size check. This application does not depend on native enforcement.
+The version-one application byte limit is **512**, inclusive, in each direction
+before the Admin string's NUL terminator, and it remains the default for every
+protocol that does not declare a larger bound. A protocol-specific contract may
+pass its documented bound explicitly to `encode_gamescript`/`decode_gamescript`;
+protocol 4 (the D4 corridor) permits responses up to **640** bytes because the
+final route read echoes the ordered 24-tile witness. The decoder validates that
+bound and refuses any value above the Admin frame-body maximum (32763 bytes), so
+the version-one contracts are not loosened. The bridge returns only a fixed ACK
+envelope and the validated ID. Its maximum compact output is **121 bytes**,
+safely below the documented `GSAdmin.Send` 1450-byte constraint. The 15.3 API
+header documents rejection above 1450; the inspected `script_admin.cpp` does
+not contain that size check. This application does not depend on native
+enforcement.
 
 GameScript receives a converted table through `GetObject()`, not raw JSON.
 It validates field count, types, protocol, command, and ID. Native JSON conversion
@@ -66,7 +73,8 @@ A plaintext/decrypted Admin frame uses a little-endian uint16 total length,
 one-byte packet ID, and body. GameScript body is one UTF-8 JSON string terminated
 by NUL. The shared frame bound remains 32767, verified in 15.3 `config.h`.
 The engine's incoming GameScript JSON string bound is 9000 including NUL;
-this is separate from the much stricter application bound.
+this is separate from the much stricter application bound (512 by default,
+640 for protocol-4 corridor responses).
 
 `AdminFrameDecoder.feed_frames()` exposes raw packets beneath P04's existing
 `feed()` decoder. `encode_admin_frame()` is a framing primitive, not an outbound

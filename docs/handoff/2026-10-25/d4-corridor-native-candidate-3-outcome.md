@@ -7,6 +7,12 @@ read were not executed, no receipt-bound `after.sav` exists, and the retained
 result stays `verified: false`, `status: FAILED_CLEANUP`. Milestone D4 remains
 INCOMPLETE (native).**
 
+Subsequent event: credential removal and workspace disposal were later reported
+complete and independently verified read-only without reopening the workspace or
+accessing any credential. That remediation does **not** change this outcome; see
+§10 and [the remediation verification record](d4-corridor-native-candidate-3-cleanup-remediation.md)
+(E30).
+
 Predecessor:
 [d4-corridor-native-candidate-3-preparation.md](d4-corridor-native-candidate-3-preparation.md)
 (staging: seal `8cc8c1f7…7d24`, payload `e1163d09…068d`, `PENDING_AUTHORIZATION`).
@@ -104,23 +110,25 @@ verification_error: Live or ambiguous endpoint socket:
 At observation time the closing connection was in TCP state 5, not the accepted
 `TIME_WAIT`. Consequently `cleanup.json` has no `sockets_closed`,
 `workspace_disposed` or `credential_removed` success fields, the isolated
-workspace was not disposed, and the result status is `FAILED_CLEANUP`.
+workspace was not disposed, and the result status is `FAILED_CLEANUP`. This is
+the historical close-out state; §10 records the later remediation.
 
 Independent post-run observation shows the two sockets now in `TIME_WAIT` and
 no listener on `33725`/`36515`; this does **not** retroactively make the retained
 cleanup record successful.
 
 Because cleanup aborted before workspace closure, the isolated operational
-credential was not removed. It remains confined to the `0700` candidate
-workspace at:
+credential was not removed at close-out. It remained confined to the `0700`
+candidate workspace at:
 
 ```text
 artifacts/experiments/d4-corridor-native-candidate-3/isolated/openttd-15.3-aghwu0j0/secrets.cfg
 ```
 
-The secret value is not reproduced in this record. Removing or rotating it is a
-separate operator remediation; the retained evidence was left unmodified so the
-failed cleanup remains diagnosable.
+The secret value is not reproduced in this record. At close-out, removing or
+rotating it was a separate operator remediation; the retained evidence was left
+unmodified so the failed cleanup remained diagnosable. That remediation was
+later reported complete and verified in §10.
 
 Read-only replay (`corridor_construction_native verify`) passed the manifest,
 claim and authorization stages, then refused with:
@@ -154,7 +162,8 @@ Authoritative evidence remains in
 consumed `CLAIM.json`, `LAUNCH-CONSUMED.json`, `result.json`, `cleanup.json`,
 `frames.json`, all retained request/response pairs, per-op evidence, retained
 saves, runtime/session identities, logs, and `artifact-manifest.sha256`
-(48/48 OK). The manifest was not rewritten after the run.
+(48/48 OK). The manifest was not rewritten after the run at this close-out; the later
+remediation regenerated it (§10).
 
 Diagnostic copies are kept separately (not authoritative, not covered by the
 candidate manifest) in
@@ -191,3 +200,34 @@ and corrected, plus fresh explicit operator authorization.
 
 No source, test, package, frozen evidence, candidate artifact, save or
 authorization record was edited by this close-out.
+
+## 10. Subsequent cleanup remediation (2026-10-25, after this outcome)
+
+The operator subsequently reported credential removal and workspace disposal
+complete. Read-only, non-secret verification (E30) confirmed:
+
+- `cleanup.json` now carries `credential_removed: true` and
+  `workspace_disposed: true`, while retaining the historical
+  `verification_error` verbatim; it still has no `sockets_closed` field.
+- The isolated workspace `openttd-15.3-aghwu0j0` is absent, `isolated/` is
+  empty, and no candidate-3 `secrets.cfg`, `private.cfg` or `openttd.cfg`
+  remains. No candidate-3 OpenTTD process or listener on `33725`/`36515`
+  remains.
+- The candidate manifest now re-verifies **48/48 OK** against the remediated
+  `cleanup.json` (`52e1055c…463d8f`). The manifest was regenerated after the
+  remediation; its pre-remediation bytes and the pre-remediation `cleanup.json`
+  bytes are not retained.
+- Every historical outcome fact is unchanged: the claim remains consumed,
+  `result.json` remains `FAILED_CLEANUP` / `verified: false` with the same
+  three built operations, `op-03` halt, 1 launch / 1 connection / 10 requests,
+  `after-diagnostic.sav` remains non-authoritative, and no `after.sav` or
+  `receipt.json` exists.
+- Read-only replay still refuses with
+  `ValueError: halted attempt cleanup incomplete`, because `sockets_closed` is
+  still absent.
+
+This is a separate later event. It is not a retroactive successful cleanup
+certification, not a verified receipt, and not evidence of native execution
+success. `D4-CORRIDOR-3` remains consumed, unverified and halted; Milestone D4
+remains **INCOMPLETE (native)**. Full record:
+[cleanup remediation verification](d4-corridor-native-candidate-3-cleanup-remediation.md).

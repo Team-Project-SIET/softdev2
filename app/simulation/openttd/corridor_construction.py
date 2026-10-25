@@ -51,6 +51,12 @@ StationID = Annotated[StrictInt, Field(ge=-1, le=1 << 31 - 1)]
 UNOWNED_COMPANY = -1
 
 CORRIDOR_PROTOCOL = 4
+# Protocol-4 request/response bounds. The final route read echoes the ordered
+# 24-tile witness and cannot fit the version-one 512-byte response limit; 640
+# stays below the native GSAdmin.Send ceiling (1450) and the Admin frame ceiling
+# (32767). Requests stay on the historical application limit.
+MAX_CORRIDOR_REQUEST_BYTES = 512
+MAX_CORRIDOR_RESPONSE_BYTES = 640
 ROAD_OPS = ("full", "road")
 SITE_OPS = ("station", "depot")
 # Inspect/read requests name the command kind they admit or re-verify.
@@ -251,7 +257,7 @@ class CorridorRequest(Contract):
             separators=(",", ":"),
             allow_nan=False,
         ).encode("utf-8")
-        if len(raw) > 512:
+        if len(raw) > MAX_CORRIDOR_REQUEST_BYTES:
             raise ValueError("corridor request exceeds 512 bytes")
         return raw
 
@@ -332,8 +338,8 @@ class CorridorReadback(Contract):
 
     @classmethod
     def parse_for(cls, request: CorridorRequest, raw: bytes):
-        if len(raw) > 640:
-            raise ValueError("application response exceeds 640 bytes")
+        if len(raw) > MAX_CORRIDOR_RESPONSE_BYTES:
+            raise ValueError(f"application response exceeds {MAX_CORRIDOR_RESPONSE_BYTES} bytes")
 
         def unique(pairs):
             result = {}

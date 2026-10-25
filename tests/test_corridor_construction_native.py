@@ -648,10 +648,15 @@ def test_exit_status_zero_only_for_the_verified_receipt():
 # candidate itself (claim consumed) is never re-staged, re-run or re-authorized.
 
 CONSUMED_D4_CANDIDATE = d4.PROJECT / "artifacts/experiments/d4-corridor-native-candidate-1"
+CONSUMED_D4_CANDIDATE_4 = d4.PROJECT / "artifacts/experiments/d4-corridor-native-candidate-4"
 
 _requires_consumed_evidence = pytest.mark.skipif(
     not (CONSUMED_D4_CANDIDATE / "corridor-00-intent.json").is_file(),
     reason="the consumed D4-CORRIDOR-1 retained evidence is not present",
+)
+_requires_candidate_4_evidence = pytest.mark.skipif(
+    not (CONSUMED_D4_CANDIDATE_4 / "frames.json").is_file(),
+    reason="the consumed D4-CORRIDOR-4 retained evidence is not present",
 )
 
 # Every scheduled op after the prefix-preserving halt recomputes as pending;
@@ -756,3 +761,25 @@ def test_retained_d4_attempt_replays_as_phase_halted_evidence_preserved():
     assert verdict["failed"]["label"] == "op-01"
     assert verdict["pending"] == list(_PENDING_AFTER_HALT)
     assert verdict["error"] == "corridor attempt lacks retained execution evidence"
+
+
+@_requires_candidate_4_evidence
+def test_retained_candidate_4_depot_reply_is_replayed_under_the_corridor_bound():
+    """The replay decoder accepts the retained 513-byte depot reply.
+
+    Before the offline fix the same replay raised ``MalformedMessage`` at the
+    depot frame even though protocol 4 permits 640 bytes. With the protocol
+    bound wired through, the frame parses and the replay advances to the next
+    honest refusal: the client never persisted a depot response file (and no
+    confirmation or receipt exists), so no success label is produced.
+    """
+    outbound, requests, replies, request_positions, reply_positions = d4._parse_phase_frames(
+        CONSUMED_D4_CANDIDATE_4
+    )
+    assert len(outbound) == 22 and len(requests) == 20 and len(replies) == 20
+    depot_request = (CONSUMED_D4_CANDIDATE_4 / "depot-06-request.json").read_bytes()
+    depot = next(reply for reply in replies if b'"request_id":"depot-06"' in reply)
+    assert len(depot) == 513 and b'"status":"BUILT"' in depot
+    assert reply_positions[depot] > request_positions[depot_request]
+    with pytest.raises(ValueError, match="lacks its durable response file"):
+        d4.verify_corridor_attempt(CONSUMED_D4_CANDIDATE_4)

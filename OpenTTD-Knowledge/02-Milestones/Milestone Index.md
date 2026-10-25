@@ -2,7 +2,7 @@
 title: "Milestone Index"
 type: milestone
 status: current
-updated: 2026-10-22
+updated: 2026-10-26
 tags:
   - openttd
   - milestone
@@ -15,7 +15,7 @@ Two milestone tracks exist in the records:
 1. **P-track** (architecture stations P01–P08) — spec:
    [[01-Architecture/Planning and Execution Boundary]].
 2. **D-track** (native construction ceremonies on OpenTTD 15.3, Seed 17 world) — D1…D4:
-   `docs/p08-bounded-clearing-construction.md`, E17–E21.
+   `docs/p08-bounded-clearing-construction.md`, E17–E35.
 
 Plus **attempt history** — native execution attempts (delivery/canonical/qualification)
 which are indexed by evidence ID and preserved immutably
@@ -30,7 +30,7 @@ milestone records are *closed by* an attempt's consumed evidence.
 | D1 | Reusable-contract mapping (road ceremony → clearing) | Offline complete, controlled | `docs/p08-bounded-clearing-construction.md` |
 | D2 | Native tile clearing | **PROVED** | E17 |
 | D3 | Native bounded levelling chain (2 clears + 16 raises) | **PROVEN** (closed 2026-10-22) | E18, E19 |
-| D4 | Native road run ×2 + corner + 2 truck stops + depot on post-D3 world | **ATTEMPT CONSUMED — INCOMPLETE** (`PHASE_HALTED_PREFIX_PRESERVED`, `verified: false`) | E21 |
+| D4 | Native road run ×2 + corner + 2 truck stops + depot on post-D3 world | **PROVEN, 2026-10-26** (candidate-5: all seven v3 ops verified with quote-equal native costs, `ROUTE_VERIFIED` 23/23, authoritative `after.sav`, cleanup certified, manifest 90/90, replay `RECEIPT_VERIFIED`; failed/partial history E21/E28/E32 stays immutable) | E35, E21, E28, E32, E33 |
 | Stable fixed demo | Playable 3-service MVP at checkpoint `a348016` | **VERIFIED** | E1 |
 | Canonical create/reload Q3 | Canonical constructed fleet save/reload correspondence | **PROVEN** (reload-only scope) | E2 |
 | Random World native service execution | Plan→construct→deliver in a random world | **FAILED / BLOCKED** at `INCOMPLETE_TILE_CLASSIFICATION` | E4, E8, E16 |

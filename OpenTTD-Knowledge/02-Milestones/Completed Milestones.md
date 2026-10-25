@@ -2,7 +2,7 @@
 title: "Completed Milestones"
 type: milestone
 status: current
-updated: 2026-10-22
+updated: 2026-10-26
 tags:
   - openttd
   - milestone
@@ -85,6 +85,62 @@ read-only production replay verifier:
   45748(180,178) → … → 50351(175,196) is flat min-height 2, slope 0, CLEAR, unowned,
   industry-free on every tile.
 - This world is the verified evidence base for D4 preparation (E20).
+
+## Milestone D4 — native road & station construction (E20–E35; completed 2026-10-26)
+
+Consumed as four one-shot identities over five staged candidates; three ended
+incomplete and the final one completed the reviewed v3 schedule exactly:
+
+| Identity | Date | Outcome (scope-bound) |
+|---|---|---|
+| `D4-CORRIDOR-1` | 2026-10-22 | Partial: `op-00` verified (£785), `op-01` refused £2,549 > £2,000 ceiling, halted, no receipt/after-save (E21) |
+| `D4-CORRIDOR-2` | — | Staged only, never consumed; proved stale (closure predates ADR-012/ADR-013) (E24, E27) |
+| `D4-CORRIDOR-3` | 2026-10-25 | Partial: 3 ops built (£2,534); redundant interior join correctly `NOT_BUILDABLE`; historical `FAILED_CLEANUP` preserved (E28; E30 remediation) |
+| `D4-CORRIDOR-4` | 2026-10-25 | Partial: 6/7 ops built (£4,004); `op-06` depot 513-byte response rejected under the then-512-byte limit (E32; offline fix E33) |
+| `D4-CORRIDOR-5` | 2026-10-26 | **COMPLETE — all seven v3 operations verified, route verified, authoritative after-save retained (E35)** |
+
+The completing attempt (`D4-CORRIDOR-5`, consumed exactly once under the
+explicit 2026-10-26 operator authorization covering signing plus one attempt;
+all pre-signing gates re-verified; signed by the approved checklist and
+verified under the pinned production anchor before writing):
+1 launch / 1 X25519 connection / 22 of 28 request budget; every op dispatched
+exactly once with a **positive tested quote equal to its native cost**, within
+the £2,000 per-op ceiling, each independently read back via its
+intent-scoped `confirm-XX`:
+
+| Op | Planned scope | Inner pin(s) | Native cost | Readback | Funds after |
+|---|---|---|---:|---|---:|
+| op-00 | run A 45747→45743 (5 tiles) | 45747→45743 | £785 | `confirm-00` READ | £495,758 |
+| op-01 | run-B segment (9 tiles) | 45999→48047 | £1,398 | `confirm-01` READ | £494,360 |
+| op-02 | run-B segment (8 tiles) | 48303→50095 | £1,151 | `confirm-02` READ | £493,209 |
+| op-03 | perpendicular corner road | 45743↔45999 | £71 | `confirm-03` READ | £493,138 |
+| op-04 | pickup stop | tile 45748, front 45747 | £307 | `confirm-04` READ | £492,831 |
+| op-05 | delivery stop | tile 50351, front 50095 | £292 | `confirm-05` READ | £492,539 |
+| op-06 | depot | tile 45487, front 45743 (south) | £390 | **`confirm-06` READ** (513-byte durable response under the E33 640-byte bound) | **£492,149** |
+| route read | 24-tile witness / 23 adjacent pairs | — | 0 | `ROUTE_VERIFIED`, 23/23, `first_fail_index −1` | £492,149 |
+
+- Finance reconciles exactly and is confirmed twice (route read + depot
+  readback path): £496,543 − £785 − £1,398 − £1,151 − £71 − £307 − £292 − £390
+  = **£492,149**.
+- Schedule invariants held: 7 ops / 22 planned exchanges / 28-request cap
+  (22 used) / no redundant interior join / corner `45743↔45999` present.
+- `receipt.json` (`PHASE_COMPLETE`, seven per-op receipts + route receipt)
+  binds before-save `a3e6b510…5c5c` and the **authoritative** `after.sav`
+  `a81ac836…ef261`; `after-diagnostic.sav` (`7a853eba…a3`) is a distinct
+  diagnostic copy, never substituted; `result.json` returns `verified: true`,
+  `status: NATIVE_CORRIDOR_VERIFIED`, return code 0.
+- Cleanup certified (all four fields true, endpoints certified, workspace
+  disposed, credential removed); artifact manifest 90/90 OK; the independent
+  read-only replay verifier returns **`RECEIPT_VERIFIED`**.
+- Evidence basis reviewed before authorization: the staged v3 candidate passed
+  a fresh-context independent review **PASS 20/20** and was bound over the
+  D3-verified world `fbebef54…d59e`; the one-shot claim is consumed.
+  Record: `docs/handoff/2026-10-26/d4-corridor-native-candidate-5-outcome.md`.
+- Scope: exactly corridor construction (two runs, corner join, two truck
+  stops, depot, connected-route observation) over the post-D3 Seed 17 world.
+  Not a vehicle, order, delivery, OPEX, profit or ROI claim; D5 remains a
+  separate, fresh-authorization-gated milestone. Failed/partial/stale
+  identities above are immutable and never retried.
 
 ## Tile Classification V2 — capture completed natively (E16, 2026-10-18)
 

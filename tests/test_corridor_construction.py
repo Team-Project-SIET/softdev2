@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import json
 import re
+import struct
 from pathlib import Path
 from typing import Any
 
@@ -24,6 +25,7 @@ import pytest
 from squirrel import SQVM
 
 from app.simulation.openttd.corridor_construction import (
+    MAX_CORRIDOR_RESPONSE_BYTES,
     CorridorReadback,
     CorridorRequest,
     admit_corridor,
@@ -31,6 +33,8 @@ from app.simulation.openttd.corridor_construction import (
     verify_corridor,
     verify_corridor_route,
 )
+from app.simulation.openttd.gamescript_protocol import MalformedMessage
+from app.simulation.openttd.gamescript_transport import decode_gamescript
 from app.simulation.openttd.proof import corridor_construction_native as d4
 
 REPO = Path(__file__).resolve().parents[1]
@@ -40,6 +44,7 @@ API = REPO / "tests" / "fixtures" / "gamescript_api_15.nut"
 PRELAUNCH = "a" * 64
 OTHER_PLAN = "b" * 64
 SOURCE = "c" * 64
+CANDIDATE_4 = REPO / "artifacts" / "experiments" / "d4-corridor-native-candidate-4"
 
 MAX_COST = 2000
 FLAT_COST = 20  # every quote and every real command in the stub world
@@ -437,7 +442,9 @@ def drive(vm: SQVM, request: CorridorRequest) -> CorridorReadback:
         raise AssertionError(f"package dropped request {request.request_id}: no reply")
     vm.execute("::sniffer.last = last_reply_json();")
     raw = vm_root(vm)["sniffer"]["last"]
-    assert len(raw) <= 640, f"response for {request.request_id} exceeds 640 bytes"
+    assert len(raw) <= MAX_CORRIDOR_RESPONSE_BYTES, (
+        f"response for {request.request_id} exceeds {MAX_CORRIDOR_RESPONSE_BYTES} bytes"
+    )
     return CorridorReadback.parse_for(request, raw.encode())
 
 
@@ -528,6 +535,81 @@ def route_read(vm: SQVM) -> dict:
     )
     assert receipt["verification"] == "ROUTE_VERIFIED"
     return receipt
+
+
+def retained_candidate_4_depot() -> tuple[CorridorRequest, bytes, bytes]:
+    """Read the consumed depot exchange as a byte-exact, read-only fixture."""
+    frames = json.loads((CANDIDATE_4 / "frames.json").read_text())
+    direction, frame_hex = frames[-1]
+    assert direction == "inbound"
+    frame = bytes.fromhex(frame_hex)
+    request = CorridorRequest.model_validate_json(
+        (CANDIDATE_4 / "depot-06-request.json").read_bytes()
+    )
+    return request, frame, frame[3:]
+
+
+# --- protocol-4 response-size boundary over the retained native frame --------
+
+
+def test_retained_candidate_4_depot_frame_decodes_under_the_protocol_bound():
+    """The 513-byte native depot payload is valid protocol-4, not oversized.
+
+    The historical version-one decoder still refuses it; the corridor contract
+    explicitly allows 640 bytes and parses the retained frame to a BUILT
+    readback. This is regression evidence for the offline fix only: it does not
+    re-verify the consumed native attempt or create a receipt.
+    """
+    if not (CANDIDATE_4 / "frames.json").is_file():
+        pytest.skip("the consumed candidate-4 frame evidence is not present")
+    request, frame, body = retained_candidate_4_depot()
+    assert request.request_id == "depot-06" and request.op == "depot"
+    assert len(frame) == 517
+    assert struct.unpack_from("<HB", frame) == (517, 124)
+    assert len(body) == 514
+    with pytest.raises(MalformedMessage):
+        decode_gamescript(body)
+    payload = decode_gamescript(body, max_payload_bytes=MAX_CORRIDOR_RESPONSE_BYTES)
+    assert len(payload) == 513
+    readback = CorridorReadback.parse_for(request, payload)
+    assert readback.status == "BUILT"
+    assert readback.cost == 390 and readback.funds == 492149
+    assert readback.tile == 45487 and readback.front == 45743
+    assert readback.depot is True and readback.depot_linked is True
+    assert readback.depot_front_id == 45743
+
+
+def test_protocol_4_response_bound_is_inclusive_and_one_over_rejected():
+    """640 bytes is permitted; 641 is refused before JSON parsing."""
+    if not (CANDIDATE_4 / "frames.json").is_file():
+        pytest.skip("the consumed candidate-4 frame evidence is not present")
+    request, _, payload = retained_candidate_4_depot()
+    payload = payload[:-1]
+    assert MAX_CORRIDOR_RESPONSE_BYTES == 640
+    padded = payload + b" " * (MAX_CORRIDOR_RESPONSE_BYTES - len(payload))
+    assert len(padded) == MAX_CORRIDOR_RESPONSE_BYTES
+    assert CorridorReadback.parse_for(request, padded).status == "BUILT"
+    with pytest.raises(ValueError, match="exceeds 640 bytes"):
+        CorridorReadback.parse_for(request, padded + b" ")
+
+
+@pytest.mark.parametrize("mutation", ["truncated", "invalid-utf8", "duplicate-key", "empty"])
+def test_protocol_4_response_parser_fails_closed(mutation: str):
+    """Malformed and truncated protocol-4 responses never produce a readback."""
+    if not (CANDIDATE_4 / "frames.json").is_file():
+        pytest.skip("the consumed candidate-4 frame evidence is not present")
+    request, _, payload = retained_candidate_4_depot()
+    payload = payload[:-1]
+    if mutation == "truncated":
+        raw = payload[:-8]
+    elif mutation == "invalid-utf8":
+        raw = payload + b"\xff"
+    elif mutation == "duplicate-key":
+        raw = b'{"protocol":4,' + payload[1:]
+    else:
+        raw = b""
+    with pytest.raises(ValueError):
+        CorridorReadback.parse_for(request, raw)
 
 
 # --- the corridor happy path: seven built ops and the route read --------------
@@ -854,9 +936,9 @@ def test_delivery_stop_after_the_last_run_segment():
     verify_corridor(intent, evidence["before"], built, evidence["independent"])
 
 
-def test_responses_never_exceed_the_512_byte_bound():
-    """Every staged exchange reply parses through the same 512-byte gate the
-    secure session enforces; the route read is the largest and stays small."""
+def test_responses_never_exceed_the_640_byte_bound():
+    """Every staged exchange reply parses through the same 640-byte gate the
+    protocol-4 secure session enforces; the route read is the largest."""
     vm = build_vm()
     run_phase(vm)
     route_read(vm)

@@ -299,6 +299,153 @@ Canonical creation/reload Q3 are historical PROVEN milestones, not pending tasks
    was attempted. **Milestone D4 remains INCOMPLETE (native).** Record:
    `docs/handoff/2026-10-25/d4-corridor-native-candidate-3-outcome.md`.
 
+   **Update (2026-10-25, offline `op-03` root cause — E29):** the failure was a
+   scheduling/modeling defect, not an admission bug. Scripted `BuildRoadFull`
+   builds both straight road bits at both span endpoints, so the collinear
+   run-B segments already auto-connect at `48047↔48303`; the native
+   `pairs_ok 1` observation was correct and the road admission rightly refused
+   an already-connected pair. The perpendicular corner `45743↔45999` still
+   needs its own `BuildRoad`. The fresh schedule is now v3 with 7 ops and no
+   interior join (`SCHEDULE_VERSION = 3`, `ROAD_OP_COUNT = 7`, 22 planned
+   exchanges, budget 28); v2/v1 remain read-only replay derivations. The Nut
+   `StageIndex`, budget, offline endpoint-bit model and regression tests are
+   updated. Focused suites 55/55 PASS; ruff, `py_compile` and
+   `git diff --check` clean. No native run, candidate reuse/staging or evidence
+   modification. Record: `docs/handoff/2026-10-25/d4-corridor-op03-root-cause.md`.
+
+   **Update (2026-10-25, cleanup remediation verified — E30):** the reported
+   `D4-CORRIDOR-3` credential removal and workspace disposal were verified
+   read-only and without accessing any credential. `cleanup.json` now records
+   `credential_removed: true` and `workspace_disposed: true`; the workspace is
+   absent, `isolated/` is empty, and no candidate-3 secret/config file or
+   process/listener remains. The historical TCP state-5 `verification_error` is
+   retained, `sockets_closed` is still absent, and `result.json` remains
+   `FAILED_CLEANUP` / `verified: false`; read-only replay still refuses
+   `halted attempt cleanup incomplete`. The candidate manifest re-verifies
+   48/48 against the remediated record (regenerated after remediation). This is
+   not native success and does not complete D4. Record:
+   `docs/handoff/2026-10-25/d4-corridor-native-candidate-3-cleanup-remediation.md`.
+
+   **Update (2026-10-25, fresh candidate-4 staged — E31):** `D4-CORRIDOR-4` is
+   staged at `artifacts/experiments/d4-corridor-native-candidate-4/` from the
+   reviewed v3 schedule (one identity constant advanced from candidate-3; no
+   other source/test/package byte changed). `PRELAUNCH PASS` + read-only
+   `PREFLIGHT PASS`; seal `88cd1ecc…fd22c3`, v3 plan digest `b5b472ff…2283a78`,
+   payload `4037c5d8…487c7f` over 2,307 canonical bytes; 7 road ops, 22 planned
+   exchanges, request cap 28, per-op ceiling £2,000, no redundant interior
+   join, perpendicular corner retained; source world unchanged D3 after-save
+   `fbebef54…d59e`; focused suites 55/55 PASS. No authorization, claim, signing,
+   launch or native quote exists. **Milestone D4 remains INCOMPLETE (native);**
+   next is independent review, then separate explicit operator authorization
+   for signing and one native attempt. Record:
+   `docs/handoff/2026-10-25/d4-corridor-native-candidate-4-preparation.md`.
+
+   **Update (2026-10-25, native candidate-4 consumed — E32):** the cleanup
+   certification question was resolved as attempt-scoped: candidate-3's
+   historical `FAILED_CLEANUP`/absent `sockets_closed` stays unchanged and is
+   not a hard prerequisite for a fresh candidate, while current isolation was
+   verified independently (no process, listener, workspace or staged secret;
+   candidate-3 and candidate-4 ports free). `D4-CORRIDOR-4` was signed under
+   the pinned anchor (authorization `b069b484…5db6d`, 64-byte signature,
+   payload `4037c5d8…487c7f`, 2,307 bytes) and consumed exactly once.
+   `op-00`–`op-05` built and read back (£785 + £1,398 + £1,151 + £71 + £307 +
+   £292 = £4,004; funds £496,543 → £492,539), including the perpendicular
+   corner `45743↔45999` and both stops. `op-06` (depot `45487`) was dispatched:
+   the native log reports `D4_RESPONSE depot-06 BUILT` and the retained frame
+   reports `BUILT`/£390/£492,149, but its 513-byte GameScript payload exceeded
+   the 512-byte application limit, so the client raised
+   `MalformedMessage: GameScript packet exceeds application limit` before
+   parsing. No `confirm-06`, `receipt.json` or authoritative `after.sav`
+   exists; `after-diagnostic.sav` is non-authoritative. Phase
+   `PARTIAL_EXECUTION_EVIDENCE`, `verified: false`,
+   `status: PHASE_HALTED_PREFIX_PRESERVED`; cleanup is certified (all four
+   fields true) and the manifest is 80/80 OK. Read-only replay raised the same
+   `MalformedMessage` before a verdict at the time. No retry, re-sign,
+   replacement or claim reuse; **Milestone D4 remains INCOMPLETE (native)**. Record:
+   `docs/handoff/2026-10-25/d4-corridor-native-candidate-4-outcome.md`.
+
+   **Offline correction (2026-10-25, E33):** the terminal defect was an
+   application-bound mismatch, not an oversized frame. Protocol 4 permits
+   640-byte responses, but `decode_gamescript` applied the version-one 512-byte
+   limit to every protocol. `encode_gamescript`/`decode_gamescript` now take a
+   validated opt-in `max_payload_bytes` (default unchanged 512; absolute
+   frame-body ceiling 32763), and protocol 4 uses its documented 640-byte bound
+   in `CorridorReadback.parse_for`, the live exchange and retained-frame replay.
+   The retained 517-byte depot frame decodes to a 513-byte payload and parses to
+   `BUILT`; exact 640 passes, 641 fails, and malformed/truncated/duplicate/
+   invalid-UTF-8 bodies still fail closed. Focused suites 129/129 PASS;
+   `ruff check --ignore UP037` on the touched files passed, while full
+   `ruff check` reports only four pre-existing `UP037` findings at unchanged
+   `corridor_construction.py` lines 116/214/534; `py_compile` and
+   `git diff --check` clean. This creates no receipt and does
+   not verify the consumed attempt: replay now reaches the next honest refusal
+   (missing `depot-06-response.json`), and D4 remains INCOMPLETE (native).
+   Record: `docs/handoff/2026-10-25/d4-corridor-response-limit-fix.md`.
+
+   **Native completion (2026-10-26, E35):** under the operator's explicit
+   written authorization (signing of `D4-CORRIDOR-5` plus exactly one native
+   attempt), every pre-signing gate was re-verified fresh — identity/seal
+   `505b5d49…4a7c`, payload `77a965f0…0e4` over 2,307 canonical bytes, plan
+   digest `b5b472ff…2283a78`, schedule v3 invariants (7 ops, 22 planned, cap
+   28, £2,000 per-op, no interior join, corner `45743↔45999`), source save
+   `fbebef54…d59e`, 3,448-entry frozen closure re-hashed by a fresh read-only
+   `PREFLIGHT PASS`, independent review PASS (20/20), implementation-vs-review
+   freeze binding, protocol 640/512/32763 statics + dynamics, quote/budget
+   machinery, runtime isolation, never-consumed state, and focused suites
+   129/129 PASS. The candidate was signed exactly by the documented approved
+   checklist (Option 1 repository tooling; seed captured, never displayed,
+   never written or passed as an argument; signature verified under the pinned
+   production anchor before writing; seed cleared right after signing) and the
+   resulting record (`55486971…dec03`, operator identity
+   `sha256-ed25519-public-key:cbb63ff5…40c614`) re-verifies. The single native
+   attempt ran to completion; no retry, reconnect or second launch: 1 launch /
+   1 encrypted X25519 connection / 22 of 28 requests; all seven scheduled ops
+   dispatched exactly once, each with a positive tested quote equal to its
+   native cost within the £2,000 per-op ceiling and each independently read
+   back via its `confirm-XX` — op-00 £785, op-01 £1,398, op-02 £1,151, op-03
+   corner £71, op-04 £307, op-05 £292, op-06 depot £390 (the durable 513-byte
+   `depot-06-response.json` retained under the E33 640-byte bound, readback
+   digest matched). Funds reconcile exactly £496,543 − £4,394 = £492,149,
+   confirmed by the route read. Route receipt `ROUTE_VERIFIED` 23/23;
+   `receipt.json` binds before-save `a3e6b510…5c5c` and the authoritative
+   after-save `a81ac836…ef261`; `after-diagnostic.sav` retained, never a
+   substitute. Cleanup certified (all four fields true, return code 0,
+   endpoints certified, workspace disposed, credit/credential removed); no
+   process or listener remains and `isolated/` is empty. Manifest 90/90 OK;
+   read-only replay returns **`RECEIPT_VERIFIED`**. Candidate-1/2/3/4 and D3
+   evidence re-verified byte-unchanged (candidate-4 manifest 80/80). **D4
+   Native Road & Station Construction is COMPLETE for the reviewed v3 scope
+   (`NATIVE_CORRIDOR_VERIFIED`);** no vehicle/delivery/OPEX/ROI claim and no
+   new authorization is implied. Record:
+   `docs/handoff/2026-10-26/d4-corridor-native-candidate-5-outcome.md`.
+
+9. **Native execution attempt analytics (done offline; integrated).** A parallel
+   workstream ("OpenTTD Analytics Feature Completion") implemented and verified
+   offline, read-only run-level analytics over the retained native attempt
+   records in an isolated worktree (same base `775ecab`), and it is now
+   integrated into the main checkout: `app/experiments/native_attempt_analytics.py`,
+   the additive `analyze-native-attempts SOURCE… --output DIR` CLI subcommand in
+   `app/experiments/cli.py`, `tests/test_native_attempt_analytics.py` and
+   [the analytics record](docs/native-attempt-analytics.md). It reads only
+   retained `PRELAUNCH.json`/`result.json`/`cleanup.json` plus consumption
+   markers, copies statuses and `verified` flags verbatim, never counts an
+   unverified/partial attempt as a verified success (D4's three attempts stay
+   partial/failed and verified_outcomes counts only E17/E19/D2/D3 verified
+   records), keeps missing fields UNKNOWN (no OPEX/net-profit/ROI), certifies
+   cleanup fail-closed, refuses pooled comparisons across unrelated source
+   worlds and states schedule-revision contrasts without causal claims.
+   Integration preserved the E33 protocol-fix files byte-unchanged and
+   re-verified the feature fresh in the main checkout: focused suite 34/34
+   PASS, adjacent experiment/CLI/analytics suites 84 PASS, ruff/format/
+   compileall/`git diff --check` clean, deterministic outputs (two runs,
+   byte-identical), and the seven retained attempt directories hash-verify
+   byte-identical (626 files) before and after the analysis runs. Evidence:
+   E34. **This integrates no native evidence, verifies no consumed attempt,
+   stages no candidate, consumes no claim or authorization; Milestone D4
+   remains INCOMPLETE (native); a fresh attempt still requires a fresh
+   candidate, independent review and separate explicit operator
+   authorization.**
+
 A documentation-only handoff is complete when links and evidence references are
 valid, implementation bytes remain unchanged, the final diff is reviewed and fresh
 checks are reported separately from inherited validation. No commit/push is needed.

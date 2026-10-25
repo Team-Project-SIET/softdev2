@@ -2,7 +2,7 @@
 title: "Task Board"
 type: planning
 status: current
-updated: 2026-10-24
+updated: 2026-10-26
 tags:
   - openttd
   - planning
@@ -11,7 +11,7 @@ tags:
 
 # Task Board
 
-Derived from [[99-Source-Documents/TASKS]] (2026-10-17 list + 2026-10-18/22 updates).
+Derived from [[99-Source-Documents/TASKS]] (2026-10-17 list + 2026-10-18/22/25/26 updates).
 This board **grants no runtime authority**; statuses reflect what the source documents
 record, nothing more. Priorities below are the source documents' own ordering
 ("current product priority is the stable demo plus bounded Random World") — no invented
@@ -97,14 +97,63 @@ deadlines.
   and the route read never executed. `PARTIAL_EXECUTION_EVIDENCE`,
   `verified: false`, `FAILED_CLEANUP`; no authoritative after-save/receipt.
   Record: `docs/handoff/2026-10-25/d4-corridor-native-candidate-3-outcome.md`.
-- [ ] **Fix `op-03` join admission and prepare a fresh D4 candidate** — open:
-  diagnose why the interior join `48047↔48303` returned `NOT_BUILDABLE` with
-  `road0/road1 true` and `pairs_ok 1`; correct the plan/admission contract, then
-  stage a fresh candidate from current reviewed source, review it, and request
-  separate explicit operator authorization. D4 remains INCOMPLETE (native).
-  The consumed `D4-CORRIDOR-1`, stale `D4-CORRIDOR-2` and consumed
-  `D4-CORRIDOR-3` are never retried or reused (E21, E27, E28).
-  → [[05-Planning/Blockers]] §8, [[05-Planning/Next Actions]].
+- [x] **Fix `op-03` join admission and prepare a fresh D4 candidate** — **offline
+  correction and staging done 2026-10-25 (E29/E31):** `op-03` was a redundant
+  scheduled interior join, not an admission bug; scripted `BuildRoadFull`
+  endpoints auto-connect the collinear run-B segments, while the perpendicular
+  corner still needs its own join. Fresh v3 schedule = 7 ops, 22 planned
+  exchanges, cap 28, £2,000 per-op. `D4-CORRIDOR-4` was staged (`PRELAUNCH PASS` +
+  `PREFLIGHT PASS`, seal `88cd1ecc…fd22c3`, plan digest `b5b472ff…2283a78`,
+  payload `4037c5d8…487c7f`), `PENDING_AUTHORIZATION`, no claim or launch at that
+  time; it was consumed later in E32.
+  Candidate-3 cleanup remediation was separately verified (E30), without
+  changing its historical failure. Records:
+  `docs/handoff/2026-10-25/d4-corridor-op03-root-cause.md`,
+  `…-candidate-3-cleanup-remediation.md`, `…-candidate-4-preparation.md`.
+- [x] **One-shot native run of `D4-CORRIDOR-4`** — **consumed 2026-10-25 (E32):**
+  signed under the pinned anchor and executed exactly once. `op-00`–`op-05` built
+  and read back (£4,004; £496,543 → £492,539), including the perpendicular
+  corner and both stops; `op-06` depot was dispatched and the native log reports
+  `BUILT`, but its 513-byte response exceeded the 512-byte application limit and
+  was rejected before parsing. `PARTIAL_EXECUTION_EVIDENCE`, `verified: false`,
+  `PHASE_HALTED_PREFIX_PRESERVED`; no authoritative after-save/receipt; cleanup
+  PASS (all four fields true), manifest 80/80, replay raised the same
+  `MalformedMessage` at the time. No retry, re-sign or reuse. Record:
+  `docs/handoff/2026-10-25/d4-corridor-native-candidate-4-outcome.md`.
+- [x] **Fix the depot response-size path** — **offline fix done 2026-10-25
+  (E33):** protocol 4 permits 640-byte responses, but `decode_gamescript`
+  applied the version-one 512-byte limit to every protocol. Encode/decode now
+  take a validated opt-in bound (default unchanged 512; absolute frame-body
+  maximum 32763), and protocol 4 uses 640 in `parse_for`, the live exchange and
+  retained-frame replay. The retained 517-byte depot frame parses to `BUILT`;
+  exact 640 passes, 641 fails, malformed/truncated/duplicate/invalid-UTF-8
+  bodies fail closed. Focused suites 129/129 PASS; `ruff check --ignore UP037`
+  passed with four pre-existing `UP037` findings unchanged; compile/diff clean.
+  No receipt or native verification is claimed; replay now stops at the missing
+  `depot-06-response.json`. Record:
+  `docs/handoff/2026-10-25/d4-corridor-response-limit-fix.md`.
+- [x] **Prepare a fresh D4 candidate and obtain authorization** — **done and consumed 2026-10-26 (E35):**
+  the reviewed v3 schedule was staged as `D4-CORRIDOR-5` (staging 2026-10-25; fresh-context
+  independent review **PASS 20/20**; the E33 protocol rules bound in the freeze), then
+  signed under the explicit 2026-10-26 operator authorization and consumed exactly once:
+  1 launch / 1 X25519 connection / 22 of 28 requests; all seven v3 ops dispatched with
+  positive tested quotes equal to native costs within the £2,000 per-op ceiling
+  (£785 + £1,398 + £1,151 + £71 + £307 + £292 + £390 = £4,394) and each independently read
+  back including `confirm-06` (513-byte depot response under the 640-byte bound); funds
+  £496,543 → £492,149; `ROUTE_VERIFIED` 23/23; authoritative `after.sav` `a81ac836…ef261`;
+  cleanup certified; manifest 90/90; read-only replay `RECEIPT_VERIFIED`.
+  **Milestone D4 is COMPLETE (native) for exactly the reviewed v3 scope**
+  ([[02-Milestones/Completed Milestones]]). Consumed identities `D4-CORRIDOR-1/3/4/5`
+  are never retried; stale `D4-CORRIDOR-2` stays frozen (E21, E24, E27, E28, E32, E33, E35).
+  Record: `docs/handoff/2026-10-26/d4-corridor-native-candidate-5-outcome.md`.
+- [ ] **Design D5 — vehicle purchase, orders, delivery on the built corridor** — next
+  in sequence after D4's completion (E35); **not designed, not staged, not authorized.**
+  Requires controlled contracts + tests offline, independent review, a fresh staged
+  never-consumed candidate, and ONE fresh explicit operator authorization before any
+  signing or launch. The current authoritative world is candidate-5's `after.sav`
+  `a81ac836…ef261`; D4's `NATIVE_CORRIDOR_VERIFIED` result covers construction only and
+  implies no vehicle/delivery capability. → [[05-Planning/Blockers]] §8,
+  [[05-Planning/Next Actions]], [[02-Milestones/Pending Milestones]].
 - [ ] **Random World facts** — recorded follow-up options: same-instant re-observation of
   tiles [43951, 47286, 47288, 48042, 48309, 51378], and/or operator policy decision on the
   save-instant census; both under a new reviewed candidate + fresh authorization
