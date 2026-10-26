@@ -282,6 +282,21 @@ For a new run, inspect these files under `$FREIGHT_ATTEMPT`:
 The disposable runtime is removed after cleanup; the evidence stays. These artifacts
 are ignored by Git. Back them up before removing an attempt directory.
 
+### Read-only evidence TUI
+
+An optional Textual console renders retained runs and P07 reports without launching
+OpenTTD or opening an Admin connection:
+
+```bash
+uv sync --group tui
+uv run --group tui python -m app.tui --root artifacts/demos
+```
+
+It shows summary/finance readback, service rows, planned-versus-actual metrics,
+retained charts and the evidence file list. Missing values remain `UNKNOWN`; the UI
+never substitutes zero, estimates OPEX/ROI, or writes into evidence. See
+[docs/tui.md](docs/tui.md) for screens, keys and limits.
+
 ## Planning integration boundary
 
 `app/planning/p08_adapter.py` and `p08_road.py` consume admitted observation,

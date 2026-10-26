@@ -1,0 +1,67 @@
+Screen {
+    layout: vertical;
+}
+
+#body {
+    height: 1fr;
+}
+
+#sidebar {
+    width: 46;
+    min-width: 34;
+    border-right: solid $panel;
+}
+
+#runs-title {
+    padding: 1 1 0 1;
+    text-style: bold;
+    color: $text-muted;
+}
+
+#runs {
+    height: 1fr;
+}
+
+#detail {
+    width: 1fr;
+}
+
+#detail-title {
+    padding: 1 1 0 1;
+    text-style: bold;
+}
+
+TabbedContent {
+    height: 1fr;
+}
+
+#summary {
+    padding: 0 1;
+}
+
+#services,
+#metrics,
+#evidence {
+    height: 1fr;
+}
+
+#charts {
+    padding: 1 2;
+}
+
+HelpScreen {
+    align: center middle;
+}
+
+#help-body {
+    width: 88;
+    height: 85%;
+    border: thick $accent;
+    background: $surface;
+    padding: 1 2;
+}
+
+#help-hint {
+    padding: 1 0;
+    color: $text-muted;
+}

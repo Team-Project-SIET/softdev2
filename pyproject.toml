@@ -20,6 +20,7 @@ dependencies = [
 ]
 
 [project.scripts]
+openttd-tui = "app.tui.cli:main"
 transport-experiment = "app.experiments.cli:main"
 
 [dependency-groups]
@@ -28,6 +29,8 @@ dev = [
     "ruff>=0.5",
     "squirrel-lang==0.3.1",
 ]
+# Optional read-only terminal frontend: `uv sync --group tui`.
+tui = ["textual>=8.0"]
 
 [build-system]
 requires = ["hatchling"]
