@@ -177,12 +177,35 @@ OPEX/ROI claim; the claim is consumed and identity `D4-CORRIDOR-5` must not
 be retried. Record:
 `docs/handoff/2026-10-26/d4-corridor-native-candidate-5-outcome.md`.
 
-## D5+ — Vehicle purchase, orders, delivery on the corridor — NOT DESIGNED
+## D5 — Corridor freight cycle on the built D4 corridor → OFFLINE T1–T6 COMPLETE, T7 REVIEW NEXT (2026-10-26)
 
-After D4 (completed natively 2026-10-26, E35), separately scoped milestones would put a
+After D4 (completed natively 2026-10-26, E35), the next milestone would put a
 vehicle on the built corridor kept by candidate-5's authoritative `after.sav`
-`a81ac836…ef261`. No candidate exists; nothing here is prepared. Road/station admission does not imply
-purchase/run/verify capability.
+`a81ac836…ef261`. **The D5 scope is now designed offline and
+implementation-ready: exactly one native cargo-1 pickup→delivery freight
+cycle on that corridor** — site admission gates (both stops truck-stop-typed,
+depot present, 24-tile witness re-check, delivery-stop cargo-1 acceptance ≥
+1/8, funds £492,149), one compatible engine purchased once under a positive
+tested quote ≤ £2,000, the exact two-stop order set (pickup `OF_FULL_LOAD`,
+delivery `OF_NO_LOAD`), observed loading → transit → unloading with
+GSCargoMonitor pickup/delivery amounts equal to the observed load,
+per-exchange funds reconciliation, and a receipt-bound before/after save
+pair replay-verified to `RECEIPT_VERIFIED` with certified cleanup. Design:
+`docs/d5-corridor-freight-design.md` (2026-10-26; not committed at design
+time). **Status (updated 2026-10-26, offline): T1–T6 complete, uncommitted**
+— protocol-5 contracts, the bounded fifteen-exchange package, the
+staging/preflight/replay proof module, 32 controlled Squirrel-VM tests and
+29 temporary-staging native-orchestration tests pass. The T6 record is
+`docs/d5-corridor-freight-preparation.md`; it documents the actual 15.3
+acceptance API (no `GSStation.GetCargoAcceptance`), the TileID/65535 safety
+bound, 13 logical ops versus 15 exchanges, and transit-window behavior while
+the vehicle is still in its depot. **Status discipline:** staging (T8) is
+gated on an independent fresh-context review (T7); signing and launching
+(T9) require ONE fresh explicit operator authorization from the operator
+alone; no candidate, claim, seal, signature or authorization exists; no
+native attempt has run, so native freight delivery remains UNKNOWN. Road/
+station admission does not imply purchase/run/verify capability, and full
+OPEX/net-profit/ROI remain UNKNOWN regardless of a D5 outcome.
 
 ## Random World native service execution — BLOCKED (infeasibility + open facts)
 

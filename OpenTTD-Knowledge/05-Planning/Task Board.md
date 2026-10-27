@@ -146,14 +146,27 @@ deadlines.
   ([[02-Milestones/Completed Milestones]]). Consumed identities `D4-CORRIDOR-1/3/4/5`
   are never retried; stale `D4-CORRIDOR-2` stays frozen (E21, E24, E27, E28, E32, E33, E35).
   Record: `docs/handoff/2026-10-26/d4-corridor-native-candidate-5-outcome.md`.
-- [ ] **Design D5 — vehicle purchase, orders, delivery on the built corridor** — next
-  in sequence after D4's completion (E35); **not designed, not staged, not authorized.**
-  Requires controlled contracts + tests offline, independent review, a fresh staged
-  never-consumed candidate, and ONE fresh explicit operator authorization before any
-  signing or launch. The current authoritative world is candidate-5's `after.sav`
-  `a81ac836…ef261`; D4's `NATIVE_CORRIDOR_VERIFIED` result covers construction only and
-  implies no vehicle/delivery capability. → [[05-Planning/Blockers]] §8,
-  [[05-Planning/Next Actions]], [[02-Milestones/Pending Milestones]].
+- [x] **Design D5 — vehicle purchase, orders, delivery on the built corridor** —
+  **designed offline 2026-10-26 (implementation-ready; not committed at design time):**
+  one native cargo-1 pickup→delivery cycle on the D4 corridor over the
+  candidate-5 `after.sav` world; explicit site admission (witness re-check,
+  native delivery-stop acceptance ≥ 1/8, funds £492,149), positive-tested-quote
+  purchase ≤ £2,000, exact `OF_FULL_LOAD`/`OF_NO_LOAD` order set, loading →
+  transit → unloading with GSCargoMonitor amounts equal to the observed load,
+  per-exchange funds reconciliation, receipt-bound before/after saves and
+  replay `RECEIPT_VERIFIED`; budget/request/cleanup/idempotency constraints and
+  dependency-ordered tasks T1–T12 recorded with review (T7) and
+  explicit-operator-authorization (T9) gates. Design:
+  `docs/d5-corridor-freight-design.md`. **Statuses: offline implementation
+  T1–T6 complete (uncommitted, 2026-10-26) — protocol-5 contracts, the
+  fifteen-exchange package, staging/preflight/replay module and
+  32 unit + 29 native-orchestration tests; see
+  `docs/d5-corridor-freight-preparation.md`. T7 independent review is next.
+  No candidate, claim, signature or authorization exists; no native attempt
+  was made; native freight delivery remains UNKNOWN; full OPEX/net-profit/ROI
+  stay UNKNOWN (out of scope).**
+  → [[05-Planning/Blockers]] §8, [[05-Planning/Next Actions]],
+  [[02-Milestones/Pending Milestones]].
 - [ ] **Random World facts** — recorded follow-up options: same-instant re-observation of
   tiles [43951, 47286, 47288, 48042, 48309, 51378], and/or operator policy decision on the
   save-instant census; both under a new reviewed candidate + fresh authorization

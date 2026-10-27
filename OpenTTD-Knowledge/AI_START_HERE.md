@@ -81,13 +81,23 @@ Condensed. Full scope/boundaries: [[00-Project/Current Status]]. Status vocabula
   COMPLETE (native) for exactly the reviewed v3 scope** — construction only,
   no vehicle/delivery/OPEX/ROI claim; the one-shot claim is consumed.
   Record: `docs/handoff/2026-10-26/d4-corridor-native-candidate-5-outcome.md`.
-- **Recommended next engineering task (updated 2026-10-26):** offline design of
-  D5 — vehicle purchase, orders, loading, delivery and delivery-economics
-  readbacks on the built corridor over the candidate-5 `after.sav` world.
-  Nothing exists yet: controlled contracts + tests first, then independent
-  review, then a fresh staged never-consumed candidate, then ONE fresh explicit
-  operator authorization before any signing or launch. Neither this note nor
-  any vault page grants that authorization.
+- **Recommended next engineering task (updated 2026-10-26):** D5 offline
+  implementation T1–T6 is complete and uncommitted — protocol-5 contracts,
+  the bounded fifteen-exchange package, the staging/preflight/replay proof
+  module, 32 controlled VM tests and 29 temporary-staging native-orchestration
+  tests pass. Design: `docs/d5-corridor-freight-design.md`; preparation/T6
+  record: `docs/d5-corridor-freight-preparation.md`. A prior T7 review covered
+  earlier D5 bytes; later source edits mean that review does not by itself
+  establish a fresh comprehensive review of the current bytes, and no durable
+  T7 review record is stored in the repository. Current revalidation re-ran
+  the D5 suite (74 passed) and the D4/transport regression suite (71 passed)
+  and verified the four 640-byte request-bound call sites; completing T7
+  against the current bytes and archiving that record remain outstanding.
+  Staging (T8) and any signing or launch (T9) remain separate gates exactly
+  as recorded in the design's §12 — nothing exists yet: no candidate, claim,
+  signature or authorization, and no native attempt has run, so native
+  freight delivery remains UNKNOWN. Neither this note nor any vault page
+  grants that authorization.
 - **Superseded recommendation (2026-10-25, E33), retained as history:** the depot
   response-size defect is fixed offline: protocol 4 now uses its documented
   640-byte decode bound (version-one 512 default unchanged), and the retained

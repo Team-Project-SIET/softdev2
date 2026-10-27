@@ -145,6 +145,37 @@ Historical records of this chain:
 `…-candidate-4-preparation.md`, `…-candidate-4-outcome.md` and
 `…-response-limit-fix.md`.
 
+**D5 design drafted (2026-10-26, offline; not committed at design time):**
+the recommended D5 scope is now designed as **one completed native
+pickup→delivery freight cycle for cargo 1 on the D4-built corridor** over
+the candidate-5 `after.sav` world (`docs/d5-corridor-freight-design.md`):
+explicit site-admission gates (stops/depot witness re-check, native
+delivery-stop cargo-1 acceptance ≥ 1/8, funds £492,149), one engine with a
+positive tested quote ≤ £2,000, the exact two-stop order set
+(`OF_FULL_LOAD`/`OF_NO_LOAD`), loading → transit → unloading verified
+physically and by GSCargoMonitor arithmetic equal to the observed load,
+funds reconciliation at every exchange, and a receipt-bound before/after
+save pair replay-verified to `RECEIPT_VERIFIED` with certified cleanup —
+statuses copied verbatim so the existing `analyze-native-attempts` analytics
+(E34) consumes the future attempt unchanged. It was selected from candidates
+(vehicle/depot ops, end-to-end order lifecycle, OPEX measurement,
+planning-vs-execution comparison, optimization evaluation) as the one
+bounded scope that advances the full chain (Python plan → execution →
+native verification → machine evidence → optimization) and opens the
+delivery-economics measurement without duplicating proven machinery.
+**Status (updated 2026-10-26, offline):** T1–T6 offline implementation is
+complete and uncommitted — protocol-5 contracts, the fifteen-exchange
+package, the staging/preflight/replay module, 32 controlled VM tests and 29
+temporary-staging native-orchestration tests pass. The T6 record is
+`docs/d5-corridor-freight-preparation.md` (TileID/65535 bound, 13 logical ops
+vs 15 exchanges, the real `GSStation.GetCoverageRadius` +
+`GSTile.GetCargoAcceptance` API, and pre-departure transit behavior in the
+depot). The independent review (T7), staging (T8), and any signing or launch
+(T9) remain gated exactly as §12 of the design records; no candidate, claim,
+signature or authorization exists yet, no native attempt was made, native
+freight delivery is UNKNOWN, and full OPEX/net-profit/ROI stay UNKNOWN out of
+scope.
+
 **Operator-guidance correction (2026-10-24, documentation only):** the key
 extraction commands that the operator would follow were corrected in
 `docs/handoff/2026-10-17/operator-key-provisioning.md` §1 and

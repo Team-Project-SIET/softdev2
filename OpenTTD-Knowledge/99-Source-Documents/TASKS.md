@@ -446,6 +446,53 @@ Canonical creation/reload Q3 are historical PROVEN milestones, not pending tasks
    candidate, independent review and separate explicit operator
    authorization.**
 
+10. **D5 corridor freight cycle — implementation-ready design (done offline;
+    2026-10-26; not committed at design time).** After the E35 close-out, the
+    next objective-advancing milestone was selected and designed offline:
+    **D5 = complete exactly one native pickup→delivery freight cycle for
+    cargo 1 on the D4-built corridor over the candidate-5 `after.sav`
+    world** — site admission, one engine purchase under a positive tested
+    quote ≤ £2,000, the exact two-stop order set (pickup `OF_FULL_LOAD`,
+    delivery `OF_NO_LOAD`), observed loading → transit along the verified
+    witness → unloading with GSCargoMonitor pickup/delivery amounts equal to
+    the observed load, per-exchange funds reconciliation, and a
+    receipt-bound before/after save pair replay-verifiable to
+    `RECEIPT_VERIFIED`. Design record:
+    `docs/d5-corridor-freight-design.md` (problem/objective, in/out of
+    scope, architecture, protocol-5 entities/messages/state/failure
+    taxonomy, trust boundaries, offline+native test strategy, required
+    machine-verifiable evidence, budget/packet/cleanup/replay/idempotency
+    constraints, explicit A1–A12 pass/fail acceptance criteria, risks and
+    fallbacks, dependency-ordered tasks T1–T12, and the future
+    independent-review + explicit-authorization gates). It reuses the proven
+    corridor ceremony machinery (E35), the proven vehicle
+    admission/lifecycle semantics (legacy lane) and the proven delivery
+    evidence contract (`NATIVE_MULTI_SERVICE_DELIVERY_VERIFIED` legacy
+    attempt) without relabeling any historical lane. **Status discipline:**
+    D5 is a designed plan only — no candidate, claim, seal, signature or
+    authorization exists; nothing here grants launch authority; full
+    OPEX/net-profit/ROI remain UNKNOWN and are out of scope; staging (T8)
+    is gated on the independent review (T7), and any signing or launch (T9)
+    requires a fresh explicit operator authorization. Next tasks: T1–T6
+    offline implementation, then T7 review.
+    **Update (2026-10-26, offline):** T5 and T6 are complete. The active
+    protocol/cargo agent, the fifteen-exchange package (`site` through
+    `finish-00`), the staging/preflight/replay proof module, and two test
+    suites now exist uncommitted. `tests/test_corridor_freight.py` passes
+    32/32 controlled VM tests and `tests/test_corridor_freight_native.py`
+    passes 29/29 temporary-staging tests, including the pinned D4
+    prerequisite, tamper/seal/claim/freeze refusals, request mapping, budgets
+    and the unconsumed fail-closed verdict. The T6 record
+    (`docs/d5-corridor-freight-preparation.md`) documents the TileID/65535
+    safety bound, 13 logical ops versus 15 exchanges, the actual
+    `GSStation.GetCoverageRadius` + `GSTile.GetCargoAcceptance` API (no
+    `GSStation.GetCargoAcceptance` in 15.3), and pre-departure transit
+    behavior in the depot. No native candidate, claim, signature,
+    authorization, launch or AdminPort interaction occurred; D5 native
+    freight delivery remains UNKNOWN. T7 independent review is the next
+    gate; the eventual POC still needs an optimizer-produced route in place
+    of the fixed compiled plan.
+
 A documentation-only handoff is complete when links and evidence references are
 valid, implementation bytes remain unchanged, the final diff is reviewed and fresh
 checks are reported separately from inherited validation. No commit/push is needed.
