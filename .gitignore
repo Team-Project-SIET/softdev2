@@ -9,3 +9,7 @@ __pycache__/
 .coverage
 htmlcov/
 docs/examsrs*
+--version
+.agents/
+OpenTTD-Knowledge.zip
+skills-lock.json
