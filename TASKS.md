@@ -492,6 +492,183 @@ Canonical creation/reload Q3 are historical PROVEN milestones, not pending tasks
     freight delivery remains UNKNOWN. T7 independent review is the next
     gate; the eventual POC still needs an optimizer-produced route in place
     of the fixed compiled plan.
+    **Update (2026-10-27, offline):** The 2026-10-26 note is superseded on
+    two points. (1) The T5/T6 implementation is committed (the reviewed
+    bytes are the `f67f107`…`70d4ce7` lineage on `devmodule2`), not
+    uncommitted. (2) The optimizer-produced route now exists: the staged D5
+    plan is derived through the production `optimize_candidate_network`
+    path (`route_from_d5_map`/`optimized_freight_route` in
+    `app/simulation/openttd/proof/corridor_freight_native.py`) and the
+    selected route is digest-bound into the wire plan; the staged candidate
+    still round-trips the single retained D4 corridor witness (no competing
+    executable route is demonstrated — recorded as M8 in
+    `docs/d5-corridor-freight-t7-review.md`). T7 review and two offline
+    remediation rounds are complete and recorded in that review document;
+    native freight delivery remains UNKNOWN, no candidate, claim,
+    signature or authorization exists, and T8 staging plus Gate C remain
+    separate explicit gates.
+
+   **Update (2026-10-27, native — E36):** T8 staging and the Gate C
+   signing-and-single-attempt authorization were granted and consumed for a
+   fixed-corridor POC. Candidate `D5-FREIGHT-1` staged fresh from the
+   reviewed bytes: `PRELAUNCH PASS` + fresh read-only `PREFLIGHT PASS`, seal
+   `c8bdc65f…d0f7c9`, authorization payload `fdb1325f…3f75c7` (2,410 bytes,
+   rebuild-verified), source world bound to candidate-5 after-save
+   `a81ac836…ef261`, 3,486-entry frozen closure, 15 planned exchanges /
+   request cap 32. Signing followed the documented Option-1 checklist
+   (seed captured never displayed, signature verified under the pinned
+   anchor before writing; record `f99e8233…7fde`, operator identity
+   `sha256-ed25519-public-key:cbb63ff5…40c614`) — including two signing-
+   debug substeps in which nothing was ever written before signature
+   verification. The one attempt ran once: 1 launch (15.3 dedicated,
+   pid 15053), 1 encrypted connection, welcome identity matched, staged
+   composition started (`D5_READY`). The native `site-00` readback
+   (`site-00-response.json`) is READY with all pinned corridor facts
+   correct — funds £492,149 exactly, `pairs_ok 23`/23, production 104,
+   owner 0, vehicles 0 — but the delivery-stop cargo-1 acceptance read
+   **0** (< the required 1/8), so the pinned admission refused before any
+   mutation: no order, no engine, no purchase, cost £0, funds unchanged,
+   `state_changed false`, phase `PARTIAL_EXECUTION_EVIDENCE`, terminal
+   `PHASE_HALTED_PREFIX_PRESERVED`, `verified: false`, exit 1, cleanup
+   certified, manifest 16/16 OK. Read-only replay returns
+   `PHASE_HALTED_EVIDENCE_PRESERVED` on the same first refusal. **This is
+   the D5 design's anticipated finding of record: the pinned delivery stop
+   `50351` (front `50095`) has zero native cargo-1 acceptance on the fixed
+   corridor. D5 is ATTEMPTED, NOT DELIVERED; no freight delivery, no
+   optimizer-route claim (M8 unchanged), no OPEX/profit/ROI fact, and the
+   consumed identity is closed forever.** A future POC attempt requires a
+   fresh reviewed candidate whose delivery-stop acceptance fact is newly
+   derived natively first (different stop placement or a separately
+   reviewed design change), plus fresh staging, review and explicit
+   operator authorization. Prior candidate-5 (90/90) and candidate-4 (80/80) manifest verification
+   re-verified byte-unchanged after the attempt; analytics over
+   the attempt ran twice byte-identical. Record:
+   `docs/handoff/2026-10-27/d5-corridor-freight-native-candidate-1-outcome.md`.
+
+11. **D5 follow-up — `D5-ACCEPT-SURVEY-1` read-only native acceptance survey
+    prepared offline (2026-10-27; uncommitted).** After E36's zero-acceptance
+    finding of record, the next step was prepared strictly offline: an
+    additive **protocol 6** acceptance-survey wire contract
+    (`app/simulation/openttd/corridor_accept_survey.py`: pinned
+    `AcceptSurveyPlan`, strict request/readback subsets, fail-closed parse
+    surfaces, the request-vs-plan verifier and the fail-closed
+    `survey_phase_outcome` replay verifier that distinguishes a measured
+    zero from refused/missing/malformed/out-of-range/stale), an additive
+    protocol-6 `SurveyHandle` in the shipped `d5_freight_package/main.nut`
+    (own prefix-preserving survey stage accounting, shared 32-request
+    budget, funds readback per exchange, pin/company/pause defences, a
+    handler-side pinned-tile set — control `50351` + candidates `50607`,
+    `50863`, `51119`, `51375`, `50605` — and zero observation fields on any
+    refusal; the protocol-5 freight schedule is byte-identical), and a new
+    offline suite `tests/test_corridor_accept_survey.py` (25 tests) that
+    runs the shipped package in the real Squirrel VM. The candidate
+    acceptance values are retained pre-construction census **hypotheses**
+    (candidates census 8, control census 0), re-bound by a census-guarding
+    test, and are not valid stops, not proven buildable and not a route
+    claim. Verification in this tree: survey 25/25, freight regressions
+    42/42 + 55/55, ruff/py_compile/`git diff --check` clean; no launch, no
+    AdminPort, no staged candidate, no claim/signature/authorization, no
+    repository mutation of authoritative evidence. The staging/claim
+    machinery is freight-plan-bound today, so execution requires the
+    separate `corridor_accept_survey_native.py` ceremony increment (smallest
+    safe fix, documented) plus the independent review and a fresh explicit
+    operator authorization covering exactly the one read-only survey
+    session. Record:
+    `docs/d5-acceptance-survey-1-preparation.md`.
+
+    **Update (2026-10-27, offline — the ceremony increment implemented).**
+    `app/simulation/openttd/proof/corridor_accept_survey_native.py` (new)
+    closes the freight-plan-bound staging gap: its own narrow pipeline is
+    explicitly bound to `AcceptSurveyPlan` (`_require_survey_plan` refuses
+    any other plan model — a `FreightPlan` cannot be staged, sealed or
+    replayed as a survey) and to the fixed eight-exchange `radius` →
+    control/candidate `accept` → pickup `prod` schedule; it reuses the
+    proven shared ceremony by import (the D4 candidate-5 after-save
+    prerequisite binding, runtime freeze/dependency identity, one-launch
+    backend, authorization-payload builder, cleanup discipline) — never by
+    copy — while its wire session parses protocol-6 `SurveyRequest`s only
+    (a freight frame fails the survey session's protocol-6 schema check and
+    a survey frame fails the freight session's protocol-5 check), its
+    schedule admits only the read-only `radius`/`accept`/`prod` ops,
+    `max_cost` is 0 everywhere, funds are read back per exchange, and
+    cleanup certification gates every completion verdict. Staging re-parses
+    the retained pre-construction census as `HYPOTHESIS` rows only (absence
+    recorded as `CENSUS_ABSENT`, never invented) and a measured value
+    differing from its hypothesis is a recorded finding
+    (`compare_census_findings`), never normalized or refused. The read-only
+    replay verifier (`verify_survey_attempt`) re-derives every binding
+    (schema, lineage, prerequisite, after-save, welcome, schedule, plan
+    digest, budgets, world pins, hypotheses) and re-verifies all eight
+    exchanges through the production `survey_phase_outcome`;
+    `SURVEY_COMPLETE` is impossible without a full verified schedule plus
+    certified cleanup, the retained receipt's phase must replay byte-equal,
+    `state_changed` must be false, and a forced success label with no
+    operator authorization returns structured `AUTHORIZATION_UNVERIFIED`.
+    New suite `tests/test_corridor_accept_survey_native.py` (22 tests):
+    staged candidate + payload rebuild + preflight re-derivation,
+    cross-session freight/survey refusal both ways, mutation-op and
+    exchange-budget refusals, census hypothesis/finding semantics, exchange
+    request/response persistence plus malformed/stale/truncated/over-512
+    failures, and replay fail-closed verdicts (claim absent, claim/
+    manifest/schema/seal tamper, forced labels, exit-status discipline).
+    Actual runs this session (offline; no launch, no AdminPort, no staged
+    runtime-area candidate, no claim/signature/authorization): survey
+    native 22/22 PASS, survey 25/25, freight 42/42, freight-native 55/55
+    (122/122 combined), construction wire/native + route-optimizer 84/84,
+    transport/protocol 80/80; fresh `PRELAUNCH PASS` from the shipped
+    package under the real staging path; ruff check/format clean on the
+    touched files, `py_compile` clean, `git diff --check` clean, TASKS
+    mirror byte-identical. Survey preparation doc updated with the
+    implementation status. Executing the survey still requires fresh
+    independent review plus the ONE explicit operator authorization
+    described in the preparation record §7.
+
+### 2026-10-27 — `D5-ACCEPT-SURVEY-1` executed and verified (candidate-1 consumed)
+
+The survey was authorized, staged from the reviewed bytes, sealed,
+authorized (operator anchor unchanged), launched exactly once on OpenTTD
+15.3 and completed all eight read-only exchanges with zero world mutation.
+Measured: native truck-stop coverage radius 3; control tile 50351
+acceptance 0 (E36 finding of record re-confirmed); candidate tiles 50607,
+50863, 51119, 51375, 50605 each accept 8/8; pickup production 104; funds
+£492,149 every exchange; no census divergence. Replay verifier
+`SURVEY_COMPLETION_VERIFIED` exit 0, cleanup certified, no process or
+listener remains. Full record:
+docs/handoff/2026-10-27/d5-accept-survey-native-candidate-1-outcome.md.
+Post-attempt correction: the replay receipt-arm comparison now reads the
+flat retained-receipt shape exactly as the run writes it
+(`corridor_accept_survey_native.py`), with synthetic consumed-frame
+replay + tamper regression tests added (survey-native now 25/25, survey
+25/25, freight 42/42 + freight-native 55/55 re-ran PASS after the change).
+Both the survey and freight identities remain consumed; the next freight
+phase needs a new design, new candidate and NEW explicit authorization.
+Nothing was committed or pushed; HEAD stayed `1e6d6c1`.
+### 2026-10-28 — D5 corridor extension: offline design + implementation (review, geometry, package, native pipeline)
+
+`D5-ACCEPT-SURVEY-1` measured facts consumed by design only: radius 3,
+control 0 at 50351, `accept 8` at 50607/50863/51119/51375/50605, prod 104.
+Survey replay fix audited by a fresh-context independent reviewer:
+`MATERIAL DEFECT: no` (3 minor findings retained as standing remediations;
+full report in docs/handoff/2026-10-28/). Corridor geometry verified
+offline from the D4 route read + retained census: run A y=178 x=175-180,
+run B x=175 y=179-195, terminus front 50095=(175,195), dead-end stop
+50351=(175,196), accepting industry tile 51373=(173,200); acceptance
+pattern is Chebyshev-consistent with radius 3; all branch tiles flat/
+vacant. Recommended placement: primary stop 50607 via east branch
+(full 50096-50608, road 50095-50096, station 50607 front 50608 with
+`GSStation.STATION_NEW` — distinct new station, sid {0,1} is a fail-closed
+merge defect); fallback 50605 mirrored west branch. No terrain
+modification. Prepared offline, all uncommitted:
+`d5_extension_package/main.nut` (VM-tested 23/23 incl. no-auto-join
+probe), `proof/corridor_extension_native.py` (D4 candidate-5
+prerequisite binding, evidence-derived schedule with census
+cross-check, prepare/preflight/execute/replay fail-closed verifier,
+funds arithmetic from the 492,149 pin, budget 16, per-op 2000),
+extension-native tests 43/43, plus the design record
+`docs/handoff/2026-10-28/d5-corridor-extension-design.md`. The
+acceptance recheck stays a SEPARATE read-only survey session on the
+extension after-save before any freight attempt. No commit, no launch,
+no candidate staged in the runtime area.
 
 A documentation-only handoff is complete when links and evidence references are
 valid, implementation bytes remain unchanged, the final diff is reviewed and fresh

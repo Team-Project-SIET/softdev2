@@ -4,21 +4,17 @@
     "type": "split",
     "children": [
       {
-        "id": "2e52a4ccc2a71661",
+        "id": "1460ebfc5432d682",
         "type": "tabs",
         "children": [
           {
-            "id": "99b44bdf2e38d3e2",
+            "id": "3c2d36637146c226",
             "type": "leaf",
             "state": {
-              "type": "markdown",
-              "state": {
-                "file": "Home.md",
-                "mode": "preview",
-                "source": false
-              },
+              "type": "empty",
+              "state": {},
               "icon": "lucide-file",
-              "title": "Home"
+              "title": "New tab"
             }
           }
         ]
@@ -182,14 +178,17 @@
       "daily-notes:Open today's daily note": false,
       "templates:Insert template": false,
       "command-palette:Open command palette": false,
-      "bases:Create new base": false,
-      "atlas-vtt:Display image on player view": false
+      "bases:Create new base": false
     }
   },
-  "active": "99b44bdf2e38d3e2",
+  "active": "3c2d36637146c226",
   "lastOpenFiles": [
-    "AI_START_HERE.md",
+    "Untitled.canvas",
+    "Untitled",
+    "Untitled.md",
+    "99-Source-Documents/TASKS.md",
     "Home.md",
+    "AI_START_HERE.md",
     "atlas-vtt/assets/Cleric_1792817721344_jhxatp.webp",
     "atlas-vtt/assets/Assassin_1792817721383_5ls0nd.webp",
     "atlas-vtt/collections/Default/tokens/token-starter-occultist.json",
@@ -209,7 +208,6 @@
     "atlas-vtt/assets/Paladin_1792817721355_fk8n4a.webp",
     "atlas-vtt/collections/Default/tokens/token-starter-fighter.json",
     "atlas-vtt/assets/Fighter_1792817721350_zyrx21.webp",
-    "atlas-vtt/collections/Default/tokens/token-starter-cleric.json",
     "90-Templates/Project Note.md",
     "00-Project/Current Status.md"
   ]
