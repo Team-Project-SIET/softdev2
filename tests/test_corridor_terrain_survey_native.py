@@ -342,13 +342,13 @@ def test_terrain_preflight_re_derives_every_binding(staged):
 
 
 def test_staged_attempt_identity_is_join_secure_encodable(staged):
-    """The compact D5CE3-SURVEY-2 identity fits JOIN_SECURE's 24-byte payload
+    """The compact D5CE3-SURVEY-3 identity fits JOIN_SECURE's 24-byte payload
     and is validated by the shared production rule, not just by equality."""
     from app.simulation.openttd.secure_admin import JOIN_SECURE_CLIENT_NAME_CAPACITY
     from app.simulation.openttd.secure_admin import validate_join_secure_string
 
     metadata = metadata_of(staged)
-    assert metadata["attempt"] == "D5CE3-SURVEY-2"
+    assert metadata["attempt"] == "D5CE3-SURVEY-3"
     assert len(metadata["attempt"].encode("utf-8")) == 14
     assert len(metadata["attempt"].encode("utf-8")) <= JOIN_SECURE_CLIENT_NAME_CAPACITY - 1
     validate_join_secure_string(
@@ -380,7 +380,7 @@ def test_oversized_attempt_identity_refused_before_candidate_artifacts(tmp_path,
         terrain_native.prepare_terrain_survey_candidate(empty)
     assert not empty.exists()
     # the accepted identity passes the preparation validator
-    terrain_native.require_join_secure_attempt_identity("D5CE3-SURVEY-2")
+    terrain_native.require_join_secure_attempt_identity("D5CE3-SURVEY-3")
 
 
 def test_terrain_preflight_re_refuses_unencodable_attempt_identity(staged):

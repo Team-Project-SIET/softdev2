@@ -670,6 +670,150 @@ acceptance recheck stays a SEPARATE read-only survey session on the
 extension after-save before any freight attempt. No commit, no launch,
 no candidate staged in the runtime area.
 
+### 2026-10-31 — D5-CORRIDOR-EXTENSION-3 journal-ordering correction + independent review (offline)
+
+Appended to the terrain-survey pipeline record
+(`docs/d5-corridor-extension-3-phase-a.md`): (1) a source-backed journal-ordering
+correction (§10) fixing §9.3's overstated sequence — the `TerrainAttemptJournal`
+object is constructed before `backend.preflight` but writes nothing; the first
+`journal.stage("RUN_PREFLIGHT")` after a successful read-only
+`backend.preflight` creates `attempt-progress.json`, both preflight stages are
+recorded at boundary completion before the claim, and a backend-preflight
+failure leaves no journal, no `CLAIM.json`, no `LAUNCH-CONSUMED.json`, replaying
+`AUTHORIZATION_UNVERIFIED`/`CLAIM_ABSENT` (not evidence of consumption or
+success); (2) a schema-hygiene observation that `LAUNCH_BOUNDARY` is declared
+but never journaled and is required by no replay verdict (left unchanged for a
+future schema revision); (3) the corrected comment at
+`corridor_terrain_survey_native.py` `execute_terrain_attempt` (comment only,
+behavior unchanged); (4) the §11 continuation record: an independent
+six-workstream remediation review with all six verdicts **PASS** (ordering,
+atomic claim, launch trust chain/binary/launch-critical identity, Popen-seam
+marker, journal/handshake lifecycle, replay fail-closed), three harmless
+schema-hygiene observations retained, and the actual offline suite result
+**130 passed, 1 skipped, 0 failed, 0 errors** for the documented three-file
+command (skip = `test_corridor_terrain_survey.py:346` `typeof` note), equal to
+the historical baseline. Because the comment correction changed the file's
+bytes, the never-consumed, signed candidate-2 is now **stale-by-source-drift**
+(read-only preflight fails `verify_freeze`; replay still `CLAIM_ABSENT`): its
+retained state stands unchanged and it is never edited, re-signed, re-claimed
+or launched. **No candidate-3 has been staged, signed or authorized, no launch
+occurred, Gate C signing has not been requested for anything, and staging,
+signing and launch each remain separate explicit operator approval gates** —
+the fresh-candidate checklist (identity bump `D5CE3-SURVEY-2` → a fresh ≤24-byte
+identity, new directory, fresh seal/freeze/payload, staged-bytes review,
+preflight, Gate C Option-1 local signing, separate launch approval) is prepared
+in the phase-a record §11.4. D5 stays ATTEMPTED, NOT DELIVERED: freight delivery
+unproven (`D5-FREIGHT-1` failed-of-record retained), M8 optimizer route
+selection not demonstrated, and the A0 native survey still requires the fresh
+candidate plus operator gates.
+
+### 2026-10-31 — D5-CORRIDOR-EXTENSION-3 fresh candidate-3 staged (offline, operator-approved)
+
+Following the 2026-10-31 correction/review/checklist entry above, one explicit
+operator staging approval was granted and the §11.4 checklist was executed.
+The one-constant identity bump `TERRAIN_SURVEY_ATTEMPT` `D5CE3-SURVEY-2` →
+`D5CE3-SURVEY-3` (14 UTF-8 bytes, never-consumed; milestone unchanged) plus its
+two review-facing test constants was applied, and the documented three-file
+offline suite re-ran at its exact baseline (**130 passed, 1 skipped, 0
+failed**, exit 0). `corridor_terrain_survey_native prepare` staged
+`artifacts/experiments/d5-corridor-extension-3-survey-native-candidate-3/`
+(`PRELAUNCH PASS`; fresh EndpointReservation admin 44109 / game 60181; fresh
+credential, never displayed). Seal
+`6743fc3c8400723854cde6f2f1d643188a9c2c5583d02a7acff7e241d6898df8` ≡
+`PRELAUNCH.sha256`; authorization payload digest
+`75a5d226ea598056c5b32240d1c984f3f1a8578058d062213cb88548ba0ae991`; frozen
+closure 3,491 entries pinning the bumped source
+`1b92d191994d26f55c6c75028dacb9f886719ea39aeae730636f351c156c7d5e` and the
+byte-identical staged GameScript; prerequisite freshly re-bound to the pinned
+D4 candidate-5 after-save `a81ac83677732f99…6cef261`; schedule digest
+unchanged `f091754de6d364d226b77555766ed5d2f3f3dfb38e23f42f5d3757fd62246c3a`.
+Standalone read-only preflight: **PASS**. Independent fresh-context review:
+**PASS** (full frozen sweep re-hashed 3,491 OK / 0 mismatch; lifecycle
+`AUTHORIZATION_UNVERIFIED`/`CLAIM_ABSENT`; secret-adjacent files confirmed by
+name/digest only). Stale candidate-2 re-verified byte-untouched (seal
+`c76992…aaa2b6`). Record: phase-a record §12; evidence index E38. **Next
+gates: operator Gate C Option-1 signing over `75a5d226…e991` bound to
+`D5CE3-SURVEY-3` (fresh authorization; no candidate-2 authorization reuse),
+then a separate explicit launch approval for exactly one survey attempt
+through the remediated lifecycle, then replay + certified cleanup — never
+retried on any failure. Nothing is signed, claimed, consumed or launched by
+this entry.** D5 stays ATTEMPTED, NOT DELIVERED: freight delivery unproven
+(`D5-FREIGHT-1` failed-of-record retained), M8 optimizer route selection not
+demonstrated.
+
+### 2026-10-31 — D5-CORRIDOR-EXTENSION-3 candidate-3 signed under Gate C (offline, operator-approved)
+
+Following the candidate-3 staging entry above, one explicit operator Gate C
+Option-1 approval was granted and the documented signing checklist
+(operator-key-provisioning §1/§2/§4, the E36-validated repository-tooling
+pipeline) was executed. Refusal gates were checked first and immediately
+before signing (`AUTHORIZATION.json`/`CLAIM.json`/`LAUNCH-CONSUMED.json`
+absent; payload digest re-verified `75a5d226…e991` over the exact canonical
+bytes). The seed was extracted from the operator-held PEM into a shell
+variable only (corrected exit-status/shape-checked pipeline; never printed,
+argument-passed or written), the derived public key was checked equal to
+the pinned anchor `5063982b…4880f`, the 64-byte Ed25519 signature was
+verified under the pinned anchor **before** any write, and
+`AUTHORIZATION.json` was written (sha-256
+`a481dfb51d80766e8f75ae5e9ae19dc1b9758098682ee72540e9aca4abac8261`); the
+seed was cleared immediately after final use. One first invocation aborted
+at a verifier-API name check (`is_valid` vs `verify`) before any signature
+or write — the seed was cleared there and the complete checklist re-ran
+once; `sign_authorization_record` executed exactly once. Read-only
+post-write verification: `verify_authorization` PASS,
+`operator_key_identity` = `sha256-ed25519-public-key:cbb63ff5…40c614`
+(unchanged production anchor); payload binds `attempt D5CE3-SURVEY-3` /
+milestone `D5-CORRIDOR-EXTENSION-3` to seal
+`6743fc3c…898df8`; `CLAIM.json`, `LAUNCH-CONSUMED.json` and the attempt
+journal remain absent; read-only `verify` still returns
+`AUTHORIZATION_UNVERIFIED`/`CLAIM_ABSENT` (authorized, never consumed);
+standalone `preflight` → `PREFLIGHT PASS`; stale candidate-2 re-verified
+byte-untouched. Record: phase-a record §12.5; evidence index E39. **Next
+and final gate: one separate explicit operator launch approval, then
+exactly one native survey attempt through the remediated lifecycle (the run
+consumes the one-shot claim; no retry on any failure), then replay +
+certified cleanup. The signature is not launch approval; nothing is
+claimed, consumed or launched by this entry.** D5 stays ATTEMPTED, NOT
+DELIVERED: freight delivery unproven (`D5-FREIGHT-1` failed-of-record
+retained), M8 optimizer route selection not demonstrated.
+
+### 2026-10-31 — D5-CORRIDOR-EXTENSION-3 A0 native survey COMPLETE (operator-approved launch)
+
+Following the candidate-3 signing entry above, one separate explicit
+operator launch approval was granted and `D5CE3-SURVEY-3` was executed
+exactly once through the remediated lifecycle
+(`corridor_terrain_survey_native run`, exit 0). The one-shot `CLAIM.json`
+and `LAUNCH-CONSUMED.json` (`d5-native-launch-consumed`) were consumed
+exactly once: 1 native launch (OpenTTD 15.3, pid 54600), 1 encrypted X25519
+connection, 10/10 planned exchanges (`radius-00`, `tile-00`…`tile-06`,
+`accept-00`, `accept-01`), 0 retries, `state_changed: false`. All native
+success conditions met: runtime identity matched the pinned D4 prerequisite
+world (`15.3`, seed `17`, 256×256, `start_day 712223`, encrypted); handshake
+`join_secure AUTHENTICATED`, `welcome VERIFIED` (the 14-byte identity
+passing the encoder that refused the 32-byte historical identity);
+`result.json` `verified: true` / `NATIVE_TERRAIN_COMPLETE`, `receipt.json`
+`SURVEY_COMPLETE`, every receipt funds £492,149; read-only replay →
+**`SURVEY_COMPLETION_VERIFIED`** (exit 0); certified cleanup (reaped rc 0,
+no remaining processes, sockets closed, credential removed, reservation
+released, workspace disposed, endpoint kernel `TIME_WAIT` record,
+`cleanup_complete: true`, 38-file manifest re-hash 0 mismatches); journal
+stages in the exact remediated order with `CLEANUP_COMPLETED` before
+`TERMINAL_SUCCESS`. Findings of record: stop tile `50862` reports **8/8**
+cargo-1 acceptance in its measured radius-3 footprint, control `50351`
+reports 0/8; `50096`/`50352`/`50608` buildable slopes 12/12/8,
+`50864`/`50863`/`50862` flat/buildable/unowned/roadless; six
+census-vs-native deviations captured as findings, nothing fused;
+protocol-7 blind spots (vehicle reachability, road-bit directions,
+front-road station buildability, pathfinding) stay UNKNOWN. Record:
+phase-a record §13; evidence index E40. **A0_SURVEY: COMPLETE — VERIFIED
+NATIVE. Candidate-3 is permanently consumed history: never re-run,
+re-signed or re-claimed; stale candidate-2 stays preserved untouched.
+A1 (corridor spur + bay truck stop) is unblocked but needs its own scoped
+design, fresh never-consumed candidate staging, independent review, fresh
+Gate C signature and a separate explicit launch approval.** D5's freight
+delivery (`D5-FREIGHT-1` FAILED-of-record) and M8 optimizer route selection
+remain unproven and are not covered by the survey result.
+
 A documentation-only handoff is complete when links and evidence references are
 valid, implementation bytes remain unchanged, the final diff is reviewed and fresh
 checks are reported separately from inherited validation. No commit/push is needed.

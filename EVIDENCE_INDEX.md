@@ -215,9 +215,112 @@ v3 schedule over the D3-verified world — no vehicle/delivery/OPEX/ROI claim;
 candidates 1/3/4 stay failed/partial and candidate-2 stays stale; the claim is
 consumed, so any further native work needs a fresh candidate and fresh
 explicit operator authorization.
+**2026-10-31 addendum, twelfth entry (offline; no launch, no claim, no signing):**
+E37 records the D5-CORRIDOR-EXTENSION-3 continuation: the source-backed
+journal-ordering correction and the independent six-workstream remediation
+review, appended as phase-a record §10–§11
+([the phase-a record](docs/d5-corridor-extension-3-phase-a.md)). The corrected
+contract: the terrain attempt journal is constructed in memory before
+`backend.preflight` but written only from the first `journal.stage("RUN_PREFLIGHT")`
+after that read-only preflight succeeds; both preflight stages are recorded at
+their boundary completion before the exclusive claim; a backend-preflight
+failure leaves no journal and no retained claim, and replay's
+`AUTHORIZATION_UNVERIFIED`/`CLAIM_ABSENT` is evidence of nothing consumed.
+`LAUNCH_BOUNDARY` is documented as a declared-but-unrecorded schema-hygiene
+limitation required by no replay verdict. Production changes: one comment
+correction at `corridor_terrain_survey_native.py` only (behavior unchanged).
+The documented offline command returned its exact baseline: **130 passed,
+1 skipped, 0 failed** (`test_corridor_terrain_survey.py:346` `typeof` skip).
+Review verdicts: all six remediation workstreams **PASS** with named
+source/test references in §11.1. Consequence of record: the signed,
+never-consumed survey candidate-2 became stale-by-source-drift (read-only
+preflight fails `verify_freeze`; replay still `CLAIM_ABSENT`); its bytes,
+authorization and history stand untouched and it is never reused. A fresh
+candidate-3 is prepared as a checklist only (§11.4) — nothing staged, nothing
+signed, nothing launched; D5 remains ATTEMPTED, NOT DELIVERED with freight
+unproven and M8 undemonstrated.
+**2026-10-31 addendum, thirteenth entry (offline staging; operator-approved,
+no signing, no claim, no launch):**
+E38 records the fresh D5-CORRIDOR-EXTENSION-3 survey candidate-3 staging:
+after the explicit operator staging approval, the one-constant identity bump
+`TERRAIN_SURVEY_ATTEMPT` `D5CE3-SURVEY-2` → `D5CE3-SURVEY-3` (14 UTF-8 bytes,
+never-consumed) plus its two review-facing test constants was applied, the
+documented 3-file offline suite re-ran at its exact E37 baseline (**130
+passed, 1 skipped, 0 failed**), and `corridor_terrain_survey_native prepare`
+staged
+`artifacts/experiments/d5-corridor-extension-3-survey-native-candidate-3/`
+(`PRELAUNCH PASS`, fresh EndpointReservation admin 44109 / game 60181, fresh
+credential never displayed). Seal
+`6743fc3c8400723854cde6f2f1d643188a9c2c5583d02a7acff7e241d6898df8`
+(= `PRELAUNCH.sha256`); authorization payload digest
+`75a5d226ea598056c5b32240d1c984f3f1a8578058d062213cb88548ba0ae991`; source
+closure pins the bumped bytes
+`1b92d191994d26f55c6c75028dacb9f886719ea39aeae730636f351c156c7d5e`; fresh
+prerequisite re-binding to the pinned D4 candidate-5 after-save
+`a81ac836…cfef261`; schedule digest unchanged
+`f091754d…2246c3a`. Standalone read-only preflight: **PASS**. Independent
+fresh-context review: **PASS** — full frozen sweep re-hashed 3,491 OK / 0
+mismatch / 0 missing, payload digest recomputed to the exact value,
+lifecycle `AUTHORIZATION_UNVERIFIED`/`CLAIM_ABSENT`, no
+`AUTHORIZATION.json`/`CLAIM.json`/`LAUNCH-CONSUMED.json`/journal, secret
+files confirmed by name/digest only. Stale candidate-2 re-verified
+byte-untouched (seal `c76992…aaa2b6`). Remaining gates: operator Gate C
+Option-1 signing over `75a5d226…e991`, then a separate explicit launch
+approval; nothing is signed, claimed, consumed or launched by this entry.
+Detail: phase-a record §12.
+**2026-10-31 addendum, fourteenth entry (offline signing; operator-approved,
+no launch):**
+E39 records the Gate C Option-1 signing of the already-staged candidate-3:
+refusal gates checked first and re-checked immediately before signing
+(`AUTHORIZATION.json`/`CLAIM.json`/`LAUNCH-CONSUMED.json` absent; payload
+digest re-verified `75a5d226…e991` over the exact canonical bytes), seed
+extracted from the operator-held PEM into a shell variable only (corrected
+exit-status/shape-checked pipeline; never printed/argument-passed), derived
+public key equal to the pinned anchor `5063982b…4880f`, 64-byte Ed25519
+signature verified under that anchor before any write, `AUTHORIZATION.json`
+written (sha-256 `a481dfb5…8261`), seed cleared immediately (verified
+empty). A first invocation failed at a verifier-API name check before any
+signature/write; the seed was cleared and the complete checklist re-ran once
+(`sign_authorization_record` executed exactly once). Read-only
+post-write: `verify_authorization` PASS, `operator_key_identity`
+`sha256-ed25519-public-key:cbb63ff5…40c614` (unchanged anchor), payload
+binds `D5CE3-SURVEY-3` to seal `6743fc3c…898df8`; claim/consume markers and
+journal still absent; read-only `verify` still
+`AUTHORIZATION_UNVERIFIED`/`CLAIM_ABSENT`; `PREFLIGHT PASS`; candidate-2
+re-verified untouched. The signature is NOT launch approval: the next and
+final gate is one separate explicit operator launch approval for exactly one
+attempt through the remediated lifecycle. Detail: phase-a record §12.5.
+**2026-10-31 addendum, fifteenth entry (NATIVE; operator-approved launch):**
+E40 records the A0 Native Survey completion: after the separate explicit
+operator launch approval, `D5CE3-SURVEY-3` ran exactly once through the
+remediated lifecycle (
+`...corridor_terrain_survey_native run
+artifacts/experiments/d5-corridor-extension-3-survey-native-candidate-3`,
+exit 0): one-shot claim + `LAUNCH-CONSUMED.json` consumed exactly once, 1
+native launch (OpenTTD 15.3, pid 54600), 1 encrypted X25519 connection,
+10/10 planned exchanges, 0 retries, `state_changed: false`. All documented
+native success conditions met: runtime identity matched the pinned
+prerequisite world (15.3, seed 17, 256×256, start_day 712223); handshake
+`AUTHENTICATED`/`welcome VERIFIED` (the 14-byte identity passing the
+encoder that refused the 32-byte SURVEY-1 identity); `result.json`
+`verified: true` / `NATIVE_TERRAIN_COMPLETE`, `receipt.json`
+`SURVEY_COMPLETE`, ten retained exchange pairs + `frames.json`, every
+receipt funds £492,149; read-only replay `verify` →
+**`SURVEY_COMPLETION_VERIFIED`** (exit 0); certified cleanup (reaped rc 0,
+sockets closed, credential removed, reservation released, workspace
+disposed, kernel `TIME_WAIT` endpoint record, `cleanup_complete: true`,
+manifest re-hash 0 mismatches). Journal stages recorded at boundaries with
+cleanup complete before `TERMINAL_SUCCESS` — exactly the remediated
+ordering contract. Substantive findings: stop tile `50862` reports
+**8/8** cargo-1 acceptance in its measured radius-3 footprint while
+control `50351` reports 0/8; six census-vs-native deviations captured as
+findings, nothing fused; protocol-7's blind spots stay UNKNOWN. `A0_SURVEY`
+is COMPLETE — VERIFIED NATIVE; `A1` is unblocked but still gated on its own
+staging/signing/launch approvals; freight delivery and M8 remain unproven
+and are never covered by this record. The consumed candidate-3 is history:
+never re-run, never re-signed. Detail: phase-a record §13.
 
-| ID | Retained source | Supported proposition and limits |
-|---|---|---|
+
 | E1 | [stable demo result](artifacts/demos/playable-demo-25d891bc9f3444aca73058165d10055a/result.json), [receipt](artifacts/demos/playable-demo-25d891bc9f3444aca73058165d10055a/receipt.json), [P07 results](artifacts/demos/playable-demo-25d891bc9f3444aca73058165d10055a-report/results.md), [smoke verification](artifacts/demos/smoke-review-210cd759e9ef47228002514836bd8b46/verification.json) | 3 services/vehicles, 60 coal, £1,022 revenue, £28,459 CAPEX; historical spectator inspection, P07, cleanup and integrity PASS. No direct company control or full OPEX/ROI. |
 | E2 | [create Q3 result](artifacts/runtime/canonical-fleet-create-q3/result.json), [reload Q3 result](artifacts/runtime/canonical-fleet-reload-q3/result.json), [reload correspondence](artifacts/runtime/canonical-fleet-reload-q3/reload-correspondence.json) | Native creation then exact semantic fresh-process reload-only correspondence. Protected source save SHA-256 `51e45689ae40dfa53c2cc150a05076fcb6e5cc2f38ec4eff56908372ab1297eb`. Reload: 0 mutations, paused before/after, originals restored, heartbeat advances. No purchase/dispatch/unpause proof. |
 | E3 | [Attempt 19 terminal](artifacts/runtime/openttd-15.3-first-freight-delivery-attempt19/result.json), [derived finalization](artifacts/experiments/attempt19-offline-recovery/derived-finalization.json), [recovery verification](artifacts/experiments/attempt19-offline-recovery/verification.json), [five-year analysis](docs/five-year-freight-performance-analysis.md) | Five economy years within separate offline recovery scope. Original FAILED terminal remains unchanged; finalization collided with existing company-policy.json. |
@@ -256,6 +359,11 @@ explicit operator authorization.
 | E36-a | (2026-10-27 addendum, eleventh entry) | E36 records the consumed `D5-FREIGHT-1` fixed-corridor freight POC attempt above: staged, signed, launched exactly once, and refused at `site-00` with the native `accept 0` finding of record. D5 native freight delivery remains NOT PROVEN; the fixed-corridor-only and M8 limitations stand. |
 | E35 | [candidate-5 native outcome](docs/handoff/2026-10-26/d4-corridor-native-candidate-5-outcome.md), consumed `artifacts/experiments/d4-corridor-native-candidate-5/` (`AUTHORIZATION.json` sha `55486971…dec03`, one-shot consumed `CLAIM.json`, `LAUNCH-CONSUMED.json`, `result.json`, `receipt.json`, `cleanup.json`, `frames.json`, 22 retained request/response exchanges + per-op evidence, `session-before.sav`/authoritative `after.sav` sha `a81ac836…ef261`/`after-diagnostic.sav`, logs, 90-file `artifact-manifest.sha256`) | **One operator-authorized native run of `D4-CORRIDOR-5` after all pre-signing gates re-verified; all seven v3 operations verified including the depot, route receipt verified, authoritative receipt-bound after-save exists: Milestone D4 native road and station construction PROVEN for exactly the reviewed v3 scope.** Explicit operator authorization (2026-10-26) covered signing and exactly one native attempt; every gate was re-run fresh (seal/payload/plan digest/source save/frozen closure 3,448 across a fresh `PREFLIGHT PASS`, independent-review PASS 20/20, implementation-vs-review freeze binding, protocol 640/512/32763 statics + dynamics, positive-tested-quote admission and budget machinery, runtime isolation, never-consumed state). Signing followed the documented approved checklist (Option 1 only; seed captured never displayed; signature verified under the pinned production anchor before writing; record `55486971…dec03`, operator identity `sha256-ed25519-public-key:cbb63ff5…40c614`). The attempt: preflight PASS, claim consumed once, 1 launch / 1 encrypted X25519 connection (welcome identity matched; pid 105464), 22 of 28 request budget. All seven ops dispatched exactly once with positive tested quotes equal to native costs within the £2,000 per-op ceiling and each independently read back via its intent-scoped `confirm-XX` (`NATIVE_STATE_CHANGED`): op-00 run A 5 tiles £785; op-01 run-B 9 tiles £1,398; op-02 run-B 8 tiles £1,151; op-03 perpendicular corner `45743↔45999` 2 tiles £71; op-04 pickup stop `45748` £307; op-05 delivery stop `50351` £292; **op-06 depot `45487` £390 — `confirm-06` READ, digest matched, the durable `depot-06-response.json` (513-byte payload) retained under the E33 640-byte protocol-4 bound**. Funds reconcile exactly: £496,543 − £4,394 = **£492,149**, independently confirmed by the route read. The pure-observation route read of the 24-tile/23-pair witness returned `ROUTE_VERIFIED` 23/23 with `first_fail_index −1`. Phase `PHASE_COMPLETE` (`failed: null`, `pending: []`); `receipt.json` binds before-save `a3e6b510…5c5c` and after-save `a81ac836…ef261`; `after-diagnostic.sav` (`7a853eba…a3`) is a distinct diagnostic copy, never a substitute. Cleanup certified (reaped/sockets_closed/workspace_disposed/credential_removed all true, return code 0, endpoints certified); post-run isolation re-verified (no process, no listener, `isolated/` empty). Manifest 90/90 OK; the independent read-only replay verifier returns **`RECEIPT_VERIFIED`** (exit 0). D3 prerequisite and candidate-1/2/3/4 evidence re-verified untouched (candidate-4 manifest 80/80 both before and after). Limits: exactly the reviewed v3 schedule over the D3-verified Seed 17 world — this is not a vehicle/delivery/OPEX/profit/ROI claim; consumed identities 1/3/4 stay failed/partial, 2 stays stale; any further native work needs a fresh reviewed candidate and fresh explicit operator authorization. |
 
+
+| E37 | [phase-a record §10–§11](docs/d5-corridor-extension-3-phase-a.md), comment edit `app/simulation/openttd/proof/corridor_terrain_survey_native.py` (comment only), offline suite run 2026-10-31 | **Journal-ordering correction + independent six-workstream review + offline validation; offline only.** Corrected lifecycle contract recorded (§10.1) and enforced by the code as verified: in-memory journal construction precedes `backend.preflight`, the journal file and its first two stages appear only after a successful read-only backend preflight, and absence of the journal is never evidence of consumption/success; replay of stale candidate-2 returns `AUTHORIZATION_UNVERIFIED`/`CLAIM_ABSENT`. Review verdicts (§11.1) PASS for preflight-before-claim ordering, exclusive atomic claim, launch trust chain/binary/launch-critical identity, Popen-boundary marker, journal/handshake lifecycle and fail-closed replay, each with test references. Documented offline command equals its baseline (130 passed, 1 skipped, 0 failed, 0 errors). Consequence of record: signed, never-consumed candidate-2 is stale-by-source-drift, untouched, never reused. Fresh candidate-3 exists only as a checklist (§11.4): not staged, not signed, not authorized for launch; freight and M8 remain unchanged/undemonstrated. |
+| E38 | phase-a record §12, staged candidate `artifacts/experiments/d5-corridor-extension-3-survey-native-candidate-3/` (`PRELAUNCH.json`/`PRELAUNCH.sha256` + isolated frozen 3,491-entry workspace; claim absent, no authorization file), one identity edit `TERRAIN_SURVEY_ATTEMPT` `"D5CE3-SURVEY-2"` → `"D5CE3-SURVEY-3"` (plus its two review-facing test constants) | **Operator-approved offline staging of ONE fresh D5-CORRIDOR-EXTENSION-3 survey candidate after the §11.4 checklist; offline only.** Identity 14 UTF-8 bytes; documented 3-file suite re-ran at its exact baseline (130 passed, 1 skipped, 0 failed); `PRELAUNCH PASS` with fresh EndpointReservation and fresh never-displayed credential; seal `6743fc3c…898df8` re-verified byte-for-byte; authorization payload digest `75a5d226…e991`; source closure pins the bumped source `1b92d191…7d5e` and byte-identical staged GameScript `500d3f02…c5a3e4`; prerequisite freshly re-bound to the pinned D4 candidate-5 after-save `a81ac836…cfef261`; schedule digest unchanged `f091754d…2246c3a`; standalone read-only `PREFLIGHT PASS`; independent fresh-context review **PASS** (full frozen sweep 3,491 OK/0 mismatch/0 missing; lifecycle `AUTHORIZATION_UNVERIFIED`/`CLAIM_ABSENT`; stale candidate-2 re-verified untouched, seal `c76992…aaa2b6`). No signing, claim, launch, claim or commit; next gates: Gate C Option-1 signing over `75a5d226…e991`, then separate explicit launch approval. |
+| E39 | phase-a record §12.5, signed `artifacts/experiments/d5-corridor-extension-3-survey-native-candidate-3/AUTHORIZATION.json` (sha `a481dfb5…8261`) over the E38 staged bytes | **Operator-approved Gate C Option-1 signing of the staged D5-CORRIDOR-EXTENSION-3 survey candidate; offline, no launch.** Checklist of the [key provisioning doc §1/§2/§4](docs/handoff/2026-10-17/operator-key-provisioning.md) executed: refusal gates first (no `AUTHORIZATION.json`/`CLAIM.json`/`LAUNCH-CONSUMED.json`/journal; payload digest re-verified `75a5d226…e991`), seed handled only as an environment variable via the corrected pipeline (never printed/argument-passed/written), derived key ≡ pinned anchor `5063982b…4880f`, signature verified under the pinned anchor before any write, seed cleared after final use. One failed invocation aborted at a verifier-API name check before signature/write; complete checklist re-ran once. Post-write: `verify_authorization` PASS with `operator_key_identity sha256-ed25519-public-key:cbb63ff5…40c614`; `CLAIM.json`/`LAUNCH-CONSUMED.json` absent; `verify` → `AUTHORIZATION_UNVERIFIED`/`CLAIM_ABSENT`; `PREFLIGHT PASS`; candidate-2 unchanged. The authorization is binding only — the separate explicit launch approval gate remains ungranted. |
+| E40 | [phase-a record §13](docs/d5-corridor-extension-3-phase-a.md), consumed `artifacts/experiments/d5-corridor-extension-3-survey-native-candidate-3/` (`AUTHORIZATION.json` sha `a481dfb5…8261` (E39), one-shot consumed `CLAIM.json`, `LAUNCH-CONSUMED.json`, `attempt-progress.json` with `TERMINAL_SUCCESS`, `handshake-evidence.json`, `result.json`, `receipt.json`, ten exchange pairs + `frames.json`, `runtime-identity.json`, `cleanup.json`, `session-before.sav`/`after-diagnostic.sav`, logs, 38-file `artifact-manifest.sha256`) | **A0 Native Survey COMPLETE — VERIFIED NATIVE for `D5CE3-SURVEY-3` (operator-approved launch; consumed exactly once).** 1 launch (OpenTTD 15.3, pid 54600), 1 encrypted connection, 10/10 exchanges, 0 retries, 0 mutations (`state_changed: false`); runtime identity matched the pinned world (seed 17, 256×256, start_day 712223); handshake `AUTHENTICATED`/`VERIFIED`; replay `verify` → `SURVEY_COMPLETION_VERIFIED`; certified cleanup all-true (reaped, sockets closed, credential removed, reservation released, workspace disposed; endpoint kernel `TIME_WAIT` record); manifest 0 mismatches. Findings: delivery-stop tile `50862` = **8/8** cargo-1 acceptance radius-3, control `50351` = 0/8; tiles `50096`/`50352`/`50608` buildable (slopes 12/12/8), `50864`/`50863`/`50862` flat/buildable/unowned/roadless; six census deviations retained as findings. Journal ordering matches the remediated contract exactly. **The D5 scope of record is unchanged and not closed:** freight delivery (`D5-FREIGHT-1` FAILED-of-record) and M8 route selection remain unproven; A1 construction must not reuse candidate-3 (permanent) and needs a fresh staged/signed candidate plus separate approvals. |
 | E36-b | (2026-10-27, offline implementation record) implementation `app/simulation/openttd/proof/corridor_accept_survey_native.py` (new `D5-ACCEPT-SURVEY-1` native staging pipeline: `AcceptSurveyPlan`-typed staging/sealing/preflight/execution/replay bound to the fixed eight-exchange read-only schedule, reusing the shared D4/D5 ceremony by import), tests `tests/test_corridor_accept_survey_native.py` (22 PASS) | **Offline implementation and validation of the survey-native pipeline only; no native action, no candidate in the runtime area.** Closes the gap recorded in the preparation doc §6: the survey gets its own narrow pipeline (no generic abstraction layer, no freight-pipeline edit), explicitly refusing cross-plan abuse — a `FreightPlan` fails `_require_survey_plan`, a freight frame fails the survey session's protocol-6 check and a survey frame fails the freight session's protocol-5 check; the schedule admits only `radius`/`accept`/`prod` with `max_cost = 0`, funds readback per exchange, radius-before-acceptance ordering, census `HYPOTHESIS` rows (absence recorded, never invented) with measured-vs-hypothesis divergence recorded as findings, and a replay verifier that re-derives every binding and re-verifies all eight exchanges through production `survey_phase_outcome` with certified cleanup gating `SURVEY_COMPLETION_VERIFIED`. Runs: survey-native 22/22, survey 25/25, freight 42/42 + freight-native 55/55, construction wire/native + optimizer 84/84, transport/protocol 80/80 (all PASS, offline); ruff check/format clean on touched files, `py_compile` and `git diff --check` clean, TASKS mirror byte-identical; fresh `PRELAUNCH PASS` staging rehearsal outside the repository. Executing the survey needs fresh independent review plus fresh explicit operator authorization; no launch, AdminPort session, claim, signature or Gate C artifact exists. |
 Historical detailed indexes and their recorded hashes are preserved in
 [previous-EVIDENCE_INDEX.md](docs/handoff/2026-10-17/previous-EVIDENCE_INDEX.md).

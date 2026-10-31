@@ -1280,7 +1280,7 @@ def _pins(entry: dict, *, intent: CorridorIntent | None = None) -> dict:
             "front": intent.front,
         }
     kind = entry["kind"]
-    if kind in ("full", "road"):
+    if kind in ("full", "road", "spur"):
         return dict(start=entry["start"], end=entry["end"])
     return dict(tile=entry["tile"], front=entry["front"])
 

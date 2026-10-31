@@ -23,6 +23,23 @@ shared D2 gates, ``corridor_freight_native`` for the shared D4 candidate-5
 after-save prerequisite binding, ``corridor_accept_survey_native``'s shape
 for the staged-candidate staging).
 
+v2 update (the consumed D5-CORRIDOR-EXTENSION-2 connectivity postmortem §3):
+the consumed v1 attempt (candidate-2) failed at route pair 28 with the stop
+built but unreachable — plain ``GSRoad.BuildRoad`` on the company-road
+/roadless corner left the missing end bit on 50864 (postmortem §2,
+Explanation A). The v2 design of record keeps ops 0/1 and adds a DEDICATED
+``spur`` op kind running ``GSRoad.BuildRoadFull(50864, 50863)`` — full build
+semantics set the missing end bit — and moves the NEW bay truck stop to
+50862 fronting the spur end 50863 (the A0 native survey ``D5CE3-SURVEY-3``
+observed 50862 live-flat/buildable/unowned/roadless with full 8/8 radius-3
+cargo-1 acceptance). The witness grows to 31 tiles / 30 pairs ending
+``... 50864, 50863, 50862``; the route read's terminal station facts gate
+the stop at the witness tail. The v1 schedule and its D5-TERRAIN-SURVEY-1
+terrain binding are preserved for consumed-record replay only
+(``extension_schedule_v1`` / the version-scoped replay), never re-staged:
+candidate-2 is a consumed historical record and is never staged, signed,
+consumed, re-signed or edited.
+
 The ``D5-FREIGHT-1``, ``D5-ACCEPT-SURVEY-1`` and the consumed
 D5-CORRIDOR-EXTENSION-1 candidate identities are consumed forever; this
 pipeline derives from the same authoritative D4 candidate-5 after-save as a
@@ -120,7 +137,6 @@ EXTENSION_CLOSURE_ROOT = "app.simulation.openttd.proof.corridor_extension_native
 
 KIND = "corridor-extension"
 MILESTONE_EXTENSION = "D5-CORRIDOR-EXTENSION"
-EXTENSION_ATTEMPT = "D5-CORRIDOR-EXTENSION-2"
 D5_EXTENSION_PRELAUNCH_SCHEMA = "d5-corridor-extension-prelaunch-v1"
 # The shared prerequisite/launch lineage records (same D4 candidate-5 world,
 # same one-launch consumed marker family).
@@ -134,20 +150,22 @@ PINNED_PREREQUISITE_AFTER_SAVE = freight_native.PINNED_PREREQUISITE_AFTER_SAVE
 # verified prefix's native costs.
 FUNDS_PIN = FUNDS_AT_D4_CLOSE
 
-# --- Retained D5-TERRAIN-SURVEY-1 evidence of record (fail-closed reader) ----
+# --- Retained D5CE3-A0 native survey evidence of record (fail-closed reader) --
 #
-# The consumed D5-TERRAIN-SURVEY-1 native survey candidate observed, with
+# The consumed A0 native survey candidate ``D5CE3-SURVEY-3`` observed, with
 # zero world mutation and a byte-bound receipt per exchange, the same D4
 # candidate-5 after-save world this extension stages on. Its identity is
 # consumed forever and is never reused; this module reads its retained
-# ``result.json`` as EVIDENCE OF RECORD only. The survey never proves road
-# or station buildability: it fixes the live facts the pre-admission gate's
-# native test-mode previews are quoted against.
+# ``result.json`` as EVIDENCE OF RECORD only. (The v1 extension staging read
+# the D5-TERRAIN-SURVEY-1 evidence instead; that v1 binding is preserved in
+# the consumed candidate-2 record and is not re-derived for fresh staging.)
+# The survey never proves road or station buildability: it fixes the live
+# facts the pre-admission gate's native test-mode previews are quoted against.
 PINNED_TERRAIN_SURVEY = (
-    PROJECT / "artifacts/experiments/d5-terrain-survey-native-candidate-1"
+    PROJECT / "artifacts/experiments/d5-corridor-extension-3-survey-native-candidate-3"
 ).resolve()
-TERRAIN_SURVEY_PLAN_DIGEST = "be3be5570181f16948cb60c090ca831861eb244856d191156eb14de6e48a5324"
-TERRAIN_SURVEY_SEAL = "ee0f21af5c8360476fd004c32ac4a3841eb070a457280fc2c735100cc1a88751"
+TERRAIN_SURVEY_PLAN_DIGEST = "82246eb67f0fa6dfc0631a1fe7b84e84f963f9b7d8c8919fe4a064e8c98ef8d9"
+TERRAIN_SURVEY_SEAL = "6743fc3c8400723854cde6f2f1d643188a9c2c5583d02a7acff7e241d6898df8"
 TERRAIN_SURVEY_RADIUS = 3
 # The receipt-bound terrain frame of record per pinned branch tile. The
 # escarpment ramp slopes 12/12/8 on 50096/50352/50608 are the survey's own
@@ -155,6 +173,9 @@ TERRAIN_SURVEY_RADIUS = 3
 # road over such tiles with a foundation price, so they are priced by the
 # native previews, never folded into a census-flat claim. 50095 is the built
 # company road (hence road=True and buildable=False exactly as observed).
+# 50862 — the v2 bay-stop site — is the A0 survey's own addition: live-flat
+# height 1, buildable, unowned, roadless, and the delivery-stop acceptance
+# observation of record (8/8 radius-3 cargo acceptance; control 50351 = 0).
 TERRAIN_SURVEY_TILES: dict[int, dict] = {
     50095: dict(slope=0, min_height=2, max_height=2, buildable=False, road=True),
     50096: dict(slope=12, min_height=1, max_height=2, buildable=True, road=False),
@@ -162,15 +183,16 @@ TERRAIN_SURVEY_TILES: dict[int, dict] = {
     50608: dict(slope=8, min_height=1, max_height=2, buildable=True, road=False),
     50864: dict(slope=0, min_height=1, max_height=1, buildable=True, road=False),
     50863: dict(slope=0, min_height=1, max_height=1, buildable=True, road=False),
+    50862: dict(slope=0, min_height=1, max_height=1, buildable=True, road=False),
 }
 TERRAIN_SURVEY_OWNER = {tile: 0 if tile == 50095 else -1 for tile in TERRAIN_SURVEY_TILES}
-TERRAIN_SURVEY_ACCEPTANCE = {50351: 0, 50863: 8}
+TERRAIN_SURVEY_ACCEPTANCE = {50351: 0, 50862: 8}
 
 
 def terrain_survey_facts(survey: Path | None = None) -> dict:
     """The fail-closed reader of the retained terrain-survey receipts.
 
-    Consumed D5-TERRAIN-SURVEY-1 identity only (never reused): the retained
+    Consumed A0 native survey identity only (never reused): the retained
     ``result.json`` must be a verified zero-mutation observation on the
     pinned plan digest/seal/world, and every receipted fact must equal the
     tile frame of record above; any drift, absence or re-label refuses
@@ -262,24 +284,39 @@ def terrain_survey_facts(survey: Path | None = None) -> dict:
 
 
 EXTENSION_READY_MARKER = "D5_EXT_READY"
-EXTENSION_SCHEDULE_VERSION = 1
+EXTENSION_SCHEDULE_VERSION = 2
 PER_OP_MAX_COST = 2000
 
+# Attempt identity per schedule version: the consumed v1 record
+# (``D5-CORRIDOR-EXTENSION-2``) is history and is never reused; fresh v2
+# staging carries the next attempt number of the same lineage.
+EXTENSION_ATTEMPTS = {
+    1: "D5-CORRIDOR-EXTENSION-2",
+    2: "D5-CORRIDOR-EXTENSION-3",
+}
+EXTENSION_ATTEMPT = EXTENSION_ATTEMPTS[EXTENSION_SCHEDULE_VERSION]
+
 # Wire bounds stay the D4 protocol-4 gates: requests at 512 bytes, responses
-# at 640 (the 30-tile route echo is the largest legal reply).
-PLANNED_EXTENSION_REQUESTS = 10
-EXTENSION_REQUEST_BUDGET = 16
+# at 640 (the 31-tile route echo is the largest legal reply).
+PLANNED_EXTENSION_REQUESTS = 13
+EXTENSION_REQUEST_BUDGET = 18
 
 ACCEPTANCE_RECHECK_STATEMENT = (
     "acceptance recheck happens in a separate read-only survey session on "
     "this attempt's after-save, before any freight order or vehicle purchase"
 )
 
-# The pinned approved design (the terrain-aware D5 recovery spec's own
-# schedule; the delivery terrace's raised corner evidence excluded the
-# halted predecessor's stop tile 50607 and moved the branch stop to 50608's
-# south neighbour row). The staged derivation must equal this exactly or
+# The pinned approved v2 design (the consumed D5-CORRIDOR-EXTENSION-2
+# connectivity postmortem §3 primary design, bound to the A0 native survey
+# evidence of record): the v1 four-branch-run + join + NEW bay truck stop
+# schedule with the spur road piece the v1 attempt's dead-end pair-28
+# failure proved missing. The staged derivation must equal this exactly or
 # staging refuses.
+# The pinned approved v2 witness (postmortem-corrected design): the v1
+# sequence plus the new bay-stop tail. The road path ends at the spur road
+# end 50863 (a v1-failed plain road piece) and the NEW bay truck stop 50862
+# stands last — its tail facts (stop/truck/sid/drive_through/linkage) are
+# the terminal route-witness gate. 31 tiles / 30 pairs.
 PINNED_WITNESS = (
     45748,
     45747,
@@ -311,6 +348,7 @@ PINNED_WITNESS = (
     50608,
     50864,
     50863,
+    50862,
 )
 
 
@@ -390,8 +428,15 @@ def network_pins() -> dict:
 
     Every number comes from the compiled corridor witness and the map width;
     the derived pins are then validated against the retained census vacancy
-    predicates and the built-corridor exclusion facts. Any drift is an
-    :class:`ExtensionStagingError` — the branch is never hand-pinned.
+    predicates and the built-corridor exclusion facts. The v2 spur geometry
+    is the postmortem-corrected design: the branch full run ends at
+    ``spur_start`` (the built run end), the dedicated ``spur`` road piece
+    runs one tile further along the same row to ``spur_end`` (= ``branch_front``,
+    the NEW stop's front), and the NEW bay truck stop stands at
+    ``branch_stop`` (= ``spur_end − 1``, per the A0 survey the stop tile
+    live-flat/buildable/unowned/roadless with full cargo-1 acceptance).
+    Any drift is an :class:`ExtensionStagingError` — the branch is never
+    hand-pinned.
     """
     corridor = _compiled_corridor()
     depot = dict(d4.corridor_facts()["depot"])
@@ -399,26 +444,35 @@ def network_pins() -> dict:
     delivery_stop = corridor[-1]
     branch_full_start = delivery_front + 1
     # Terrain-aware recovery: the terraform-receipt corner arithmetic drove a
-    # live native slope onto the delivery terrace's old stop tile, so the stop
+    # live native slope onto the delivery terrace's old stop tile, so the run
     # moves one full tile row further south (south-front row). The stop's own
     # live slope is a native UNKNOWN until the zero-mutation pre-admission
     # chain proves the station op buildable; the census pin below stays a
     # census predicate only, never a live-slope claim.
-    branch_stop = delivery_stop + 512
-    branch_front = branch_stop + 1
     branch_run = [branch_full_start + i * 256 for i in range(4)]
-    run_len = (branch_front - branch_full_start) // 256 + 1
-    if run_len != 4 or branch_run[-1] != branch_front:
+    run_len = (branch_run[-1] - branch_full_start) // 256 + 1
+    if run_len != 4:
         raise ExtensionStagingError("the derived branch run does not tie the stop front")
+    # The v2 spur geometry (postmortem §3 primary design): the spur road
+    # piece runs one tile west of the branch run end along the same row, and
+    # the NEW bay stop stands one tile further west again on that spur end.
+    spur_start = branch_run[-1]
+    spur_end = spur_start - 1
+    branch_stop = spur_end - 1
+    branch_front = spur_end
+    if not _adjacent(spur_start, spur_end) or not _adjacent(branch_stop, branch_front):
+        raise ExtensionStagingError(
+            "the derived spur/stop pins are not the same-row adjacency of record"
+        )
     census = d4._retained_network_facts()
     facts_by_id = {int(entry["tile_id"]): entry for entry in census["tiles"]}
     pins: dict[int, dict] = {}
-    for tile in [delivery_front, *branch_run, branch_stop]:
+    for tile in [delivery_front, *branch_run, spur_end]:
         if tile not in facts_by_id:
             raise ExtensionStagingError(f"the derived branch pin {tile} lacks its census row")
         pins[tile] = _vacant_census_pin(tile, facts_by_id[tile])
     built = set(corridor) | set(built_route_witness())
-    for tile in (*branch_run, branch_stop, branch_front):
+    for tile in (*branch_run, spur_end, branch_stop):
         if tile in built:
             raise ExtensionStagingError(
                 f"the derived branch pin {tile} overlaps the built D4 corridor"
@@ -429,7 +483,9 @@ def network_pins() -> dict:
         depot=int(depot["tile_id"]),
         depot_front=int(depot["front_tile_id"]),
         branch_full_start=branch_full_start,
-        branch_full_end=branch_front,
+        branch_full_end=branch_run[-1],
+        spur_start=spur_start,
+        spur_end=spur_end,
         branch_stop=branch_stop,
         branch_front=branch_front,
         branch_run=tuple(branch_run),
@@ -441,16 +497,17 @@ def network_pins() -> dict:
 
 
 def extension_witness() -> tuple[int, ...]:
-    """The ordered 30-tile extended-corridor witness path.
+    """The ordered 31-tile extended-corridor witness path.
 
     The D4 witness first (verified equal to the compiled corridor and to the
-    built route-read evidence), then the retraced delivery front and the
-    branch run tiles, standing on the new branch stop last.
+    built route-read evidence), then the retraced delivery front, the branch
+    run tiles, the spur road end (the NEW stop's front), standing on the
+    NEW bay truck stop last.
     """
     pins = network_pins()
     witness = tuple(
         list(_compiled_corridor())
-        + [pins["delivery_front"], *pins["branch_run"], pins["branch_stop"]]
+        + [pins["delivery_front"], *pins["branch_run"], pins["spur_end"], pins["branch_stop"]]
     )
     for a, b in zip(witness, witness[1:]):
         if not _adjacent(a, b):
@@ -462,15 +519,18 @@ def extension_witness() -> tuple[int, ...]:
 
 
 def extension_schedule() -> list[dict]:
-    """The staged three-op extension schedule, derived from evidence.
+    """The staged four-op extension schedule, derived from evidence.
 
     Op-0 is the branch ``full`` run 50096..50864 (east of the delivery
     front, on vacant census ground); op-1 the ``road`` join 50095-50096
     (second because ``road`` eligibility requires both endpoints to be
-    company road already); op-2 the branch truck stop 50863 fronting
-    50864. The production wire contract's own adjacency semantics are the
-    schedule's gates; the derived schedule must also equal the pinned
-    approved design exactly.
+    company road already); op-2 the dedicated ``spur`` road piece
+    50864-50863 with ``GSRoad.BuildRoadFull`` semantics (the v1 record
+    proved a plain ``BuildRoad`` at the company-road/roadless corner
+    relocates the missing-end-bit failure); op-3 the NEW bay truck stop
+    50862 fronting the spur end 50863. The production wire contract's own
+    adjacency semantics are the schedule's gates; the derived schedule must
+    also equal the pinned approved design exactly.
     """
     pins = network_pins()
     corridor = list(_compiled_corridor())
@@ -492,8 +552,16 @@ def extension_schedule() -> list[dict]:
             tiles=[pins["delivery_front"], pins["branch_full_start"]],
         ),
         dict(
-            kind="station",
+            kind="spur",
             index=2,
+            start=pins["spur_start"],
+            end=pins["spur_end"],
+            run_len=2,
+            tiles=[pins["spur_start"], pins["spur_end"]],
+        ),
+        dict(
+            kind="station",
+            index=3,
             tile=pins["branch_stop"],
             front=pins["branch_front"],
             stop_role="delivery",
@@ -514,9 +582,65 @@ def extension_schedule() -> list[dict]:
             tiles=[50096, 50352, 50608, 50864],
         ),
         dict(kind="road", index=1, start=50095, end=50096, run_len=2, tiles=[50095, 50096]),
-        dict(kind="station", index=2, tile=50863, front=50864, stop_role="delivery"),
+        dict(kind="spur", index=2, start=50864, end=50863, run_len=2, tiles=[50864, 50863]),
+        dict(kind="station", index=3, tile=50862, front=50863, stop_role="delivery"),
     ]:
         raise ExtensionStagingError("the derived schedule drifted from the approved design")
+    return schedule
+
+
+def extension_schedule_v1() -> list[dict]:
+    """The historical derivation of the consumed ``D5-CORRIDOR-EXTENSION-2``
+    (schedule v1) three-op schedule.
+
+    The consumed candidate staged the v1 stop at 50863 fronting 50864 with
+    NO spur op; its retained record binds that v1 plan digest. This
+    derivation is compiled from the same pinned branch arithmetic — the
+    v1 stop sat one row-south-west of the v1 front — never hand-retold, and
+    exists only so :func:`verify_extension_attempt` keeps re-deriving the
+    consumed v1 candidate's binding (the D4 v1/v2 precedent); fresh staging
+    always carries the current v2 schedule (``extension_plan_policy`` pins
+    ``schedule_version``).
+    """
+    pins = network_pins()
+    corridor = list(_compiled_corridor())
+    # The v1 geometry: no spur op; the stop sat at the road corner the v2
+    # design turned into the spur end, fronting the branch run end.
+    v1_stop = pins["branch_run"][-1] - 1
+    v1_front = v1_stop + 1
+    schedule = [
+        dict(
+            kind="full",
+            index=0,
+            start=pins["branch_full_start"],
+            end=pins["branch_full_end"],
+            run_len=int(pins["run_len"]),
+            tiles=list(pins["branch_run"]),
+        ),
+        dict(
+            kind="road",
+            index=1,
+            start=pins["delivery_front"],
+            end=pins["branch_full_start"],
+            run_len=2,
+            tiles=[pins["delivery_front"], pins["branch_full_start"]],
+        ),
+        dict(kind="station", index=2, tile=v1_stop, front=v1_front, stop_role="delivery"),
+    ]
+    if v1_stop != 50863 or v1_front != 50864:  # pragma: no cover - arithmetic pin
+        raise ExtensionStagingError("the historical v1 extension geometry drifted")
+    for entry in schedule:
+        if entry["kind"] not in ("full", "road", "station"):
+            raise ExtensionStagingError("a historical v1 op carries an unsupported kind")
+        if entry["kind"] in ("full", "road"):
+            if entry["start"] is None or not 0 <= entry["start"] <= 0xFFFF or not (
+                0 <= entry["end"] <= 0xFFFF
+            ):
+                raise ExtensionStagingError("a historical v1 road pin exceeds the tile bound")
+        if entry["kind"] == "station" and (
+            entry["tile"] in corridor or entry["front"] in corridor
+        ):
+            raise ExtensionStagingError("the historical v1 stop overlaps the built corridor")
     return schedule
 
 
@@ -525,23 +649,27 @@ def _validate_schedule_shape(schedule: list[dict], *, corridor: list[int]) -> No
     if indexes != list(range(len(schedule))):
         raise ExtensionStagingError("the extension schedule order drifted")
     for entry in schedule:
-        if entry["kind"] not in ("full", "road", "station", "depot"):
+        if entry["kind"] not in ("full", "road", "spur", "station", "depot"):
             raise ExtensionStagingError("a scheduled extension op carries an unknown kind")
-        if entry["kind"] in ("full", "road"):
+        if entry["kind"] in ("full", "road", "spur"):
             start, end = entry["start"], entry["end"]
             if start is None or end is None or not 0 <= start <= 0xFFFF or not 0 <= end <= 0xFFFF:
                 raise ExtensionStagingError("an extension road pin exceeds the tile bound")
             dx = abs(start % 256 - end % 256)
             dy = abs(start // 256 - end // 256)
-            if entry["kind"] == "full":
+            if entry["kind"] in ("full", "spur"):
                 if (dx != 0 and dy != 0) or not 1 <= dx + dy <= MAX_FULL_SPAN:
                     raise ExtensionStagingError(
-                        "the branch full run is not a bounded straight axis"
+                        "the extension road run is not a bounded straight axis"
                     )
                 if entry["run_len"] != dx + dy + 1:
-                    raise ExtensionStagingError("the branch run length drifted from its span")
+                    raise ExtensionStagingError("the run length drifted from its span")
                 if any(tile in corridor for tile in entry["tiles"]):
                     raise ExtensionStagingError("the branch run overlaps the built corridor")
+                if entry["kind"] == "spur" and (start, end) != (end + 1, end):
+                    raise ExtensionStagingError(
+                        "the spur is not the one-tile same-row piece west of the run end"
+                    )
             else:
                 if dx + dy != 1:
                     raise ExtensionStagingError("the join endpoints are not adjacent")
@@ -553,8 +681,11 @@ def _validate_schedule_shape(schedule: list[dict], *, corridor: list[int]) -> No
                 raise ExtensionStagingError("the branch stop overlaps the built corridor")
     if schedule[1]["end"] != schedule[0]["start"]:
         raise ExtensionStagingError("the join does not tie the delivery front to the branch head")
-    if schedule[2]["front"] != schedule[0]["end"]:
-        raise ExtensionStagingError("the branch stop does not front the branch run end")
+    if "spur" in [entry["kind"] for entry in schedule]:
+        if schedule[2]["kind"] != "spur" or schedule[2]["start"] != schedule[0]["end"]:
+            raise ExtensionStagingError("the spur does not start at the branch run end")
+        if schedule[3]["front"] != schedule[2]["end"]:
+            raise ExtensionStagingError("the branch stop does not front the spur road end")
 
 
 def extension_route_policy() -> dict:
@@ -573,7 +704,7 @@ def extension_route_policy() -> dict:
         branch_full_start=pins["branch_full_start"],
         branch_stop=pins["branch_stop"],
         statement=(
-            "the route read is pure observation of the ordered 30-tile witness, "
+            "the route read is pure observation of the ordered 31-tile witness, "
             "never a build assertion; only consecutive-pair connectivity counts"
         ),
     )
@@ -592,7 +723,10 @@ def extension_plan_policy() -> dict:
         company=0,
         target_tile=int(schedule[0]["start"]),
         max_cost=PER_OP_MAX_COST,
-        command="GSRoad.BuildRoadFull + GSRoad.BuildRoad + GSRoad.BuildRoadStation",
+        command=(
+            "GSRoad.BuildRoadFull (run) + GSRoad.BuildRoad (join) + "
+            "GSRoad.BuildRoadFull (spur) + GSRoad.BuildRoadStation"
+        ),
         stale_rule=(
             "re-observe every pin of each op immediately before admission; "
             "any mismatch stops the phase without any command and preserves "
@@ -636,7 +770,8 @@ def extension_plan_policy() -> dict:
             depot_front=pins["depot_front"],
             branch_full_start=int(PINNED_WITNESS[25]),
             branch_run=[int(tile) for tile in PINNED_WITNESS[25:29]],
-            branch_stop=int(PINNED_WITNESS[29]),
+            branch_front=int(PINNED_WITNESS[29]),
+            branch_stop=int(PINNED_WITNESS[30]),
             expected_funds=FUNDS_PIN,
             per_op_max_cost=PER_OP_MAX_COST,
             request_budget=EXTENSION_REQUEST_BUDGET,
@@ -682,7 +817,7 @@ def _require_extension_policy(policy: dict) -> dict:
         raise ExtensionStagingError("the acceptance-recheck statement drifted")
     if policy["funds_initial"] != FUNDS_PIN:
         raise ExtensionStagingError("the funds pin drifted")
-    if policy["schedule_version"] != EXTENSION_SCHEDULE_VERSION:
+    if policy["schedule_version"] not in (1, EXTENSION_SCHEDULE_VERSION):
         raise ExtensionStagingError("the extension schedule version drifted")
     return policy
 
@@ -744,13 +879,15 @@ def extension_staging_pins() -> dict:
     """The hypothesis-free design facts bound into the prelaunch record."""
     pins = network_pins()
     return dict(
-        schema="d5-corridor-extension-design-pins-v1",
+        schema="d5-corridor-extension-design-pins-v2",
         corridor_front=pins["delivery_front"],
         corridor_delivery_stop=pins["delivery_stop"],
         depot=pins["depot"],
         depot_front=pins["depot_front"],
         branch_full_start=pins["branch_full_start"],
         branch_run=list(pins["branch_run"]),
+        spur_start=pins["spur_start"],
+        spur_end=pins["spur_end"],
         branch_stop=pins["branch_stop"],
         branch_front=pins["branch_front"],
         run_len=pins["run_len"],
@@ -761,10 +898,10 @@ def extension_staging_pins() -> dict:
         statement=(
             "design facts only, no acceptance hypotheses: the branch sits on "
             "census ground whose live escarpment slopes (12/12/8 on "
-            "50096/50352/50608, per the consumed D5-TERRAIN-SURVEY-1 "
-            "evidence of record) are facts for the native test-mode "
-            "previews, never census-flat claims; every acceptance story is "
-            "the separate survey session's instrument"
+            "50096/50352/50608, per the consumed A0 native survey evidence "
+            "of record bound in terrain_survey) are facts for the native "
+            "test-mode previews, never census-flat claims; every acceptance "
+            "story is the separate survey session's instrument"
         ),
     )
 
@@ -783,7 +920,7 @@ def prepare_extension_candidate(
     policy = _require_extension_policy(extension_plan_policy())
     if policy["schedule"] != schedule or policy["plan_digest"] != plan_digest_of(schedule):
         raise ExtensionStagingError("the staged extension schedule/policy digest drifted")
-    if [row["index"] for row in schedule] != [0, 1, 2]:
+    if [row["index"] for row in schedule] != list(range(len(schedule))):
         raise ExtensionStagingError("the staged extension schedule order drifted")
     if sha256(BINARY) != BINARY_SHA256 or matching_processes(BINARY):
         raise ExtensionStagingError("pinned binary / exclusive runtime gate failed")
@@ -1016,7 +1153,8 @@ def extension_preflight(prepared: PreparedProof) -> dict:
         ("expected_funds", FUNDS_PIN),
         ("per_op_max_cost", PER_OP_MAX_COST),
         ("request_budget", EXTENSION_REQUEST_BUDGET),
-        ("branch_stop", int(PINNED_WITNESS[29])),
+        ("branch_front", int(PINNED_WITNESS[29])),
+        ("branch_stop", int(PINNED_WITNESS[30])),
         ("branch_full_start", int(PINNED_WITNESS[25])),
     ):
         if world_pins.get(name) != expected:
@@ -1427,15 +1565,30 @@ async def execute_extension_attempt(prepared: PreparedProof, backend) -> dict:
 
 
 def _staged_extension_schedule(plan: dict) -> list[dict]:
+    """The staged schedule one plan record binds its digest to.
+
+    Fresh v2 records bind the current spur-and-bay-stop derivation; consumed
+    v1 records bind the historical three-op derivation exactly (never a
+    best-effort guess). Any other versioning is a refused plan record.
+    """
     version = plan.get("schedule_version", 0)
-    if version != EXTENSION_SCHEDULE_VERSION:
-        raise ValueError(f"plan record names an unknown extension schedule version: {version}")
-    return extension_schedule()
+    if version == EXTENSION_SCHEDULE_VERSION:
+        return extension_schedule()
+    if version == 1:
+        return extension_schedule_v1()
+    raise ValueError(f"plan record names an unknown extension schedule version: {version}")
 
 
 def verify_extension_attempt_identity(metadata: dict) -> dict:
-    """Re-bind one retained extension attempt to its pinned prerequisite."""
-    if metadata.get("attempt") != EXTENSION_ATTEMPT:
+    """Re-bind one retained extension attempt to its pinned prerequisite.
+
+    The retained attempt identity is version-scoped: a v1 plan record binds
+    the consumed ``D5-CORRIDOR-EXTENSION-2`` identity exactly, a v2 record
+    the fresh ``D5-CORRIDOR-EXTENSION-3`` identity; any other pairing is a
+    drifted lineage.
+    """
+    schedule_version = (metadata.get("plan_policy") or {}).get("schedule_version")
+    if metadata.get("attempt") != EXTENSION_ATTEMPTS.get(schedule_version):
         raise ValueError("the retained attempt identity drifted from the staged scope")
     if (
         metadata.get("schema") != D5_EXTENSION_PRELAUNCH_SCHEMA
@@ -1653,7 +1806,9 @@ def verify_extension_attempt(directory: Path) -> dict:
                     entry, intent=intent
                 ):
                     raise ValueError("an admitted intent drifted from the staged schedule")
-                if intent.kind in ("full", "road") and intent.run_len != entry.get("run_len"):
+                if intent.kind in ("full", "road", "spur") and intent.run_len != entry.get(
+                    "run_len"
+                ):
                     raise ValueError("an admitted intent run length drifted")
                 if int(intent.max_cost) > PER_OP_MAX_COST:
                     raise ValueError("an admitted intent exceeds the per-op cost ceiling")
@@ -1714,7 +1869,7 @@ def verify_extension_attempt(directory: Path) -> dict:
             raise ValueError("the verified receipt contradicts its launch/connection seal")
         if len(result.get("built_ops", [])) != len(schedule) or not cleanup_complete:
             raise ValueError("the verified receipt cleanup or built inventory incomplete")
-        if len(outbound_requests) != PLANNED_EXTENSION_REQUESTS:
+        if len(outbound_requests) != len(extension_request_sequence(schedule)):
             raise ValueError("the verified receipt request inventory drifted from the schedule")
         if ordered_exchange_ids + ["route-00"] != extension_request_sequence(schedule):
             raise ValueError("the exchange-id order drifted from the staged schedule")

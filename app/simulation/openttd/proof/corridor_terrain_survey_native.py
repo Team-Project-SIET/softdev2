@@ -147,7 +147,7 @@ MILESTONE_TERRAIN_SURVEY = "D5-CORRIDOR-EXTENSION-3"
 # D5-CORRIDOR-EXTENSION-3-SURVEY-1 (32 UTF-8 bytes) exceeded JOIN_SECURE's
 # 24-byte client-name payload and failed before any survey request; the
 # follow-up attempt identity is compact and distinct from the consumed one.
-TERRAIN_SURVEY_ATTEMPT = "D5CE3-SURVEY-2"
+TERRAIN_SURVEY_ATTEMPT = "D5CE3-SURVEY-3"
 D5_TERRAIN_PRELAUNCH_SCHEMA = "d5-terrain-survey-prelaunch-v1"
 # The terrain candidate keeps the shared native consumed-launch marker family
 # and prerequisite lineage record (the same pinned D4 candidate-5 after-save
@@ -1362,9 +1362,15 @@ async def execute_terrain_attempt(prepared: PreparedProof, backend) -> dict:
     """
     directory = prepared.directory
     terrain_survey_preflight(prepared)
-    # The stage journal opens with run-scoped, non-consumable facts only; none
-    # of its entries authorizes a launch, and it exists before any irreversible
-    # transition so even a pre-claim failure stays attributed and non-consuming.
+    # The stage journal object is constructed here in memory only; nothing is
+    # written yet. backend.preflight below runs before any journal stage is
+    # recorded, so a backend-preflight failure stays fully reversible and
+    # leaves no attempt-progress.json at all. The first stage("RUN_PREFLIGHT")
+    # call after backend.preflight succeeds creates the journal file, and both
+    # preflight stages are recorded at their boundary completion, before the
+    # irreversible claim. Absence of the journal file is therefore evidence of
+    # a run that never got past backend.preflight — never evidence of
+    # consumption or success — and none of its entries authorizes a launch.
     journal = TerrainAttemptJournal(directory, sha256(directory / "PRELAUNCH.json"))
     seal = sha256(directory / "PRELAUNCH.json")
     metadata = json.loads((directory / "PRELAUNCH.json").read_text())

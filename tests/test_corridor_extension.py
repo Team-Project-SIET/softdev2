@@ -2,8 +2,10 @@
 
 The shipped ``d5_extension_package/main.nut`` extends the built D4 corridor:
 a vertical full run east of the delivery front (50096..50864), the horizontal
-join 50095-50096 and a new truck stop 50863 fronting 50864, each executed at
-most once. The package runs inside the real Squirrel VM against a stub road
+join 50095-50096, the dedicated spur road piece 50864-50863 (full-build
+semantics) and a NEW bay truck stop 50862 fronting the spur end 50863, each
+executed at most once. The package runs inside the real Squirrel VM against a
+stub road
 world that pre-plants the proven D4 corridor (runs, stops, depot) and models
 the retained census facts south of the delivery stop; every dispatched reply
 is parsed back through the protocol-4 wire contract the production commanding
@@ -48,30 +50,40 @@ MAX_COST = 2000
 
 # The staged exchange groups carry their own pinned native quotes (the D4
 # corridor holds its historical per-piece pricing; the extension ops quote
-# the branch pieces explicitly).
-OP_COSTS = {0: 454, 1: 71, 2: 307}
+# the branch pieces explicitly). The spur's native quote (position 2) is an
+# admission-time fact per the postmortem's "no planning assumption of £0"
+# rule: this stub value is a placeholder until the native quote of record
+# replaces it at prelaunch.
+OP_COSTS = {0: 454, 1: 71, 2: 143, 3: 307}
 
 # The built D4 corridor (OpenTTD 15.3 Seed-17, 256x256, tile = y*256+x), the
 # pinned extension design facts: the branch full run occupies vacant unowned
 # roadless flat ground south of the delivery stop's front, the tie-in runs to
-# the delivery front tile, and the branch stop fronts the branch end.
+# the delivery front tile, the dedicated spur road piece runs
+# 50864->50863 wide-build, and the NEW bay truck stop 50862 fronts the spur
+# end 50863.
 SCHEDULE = [
     dict(index=0, kind="full", start=50096, end=50864, run_len=4),
     dict(index=1, kind="road", start=50095, end=50096, run_len=2),
-    dict(index=2, kind="station", tile=50863, front=50864, run_len=None),
+    dict(index=2, kind="spur", start=50864, end=50863, run_len=2),
+    dict(index=3, kind="station", tile=50862, front=50863, run_len=None),
 ]
 BRANCH_RUN = (50096, 50352, 50608, 50864)
 BRANCH_FRONT = 50095
-EXT_STOP = 50863
-EXT_FRONT = 50864
+EXT_STOP = 50862
+EXT_FRONT = 50863
 PICKUP = 45748
 PICKUP_FRONT = 45747
 DEPOT = 45487
 DEPOT_FRONT = 45743
 
-# The 30-tile ordered witness path of the extended corridor. It retraces
+# The 31-tile ordered witness path of the extended corridor. It retraces
 # 50095 past the dead-end delivery stop 50351 so the stop pair is witnessed
-# twice by design; only consecutive-pair connectivity is checked.
+# twice by design; only consecutive-pair connectivity is checked. The tail
+# pairs 50864->50863 (the spur piece) and 50863->50862 (the stop's
+# stop-facing link) are the v2 terminal pair semantics: the spur receipts
+# prove pairs_ok 1 / covered 2 on its own span; the stop's station link is
+# awaited from the built station itself.
 WITNESS = (
     45748,
     45747,
@@ -103,11 +115,12 @@ WITNESS = (
     50608,
     50864,
     50863,
+    50862,
 )
 EXPECTED_ROUTE_PAIRS = len(WITNESS) - 1
 
-PLANNED_REQUESTS = len(SCHEDULE) * 3 + 1  # 10
-REQUEST_BUDGET = PLANNED_REQUESTS + 6  # 16: request 17 is the first refused
+PLANNED_REQUESTS = len(SCHEDULE) * 3 + 1  # 13
+REQUEST_BUDGET = PLANNED_REQUESTS + 5  # 18: request 19 is the first refused
 
 
 WORLD = """
@@ -289,21 +302,22 @@ stub_build_road(45743, 45999);
 stub_build_road_stop(45748, 45747);
 stub_build_road_stop(50351, 50095);
 stub_build_road_depot(45487, 45743);
-/* An optional occupied stop-tile fixture (the extension stop tile already
- * carries a stop, e.g. a prior survey artifact). */
+/* An optional occupied stop-tile fixture (the extension bay-stop tile
+ * already carries a stop, e.g. a prior survey artifact). */
 if (::pre_ext_stop) {
-    ::stops[50863] <- {front = 50864, dt = false, sid = 2};
+    ::stops[50862] <- {front = 50863, dt = false, sid = 2};
     ::station_types[2] <- 0x1;
-    ::tiles[50863].flags = ::tiles[50863].flags | 0x4000;
-    ::tiles[50863].owner = 0;
+    ::tiles[50862].flags = ::tiles[50862].flags | 0x4000;
+    ::tiles[50862].owner = 0;
     ::next_station = 3;
 }
+::tiles[50862].c = {N=1, E=1, W=1, S=1};
 ::tiles[50863].c = {N=1, E=1, W=1, S=1};
-/* The D5-TERRAIN-SURVEY-1 receipts of record, live on this world: the
- * escarpment ramp tiles 50096 and 50352 measured live slope 12 (N|E
- * raised, min 1 max 2), 50608 live slope 8 (N raised alone), and the
- * stop-front pair 50863/50864 measured live-flat height 1 — exactly the
- * corner model the survey-bound gate observes. */
+/* The consumed A0 native survey D5CE3-SURVEY-3 receipts of record, live on
+ * this world: the escarpment ramp tiles 50096 and 50352 measured live slope
+ * 12 (N|E raised, min 1 max 2), 50608 live slope 8 (N raised alone), and
+ * the bay-stop trio 50862/50863/50864 measured live-flat height 1 — exactly
+ * the corner model the survey-bound gate observes. */
 ::tiles[50096].c = {N=2, E=2, W=1, S=1};
 ::tiles[50352].c = {N=2, E=2, W=1, S=1};
 ::tiles[50608].c = {N=2, E=1, W=1, S=1};
@@ -596,7 +610,7 @@ def run_group(vm: SQVM, entry: dict, position: int) -> tuple:
 
 
 def run_phase(vm: SQVM) -> list[tuple[str, dict]]:
-    """The whole staged phase: 3 ops x 3 exchanges in the staged order."""
+    """The whole staged phase: 4 ops x 3 exchanges in the staged order."""
     attempts = []
     for position, entry in enumerate(SCHEDULE):
         _, evidence = run_group(vm, entry, position)
@@ -655,7 +669,8 @@ def test_baked_stage_keys_track_the_extension_schedule():
     assert keys == [
         "full-50096-50864",
         "road-50095-50096",
-        "station-50863",
+        "spur-50863-50864",
+        "station-50862",
     ]
     assert "extends D5CorridorExtensionProof" in text
     assert "class D5CorridorExtensionProof" in text
@@ -663,8 +678,9 @@ def test_baked_stage_keys_track_the_extension_schedule():
     assert 'GSLog.Info("D4_' not in text
     assert "D4CorridorProof" not in text
     assert "GSStation.STATION_NEW" in text
-    assert re.search(r"max_requests = 16\b", text)
-    assert "EXT_STOP = 50863" in text and "EXT_FRONT = 50864" in text
+    assert re.search(r"max_requests = 18\b", text)
+    assert "EXT_STOP = 50862" in text and "EXT_FRONT = 50863" in text
+    assert "EXT_SPUR = [50864, 50863]" in text
     assert "BRANCH_RUN = [50096, 50864]" in text
     assert "BRANCH_JOIN = [50095, 50096]" in text
     assert not re.search(r"\bDELIVERY\b =", text)
@@ -677,27 +693,29 @@ def test_setup_pins_stay_derived_not_retold():
     assert all(isinstance(t, int) for t in BRANCH_RUN)
     assert (SCHEDULE[1]["start"], SCHEDULE[1]["end"]) == (50095, 50096)
     assert SCHEDULE[1]["run_len"] == 2
-    assert (SCHEDULE[2]["tile"], SCHEDULE[2]["front"]) == (50863, 50864)
+    assert (SCHEDULE[2]["start"], SCHEDULE[2]["end"]) == (50864, 50863)
+    assert SCHEDULE[2]["run_len"] == 2
+    assert (SCHEDULE[3]["tile"], SCHEDULE[3]["front"]) == (50862, 50863)
     assert (DEPOT, DEPOT_FRONT) == (45487, 45743)
-    assert EXPECTED_ROUTE_PAIRS == len(WITNESS) - 1 == 29
+    assert EXPECTED_ROUTE_PAIRS == len(WITNESS) - 1 == 30
     assert len(set(WITNESS)) < len(WITNESS)  # the retraced dead-end by design
     assert WITNESS[0] == PICKUP and WITNESS[-1] == EXT_STOP
 
 
-# --- the corridor happy path: three built ops and the route read -------------
+# --- the corridor happy path: four built ops and the route read --------------
 
 
 def test_full_phase_reaches_the_extended_route():
     """The staged extension ops admit, build and read in order through the
     production verifiers; the route read then proves the connected usable
-    corridor up to the new branch stop."""
+    corridor up to the new bay truck stop."""
     vm = build_vm()
     attempts = run_phase(vm)
-    assert [label for label, _ in attempts] == [f"op-{i:02d}" for i in range(3)]
+    assert [label for label, _ in attempts] == [f"op-{i:02d}" for i in range(4)]
     phase = corridor_phase_outcome(attempts)
     assert phase["verification"] == "PHASE_COMPLETE"
     assert phase["failed"] is None and phase["pending"] == []
-    assert len(phase["completed"]) == 3
+    assert len(phase["completed"]) == 4
     for receipt in phase["completed"]:
         assert receipt["verification"] == "NATIVE_STATE_CHANGED"
         assert 0 < receipt["cost"] <= MAX_COST
@@ -705,7 +723,7 @@ def test_full_phase_reaches_the_extended_route():
         assert receipt["source_save_digest"] == SOURCE
         assert receipt["error_code"] is None
     route = route_read(vm)
-    assert route["connected_pairs"] == 29 and route["first_fail_index"] == -1
+    assert route["connected_pairs"] == 30 and route["first_fail_index"] == -1
     assert route["cost"] == 0
 
 
@@ -737,7 +755,7 @@ def test_route_read_reports_the_observed_facts_precisely():
     run_phase(vm)
     readback = drive(vm, route_request(vm))
     assert readback.op == "route" and readback.status == "READ"
-    assert readback.connected_pairs == 29 and readback.first_fail == -1
+    assert readback.connected_pairs == 30 and readback.first_fail == -1
     assert readback.pickup_stop is True and readback.pickup_truck is True
     assert readback.pickup_sid == 0  # the corridor's pickup stop
     assert readback.delivery_stop is True and readback.delivery_truck is True
@@ -788,19 +806,19 @@ def test_duplicate_request_id_is_dropped_without_budget_cost():
     assert vm_root(vm)["sniffer"]["requests"] == 1
 
 
-def test_request_budget_refuses_the_17th_unique_request():
-    """10 planned + 6 slack reads fill the 16-request budget; the request
+def test_request_budget_refuses_the_19th_unique_request():
+    """13 planned + 5 slack reads fill the 18-request budget; the request
     after that is dropped without any reply (never re-labelled)."""
     vm = build_vm()
     run_phase(vm)
     route_read(vm)
-    for position in range(90, 96):
+    for position in range(90, 95):
         reply = drive(vm, read_of(SCHEDULE[0], position))
         assert reply.status == "READ"
     vm.execute("::sniffer.requests <- ::bridge.requests;")
-    assert vm_root(vm)["sniffer"]["requests"] == REQUEST_BUDGET == 16
+    assert vm_root(vm)["sniffer"]["requests"] == REQUEST_BUDGET == 18
     with pytest.raises(AssertionError, match="dropped request"):
-        drive(vm, read_of(SCHEDULE[0], 96))
+        drive(vm, read_of(SCHEDULE[0], 95))
 
 
 def test_road_eligibility_gate_refuses_before_the_branch_run_built():
@@ -833,29 +851,29 @@ def test_road_eligibility_gate_refuses_before_the_branch_run_built():
 
 def test_station_refuses_when_the_front_is_not_company_road():
     """A stop may only be admitted fronting an existing company road: with
-    the branch front 50608 not company road (fixture: its road and
-    ownership are absent), inspection refuses NOT_BUILDABLE and never
-    quotes, commands or mutates."""
+    the spur end 50863 not company road (fixture: its road and ownership are
+    absent), inspection refuses NOT_BUILDABLE and never quotes, commands or
+    mutates."""
     vm = build_vm()
-    for position in range(2):
+    for position in range(3):
         run_group(vm, SCHEDULE[position], position)
     funds = seed_funds(vm)
     vm.execute(
-        "::tiles[50864].flags = ::tiles[50864].flags & ~(0x0080 | 0x0200);"
-        "::tiles[50864].owner = -1;"
+        "::tiles[50863].flags = ::tiles[50863].flags & ~(0x0080 | 0x0200);"
+        "::tiles[50863].owner = -1;"
     )
-    before = drive(vm, inspect_of(SCHEDULE[2], 2))
+    before = drive(vm, inspect_of(SCHEDULE[3], 3))
     assert before.status == "NOT_BUILDABLE"
     assert before.eligible is False
     assert before.front_owner == -1 and before.stop is False
-    assert vm_root(vm)["real_calls"] == 2 and seed_funds(vm) == funds
+    assert vm_root(vm)["real_calls"] == 3 and seed_funds(vm) == funds
 
 
 def test_station_refuses_when_the_stop_tile_is_already_a_stop():
-    """The extension stop tile carries a stop already (fixture: a pre-placed
-    stop at 50863): the zero-surprise chain at stage-0 surveys the stop tiles
-    itself, so the very first inspection refuses NOT_BUILDABLE — no road/op
-    exchange is quoted, commanded or mutated at all."""
+    """The extension bay-stop tile carries a stop already (fixture: a
+    pre-placed stop at 50862): the zero-surprise chain at stage-0 surveys the
+    stop tiles itself, so the very first inspection refuses NOT_BUILDABLE —
+    no road/op exchange is quoted, commanded or mutated at all."""
     vm = build_vm(pre_ext_stop=True)
     funds = seed_funds(vm)
     before = drive(vm, inspect_of(SCHEDULE[0], 0))
@@ -944,13 +962,14 @@ def test_quote_reject_refuses_admission_without_a_command():
 
 
 def test_gate_refuses_a_sloped_stop_tile_before_any_mutation():
-    """The exact halted D5-CORRIDOR-EXTENSION-1 failure mode, replayed: the
-    stop tile 50863 carries live raised corners while the whole run-front
-    road world would otherwise admit. The stage-0 gate surveys the stop tiles
-    itself, so the first inspection refuses NOT_BUILDABLE with the stop's own
-    native slope fact in the reply and NOTHING is quoted, built or debited."""
+    """The exact halted D5-CORRIDOR-EXTENSION-1 failure mode, replayed on the
+    v2 stop site: the bay-stop tile 50862 carries live raised corners while
+    the whole run-front road world would otherwise admit. The stage-0 gate
+    surveys the stop tiles itself, so the first inspection refuses
+    NOT_BUILDABLE with the stop's own native slope fact in the reply and
+    NOTHING is quoted, built or debited."""
     vm = build_vm()
-    vm.execute("::tiles[50863].c = {N=9, E=1, W=9, S=1};")  # live slope 9
+    vm.execute("::tiles[50862].c = {N=9, E=1, W=9, S=1};")  # live slope 9
     funds = seed_funds(vm)
     before = drive(vm, inspect_of(SCHEDULE[0], 0))
     assert before.status == "NOT_BUILDABLE"
@@ -965,11 +984,11 @@ def test_gate_refuses_a_sloped_stop_tile_before_any_mutation():
 
 def test_gate_quotes_the_surveyed_sloped_run_tiles_before_any_mutation():
     """The surveyed terrace-ramp run tiles (live slope 12/12/8 of record in
-    the D5-TERRAIN-SURVEY-1 receipts) are not admission refusals: the natural
-    straight road on such escarpment ramps is native legal with a foundation
-    price under live build_on_slopes, so the stage-0 gate previews the whole
-    full-run command natively and admits it at its positive quote — before
-    any mutation (no road piece, no debit, no stop)."""
+    the consumed A0 native survey D5CE3-SURVEY-3 receipts) are not admission
+    refusals: the natural straight road on such escarpment ramps is native
+    legal with a foundation price under live build_on_slopes, so the stage-0
+    gate previews the whole full-run command natively and admits it at its
+    positive quote — before any mutation (no road piece, no debit, no stop)."""
     vm = build_vm()
     for tile, slope in ((50096, 12), (50352, 12), (50608, 8)):
         vm.execute(f"::survey_slope <- GSTile.GetSlope({tile});")
@@ -1003,7 +1022,7 @@ def test_gate_refuses_a_native_fact_on_the_stop_tile():
     tile is not a valid map tile) is an UNKNOWN: the gate refuses
     UNSUPPORTED_NATIVE_FACT with zero mutation, never an assumed pass."""
     vm = build_vm()
-    vm.execute("delete ::tiles[50863];")
+    vm.execute("delete ::tiles[50862];")
     funds = seed_funds(vm)
     before = drive(vm, inspect_of(SCHEDULE[0], 0))
     assert before.status == "UNSUPPORTED_NATIVE_FACT"
@@ -1056,7 +1075,7 @@ def test_gate_refuses_join_preview_quote_refusal():
 def test_prelaunch_package_has_no_forbidden_op_surface():
     """The shipped package's own text contains no vehicle, order, cargo,
     terraforming, demolition, rail, dock, airport or depot-build op surface:
-    only the three staged road/stop commands may ever exist in the plan."""
+    only the four staged road/stop commands may ever exist in the plan."""
     text = (PACKAGE / "main.nut").read_text()
     for forbidden in (
         "BuyVehicle",
@@ -1075,7 +1094,7 @@ def test_prelaunch_package_has_no_forbidden_op_surface():
         "CreatePayment",
     ):
         assert forbidden not in text
-    # The build surface is exactly the three staged commands.
+    # The build surface is exactly the four staged commands.
     assert "GSRoad.BuildRoadFull(" in text
     assert "GSRoad.BuildRoad(" in text
     assert "GSRoad.BuildRoadStation(" in text
@@ -1135,7 +1154,7 @@ def test_station_build_records_the_exact_new_station_arguments():
     second = vm_root(vm)["second_sid"]
     assert second == 3 and second != 2
     vm.execute(
-        "::ext_sid <- GSStation.GetStationID(50863);::join_sid <- GSStation.GetStationID(50865);"
+        "::ext_sid <- GSStation.GetStationID(50862);::join_sid <- GSStation.GetStationID(50865);"
     )
     assert vm_root(vm)["ext_sid"] == 2 and vm_root(vm)["join_sid"] == 3
     vm.execute(
@@ -1146,18 +1165,45 @@ def test_station_build_records_the_exact_new_station_arguments():
     assert vm_root(vm)["delivery_sid"] == 1
 
 
-def test_extension_station_exchange_group_verifies():
-    """The station op's full exchange group verifies through the production
-    verifier like any other staged op."""
+def test_spur_exchange_group_verifies():
+    """The dedicated spur op's full exchange group verifies through the
+    production verifier: its admission clause is the company-road start
+    corner into company-invalid roadless ground with the pair unlinked, and
+    its built receipt carries pairs_ok 1 / covered 2 (full-build semantics
+    set both end bits)."""
     vm = build_vm()
     for position in range(2):
         run_group(vm, SCHEDULE[position], position)
     intent, evidence = run_group(vm, SCHEDULE[2], 2)
+    before, built = evidence["before"], evidence["built"]
+    assert before.status == "READY" and before.eligible is True
+    assert before.owner0 == 0 and before.road0 is True  # the built run end
+    assert before.owner1 == -1 and before.road1 is False  # the unplanned spur end
+    assert before.covered == 1 and before.pairs_ok == 0
+    assert built.status == "BUILT"
+    assert built.covered == 2 and built.pairs_ok == built.pair_total == 1
+    assert built.owner0 == 0 and built.owner1 == 0
+    assert built.road0 is True and built.road1 is True
+    assert built.cost == OP_COSTS[2]
+    receipt = verify_corridor(intent, evidence["before"], built, evidence["independent"])
+    assert receipt["kind"] == "spur" and receipt["operation"] == "ROAD_SPUR"
+    assert json.dumps(receipt["pins"]) == json.dumps(
+        dict(start=50864, end=50863, tile=None, front=None, tiles=None)
+    )
+
+
+def test_extension_station_exchange_group_verifies():
+    """The station op's full exchange group verifies through the production
+    verifier like any other staged op."""
+    vm = build_vm()
+    for position in range(3):
+        run_group(vm, SCHEDULE[position], position)
+    intent, evidence = run_group(vm, SCHEDULE[3], 3)
     built = evidence["built"]
     assert built.status == "BUILT"
     assert built.stop is True and built.truck is True
     assert built.drive_through is False and built.depot is False
-    assert built.sid == 2 and built.cost == OP_COSTS[2]
+    assert built.sid == 2 and built.cost == OP_COSTS[3]
     assert built.stop_owner == 0 and built.front_owner == 0
     assert built.linked is True and built.front == EXT_FRONT
     receipt = verify_corridor(intent, evidence["before"], built, evidence["independent"])

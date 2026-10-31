@@ -142,3 +142,36 @@ sweep/receipt classes over those retained page bytes (see
 [the completion record](docs/p08-classification-v2-native-capture-completion.md)),
 not any new launch. Native capture runs remain one-shot authorized events with
 consumed identities; never re-run them from this file.
+
+## 2026-10-31 addendum — D5-CORRIDOR-EXTENSION-3 offline validation (checked)
+
+The terrain-survey pipeline's documented offline command of record (no launch,
+no AdminPort, no candidate lifecycle; exact result 2026-10-31: 130 passed,
+1 skipped, 0 failed, 0 errors; the skip is the `typeof` note at
+`tests/test_corridor_terrain_survey.py:346`):
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m pytest \
+  tests/test_secure_admin.py \
+  tests/test_corridor_terrain_survey.py \
+  tests/test_corridor_terrain_survey_native.py \
+  -q -p no:cacheprovider -rs
+```
+
+Read-only status proves on retained D5-CORRIDOR-EXTENSION-3 candidates (never
+a reproduction of any consumed attempt; candidate-2 is stale-by-source-drift
+and never-consumed, candidate-3 is consumed COMPLETE — `SURVEY_COMPLETION_VERIFIED`):
+
+```bash
+.venv/bin/python -m app.simulation.openttd.proof.corridor_terrain_survey_native \
+  verify artifacts/experiments/d5-corridor-extension-3-survey-native-candidate-2
+
+.venv/bin/python -m app.simulation.openttd.proof.corridor_terrain_survey_native \
+  verify artifacts/experiments/d5-corridor-extension-3-survey-native-candidate-3
+```
+
+`PRELAUNCH`/`preflight`/`run` are staging or native-execution entry points:
+run them only under the exact staging/approval gates recorded in phase-a
+record §11.4. A candidate whose staged bytes verify is one operator signature
+and one launch approval away from execution — neither is granted by a
+documentation task.

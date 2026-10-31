@@ -58,6 +58,9 @@ acceptance; FAILED is an immutable consumed outcome; UNKNOWN means missing facts
 | Attempt 19 | Five economy years recorded, original native terminal FAILED at finalization (`company-policy.json` already existed). Separate offline recovery valid within derived scope; never relabel original terminal. E3. |
 | Random World implementation | Controlled/offline implementation available in dirty tree; native generation/discovery/GUI verified in Seed 17, native service execution remains unverified. E4/E5. |
 | Tile Classification V2 capture | NATIVE VERIFIED capture completed 2026-10-18 (90/90 pages, 450/450 tiles, schema 2, staged AI + GameScript startup, zero script deaths, 0 mutations, cleanup PASS); SOURCE_SAVE_FUSION verdict **REJECTED** — 83 projected-flag disagreements, nothing fused; the 19 historically UNKNOWN tiles were observed CLEAR in the fresh census and stay UNKNOWN in the retained assessment; P08 remains `INCOMPLETE_TILE_CLASSIFICATION`. E16. |
+| D4 corridor construction | Native road + station construction PROVEN for the reviewed v3 scope (candidate-5, `RECEIPT_VERIFIED`, authoritative after-save `a81ac836…ef261`; £492,149 funds pin). E35. |
+| D5 corridor freight | ATTEMPTED, NOT DELIVERED: `D5-FREIGHT-1` consumed with the native delivery-stop cargo-1 acceptance 0 finding of record; no freight delivery, no OPEX/profit fact. M8 optimizer route-selection NOT demonstrated (no competing executable route). E36. |
+| D5 corridor extension | A0 SURVEY COMPLETE — VERIFIED NATIVE (E40): candidate-3 `D5CE3-SURVEY-3` launched once under all operator gates, claim consumed, replay `SURVEY_COMPLETION_VERIFIED`, cleanup certified; stop tile `50862` observed 8/8 cargo-1 acceptance (control 0/8). Corridor construction (A1), freight delivery and M8 route-selection proof remain separate future attempts; the stale never-consumed candidate-2 is preserved untouched. E37, E38, E39, E40, phase-a record §10–§13. |
 | Seed 17 smoke | FAILED under old capture-area gate; no service construction/delivery; P05 NOT_RUN. E4. |
 | Larger random capture | Controlled/offline correction, no new native run: 512 fully observed tiles per rectangle; fixed demo stays 256; road path stays 47. E5. |
 | Fourth vehicle / matched experiments | Native intervention and matched A/B outcome not established by reload-only Q3. Retain as future scoped work. |
@@ -187,6 +190,22 @@ the 19 fresh-CLEAR/retained-UNKNOWN tiles and the resulting feasibility
 statement — which needs its own reviewed record; anything beyond offline
 analysis requires fresh, separately authorized frozen inputs. Stable demo
 verification and canonical engineering do not remove the missing random facts.
+
+Next for D5 (per the 2026-10-31 record): D5-CORRIDOR-EXTENSION-3 **Phase A-A0
+is COMPLETE — VERIFIED NATIVE (E40)**: candidate-3 `D5CE3-SURVEY-3` was
+launched exactly once under all operator gates, the one-shot claim was
+consumed, the replay verdict is `SURVEY_COMPLETION_VERIFIED`, cleanup is
+certified, and the ten-exchange survey observed delivery-stop tile `50862`
+at 8/8 cargo-1 acceptance (control `50351` 0/8). The candidate is consumed
+history: never re-run, re-signed or re-claimed; candidate-2 (stale,
+never-consumed) stays preserved untouched. The next step is **A1
+(corridor spur + bay-truck-stop construction, phase-a §1 solver work)**, a
+separate native attempt: it needs a scoped design update, a fresh never
+-consumed candidate (new identity, fresh staging), independent review, its
+own Gate C signature and a separate explicit launch approval. Freight
+delivery and M8 route-selection proof remain separate, unsatisfied D5
+requirements and are never covered by the A0 survey. CONTEXT.md is not
+edited here: its bytes stay pinned by the E26 authority record.
 
 ## Shared language for continuation
 

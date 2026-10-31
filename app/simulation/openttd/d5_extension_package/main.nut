@@ -33,13 +33,19 @@
  * full run east of the delivery front (50096..50608..50864, tile =
  * y*256 + x on the 256x256 Seed-17 map) builds the branch road; the
  * horizontal join 50095-50096 then ties the branch head to the delivery
- * front's existing company road; and a new truck stop 50863 fronts the
- * branch end 50864. The full run cannot start on 50095: that tile is
- * already company road, and a `full` op requires roadless unowned ground,
- * so the run starts at the east neighbour 50096. The road join is second
- * in execution order exactly because `road` eligibility requires both of
- * its endpoints to be company road already (50095 already is; 50096
- * becomes one only after the full run builds).
+ * front's existing company road. The v2 design (postmortem §3) then adds
+ * the DEDICATED spur road piece 50864-50863 as its own op kind with
+ * GSRoad.BuildRoadFull semantics — the consumed v1 attempt proved a plain
+ * BuildRoad on that company-road/roadless corner runs BUILT while
+ * relocating the missing front end-bit (pair-28 dead road end) — and the
+ * NEW bay truck stop 50862 fronts the spur end 50863 (the A0 native survey
+ * D5CE3-SURVEY-3 observed 50862 live-flat, buildable, unowned, roadless,
+ * with full 8/8 radius-3 cargo-1 acceptance). The full run cannot start on
+ * 50095: that tile is already company road, and a `full` op requires
+ * roadless unowned ground, so the run starts at the east neighbour 50096.
+ * The road join is second in execution order exactly because `road`
+ * eligibility requires both of its endpoints to be company road already
+ * (50095 already is; 50096 becomes one only after the full run builds).
  * The stop build pins GSRoad.STATION_NEW: a new distinct station is the
  * pinned design, and it must never merge into the corridor's station sid 0
  * (pickup 45748) or sid 1 (delivery 50351).
@@ -53,7 +59,7 @@ class D5CorridorExtensionProof extends GSController {
     attempted = null
     admitted = null
     used = null
-    /* Progress state: the schedule has three staged extension ops; `stage`
+    /* Progress state: the schedule has four staged extension ops; `stage`
      * is the index of the one whose exchange group may run next. `halted`
      * stops every op after any command exchange failed to reach BUILT:
      * schedule evidence is prefix-preserving and no op is ever reordered or
@@ -79,8 +85,12 @@ class D5CorridorExtensionProof extends GSController {
      * 50095-50096 (run_len 2) runs second because `road` eligibility
      * requires both endpoints to be already company road — 50095 is the
      * built corridor's delivery front; 50096 becomes one only after the
-     * full run builds. The truck stop 50863 fronts the branch end 50864 (an
-     * existing company road tile) and its build pins GSStation.STATION_NEW:
+     * full run builds. The v2 spur road piece 50864-50863 runs third with
+     * BuildRoadFull semantics — its start corner is the built run end and
+     * its end corner is roadless unowned ground (the plain-BuildRoad variant
+     * is not scheduled: the consumed v1 record proved it leaves the missing
+     * front end-bit on the road corner). The NEW bay truck stop 50862
+     * fronts the spur end 50863 and its build pins GSStation.STATION_NEW:
      * a new distinct station is the pinned design, never a merge into the
      * corridor's station sid 0 (pickup 45748) or sid 1 (delivery 50351).
      * No depot op is scheduled. The final route read stays pure
@@ -107,8 +117,8 @@ class D5CorridorExtensionProof extends GSController {
      * company road, and BOTH independent road commands — the whole branch
      * full run and the horizontal join — must pass native test-mode
      * validation at a positive price on the live world. Sloped run tiles are
-     * NOT refused here on their slope: the D5-TERRAIN-SURVEY-1 receipts of
-     * record measured 50096, 50352 live slope 12 and 50608 live slope 8 —
+     * NOT refused here on their slope: the consumed A0 native survey
+     * D5CE3-SURVEY-3 receipts of record measured 50096, 50352 live slope 12 and 50608 live slope 8 —
      * escarpment-side ramp tiles the 15.3 road command legitimately admit
      * with a foundation price (run tiles stay inside the observation
      * requirement; the viable straight road bits and the price are the
@@ -123,16 +133,17 @@ class D5CorridorExtensionProof extends GSController {
      * funds rules cover. */
     PICKUP = 45748
     PICKUP_FRONT = 45747
-    EXT_STOP = 50863
-    EXT_FRONT = 50864
+    EXT_STOP = 50862
+    EXT_FRONT = 50863
     BRANCH_RUN = [50096, 50864]
+    EXT_SPUR = [50864, 50863]
     BRANCH_JOIN = [50095, 50096]
     DEPOT_TILE = 45487
     DEPOT_FRONT = 45743
     MAX_RUN = 36
-    /* 3 x 3 planned exchanges + 1 route read = 10, plus 6 slack, so request
-     * 17 is the first one the dispatcher refuses. */
-    max_requests = 16
+    /* 4 x 3 planned exchanges + 1 route read = 13, plus 5 slack, so request
+     * 19 is the first one the dispatcher refuses. */
+    max_requests = 18
 
     function Classify(flags, industry) {
         /* Precedence mirrors tile_classification.classify_tile exactly:
@@ -200,13 +211,14 @@ class D5CorridorExtensionProof extends GSController {
     }
 
     /* The baked staged schedule keys in execution order: the branch full
-     * run, the horizontal join to the delivery front, the branch truck
-     * stop. No depot key is scheduled. */
+     * run, the horizontal join to the delivery front, the dedicated spur
+     * road piece, and the NEW bay truck stop. No depot key is scheduled. */
     function StageIndex(key) {
         local stages = [ShapeKey("full", 50096, 50864),
                         ShapeKey("road", 50095, 50096),
-                        KindKey("station", 50863)]
-        for (local i = 0; i < 3; i++)
+                        ShapeKey("spur", 50864, 50863),
+                        KindKey("station", 50862)]
+        for (local i = 0; i < 4; i++)
             if (key == stages[i]) return i
         return -1
     }
@@ -466,6 +478,7 @@ class D5CorridorExtensionProof extends GSController {
     function RunCommand(kind, q) {
         if (kind == "full") return GSRoad.BuildRoadFull(q.start, q.end)
         if (kind == "road") return GSRoad.BuildRoad(q.start, q.end)
+        if (kind == "spur") return GSRoad.BuildRoadFull(q.start, q.end)
         if (kind == "station")
             return GSRoad.BuildRoadStation(q.tile, q.front, GSRoad.ROADVEHTYPE_TRUCK,
                 GSStation.STATION_NEW)
@@ -474,10 +487,14 @@ class D5CorridorExtensionProof extends GSController {
 
     /* The op kind's factual eligibility verdict on the current world state:
      * roadless unowned ground for a full run, company road on both corner
-     * endpoints with no existing link for the corner piece, unplanned ground
-     * fronting this company road for a stop. (No depot is scheduled; the
-     * depot predicates stay as the preserved handler shape.) Never a claim
-     * that a build will succeed: the native quote decides buildability. */
+     * endpoints with no existing link for the corner piece, a built company
+     * road into unplanned company-invalid roadless ground for the spur
+     * (its post-build receipt natively proves the spur end's missing bit:
+     * pairs_ok 1 and covered 2; the stop-facing bit is proven only by the
+     * terminal route-witness pair), unplanned ground fronting this company
+     * road for a stop. (No depot is scheduled; the depot predicates stay as
+     * the preserved handler shape.) Never a claim that a build will
+     * succeed: the native quote decides buildability. */
     function Eligible(kind, company, obs) {
         if (kind == "full")
             return obs.owner0 == GSCompany.COMPANY_INVALID &&
@@ -488,6 +505,10 @@ class D5CorridorExtensionProof extends GSController {
             return obs.owner0 == company && obs.owner1 == company &&
                 obs.road0 == true && obs.road1 == true &&
                 obs.covered == obs.run_len && obs.pairs_ok == 0
+        if (kind == "spur")
+            return obs.owner0 == company && obs.owner1 == GSCompany.COMPANY_INVALID &&
+                obs.road0 == true && obs.road1 == false &&
+                obs.covered == 1 && obs.pairs_ok == 0
         local unplanned = obs.stop_owner == GSCompany.COMPANY_INVALID &&
             Vacant(kind == "station" ? obs.stop_tile : obs.depot_tile)
         if (kind == "station")
@@ -501,7 +522,7 @@ class D5CorridorExtensionProof extends GSController {
     /* The post-command structural verdict of one op kind's observation. The
      * front pin is read only where the op carries one (site ops). */
     function PostHolds(kind, company, q, obs) {
-        if (kind == "full" || kind == "road")
+        if (kind == "full" || kind == "road" || kind == "spur")
             return obs.owner0 == company && obs.owner1 == company &&
                 obs.road0 == true && obs.road1 == true &&
                 obs.covered == obs.run_len &&
@@ -603,7 +624,7 @@ class D5CorridorExtensionProof extends GSController {
 
     /* Admission/execution flow for one staged op kind. */
     function Step(q, r, kind, key, company) {
-        local on_road = kind == "full" || kind == "road"
+        local on_road = kind == "full" || kind == "road" || kind == "spur"
         local obs = null
         try {
             obs = on_road ? ObserveRoad(q.start, q.end, company)
@@ -864,8 +885,8 @@ class D5CorridorExtensionProof extends GSController {
         if (!("protocol" in q) || q.protocol != 4) return
         if (!("op" in q) || typeof q.op != "string" ||
             !(q.op == "inspect" || q.op == "read" || q.op == "route" ||
-              q.op == "full" || q.op == "road" || q.op == "station" ||
-              q.op == "depot")) return
+              q.op == "full" || q.op == "road" || q.op == "spur" ||
+              q.op == "station" || q.op == "depot")) return
         if (!("request_id" in q) || typeof q.request_id != "string" ||
             q.request_id.len() < 1 || q.request_id.len() > 32) return
         if (!("plan" in q) || typeof q.plan != "string" || q.plan.len() != 64) return
@@ -887,9 +908,10 @@ class D5CorridorExtensionProof extends GSController {
         if (op == "inspect" || op == "read") {
             if (!("target" in q) || typeof q.target != "string" ||
                 !(q.target == "full" || q.target == "road" ||
+                  q.target == "spur" ||
                   q.target == "station" || q.target == "depot")) return
             local kind = q.target
-            if (kind == "full" || kind == "road") {
+            if (kind == "full" || kind == "road" || kind == "spur") {
                 if (!("start" in q) || !("end" in q) || "tile" in q ||
                     "front" in q || "tiles" in q) return
                 if (typeof q.start != "integer" || typeof q.end != "integer" ||
@@ -898,7 +920,7 @@ class D5CorridorExtensionProof extends GSController {
                 local wx = GSMap.GetMapSizeX()
                 local dx = abs_int(q.start % wx - q.end % wx)
                 local dy = abs_int(q.start / wx - q.end / wx)
-                if (kind == "full"
+                if (kind == "full" || kind == "spur"
                         ? (dx != 0 && dy != 0) || dx + dy < 1 || dx + dy > 36
                         : dx + dy != 1) return
             } else {
@@ -909,7 +931,7 @@ class D5CorridorExtensionProof extends GSController {
                     q.front > 65535) return
                 if (adjacent(q.tile, q.front) != true) return
             }
-        } else if (op == "full" || op == "road") {
+        } else if (op == "full" || op == "road" || op == "spur") {
             if ("target" in q || "tile" in q || "front" in q || "tiles" in q) return
             if (!("start" in q) || !("end" in q) ||
                 typeof q.start != "integer" || typeof q.end != "integer" ||
@@ -918,9 +940,9 @@ class D5CorridorExtensionProof extends GSController {
             local wx = GSMap.GetMapSizeX()
             local dx = abs_int(q.start % wx - q.end % wx)
             local dy = abs_int(q.start / wx - q.end / wx)
-            if (op == "full"
-                    ? (dx != 0 && dy != 0) || dx + dy < 1 || dx + dy > 36
-                    : dx + dy != 1) return
+            if (op == "road"
+                    ? dx + dy != 1
+                    : (dx != 0 && dy != 0) || dx + dy < 1 || dx + dy > 36) return
         } else if (op == "station" || op == "depot") {
             if ("target" in q || "start" in q || "end" in q || "tiles" in q) return
             if (!("tile" in q) || !("front" in q) ||
@@ -976,7 +998,7 @@ class D5CorridorExtensionProof extends GSController {
                     GSMap.GetTileY(pin) != pin / GSMap.GetMapSizeX()) map_ok = false
             if (map_ok) {
                 local kind = op == "inspect" || op == "read" ? q.target : q.op
-                local key = kind == "full" || kind == "road"
+                local key = kind == "full" || kind == "road" || kind == "spur"
                     ? ShapeKey(kind, q.start, q.end)
                     : KindKey(kind, q.tile)
                 local company = GSCompanyMode(q.company)
@@ -1027,7 +1049,7 @@ class D5CorridorExtensionProof extends GSController {
 
     /* Numeric bounds keep even the largest response honest and small; the
      * final route read binds below the corridor contract's 640-byte response
-     * gate (its 29-tile witness echo is the largest allowed reply). They mirror
+     * gate (its 31-tile witness echo is the largest allowed reply). They mirror
      * the CorridorReadback field bounds exactly. */
     function Guard(r) {
         if (r.funds < -2147483648 || r.funds > 2147483647 || r.cost < 0 ||

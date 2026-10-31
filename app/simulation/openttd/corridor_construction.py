@@ -57,11 +57,11 @@ CORRIDOR_PROTOCOL = 4
 # (32767). Requests stay on the historical application limit.
 MAX_CORRIDOR_REQUEST_BYTES = 512
 MAX_CORRIDOR_RESPONSE_BYTES = 640
-ROAD_OPS = ("full", "road")
+ROAD_OPS = ("full", "road", "spur")
 SITE_OPS = ("station", "depot")
 # Inspect/read requests name the command kind they admit or re-verify.
 TARGETS = ROAD_OPS + SITE_OPS
-CORRIDOR_OPS = ("inspect", "full", "road", "station", "depot", "read", "route")
+CORRIDOR_OPS = ("inspect", "full", "road", "spur", "station", "depot", "read", "route")
 # Fail-closed statuses mirror the proven roads/clearing pattern; the corridor
 # admission gates add the attempt/order/cost-statuses the one-shot exchange
 # groups require.
@@ -87,12 +87,14 @@ MAX_FULL_SPAN = 36
 _NATIVE_COMMANDS = {
     "full": "CMD_BUILD_ROAD",
     "road": "CMD_BUILD_ROAD",
+    "spur": "CMD_BUILD_ROAD",
     "station": "CMD_BUILD_ROAD_STATION",
     "depot": "CMD_BUILD_ROAD_DEPOT",
 }
 _OPERATIONS = {
     "full": "ROAD_FULL",
     "road": "ROAD_CONNECT",
+    "spur": "ROAD_SPUR",
     "station": "ROAD_STATION",
     "depot": "ROAD_DEPOT",
 }
@@ -124,13 +126,13 @@ def _correlation_validators():
                 raise ValueError("inspect/read requires a command-kind target")
         elif self.target is not None:
             raise ValueError("command/route op must not carry a target")
-        if self.target in ROAD_OPS or self.op in ("full", "road"):
+        if self.target in ROAD_OPS or self.op in ("full", "road", "spur"):
             if self.start is None or self.end is None or self.tile is not None:
                 raise ValueError("road op pins are start/end only")
             dx = abs(self.start % 256 - self.end % 256)
             dy = abs(self.start // 256 - self.end // 256)
             kind = self.target if self.target is not None else self.op
-            if kind == "full":
+            if kind == "full" or kind == "spur":
                 if (dx != 0 and dy != 0) or dx + dy < 1 or dx + dy > MAX_FULL_SPAN:
                     raise ValueError("full requires one straight axis within the bound")
             elif dx + dy != 1:
@@ -166,12 +168,12 @@ class CorridorRequest(Contract):
     """
 
     protocol: Literal[4] = 4
-    op: Literal["inspect", "full", "road", "station", "depot", "read", "route"]
+    op: Literal["inspect", "full", "road", "spur", "station", "depot", "read", "route"]
     request_id: Annotated[str, Field(pattern=r"^[a-z0-9-]{1,32}$")]
     plan: Digest
     company: CompanyID
     max_cost: Money
-    target: Literal["full", "road", "station", "depot"] | None = None
+    target: Literal["full", "road", "spur", "station", "depot"] | None = None
     start: TileID | None = None
     end: TileID | None = None
     tile: TileID | None = None
@@ -222,13 +224,13 @@ class CorridorRequest(Contract):
                 raise ValueError("inspect/read requires a command-kind target")
         elif self.target is not None:
             raise ValueError("command/route op must not carry a target")
-        if self.target in ROAD_OPS or self.op in ("full", "road"):
+        if self.target in ROAD_OPS or self.op in ("full", "road", "spur"):
             if self.start is None or self.end is None or self.tile is not None:
                 raise ValueError("road op pins are start/end only")
             dx = abs(self.start % 256 - self.end % 256)
             dy = abs(self.start // 256 - self.end // 256)
             kind = self.target if self.target is not None else self.op
-            if kind == "full":
+            if kind == "full" or kind == "spur":
                 if (dx != 0 and dy != 0) or dx + dy < 1 or dx + dy > MAX_FULL_SPAN:
                     raise ValueError("full requires one straight axis within the bound")
             elif dx + dy != 1:
@@ -272,12 +274,12 @@ class CorridorReadback(Contract):
     """
 
     protocol: Literal[4] = 4
-    op: Literal["inspect", "full", "road", "station", "depot", "read", "route"]
+    op: Literal["inspect", "full", "road", "spur", "station", "depot", "read", "route"]
     request_id: str
     plan: Digest
     company: Annotated[StrictInt, Field(ge=0, le=14)]
     max_cost: Money
-    target: Literal["full", "road", "station", "depot"] | None
+    target: Literal["full", "road", "spur", "station", "depot"] | None
     start: TileID | None
     end: TileID | None
     tile: TileID | None
@@ -446,7 +448,9 @@ def admit_corridor(
     it, and the handler's own eligible verdict. Road runs must report their
     staged run length with a fully roadless unowned pre-state; the corner
     ``road`` op must report both endpoints as company road with the pair not
-    yet connected; a site op must report its footprint unplanned with the
+    yet connected; the ``spur`` op must report a company-road start corner
+    with company-invalid roadless end-corner ground and the pair not yet
+    linked; a site op must report its footprint unplanned with the
     front an owned company road attachment. A zero-cost native refusal is
     terminal: it must never trigger a build command, so it is refused here.
     """
@@ -479,6 +483,23 @@ def admit_corridor(
                 or pairs_ok != 0
             ):
                 raise ValueError("full admission requires a roadless unowned run")
+        elif kind == "spur":
+            # The spur runs full-build semantics from a built company road
+            # end into company-invalid roadless ground: the start corner is
+            # already this company's road, the end corner is unplanned, and
+            # the one-tile gap is not yet linked (native pairs_ok 0).
+            if (
+                readback.owner0 != readback.company
+                or readback.road0 is not True
+                or readback.owner1 != UNOWNED_COMPANY
+                or readback.road1 is not False
+                or covered != 1
+                or pairs_ok != 0
+            ):
+                raise ValueError(
+                    "spur admission requires a company-road start corner and "
+                    "company-invalid roadless ground with no existing link"
+                )
         else:
             if (
                 readback.owner0 != readback.company
@@ -520,7 +541,7 @@ class CorridorIntent(Contract):
     prelaunch_digest: Digest
     source_save_digest: Digest
     company: CompanyID
-    kind: Literal["full", "road", "station", "depot"]
+    kind: Literal["full", "road", "spur", "station", "depot"]
     start: TileID | None
     end: TileID | None
     tile: TileID | None
