@@ -29,6 +29,34 @@ from app.simulation.openttd.admin_session import AdminWriter
 from app.simulation.openttd.gamescript_transport import GameScriptSession, ServerLifecyclePacket
 
 AUTH_METHOD = 2  # NetworkAuthenticationMethod::X25519_AuthorizedKey
+# 15.3 network_type.h string capacities include their terminating NUL, so the
+# encodable payload in each field is capacity - 1 UTF-8 bytes.
+JOIN_SECURE_CLIENT_NAME_CAPACITY = 25
+JOIN_SECURE_VERSION_CAPACITY = 33
+
+
+class InvalidSecureIdentity(ValueError):
+    """A JOIN_SECURE field violates the pinned 15.3 capacity semantics."""
+
+
+def validate_join_secure_string(value: str, *, capacity: int) -> None:
+    """Fail-closed JOIN_SECURE field validation shared with every stage.
+
+    Measures the UTF-8 encoded byte length (never the Unicode character
+    count), rejects empty fields, embedded NUL characters and anything beyond
+    ``capacity - 1`` encoded bytes. Callers never truncate or rewrite: an
+    invalid identity must surface before any artifact or frame is written.
+    """
+    raw = value.encode("utf-8", errors="strict")
+    if b"\0" in raw:
+        raise InvalidSecureIdentity("invalid secure client identification: embedded NUL")
+    if not raw:
+        raise InvalidSecureIdentity("invalid secure client identification: empty")
+    if len(raw) > capacity - 1:
+        raise InvalidSecureIdentity(
+            f"invalid secure client identification: "
+            f"{len(raw)} UTF-8 bytes exceeds the {capacity - 1}-byte capacity"
+        )
 AUTH_METHOD_MASK = 1 << AUTH_METHOD
 AUTH_DEADLINE = 10.0
 
@@ -76,16 +104,20 @@ class AuthRequest:
 
 
 def encode_join_secure(name: str, version: str) -> bytes:
-    # 15.3 network_type.h string capacities include their terminating NUL.
+    # Defensive validation retained at the encoder even when earlier stages
+    # already validated the identity; fail before any frame is written.
     def string(value: str, capacity: int) -> bytes:
-        raw = value.encode("utf-8")
-        if not raw or len(raw) >= capacity or b"\0" in raw:
-            raise AuthProtocolError("invalid secure client identification")
-        return raw + b"\0"
+        try:
+            validate_join_secure_string(value, capacity=capacity)
+        except InvalidSecureIdentity as error:
+            raise AuthProtocolError("invalid secure client identification") from error
+        return value.encode("utf-8") + b"\0"
 
     return encode_admin_frame(
         SecurePacketType.JOIN_SECURE,
-        string(name, 25) + string(version, 33) + struct.pack("<H", AUTH_METHOD_MASK),
+        string(name, JOIN_SECURE_CLIENT_NAME_CAPACITY)
+        + string(version, JOIN_SECURE_VERSION_CAPACITY)
+        + struct.pack("<H", AUTH_METHOD_MASK),
     )
 
 

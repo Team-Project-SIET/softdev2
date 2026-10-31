@@ -97,6 +97,8 @@ WORLD = """
 ::depot_tile <- 45487;
 ::depot_front <- 45743;
 ::sniffer <- {last = "missing"};
+/* Optional per-tick mover hook: only tests that simulate movement set it. */
+::mover <- null;
 function GetTick() { return ::ticks; }
 function break_link(a, b) {
     if (a in ::road_links && b in ::road_links[a]) delete ::road_links[a][b];
@@ -148,6 +150,7 @@ class GSController {
         if (t != 1) throw "unexpected script sleep";
         ::ticks++;
         ::days++;
+        if (::mover != null) ::mover();
         if (::ticks == ::stop_at) throw "CONTROLLED_STOP";
     }
 }
@@ -1164,3 +1167,237 @@ def test_local_plan_verifier_refuses_a_stale_request_before_dispatch():
         work.freight_schedule()[1], PRELAUNCH, current, dict(site=None, engine=None, vehicle=-1)
     )
     work.verify_request_against_plan(good, plan=current, seal=PRELAUNCH)
+
+
+# --- M2/M3/M4/M5/M6/M9 remediation regressions ----------------------------------
+
+
+def test_nonzero_fleet_refuses_site_as_a_typed_refusal():
+    """A nonzero vehicle fleet is INVALID_SITE before any observation field
+    attaches, so the refusal keeps the contract's refusal shape."""
+    vm = build_vm()
+    vm.execute(
+        "::vehicles[7] <- {owner = 0, engine = 73, location = 45487, cargo = 1,"
+        " capacity = 20, load = 0, state = 2, in_depot = true, speed = 0};"
+        " ::orders[7] <- [];"
+    )
+    exchanges, plan = run_refusals(vm, ("site-00",))
+    readback = exchanges[0][1]
+    assert readback.status == "INVALID_SITE"
+    # The refusal is a validly shaped readback (verified by the drive parse)
+    # and carries no observation set, unlike a corrupted hybrid.
+    assert readback.vehicles is None and readback.truck0 is None
+    probes = freight_phase_outcome(exchanges, prelaunch_digest=PRELAUNCH, plan=plan)
+    assert probes["failed"]["world_state"] == "HALTED_BEFORE_MUTATION"
+
+
+def test_finish_proves_the_stopped_state_and_only_a_real_toggle():
+    """The finish readback proves the stop: zero speed, stopped state, and
+    stop_issued true only for a toggle actually issued."""
+    vm = build_vm()
+    exchanges, plan = run_cycle(vm)
+    finished = exchanges[14][1]
+    assert finished.stop_issued is True
+    assert finished.state == "STOPPED" and finished.speed == 0
+    from app.simulation.openttd.corridor_freight import verify_freight_finish
+
+    receipt = verify_freight_finish(finished, vehicle=exchanges[2][1].vehicle)
+    assert receipt["verification"] == "NATIVE_PHASE_STOPPED"
+    # A claim of a stop without the state proof fails verification.
+    with pytest.raises(ValueError, match="proven stopped"):
+        verify_freight_finish(
+            finished.model_copy(update={"speed": 5}), vehicle=exchanges[2][1].vehicle
+        )
+    with pytest.raises(ValueError, match="stop command issued"):
+        verify_freight_finish(
+            finished.model_copy(update={"stop_issued": False}), vehicle=exchanges[2][1].vehicle
+        )
+
+
+def test_already_stopped_vehicle_is_never_toggled_and_honestly_halted():
+    """A vehicle that reads stopped before the finish exchange is not
+    re-toggled: stop_issued stays false, so the exchange refuses the
+    verification (an honest uncertain halt, never a claimed stop)."""
+    vm = build_vm()
+    exchanges, plan = run_prefix_until(vm, "finance-00")
+    vehicle = exchanges[2][1].vehicle
+    vm.execute(
+        f"::vehicles[{vehicle}].state = GSVehicle.VS_STOPPED; ::vehicles[{vehicle}].speed = 0;"
+    )
+    entry = next(e for e in work.freight_schedule() if e["exchange"] == "finish-00")
+    request = work._freight_exchange_request(entry, PRELAUNCH, plan, _state_of(exchanges))
+    readback = drive(vm, request)
+    assert readback.status == "PHASE_STOPPED" and readback.stop_issued is False
+    probes = freight_phase_outcome(
+        exchanges + [(request, readback)], prelaunch_digest=PRELAUNCH, plan=plan
+    )
+    assert probes["failed"]["world_state"] == "UNCERTAIN_AFTER_FAILED_COMMAND"
+
+
+def test_post_build_purchase_refusal_is_not_labelled_before_mutation():
+    """A realized-cost mismatch after the real build returns COST_CHANGED;
+    the phase outcome labels the world UNCERTAIN, never unchanged."""
+    vm = build_vm()
+    exchanges, plan = run_prefix_until(vm, "engine-00")
+    # The tested quote stays 20, but the realized build cost drifts: the
+    # handler builds, then refuses on the realized cost.
+    vm.execute("::exec_cost = 22;")
+    entry = next(e for e in work.freight_schedule() if e["exchange"] == "purchase-00")
+    request = work._freight_exchange_request(entry, PRELAUNCH, plan, _state_of(exchanges))
+    readback = drive(vm, request)
+    assert readback.status == "COST_CHANGED"
+    vm.execute("::sniffer.vehicles <- ::vehicles.len();")
+    assert vm_root(vm)["sniffer"]["vehicles"] == 1  # the build really happened
+    probes = freight_phase_outcome(
+        exchanges + [(request, readback)], prelaunch_digest=PRELAUNCH, plan=plan
+    )
+    assert probes["failed"]["world_state"] == "UNCERTAIN_AFTER_FAILED_COMMAND"
+
+
+def test_pre_build_purchase_refusal_stays_labelled_before_mutation():
+    """A pre-build purchase refusal (stale quote echo) never mutates and is
+    still labelled HALTED_BEFORE_MUTATION."""
+    vm = build_vm()
+    exchanges, plan = run_prefix_until(vm, "engine-00")
+    entry = next(e for e in work.freight_schedule() if e["exchange"] == "purchase-00")
+    request = work._freight_exchange_request(entry, PRELAUNCH, plan, _state_of(exchanges))
+    stale = request.model_copy(update={"expected_cost": 21})
+    readback = drive(vm, stale)
+    assert readback.status == "STALE_ADMISSION"
+    vm.execute("::sniffer.vehicles <- ::vehicles.len();")
+    assert vm_root(vm)["sniffer"]["vehicles"] == 0
+    probes = freight_phase_outcome(
+        exchanges + [(stale, readback)], prelaunch_digest=PRELAUNCH, plan=plan
+    )
+    assert probes["failed"]["world_state"] == "HALTED_BEFORE_MUTATION"
+
+
+def test_conservative_start_refusal_label():
+    """A refused start toggle is labelled UNCERTAIN by the conservative
+    post-mutation set: the handler cannot prove the toggle's atomicity."""
+    vm = build_vm()
+    exchanges, plan = run_prefix_until(vm, "monitor-00")
+    vehicle = exchanges[2][1].vehicle
+    vm.execute(f"::vehicles[{vehicle}].state = GSVehicle.VS_AT_STATION;")
+    vm.execute("::reject_start = true;")
+    entry = next(e for e in work.freight_schedule() if e["exchange"] == "start-00")
+    request = work._freight_exchange_request(entry, PRELAUNCH, plan, _state_of(exchanges))
+    readback = drive(vm, request)
+    assert readback.status == "UNSUPPORTED_NATIVE_FACT"
+    probes = freight_phase_outcome(
+        exchanges + [(request, readback)], prelaunch_digest=PRELAUNCH, plan=plan
+    )
+    assert probes["failed"]["world_state"] == "UNCERTAIN_AFTER_FAILED_COMMAND"
+
+
+def test_loaded_receipt_records_the_waiting_delta_corroboration():
+    """A7: the waiting delta is recorded observational evidence; arrivals
+    are unbounded, so the receipt states why it is not enforced."""
+    vm = build_vm()
+    exchanges, plan = run_cycle(vm)
+    loaded = exchanges[10][1]
+    assert loaded.wait == 5
+    site = exchanges[0][1]
+    from app.simulation.openttd.corridor_freight import verify_freight_loaded
+
+    engine = exchanges[1][1]
+    receipt = verify_freight_loaded(
+        loaded,
+        vehicle=exchanges[2][1].vehicle,
+        engine=work.admit_freight_engine(
+            engine,
+            prelaunch_digest=PRELAUNCH,
+            plan=plan,
+            site=work.admit_freight_site(site, prelaunch_digest=PRELAUNCH, plan=plan),
+        ),
+        waiting_baseline=site.wait,
+    )
+    assert receipt["waiting_delta"] == 0
+    assert "not enforced" in receipt["waiting_note"]
+    # The delta cannot be silently dropped from the receipt.
+    assert "waiting_delta" in receipt
+
+
+def test_transit_forward_progress_still_reaches_delivery():
+    """Sampled forward movement (even skipping tiles between samples) keeps
+    the transit success semantics intact."""
+    vm = build_vm()
+    exchanges, plan = run_prefix_until(vm, "vread-01")
+    vehicle = exchanges[2][1].vehicle
+    shape_world(vm, "load-00", vehicle)
+    entry = next(e for e in work.freight_schedule() if e["exchange"] == "load-00")
+    load_request = work._freight_exchange_request(entry, PRELAUNCH, plan, _state_of(exchanges))
+    loaded = drive(vm, load_request.model_copy(update={"watch_ticks": 2048, "watch_days": 30}))
+    assert loaded.status == "LOADED"
+    vm.execute(
+        f"::vehicles[{vehicle}].location = 48047;\n"
+        "::mover_seq <- [48303, 50351];\n"
+        "::mover_i <- 0;\n"
+        "::mover <- function() {"
+        " if (::mover_i < ::mover_seq.len()) {"
+        f"  ::vehicles[{vehicle}].location = ::mover_seq[::mover_i];"
+        "  ::mover_i++;"
+        " }"
+        "};"
+    )
+    entry = next(e for e in work.freight_schedule() if e["exchange"] == "transit-00")
+    transit_request = work._freight_exchange_request(entry, PRELAUNCH, plan, _state_of(exchanges))
+    readback = drive(vm, transit_request)
+    assert readback.status == "AT_DELIVERY"
+    assert (readback.position, readback.progress) == (50351, 23)
+
+
+def test_transit_sampled_direction_monotonicity_refuses_a_backward_drive():
+    """A sampled witness index behind an earlier one is a typed
+    INVALID_ROUTE refusal, fail-closed (sampled evidence, M6)."""
+    vm = build_vm()
+    exchanges, plan = run_prefix_until(vm, "vread-01")
+    vehicle = exchanges[2][1].vehicle
+    shape_world(vm, "load-00", vehicle)
+    entry = next(e for e in work.freight_schedule() if e["exchange"] == "load-00")
+    load_request = work._freight_exchange_request(entry, PRELAUNCH, plan, _state_of(exchanges))
+    loaded = drive(vm, load_request.model_copy(update={"watch_ticks": 2048, "watch_days": 30}))
+    assert loaded.status == "LOADED"
+    vm.execute(
+        f"::vehicles[{vehicle}].location = 48047;\n"
+        "::mover <- function() {"
+        f" ::vehicles[{vehicle}].location = 45999;"
+        " ::mover = null;"
+        "};"
+    )
+    entry = next(e for e in work.freight_schedule() if e["exchange"] == "transit-00")
+    transit_request = work._freight_exchange_request(entry, PRELAUNCH, plan, _state_of(exchanges))
+    readback = drive(vm, transit_request)
+    assert readback.status == "INVALID_ROUTE"
+    # The refusal carries no observation set on the wire (kept off the
+    # treatment of typed refusals) and halts the schedule.
+    assert readback.position is None and readback.progress is None
+    assert readback.tick is None and readback.day is None
+
+
+def test_native_handler_refuses_a_resolvable_foreign_company():
+    """M9/L6: another resolvable company answers typed INVALID_COMPANY and
+    the schedule halts prefix-preservingly."""
+    vm = build_vm(second_company=5)
+    # A foreign company's planned first exchange is refused and halts the
+    # schedule, prefix-preservingly.
+    site_request = work._freight_exchange_request(
+        work.freight_schedule()[0],
+        PRELAUNCH,
+        work.freight_plan(),
+        dict(site=None, engine=None, vehicle=-1),
+    ).model_copy(update={"company": 5})
+    readback = drive(vm, site_request)
+    assert readback.status == "INVALID_COMPANY"
+    vm.execute("::sniffer.halted <- ::bridge.halted;")
+    assert vm_root(vm)["sniffer"]["halted"] is True
+    later = drive(
+        vm,
+        work._freight_exchange_request(
+            work.freight_schedule()[1],
+            PRELAUNCH,
+            work.freight_plan(),
+            dict(site=None, engine=None, vehicle=-1),
+        ),
+    )
+    assert later.status == "OUT_OF_ORDER"

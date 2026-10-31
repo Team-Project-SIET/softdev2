@@ -42,6 +42,7 @@ import os
 import re
 import shutil
 import struct
+import time
 import zipfile
 from dataclasses import asdict
 from decimal import Decimal
@@ -197,6 +198,17 @@ SCHEDULE_VERSION = 1
 # dispatcher request cap of 32 unique ids.
 PLANNED_FREIGHT_REQUESTS = PLANNED_FREIGHT_EXCHANGES
 FREIGHT_STAGED_REQUESTS_BUDGET = FREIGHT_REQUEST_BUDGET
+
+# Protocol-5 timing contract. A non-window exchange is a bounded request /
+# immediate readback and uses the staged ``request_seconds``. A watch-window
+# exchange is permitted the design's full wall-clock window plus a small
+# client margin, because the GameScript may legitimately spend the whole
+# window before returning its bounded observation. Every exchange is further
+# clamped to the remaining overall attempt budget, so fifteen fresh windows
+# can never extend the attempt beyond its total wall clock.
+FREIGHT_WATCH_WALL_SECONDS = 60
+FREIGHT_EXCHANGE_MARGIN_SECONDS = 5
+FREIGHT_WATCH_OPS = ("load-watch", "transit-watch", "deliver-watch")
 
 
 class FreightStagingError(ClearingStagingError):
@@ -613,6 +625,7 @@ def budgets() -> dict:
         reconnects=0,
         readiness_seconds=45,
         request_seconds=10,
+        watch_seconds=FREIGHT_WATCH_WALL_SECONDS,
         total_seconds=900,
         watch_ticks=WATCH_MAX_TICKS,
         watch_days=LOAD_WATCH_MAX_DAYS,
@@ -994,6 +1007,18 @@ def preflight(prepared: PreparedProof) -> dict:
         after_save_sha256=binding["save_sha256"],
     ):
         raise ValueError("the staged prerequisite binding drifted from its replay-verified record")
+    if metadata["prerequisite"].get("schema") != D5_FREIGHT_PREREQUISITE_SCHEMA:
+        raise ValueError("the staged prerequisite schema drifted from the D5 lineage")
+    world = metadata["world"]
+    if (
+        world.get("retained_directory") != binding["retained_directory"]
+        or world.get("source_save") != binding["save"]
+        or world.get("save_sha256") != binding["save_sha256"]
+        or world.get("qualified_save_sha256") != binding.get("qualified_save_sha256")
+    ):
+        raise ValueError("the staged world is not the pinned prerequisite after-save")
+    if world["save_sha256"] != PINNED_PREREQUISITE_AFTER_SAVE:
+        raise ValueError("the staged world save digest is not the pinned authoritative world")
     if metadata["world"]["expected_welcome"] != retained_welcome():
         raise ValueError("retained world identity requirements drifted")
     verify_staged_source_save(
@@ -1074,23 +1099,76 @@ class FreightNativeBackend(ClearingNativeBackend):
         return session
 
 
-async def exchange(session, request: FreightRequest, directory: Path) -> FreightReadback:
-    """One sealed protocol-5 exchange; every frame and file is retained."""
+def exchange_timeout_seconds(request: FreightRequest, *, budget_table: dict) -> float:
+    """The wall-clock budget one exchange may consume.
+
+    Window exchanges are bounded by the design's watch-window wall budget plus
+    the client margin; every other exchange is an immediate request/readback
+    bounded by the staged request budget. This replaces the previous blanket
+    ten-second client timeout, which was shorter than the documented window.
+    """
+    request_seconds = float(budget_table["request_seconds"])
+    if request.op in FREIGHT_WATCH_OPS:
+        return float(budget_table["watch_seconds"]) + FREIGHT_EXCHANGE_MARGIN_SECONDS
+    return request_seconds
+
+
+def event_loop_deadline(seconds: float) -> float:
+    """One monotonic event-loop deadline for the current exchange budget."""
+    return time.monotonic() + seconds
+
+
+async def exchange(
+    session,
+    request: FreightRequest,
+    directory: Path,
+    *,
+    budget_table: dict | None = None,
+    overall_deadline: float | None = None,
+    clock=time.monotonic,
+    timeout_factory=asyncio.timeout,
+) -> FreightReadback:
+    """One sealed protocol-5 exchange; every frame and file is retained.
+
+    The per-exchange timeout is derived from the applicable phase budget and
+    clamped to the attempt's remaining overall budget. Timeout, cancellation,
+    disconnection, duplicate frames and stale frames all fail closed; a late
+    response for another request can never be accepted as this exchange.
+    """
+    budget_table = budget_table if budget_table is not None else budgets()
+    permitted = exchange_timeout_seconds(request, budget_table=budget_table)
+    if overall_deadline is not None:
+        remaining = overall_deadline - clock()
+        if remaining <= 0:
+            raise TimeoutError("freight attempt overall watch window exhausted")
+        permitted = min(permitted, remaining)
     raw = request.to_bytes()
     (directory / (request.request_id + "-request.json")).write_bytes(raw)
     await session.send(encode_freight_request(raw))
     decoder = AdminFrameDecoder()
-    async with asyncio.timeout(10):
-        while True:
-            chunk = await session.receive()
-            if not chunk:
-                raise ConnectionError("freight proof stream disconnected")
-            for kind, payload in decoder.feed_frames(chunk):
-                if kind != SERVER_GAMESCRIPT:
-                    raise ValueError("unexpected freight-proof packet")
-                response = decode_gamescript(payload, max_payload_bytes=MAX_FREIGHT_RESPONSE_BYTES)
-                (directory / (request.request_id + "-response.json")).write_bytes(response)
-                return FreightReadback.parse_for(request, response)
+    try:
+        async with timeout_factory(permitted):
+            while True:
+                chunk = await session.receive()
+                if not chunk:
+                    raise ConnectionError("freight proof stream disconnected")
+                game_frames = []
+                for kind, payload in decoder.feed_frames(chunk):
+                    if kind != SERVER_GAMESCRIPT:
+                        raise ValueError("unexpected freight-proof packet")
+                    game_frames.append(payload)
+                if len(game_frames) > 1:
+                    raise ValueError("duplicate freight-proof response frame")
+                if game_frames:
+                    response = decode_gamescript(
+                        game_frames[0], max_payload_bytes=MAX_FREIGHT_RESPONSE_BYTES
+                    )
+                    (directory / (request.request_id + "-response.json")).write_bytes(response)
+                    return FreightReadback.parse_for(request, response)
+    except TimeoutError:
+        raise TimeoutError(
+            f"freight exchange {request.request_id} exceeded its {permitted:.1f}s budget"
+        ) from None
 
 
 def _freight_exchange_request(
@@ -1178,6 +1256,45 @@ def verify_request_against_plan(request: FreightRequest, *, plan: FreightPlan, s
         raise ValueError("only the site request may carry a route")
 
 
+def deny_verification(result: dict, *, status: str, message: str) -> None:
+    """Terminally deny a successful verdict while preserving its diagnostics.
+
+    The previously successful status is retained under ``prior_status`` and an
+    existing error (the original exception) is never overwritten; the denial
+    message is recorded separately in that case. Repeated calls are idempotent.
+    """
+    prior = result.get("status")
+    result["verified"] = False
+    if prior != status:
+        result["prior_status"] = prior
+    result["status"] = status
+    if result.get("error"):
+        result.setdefault("denial_errors", []).append(message)
+    else:
+        result["error"] = message
+
+
+def apply_cleanup_outcome(result: dict, *, complete: bool) -> None:
+    """Fail closed on the final cleanup verdict, after every earlier mutation.
+
+    A run whose verification succeeded but whose cleanup was not certified can
+    never remain verified and can never report a successful terminal status.
+    A run that was already unsuccessful keeps its own terminal status (the
+    phase-halt evidence stays intact) but is still marked ``cleanup_failure``
+    and ``cleanup_complete: false`` so the CLI exit and replay both fail closed.
+    """
+    result["cleanup_complete"] = bool(complete)
+    if complete:
+        return
+    result["cleanup_failure"] = True
+    if result.get("verified") is True or result.get("status") == "NATIVE_FREIGHT_VERIFIED":
+        deny_verification(
+            result,
+            status="FAILED_CLEANUP",
+            message=("ValueError: cleanup was not certified; no verified receipt is possible"),
+        )
+
+
 async def execute_freight_attempt(prepared: PreparedProof, backend) -> dict:
     """Execute the authorized one-attempt freight phase (never offline).
 
@@ -1227,6 +1344,7 @@ async def execute_freight_attempt(prepared: PreparedProof, backend) -> dict:
     frames = []
     exchanges: list[tuple[FreightRequest, FreightReadback]] = []
     state: dict[str, Any] = dict(site=None, engine=None, vehicle=-1)
+    overall_deadline = event_loop_deadline(metadata["budgets"]["total_seconds"])
     try:
         async with asyncio.timeout(metadata["budgets"]["total_seconds"]):
             await backend.launch(prepared, authorization=grant)
@@ -1272,7 +1390,13 @@ async def execute_freight_attempt(prepared: PreparedProof, backend) -> dict:
                 try:
                     request = _freight_exchange_request(entry, seal, plan, state)
                     verify_request_against_plan(request, plan=plan, seal=seal)
-                    readback = await exchange(session, request, directory)
+                    readback = await exchange(
+                        session,
+                        request,
+                        directory,
+                        budget_table=metadata["budgets"],
+                        overall_deadline=overall_deadline,
+                    )
                     result["requests"] += 1
                     probe = freight_phase_outcome(
                         exchanges + [(request, readback)], prelaunch_digest=seal, plan=plan
@@ -1361,29 +1485,41 @@ async def execute_freight_attempt(prepared: PreparedProof, backend) -> dict:
         if findings:
             result["script_log_findings"] = findings
             if result["status"] == "NATIVE_FREIGHT_VERIFIED":
-                result["verified"] = False
-                result["status"] = "FAILED"
-                result["error"] = (
-                    "ValueError: retained script log health findings deny the verified receipt"
+                deny_verification(
+                    result,
+                    status="FAILED",
+                    message=(
+                        "ValueError: retained script log health findings deny the verified receipt"
+                    ),
                 )
         if result["returncode"] not in (None, 0):
             if result["status"] == "NATIVE_FREIGHT_VERIFIED":
-                result["verified"] = False
-                result["status"] = "FAILED"
-                result["error"] = (
-                    "ValueError: native runtime exited abnormally after receipt "
-                    f"(return code {result['returncode']})"
+                deny_verification(
+                    result,
+                    status="FAILED",
+                    message=(
+                        "ValueError: native runtime exited abnormally after receipt "
+                        f"(return code {result['returncode']})"
+                    ),
                 )
+        cleanup_complete = False
         try:
             cleanup.update(verify_cleanup_endpoints(prepared, cleanup))
-            if not cleanup["reaped"] or cleanup["cleanup_error"]:
-                raise ValueError("cleanup incomplete")
             prepared.spec.workspace.close()
             cleanup["workspace_disposed"] = not prepared.spec.workspace.root.exists()
             cleanup["credential_removed"] = not prepared.key_path.exists()
+            cleanup_complete = bool(
+                cleanup.get("reaped") is True
+                and not cleanup.get("cleanup_error")
+                and cleanup.get("workspace_disposed") is True
+                and cleanup.get("credential_removed") is True
+            )
+            if not cleanup_complete:
+                raise ValueError("cleanup incomplete")
         except Exception as error:
             cleanup["verification_error"] = str(error)
-            result["status"] = "FAILED_CLEANUP"
+            cleanup_complete = False
+        apply_cleanup_outcome(result, complete=cleanup_complete)
         write_json(directory / "cleanup.json", cleanup)
         write_json(directory / "result.json", result)
         (directory / "artifact-manifest.sha256").write_text(manifest(directory))
@@ -1428,6 +1564,123 @@ def _parse_phase_frames(directory: Path):
     return outbound, outbound_requests, replies, request_positions, reply_positions
 
 
+def verify_attempt_identity(metadata: dict, *, plan: FreightPlan) -> dict:
+    """Re-bind one retained attempt to its pinned prerequisite and plan.
+
+    Replay must not trust the staged record's own declarations: the pinned D4
+    prerequisite is re-verified from its retained receipt, the staged world's
+    source-save digest must equal that prerequisite's receipt-bound after-save
+    digest, the full retained welcome must match, and every plan/route/scenario
+    digest is re-derived. Returns the independently derived prerequisite
+    binding for callers that need its provenance.
+    """
+    if metadata.get("attempt") != attempt_name():
+        raise ValueError("retained attempt identity drifted from the staged scope")
+    if (
+        metadata.get("schema") != D5_FREIGHT_PRELAUNCH_SCHEMA
+        or metadata.get("kind") != KIND
+        or metadata.get("milestone") != MILESTONE_FREIGHT
+    ):
+        raise ValueError("retained attempt is not the D5 freight lineage")
+    staged_prerequisite = metadata.get("prerequisite")
+    if not isinstance(staged_prerequisite, dict):
+        raise ValueError("retained attempt lacks its prerequisite binding")
+    binding = prerequisite_binding(Path(staged_prerequisite.get("directory", "")))
+    expected_prerequisite = dict(
+        schema=D5_FREIGHT_PREREQUISITE_SCHEMA,
+        attempt=binding["attempt"],
+        milestone=binding["milestone"],
+        directory=binding["retained_directory"],
+        prelaunch_sha256=binding["prelaunch_digest"],
+        after_save_sha256=binding["save_sha256"],
+        verification=binding["verification"],
+    )
+    if staged_prerequisite != expected_prerequisite:
+        raise ValueError("retained prerequisite binding drifted from the pinned D4 attempt")
+    world = metadata.get("world")
+    if not isinstance(world, dict):
+        raise ValueError("retained attempt lacks its world binding")
+    expected_world_binding = dict(
+        retained_directory=binding["retained_directory"],
+        source_save=binding["save"],
+        save_sha256=binding["save_sha256"],
+        qualified_save_sha256=binding.get("qualified_save_sha256"),
+    )
+    for name, expected in expected_world_binding.items():
+        if world.get(name) != expected:
+            raise ValueError(f"retained world {name} drifted from the pinned prerequisite")
+    if world.get("save_sha256") != PINNED_PREREQUISITE_AFTER_SAVE:
+        raise ValueError("retained world is not the pinned prerequisite after-save")
+    expected_welcome = world.get("expected_welcome")
+    if expected_welcome != binding["expected_welcome"] or expected_welcome != retained_welcome():
+        raise ValueError("retained world welcome drifted from the pinned identity")
+    source_save = source_save_path(world)
+    if not source_save.is_file():
+        raise ValueError("the pinned prerequisite source save is absent")
+    verify_staged_source_save({"save_sha256": binding["save_sha256"]}, source_save)
+    staged_source = Path(metadata.get("workspace", "")) / "source.sav"
+    if staged_source.is_file():
+        verify_staged_source_save({"save_sha256": binding["save_sha256"]}, staged_source)
+
+    plan_policy = metadata.get("plan_policy")
+    if not isinstance(plan_policy, dict):
+        raise ValueError("retained attempt lacks its plan policy")
+    schedule = freight_schedule()
+    if plan_policy.get("schedule") != schedule or plan_policy.get("plan_digest") != plan_digest_of(
+        schedule
+    ):
+        raise ValueError("retained freight schedule drifted from the compiled derivation")
+    if metadata.get("budgets") != budgets():
+        raise ValueError("retained budget contract drifted from the compiled contract")
+    world_policy = plan_policy.get("world")
+    if not isinstance(world_policy, dict):
+        raise ValueError("retained plan policy lacks its world pins")
+    expected_pins = dict(
+        pickup=plan.pickup,
+        pickup_front=plan.pickup_front,
+        delivery=plan.delivery,
+        delivery_front=plan.delivery_front,
+        depot=plan.depot,
+        depot_front=plan.depot_front,
+        company=plan.company,
+        cargo=plan.cargo,
+        pickup_industry=plan.pickup_industry,
+        delivery_industry=plan.delivery_industry,
+        expected_funds=plan.expected_funds,
+        witness=list(plan.witness),
+    )
+    for name, expected in expected_pins.items():
+        if world_policy.get(name) != expected:
+            raise ValueError(f"retained world pin {name} drifted from the replayed plan")
+    for name, expected in (
+        ("company", plan.company),
+        ("target_tile", plan.pickup),
+        ("max_cost", plan.max_cost),
+        ("plan_model_digest", plan.digest),
+    ):
+        if plan_policy.get(name) != expected:
+            raise ValueError(f"retained plan pin {name} drifted from the replayed plan")
+    optimizer = plan_policy.get("optimizer")
+    if not isinstance(optimizer, dict):
+        raise ValueError("retained plan policy lacks its optimizer provenance")
+    selected = optimized_freight_route()
+    expected_optimizer = dict(
+        route=list(plan.witness),
+        route_digest=plan.route_digest,
+        candidate_id=selected.candidate_id,
+        depot=selected.depot,
+        depot_front=selected.depot_front,
+        pickup_front=selected.pickup_front,
+        delivery_front=selected.delivery_front,
+        execution_plan_digest=selected.plan_digest,
+        scenario_digest=selected.scenario_digest,
+    )
+    for name, expected in expected_optimizer.items():
+        if optimizer.get(name) != expected:
+            raise ValueError(f"retained optimizer pin {name} drifted from the selected route")
+    return binding
+
+
 def verify_freight_attempt(directory: Path) -> dict:
     """Replay retained protocol-5 phase semantics; never trust a success label.
 
@@ -1456,12 +1709,21 @@ def verify_freight_attempt(directory: Path) -> dict:
     claims = json.loads(claims_path.read_text())
     if claims.get("prelaunch_digest") != seal:
         raise ValueError("attempt claim does not match its prelaunch seal")
+    manifest_names: set[str] = set()
     for line in (directory / "artifact-manifest.sha256").read_text().splitlines():
         digest, name = line.split("  ", 1)
         if Path(name).name != name or not (directory / name).is_file():
             raise ValueError("artifact manifest mismatch")
         if sha256(directory / name) != digest:
             raise ValueError("artifact manifest mismatch")
+        manifest_names.add(name)
+    present_names = {
+        path.name
+        for path in directory.iterdir()
+        if path.is_file() and path.name != "artifact-manifest.sha256"
+    }
+    if present_names != manifest_names:
+        raise ValueError("artifact manifest is not exhaustive for the attempt directory")
     if metadata.get("schema") != D5_FREIGHT_PRELAUNCH_SCHEMA:
         return dict(
             verification="AUTHORIZATION_UNVERIFIED",
@@ -1489,10 +1751,17 @@ def verify_freight_attempt(directory: Path) -> dict:
         raise ValueError("staged freight schedule drifted from the compiled derivation")
     _scheduled_exchange_ids(schedule)
     plan = freight_plan()
+    verify_attempt_identity(metadata, plan=plan)
     result = json.loads((directory / "result.json").read_text())
     runtime = json.loads((directory / "runtime-identity.json").read_text())
-    if runtime["encrypted"] is not True or runtime["welcome"]["revision"] != "15.3":
+    expected_welcome = metadata["world"]["expected_welcome"]
+    welcome = runtime.get("welcome")
+    if runtime.get("encrypted") is not True or not isinstance(welcome, dict):
         raise ValueError("owned single-runtime encrypted execution evidence missing")
+    for field in WELCOME_ORDER:
+        expected = True if field == "dedicated" else expected_welcome[field]
+        if welcome.get(field) != expected:
+            raise ValueError(f"retained world welcome {field} drifted from the pinned identity")
     outbound, outbound_requests, replies, request_positions, reply_positions = _parse_phase_frames(
         directory
     )
@@ -1534,8 +1803,10 @@ def verify_freight_attempt(directory: Path) -> dict:
         exchange_id = path.name[: -len("-response.json")]
         try:
             readback = FreightReadback.model_validate_json(path.read_bytes())
-        except ValueError:
-            continue
+        except ValueError as error:
+            raise ValueError(
+                f"retained response file is not a parseable readback: {path.name}"
+            ) from error
         if readback.request_id != exchange_id:
             raise ValueError("retained response file identity does not match its payload")
         if not (directory / (exchange_id + "-request.json")).is_file():
@@ -1581,9 +1852,13 @@ def verify_freight_attempt(directory: Path) -> dict:
     phase = freight_phase_outcome(exchanges, prelaunch_digest=seal, plan=plan)
     cleanup_record = json.loads((directory / "cleanup.json").read_text())
     exit_codes = (result.get("returncode"), cleanup_record.get("returncode"))
-    cleanup_complete = all(
-        cleanup_record.get(name) is True
-        for name in ("reaped", "sockets_closed", "workspace_disposed", "credential_removed")
+    cleanup_complete = (
+        all(
+            cleanup_record.get(name) is True
+            for name in ("reaped", "sockets_closed", "workspace_disposed", "credential_removed")
+        )
+        and not bool(cleanup_record.get("cleanup_error"))
+        and not bool(cleanup_record.get("verification_error"))
     )
     if any(code not in (None, 0) for code in exit_codes):
         return dict(
@@ -1612,7 +1887,7 @@ def verify_freight_attempt(directory: Path) -> dict:
             raise ValueError("verified receipt record missing")
         expected = dict(
             phase,
-            cycle,
+            cycle=cycle,
             before_save_sha256=sha256(directory / "session-before.sav"),
             after_save_sha256=sha256(directory / "after.sav"),
         )
@@ -1622,7 +1897,20 @@ def verify_freight_attempt(directory: Path) -> dict:
         if json.loads(receipt_path.read_text()) != json.loads(json.dumps(expected)):
             raise ValueError("retained freight receipt replay mismatch")
         return dict(verification="RECEIPT_VERIFIED", receipt=expected)
-    if result["status"] in ("PHASE_HALTED_PREFIX_PRESERVED", "FAILED", "FAILED_CLEANUP"):
+    if result["status"] == "FAILED_CLEANUP":
+        # A genuine cleanup failure necessarily leaves cleanup incomplete. It is
+        # preserved as failed evidence and can never replay as a verified
+        # receipt; the dedicated arm avoids mislabelling it as a halted phase.
+        return dict(
+            verification="ATTEMPT_FAILED_EVIDENCE_PRESERVED",
+            result_status="FAILED_CLEANUP",
+            exchanges=result.get("exchanges", []),
+            error=result.get("error") or "cleanup was not certified",
+            cleanup_complete=False,
+            cleanup_error=cleanup_record.get("cleanup_error"),
+            cleanup_verification_error=cleanup_record.get("verification_error"),
+        )
+    if result["status"] in ("PHASE_HALTED_PREFIX_PRESERVED", "FAILED"):
         if result["status"] == "PHASE_HALTED_PREFIX_PRESERVED" and (
             phase["verification"] != "PARTIAL_EXECUTION_EVIDENCE"
             or not isinstance(halt_record, dict)
@@ -1669,8 +1957,22 @@ def staged_authorization_payload_digest(directory: Path) -> str:
 
 
 def exit_status(result: dict) -> int:
-    """The runner CLI exit code: zero only for the verified native outcome."""
-    return 0 if result.get("verified") is True else 1
+    """The runner CLI exit code: zero only for the final validated success.
+
+    A stale ``verified`` flag, a non-success terminal status, or an
+    uncertified cleanup all deny zero.
+    """
+    verified = (
+        result.get("verified") is True
+        and result.get("status") == "NATIVE_FREIGHT_VERIFIED"
+        and result.get("cleanup_complete") is True
+    )
+    return 0 if verified else 1
+
+
+def verdict_exit_status(verdict: dict) -> int:
+    """The read-only verifier CLI exit code: zero only for RECEIPT_VERIFIED."""
+    return 0 if verdict.get("verification") == "RECEIPT_VERIFIED" else 1
 
 
 def main():
@@ -1690,6 +1992,7 @@ def main():
     elif args.command == "verify":
         verdict = verify_freight_attempt(directory)
         print(json.dumps(verdict, sort_keys=True))
+        raise SystemExit(verdict_exit_status(verdict))
     else:
         read_prelaunch(directory)  # fail fast on any drifted prelaunch record
         result = asyncio.run(

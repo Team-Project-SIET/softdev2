@@ -55,7 +55,14 @@ one native pickup→delivery cycle for cargo 1, machine-verified:**
   OF_NO_LOAD]`, both goto-station orders, verified by independent readback;
 - D5-M4 loading observed physically: a full load amount `L > 0` of cargo 1
   (station waiting drops into vehicle capacity, vehicle full/leaves station
-  state), with transit tile after tile along the built road;
+  state), with transit observed by per-tick position sampling: every sampled
+  position lies on the ordered witness (the pinned depot tile is exempt at
+  any sample, since it is off-witness by construction) and sampled witness
+  indices never regress
+  (sampled-direction monotonicity); arrival requires the delivery tile with
+  a full load. This is sampled evidence, **not** tile-by-tile continuity: a
+  vehicle that left the witness and returned between two samples would not
+  be observed, and the receipt makes no continuous-path claim;
 - D5-M5 delivery observed physically: GSCargoMonitor pickup and delivery
   amounts for industry 0/1 **equal the observed load L exactly**, the
   vehicle is empty after unloading, and company accepted-cargo / recurring

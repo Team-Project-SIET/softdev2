@@ -300,6 +300,69 @@ def test_client_identity_bounds(name, version):
         encode_join_secure(name, version)
 
 
+# --- shared fail-closed JOIN_SECURE validation (15.3 capacity semantics) ------
+
+
+@pytest.mark.parametrize(
+    "value", ["", "x" * 24, "x" * 25, "na\0me", "ø" * 12, "ø" * 13, "ä" * 8]
+)
+def test_join_secure_string_validation(value):
+    """24 encoded bytes accept; 25, empty, NUL-embedded and any multibyte name
+    whose encoded length exceeds the payload reject — byte length, never the
+    character count ("ø"*12 is 12 characters but 24 bytes)."""
+    from app.simulation.openttd.secure_admin import (
+        InvalidSecureIdentity,
+        validate_join_secure_string,
+    )
+
+    capacity = 25
+    encoded = value.encode("utf-8")
+    if not encoded or len(encoded) > capacity - 1 or "\0" in value:
+        with pytest.raises(InvalidSecureIdentity):
+            validate_join_secure_string(value, capacity=capacity)
+    else:
+        validate_join_secure_string(value, capacity=capacity)
+
+
+def test_join_secure_boundary_exact():
+    """Exactly 24 ASCII bytes encodes; NUL termination makes it 25 on the wire."""
+    from app.simulation.openttd.secure_admin import JOIN_SECURE_CLIENT_NAME_CAPACITY
+
+    frame = encode_join_secure("x" * 24, "1")
+    assert frame == encode_admin_frame(9, b"x" * 24 + b"\0" + b"1\x00" + b"\x04\x00")
+    assert JOIN_SECURE_CLIENT_NAME_CAPACITY == 25
+    with pytest.raises(AuthProtocolError):
+        encode_join_secure("x" * 25, "1")
+
+
+def test_join_secure_multibyte_character_count_below_byte_capacity():
+    """12 'ø' characters encode to 24 bytes and still fit; 13 do not."""
+    from app.simulation.openttd.secure_admin import (
+        InvalidSecureIdentity,
+        validate_join_secure_string,
+    )
+
+    validate_join_secure_string("ø" * 12, capacity=25)
+    with pytest.raises(InvalidSecureIdentity):
+        validate_join_secure_string("ø" * 13, capacity=25)
+
+
+def test_invalid_client_name_fails_before_any_frame_write():
+    """An unencodable identity raises from the encoder itself; the caller's
+    writer sees no bytes at all."""
+
+    async def run():
+        reader = asyncio.StreamReader()
+        writer = ReferencePeer(reader)
+        session = SecureAdminSession(reader, writer, key=KEY)
+        with pytest.raises(AuthProtocolError):
+            await session.authenticate("x" * 25, "1")
+        assert not writer.frames
+        assert session.state is AuthState.CLOSED
+
+    asyncio.run(run())
+
+
 def test_authorized_public_config_isolated(tmp_path):
     from app.simulation.openttd.runtime.config import AdminSettings, RuntimeWorkspace
 

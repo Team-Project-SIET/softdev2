@@ -166,6 +166,438 @@ class D5FreightProof extends GSController {
         return -1
     }
 
+    /* -- protocol 6: the read-only acceptance survey (D5-ACCEPT-SURVEY-1) ---- */
+    /* Additive over the freight schedule: pure observation of the native
+     * truck-stop coverage radius, tile-level cargo-1 acceptance over the
+     * pinned control + candidate tiles, and the pickup-side production
+     * control. No stop is built or assumed buildable at any tile; a
+     * measured acceptance value is catchment evidence only. */
+    survey_planned = [
+        ["radius-00", "radius", "READY"],
+        ["accept-00", "accept", "READY"],
+        ["accept-01", "accept", "READY"],
+        ["accept-02", "accept", "READY"],
+        ["accept-03", "accept", "READY"],
+        ["accept-04", "accept", "READY"],
+        ["accept-05", "accept", "READY"],
+        ["prod-00", "prod", "READY"]
+    ]
+    survey_stage = 0
+    survey_halted = false
+    /* Survey pins: the consumed attempt's delivery stop (control, expected
+     * zero by the finding of record) and the five retained pre-construction
+     * census candidate tiles. These are hypothesis locations, never proven
+     * buildable stops and never a proven freight route. */
+    ACCEPT_CONTROL = 50351
+    ACCEPT_CANDIDATES = [50607, 50863, 51119, 51375, 50605]
+
+    function SurveyOpAllowed(op) {
+        return op == "radius" || op == "accept" || op == "prod"
+    }
+
+    function SurveyPlannedIndex(q) {
+        for (local i = 0; i < survey_planned.len(); i++)
+            if (survey_planned[i][0] == q.request_id && survey_planned[i][1] == q.op) return i
+        return -1
+    }
+
+    function AcceptPinned(tile) {
+        if (tile == ACCEPT_CONTROL) return true
+        foreach (t in ACCEPT_CANDIDATES) if (t == tile) return true
+        return false
+    }
+
+    function SurveyGuard(r) {
+        if (r.funds < -2147483648 || r.funds > 2147483647 || r.cost < 0 ||
+            r.cost > 2147483647) throw "D5_RESPONSE_OUT_OF_BOUNDS"
+        if ("tile" in r && (r.tile < 0 || r.tile > 65535)) throw "D5_RESPONSE_OUT_OF_BOUNDS"
+        if ("radius" in r && (r.radius < 0 || r.radius > 255)) throw "D5_RESPONSE_OUT_OF_BOUNDS"
+        if ("accept" in r && (r.accept < 0 || r.accept > 8)) throw "D5_RESPONSE_OUT_OF_BOUNDS"
+        if ("prod" in r && (r.prod < 0 || r.prod > 2147483647)) throw "D5_RESPONSE_OUT_OF_BOUNDS"
+    }
+
+    /* -- op: radius (pure observation, zero cost) --------------------------- */
+    function SurveyRadiusOp(r) {
+        local radius = GSStation.GetCoverageRadius(GSStation.STATION_TRUCK_STOP)
+        if (radius < 0 || radius > 255) throw "D5_NATIVE_FACT"
+        r.radius <- radius
+        r.status = "READY"
+    }
+
+    /* -- op: accept (one pinned tile, zero cost) ----------------------------- */
+    function SurveyAcceptOp(q, r) {
+        /* Tile defence in depth: only the pinned control or a pinned
+         * candidate may be queried; any other tile is an out-of-survey
+         * location, refused before any observation. */
+        if (!AcceptPinned(q.tile)) {
+            r.status = "INVALID_LOCATION"
+            return
+        }
+        local radius = GSStation.GetCoverageRadius(GSStation.STATION_TRUCK_STOP)
+        if (radius < 0 || radius > 255) throw "D5_NATIVE_FACT"
+        local accept = GSTile.GetCargoAcceptance(q.tile, FREIGHT_CARGO, 1, 1, radius)
+        if (accept < 0 || accept > 8) throw "D5_NATIVE_FACT"
+        /* A zero here is a MEASURED zero only under this correlated READY
+         * reply with the native radius echo attached; refusals carry no
+         * observation at all. */
+        r.tile <- q.tile
+        r.accept <- accept
+        r.radius <- radius
+        r.status = "READY"
+    }
+
+    /* -- op: prod (pickup-side production control, zero cost) ---------------- */
+    function SurveyProdOp(r) {
+        local production = GSIndustry.GetLastMonthProduction(PICKUP_INDUSTRY, FREIGHT_CARGO)
+        if (production < 0) throw "D5_NATIVE_FACT"
+        r.prod <- production
+        r.status = "READY"
+    }
+
+    function SurveyHandle(q) {
+        if (!("op" in q) || typeof q.op != "string" || !SurveyOpAllowed(q.op)) return
+        if (!("request_id" in q) || typeof q.request_id != "string" ||
+            q.request_id.len() < 1 || q.request_id.len() > 32 ||
+            !IdShape(q.request_id)) return
+        if (!("plan" in q) || typeof q.plan != "string" || !Hex64(q.plan)) return
+        if (!("company" in q) || typeof q.company != "integer" ||
+            q.company < 0 || q.company > 14) return
+        if (!("max_cost" in q) || typeof q.max_cost != "integer" || q.max_cost != 0) return
+        if (!("pickup" in q) || typeof q.pickup != "integer" ||
+            q.pickup < 0 || q.pickup > 65535 ||
+            !("delivery" in q) || typeof q.delivery != "integer" ||
+            q.delivery < 0 || q.delivery > 65535 ||
+            !("depot" in q) || typeof q.depot != "integer" ||
+            q.depot < 0 || q.depot > 65535 ||
+            q.pickup == q.delivery || q.depot == q.pickup ||
+            q.depot == q.delivery) return
+        /* tile is required (an integer in map bounds) on accept exactly and
+         * null on the other survey ops — the wire serializes its absence. */
+        if (!("tile" in q)) return
+        if (q.op == "accept") {
+            if (typeof q.tile != "integer" || q.tile < 0 || q.tile > 65535) return
+        } else if (q.tile != null) return
+        /* Shared one-shot budget accounting across both protocols: unique
+         * request ids, the same 32-request cap; a duplicate id or an
+         * exhausted budget is silently dropped. */
+        if (used == null) used = {}
+        if (q.request_id in used || this.requests >= this.max_requests) return
+        used[q.request_id] <- true
+        this.requests++
+        local r = {
+            protocol = 6, op = q.op, request_id = q.request_id, plan = q.plan,
+            company = q.company, max_cost = q.max_cost, pickup = q.pickup,
+            delivery = q.delivery, depot = q.depot, status = "OUT_OF_ORDER",
+            funds = 0, cost = 0
+        }
+        if (q.op == "accept") r.tile <- q.tile
+        local idx = SurveyPlannedIndex(q)
+        if (idx < 0 || idx != this.survey_stage || this.survey_halted) {
+            r.status = "OUT_OF_ORDER"
+        } else if (this.plan_id != null && this.plan_id != q.plan) {
+            r.status = "OUT_OF_ORDER"
+        } else if (GSCompany.ResolveCompanyID(q.company) != q.company ||
+                   q.company != FREIGHT_COMPANY) {
+            r.status = "INVALID_COMPANY"
+        } else if (q.pickup != this.pickup || q.delivery != this.delivery ||
+                   q.depot != this.depot_tile) {
+            r.status = "STALE_PIN"
+        } else {
+            if (this.plan_id == null) this.plan_id = q.plan
+            if (GSGame.IsPaused()) {
+                r.status = "PAUSED"
+            } else {
+                try {
+                    local company = GSCompanyMode(q.company)
+                    if (!GSCompanyMode.IsValid()) {
+                        r.status = "INVALID_COMPANY"
+                    } else {
+                        /* Every survey reply carries the bank balance at the
+                         * exchange boundary (recorded, never changed: the
+                         * survey has no cost-bearing operation). */
+                        r.funds = GSCompany.GetBankBalance(q.company)
+                        if (q.op == "radius") {
+                            SurveyRadiusOp(r)
+                        } else if (q.op == "accept") {
+                            SurveyAcceptOp(q, r)
+                        } else {
+                            SurveyProdOp(r)
+                        }
+                    }
+                } catch (error) {
+                    r.status = "UNSUPPORTED_NATIVE_FACT"
+                }
+            }
+        }
+        SurveyGuard(r)
+        if (!GSAdmin.Send(r)) throw "D5_RESPONSE_SEND_FAILED"
+        GSLog.Info("D5_SURVEY " + q.request_id + " " + r.status)
+        /* Survey schedule accounting: only the exact READY status of the
+         * planned exchange advances the survey stage; every other terminal
+         * status halts the survey prefix-preservingly. Evidence, never
+         * retries. The freight schedule accounting below stays untouched. */
+        if (idx >= 0) {
+            if (r.status == survey_planned[idx][2]) {
+                if (idx == this.survey_stage && !this.survey_halted) this.survey_stage = idx + 1
+            } else {
+                this.survey_halted = true
+            }
+        }
+    }
+
+    /* -- protocol 7: the read-only terrain survey --------------------------- */
+    /* Strictly additive over protocols 5 and 6: pure observation of the
+     * branch pins' live terrain facts (slope, heights, buildable, owner,
+     * tree/water/coast/farm/rock/rough and the four transport presences)
+     * plus the acceptance control pair under the measured native radius.
+     * The D5-CORRIDOR-EXTENSION-1 halt proved live slope 9/8 on the
+     * predecessor's terrace stop while its census grade said flat; this
+     * instrument samples those facts on tiles 50095/50096/50352/50608/
+     * 50864/50863/50862 BEFORE any further extension mutates anything —
+     * tile 50862 is added because the corrected terminal design places the
+     * bay truck stop there (front 50863), a tile the consumed
+     * D5-TERRAIN-SURVEY-1 never observed. Every observation here is fresh
+     * evidence for the D5-CORRIDOR-EXTENSION-3-SURVEY-1 attempt; no
+     * consumed survey observation is ever reused. A nonzero slope or an
+     * occupied tile here is a FINDING of record, never a survey failure.
+     * No stop is built and no mutation of any kind. */
+    terrain_planned = [
+        ["radius-00", "radius", "READY"],
+        ["tile-00", "tile", "READY"],
+        ["tile-01", "tile", "READY"],
+        ["tile-02", "tile", "READY"],
+        ["tile-03", "tile", "READY"],
+        ["tile-04", "tile", "READY"],
+        ["tile-05", "tile", "READY"],
+        ["tile-06", "tile", "READY"],
+        ["accept-00", "accept", "READY"],
+        ["accept-01", "accept", "READY"]
+    ]
+    terrain_stage = 0
+    terrain_halted = false
+    /* Terrain pins: the built delivery front (its live company-road fact
+     * defends the join start), the four south-branch full-run tiles, the
+     * spur-end road tile and the proposed station ground (added by the
+     * D5-CORRIDOR-EXTENSION-3 survey); the acceptance pair is the consumed
+     * attempt's delivery stop (control, expected zero) and this survey's
+     * proposed station tile. */
+    TERRA_TILES = [50095, 50096, 50352, 50608, 50864, 50863, 50862]
+    TERRA_ACCEPT_CONTROL = 50351
+    TERRA_ACCEPT_STOP = 50862
+
+    function TerrainOpAllowed(op) {
+        return op == "radius" || op == "tile" || op == "accept"
+    }
+
+    function TerrainPlannedIndex(q) {
+        for (local i = 0; i < terrain_planned.len(); i++)
+            if (terrain_planned[i][0] == q.request_id && terrain_planned[i][1] == q.op) return i
+        return -1
+    }
+
+    function TilePinned(tile) {
+        foreach (t in TERRA_TILES) if (t == tile) return true
+        return false
+    }
+
+    function TerrainAcceptPinned(tile) {
+        return tile == TERRA_ACCEPT_CONTROL || tile == TERRA_ACCEPT_STOP
+    }
+
+    /* Native booleans may surface from some API layers as the integers
+     * 0/1 instead of true/false; normalize every table fact to an explicit
+     * Squirrel boolean before sending so the wire shape is deterministic. */
+    function TerrainFactNorm(r) {
+        foreach (pred in ["buildable", "tree", "water", "coast", "farm", "rock", "rough",
+                          "road", "rail", "water_transport", "air_transport"]) {
+            if (!(pred in r)) continue
+            if (typeof r[pred] == "integer") {
+                if (r[pred] != 0 && r[pred] != 1) throw "D5_NATIVE_FACT"
+                r[pred] = r[pred] != 0
+            } else if (typeof r[pred] != "bool") {
+                throw "D5_NATIVE_FACT"
+            }
+        }
+    }
+
+    function TerrainGuard(r) {
+        if (r.funds < -2147483648 || r.funds > 2147483647 || r.cost < 0 ||
+            r.cost > 2147483647) throw "D5_RESPONSE_OUT_OF_BOUNDS"
+        if ("tile" in r && (r.tile < 0 || r.tile > 65535)) throw "D5_RESPONSE_OUT_OF_BOUNDS"
+        if ("radius" in r && (r.radius < 0 || r.radius > 255)) throw "D5_RESPONSE_OUT_OF_BOUNDS"
+        if ("accept" in r && (r.accept < 0 || r.accept > 8)) throw "D5_RESPONSE_OUT_OF_BOUNDS"
+        if ("slope" in r && (r.slope < 0 || r.slope > 255)) throw "D5_RESPONSE_OUT_OF_BOUNDS"
+        if ("min_height" in r && (r.min_height < 0 || r.min_height > 255))
+            throw "D5_RESPONSE_OUT_OF_BOUNDS"
+        if ("max_height" in r && (r.max_height < 0 || r.max_height > 255))
+            throw "D5_RESPONSE_OUT_OF_BOUNDS"
+        if ("owner" in r && (r.owner < -2 || r.owner > 65535)) throw "D5_RESPONSE_OUT_OF_BOUNDS"
+        foreach (pred in ["buildable", "tree", "water", "coast", "farm", "rock", "rough",
+                          "road", "rail", "water_transport", "air_transport"]) {
+            if (pred in r) {
+                if (typeof r[pred] != "bool" && typeof r[pred] != "integer")
+                    throw "D5_RESPONSE_OUT_OF_BOUNDS"
+                if (typeof r[pred] == "integer" && (r[pred] != 0 && r[pred] != 1))
+                    throw "D5_RESPONSE_OUT_OF_BOUNDS"
+            }
+        }
+    }
+
+    /* -- op: radius (pure observation, zero cost) --------------------------- */
+    function TerrainRadiusOp(r) {
+        local radius = GSStation.GetCoverageRadius(GSStation.STATION_TRUCK_STOP)
+        if (radius < 0 || radius > 255) throw "D5_NATIVE_FACT"
+        r.radius <- radius
+        r.status = "READY"
+    }
+
+    /* Map-length-half defence: the tile's x/y identity is recomputed from
+     * the live map, so a stale or out-of-map index can never be observed. */
+    function TerrainTileOk(tile) {
+        if (!GSMap.IsValidTile(tile)) return false
+        local wx = GSMap.GetMapSizeX()
+        return GSMap.GetTileX(tile) == tile % wx && GSMap.GetTileY(tile) == tile / wx
+    }
+
+    /* -- op: tile (one pinned branch tile, zero cost) ------------------------ */
+    function TerrainTileOp(q, r) {
+        if (!TilePinned(q.tile)) {
+            r.status = "INVALID_LOCATION"
+            return
+        }
+        if (!TerrainTileOk(q.tile)) throw "D5_NATIVE_FACT"
+        r.tile <- q.tile
+        r.slope <- GSTile.GetSlope(q.tile)
+        r.min_height <- GSTile.GetMinHeight(q.tile)
+        r.max_height <- GSTile.GetMaxHeight(q.tile)
+        r.buildable <- GSTile.IsBuildable(q.tile)
+        r.owner <- GSTile.GetOwner(q.tile)
+        r.tree <- GSTile.HasTreeOnTile(q.tile)
+        r.water <- GSTile.IsWaterTile(q.tile)
+        r.coast <- GSTile.IsCoastTile(q.tile)
+        r.farm <- GSTile.IsFarmTile(q.tile)
+        r.rock <- GSTile.IsRockTile(q.tile)
+        r.rough <- GSTile.IsRoughTile(q.tile)
+        r.road <- GSTile.HasTransportType(q.tile, GSTile.TRANSPORT_ROAD)
+        r.rail <- GSTile.HasTransportType(q.tile, GSTile.TRANSPORT_RAIL)
+        r.water_transport <- GSTile.HasTransportType(q.tile, GSTile.TRANSPORT_WATER)
+        r.air_transport <- GSTile.HasTransportType(q.tile, GSTile.TRANSPORT_AIR)
+        r.status = "READY"
+    }
+
+    /* -- op: accept (one pinned control/acceptance tile, zero cost) ---------- */
+    function TerrainAcceptOp(q, r) {
+        if (!TerrainAcceptPinned(q.tile)) {
+            r.status = "INVALID_LOCATION"
+            return
+        }
+        local radius = GSStation.GetCoverageRadius(GSStation.STATION_TRUCK_STOP)
+        if (radius < 0 || radius > 255) throw "D5_NATIVE_FACT"
+        local accept = GSTile.GetCargoAcceptance(q.tile, FREIGHT_CARGO, 1, 1, radius)
+        if (accept < 0 || accept > 8) throw "D5_NATIVE_FACT"
+        r.tile <- q.tile
+        r.accept <- accept
+        r.radius <- radius
+        r.status = "READY"
+    }
+
+    function TerrainHandle(q) {
+        if (!("op" in q) || typeof q.op != "string" || !TerrainOpAllowed(q.op)) return
+        if (!("request_id" in q) || typeof q.request_id != "string" ||
+            q.request_id.len() < 1 || q.request_id.len() > 32 ||
+            !IdShape(q.request_id)) return
+        if (!("plan" in q) || typeof q.plan != "string" || !Hex64(q.plan)) return
+        if (!("company" in q) || typeof q.company != "integer" ||
+            q.company < 0 || q.company > 14) return
+        if (!("max_cost" in q) || typeof q.max_cost != "integer" || q.max_cost != 0) return
+        if (!("pickup" in q) || typeof q.pickup != "integer" ||
+            q.pickup < 0 || q.pickup > 65535 ||
+            !("delivery" in q) || typeof q.delivery != "integer" ||
+            q.delivery < 0 || q.delivery > 65535 ||
+            !("depot" in q) || typeof q.depot != "integer" ||
+            q.depot < 0 || q.depot > 65535 ||
+            q.pickup == q.delivery || q.depot == q.pickup ||
+            q.depot == q.delivery) return
+        /* tile is required (an integer in map bounds) on the tile and accept
+         * ops exactly and null on radius — the wire serializes its absence. */
+        if (!("tile" in q)) return
+        if (q.op == "radius") {
+            if (q.tile != null) return
+        } else {
+            if (typeof q.tile != "integer" || q.tile < 0 || q.tile > 65535) return
+        }
+        /* Shared one-shot budget accounting across all three protocols:
+         * unique request ids, the same 32-request cap; a duplicate id or an
+         * exhausted budget is silently dropped. */
+        if (used == null) used = {}
+        if (q.request_id in used || this.requests >= this.max_requests) return
+        used[q.request_id] <- true
+        this.requests++
+        local r = {
+            protocol = 7, op = q.op, request_id = q.request_id, plan = q.plan,
+            company = q.company, max_cost = q.max_cost, pickup = q.pickup,
+            delivery = q.delivery, depot = q.depot, status = "OUT_OF_ORDER",
+            funds = 0, cost = 0
+        }
+        if (q.op != "radius") r.tile <- q.tile
+        local idx = TerrainPlannedIndex(q)
+        if (idx < 0 || idx != this.terrain_stage || this.terrain_halted) {
+            r.status = "OUT_OF_ORDER"
+        } else if (this.plan_id != null && this.plan_id != q.plan) {
+            r.status = "OUT_OF_ORDER"
+        } else if (GSCompany.ResolveCompanyID(q.company) != q.company ||
+                   q.company != FREIGHT_COMPANY) {
+            r.status = "INVALID_COMPANY"
+        } else if (q.pickup != this.pickup || q.delivery != this.delivery ||
+                   q.depot != this.depot_tile) {
+            r.status = "STALE_PIN"
+        } else {
+            if (this.plan_id == null) this.plan_id = q.plan
+            if (GSGame.IsPaused()) {
+                r.status = "PAUSED"
+            } else {
+                try {
+                    local company = GSCompanyMode(q.company)
+                    if (!GSCompanyMode.IsValid()) {
+                        r.status = "INVALID_COMPANY"
+                    } else {
+                        /* Every terrain-survey reply carries the bank
+                         * balance at the exchange boundary (recorded, never
+                         * changed: the survey has no cost-bearing op). */
+                        r.funds = GSCompany.GetBankBalance(q.company)
+                        if (q.op == "radius") {
+                            TerrainRadiusOp(r)
+                        } else if (q.op == "tile") {
+                            TerrainTileOp(q, r)
+                        } else {
+                            TerrainAcceptOp(q, r)
+                        }
+                    }
+                } catch (error) {
+                    r.status = "UNSUPPORTED_NATIVE_FACT"
+                }
+            }
+        }
+        if (q.op == "tile" && r.status == "READY") TerrainFactNorm(r)
+        TerrainGuard(r)
+        if (!GSAdmin.Send(r)) throw "D5_RESPONSE_SEND_FAILED"
+        GSLog.Info("D5_TERRAIN " + q.request_id + " " + r.status)
+        /* Terrain schedule accounting: only the exact READY status of the
+         * planned exchange advances the terrain stage; every other terminal
+         * status halts the terrain prefix-preservingly. Evidence, never
+         * retries. The freight (protocol 5) and acceptance-survey
+         * (protocol 6) accounting below stays untouched. */
+        if (idx >= 0) {
+            if (r.status == terrain_planned[idx][2]) {
+                if (idx == this.terrain_stage && !this.terrain_halted) {
+                    this.terrain_stage = idx + 1
+                }
+            } else {
+                this.terrain_halted = true
+            }
+        }
+    }
+
     function OpAllowed(op) {
         return op == "site" || op == "engine" || op == "purchase" ||
             op == "vread" || op == "order" || op == "order-read" ||
@@ -466,6 +898,12 @@ class D5FreightProof extends GSController {
             r.status = "INVALID_SITE"
         } else if (obs.wit.pairs_ok != obs.wit.pair_total) {
             r.status = "INVALID_SITE"
+        } else if (obs.fleet != 0) {
+            /* A D5 site admits only a company with zero vehicles. This
+             * refusal is issued before any observation field attaches, so
+             * the reply keeps the contract's refusal shape (a refusal
+             * readback carries no observation set). */
+            r.status = "INVALID_SITE"
         } else {
             /* The acceptance fact is the proven catchment predicate over the
              * delivery stop tile (0..8 eighths). The production and waiting
@@ -492,11 +930,6 @@ class D5FreightProof extends GSController {
                 r.prod <- production
                 r.wait <- waiting
                 r.vehicles <- obs.fleet
-                if (obs.fleet != 0) {
-                    /* A D5 site admits only a company with zero vehicles. */
-                    r.status = "INVALID_SITE"
-                    return
-                }
                 r.status = "READY"
                 this.site_sid0 = obs.pup.sid
                 this.site_sid1 = obs.del.sid
@@ -920,6 +1353,7 @@ class D5FreightProof extends GSController {
                 return
             }
             local samples = 0
+            local last_progress = -1
             for (;;) {
                 if (GSGame.IsPaused()) {
                     r.status = "PAUSED"
@@ -954,6 +1388,18 @@ class D5FreightProof extends GSController {
                     return
                 }
                 local progress = WitnessIndex(loc)
+                /* Sampled-direction monotonicity: this window's samples may
+                 * only advance along the ordered witness. A sample behind an
+                 * earlier one is a backward drive (or a revisit) the corridor
+                 * receipt never describes: typed INVALID_ROUTE, fail-closed.
+                 * This is sampled evidence, not tile-by-tile continuity. */
+                if (progress >= 0) {
+                    if (last_progress >= 0 && progress < last_progress) {
+                        r.status = "INVALID_ROUTE"
+                        return
+                    }
+                    last_progress = progress
+                }
                 local load = GSVehicle.GetCargoLoad(this.vehicle_id, FREIGHT_CARGO)
                 if (load < 0) {
                     r.status = "UNSUPPORTED_NATIVE_FACT"
@@ -1112,9 +1558,23 @@ class D5FreightProof extends GSController {
             return
         }
         try {
-            if (!GSVehicle.StartStopVehicle(this.vehicle_id)) {
+            /* StartStopVehicle is a toggle: read the current state first and
+             * stop only an un-stopped vehicle, then prove the final readback
+             * stopped. An already-stopped vehicle is not commanded again and
+             * reports stop_issued = false, which the Python verifier refuses
+             * (an honest halt, never a claimed stop that did not happen). */
+            local state = StateName(GSVehicle.GetState(this.vehicle_id))
+            if (GSVehicle.GetCurrentSpeed(this.vehicle_id) < 0) {
                 r.status = "UNSUPPORTED_NATIVE_FACT"
                 return
+            }
+            local issued = false
+            if (state != "STOPPED" && state != "IN_DEPOT") {
+                if (!GSVehicle.StartStopVehicle(this.vehicle_id)) {
+                    r.status = "UNSUPPORTED_NATIVE_FACT"
+                    return
+                }
+                issued = true
             }
             local in_depot = GSVehicle.IsInDepot(this.vehicle_id)
             local speed = GSVehicle.GetCurrentSpeed(this.vehicle_id)
@@ -1122,10 +1582,15 @@ class D5FreightProof extends GSController {
                 r.status = "UNSUPPORTED_NATIVE_FACT"
                 return
             }
-            r.state <- StateName(GSVehicle.GetState(this.vehicle_id))
+            state = StateName(GSVehicle.GetState(this.vehicle_id))
+            if (speed != 0 || (state != "STOPPED" && state != "IN_DEPOT")) {
+                r.status = "READBACK_MISMATCH"
+                return
+            }
+            r.state <- state
             r.speed <- speed
             r.in_depot <- in_depot
-            r.stop_issued <- true
+            r.stop_issued <- issued
             r.status = "PHASE_STOPPED"
         } catch (error) {
             r.status = "UNSUPPORTED_NATIVE_FACT"
@@ -1135,7 +1600,21 @@ class D5FreightProof extends GSController {
     /* -- the guarded wire entry point --------------------------------------- */
     function Handle(q) {
         if (typeof q != "table") return
-        if (!("protocol" in q) || q.protocol != 5) return
+        if (!("protocol" in q)) return
+        /* Protocol 6 is the additive read-only acceptance survey; it shares
+         * only the request budget accounting with the freight schedule. */
+        if (q.protocol == 6) {
+            SurveyHandle(q)
+            return
+        }
+        /* Protocol 7 is the additive read-only terrain survey; TerrainHandle
+         * validates its own request shape and shares only the one-shot
+         * budget accounting with the freight and survey schedules. */
+        if (q.protocol == 7) {
+            TerrainHandle(q)
+            return
+        }
+        if (q.protocol != 5) return
         if (!("op" in q) || typeof q.op != "string" || !OpAllowed(q.op)) return
         if (!("request_id" in q) || typeof q.request_id != "string" ||
             q.request_id.len() < 1 || q.request_id.len() > 32 ||
@@ -1190,7 +1669,11 @@ class D5FreightProof extends GSController {
             r.status = "OUT_OF_ORDER"
         } else if (this.plan_id != null && this.plan_id != q.plan) {
             r.status = "OUT_OF_ORDER"
-        } else if (GSCompany.ResolveCompanyID(q.company) != q.company) {
+        } else if (GSCompany.ResolveCompanyID(q.company) != q.company ||
+                   q.company != FREIGHT_COMPANY) {
+            /* Company defence-in-depth (M9): the Python plan and verifier pin
+             * company FREIGHT_COMPANY; the native handler refuses any other
+             * resolvable company outright, before any admission or command. */
             r.status = "INVALID_COMPANY"
         } else {
             if (this.plan_id == null) this.plan_id = q.plan

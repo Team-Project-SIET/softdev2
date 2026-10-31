@@ -231,6 +231,20 @@ _FREIGHT_REPORTED_STATUS = (
     | _FREIGHT_REFUSAL_STATUS
     | frozenset(_FREIGHT_SUCCESS_STATUS.values())
 )
+# Refusal statuses that the native handler can emit only after its one
+# mutation command for the op has (or may have) been executed. A refusal in
+# one of these sets is labelled ``UNCERTAIN_AFTER_FAILED_COMMAND`` by the
+# phase outcome: the world may not be unchanged, so it is never reported as
+# untouched. Statuses outside the op's set are still pre-mutation refusals.
+# Sets are deliberately conservative (see main.nut): e.g. a purchase
+# ``COST_CHANGED`` fires both on a pre-build quote drift and on a
+# post-build realized-cost mismatch, and the honest label is the stronger.
+_FREIGHT_POST_MUTATION_STATUS = {
+    "purchase": frozenset({"COST_CHANGED", "READBACK_MISMATCH", "UNSUPPORTED_NATIVE_FACT"}),
+    "order": frozenset({"READBACK_MISMATCH", "UNSUPPORTED_NATIVE_FACT"}),
+    "start": frozenset({"READBACK_MISMATCH", "UNSUPPORTED_NATIVE_FACT"}),
+    "finish": frozenset({"READBACK_MISMATCH", "UNSUPPORTED_NATIVE_FACT"}),
+}
 
 FreightCompany = CompanyID
 FreightActorId = Annotated[StrictInt, Field(ge=-1, le=65535)]
@@ -1160,14 +1174,25 @@ def verify_freight_loaded(
     engine: FreightEngineIntent,
     waiting_baseline: int,
 ) -> dict:
-    """Verify the load-watch window result (A7): one positive full load."""
+    """Verify the load-watch window result (A7): one positive full load.
+
+    The waiting delta against the admitted site baseline is recorded as an
+    observational corroboration only: station waiting is fed by unbounded
+    industry arrivals during the window, so it can legitimately stay level
+    or even rise while the vehicle loads, and it cannot fall below zero.
+    No ``waiting decrement`` is therefore enforceable without inventing an
+    arrival bound; the honest receipt records the delta and states why it
+    is not enforced.
+    """
     if loaded.op != "load-watch" or loaded.status != "LOADED" or loaded.cost != 0:
         raise ValueError("load window result mismatch")
     if loaded.vehicle != vehicle or loaded.capacity != engine.capacity:
         raise ValueError("load echo or capacity mismatch")
     if loaded.load is None or loaded.load <= 0 or loaded.load != loaded.capacity:
         raise ValueError("the observed load must be one positive full cargo load")
-    waiting_delta = (loaded.wait or 0) - waiting_baseline
+    if loaded.wait is None:
+        raise ValueError("the loaded readback must record its station waiting level")
+    waiting_delta = loaded.wait - waiting_baseline
     return dict(
         schema="company-freight-loaded-receipt-v1",
         request_id=loaded.request_id,
@@ -1175,6 +1200,9 @@ def verify_freight_loaded(
         capacity=loaded.capacity,
         waiting=loaded.wait,
         waiting_delta=waiting_delta,
+        # A7 corroboration note: unbounded industry arrivals can mask the
+        # decrement, so the delta is recorded evidence, not an enforced gate.
+        waiting_note="station arrivals unbounded; waiting delta recorded, not enforced",
         watch_ticks=loaded.watch_ticks,
         watch_days=loaded.watch_days,
         tick=loaded.tick,
@@ -1288,7 +1316,11 @@ def verify_freight_finish(stopped: FreightReadback, *, vehicle: int) -> dict:
 
     ``PHASE_STOPPED`` records the issued stop and the vehicle's final state;
     the owned vehicle is never sold and no further authority is implied —
-    the enumerable state facts are recorded exactly as read.
+    the enumerable state facts are recorded exactly as read. The readback
+    must prove the stop, not merely claim the command: the final state must
+    read stopped (``STOPPED`` or ``IN_DEPOT``) at zero speed, and
+    ``stop_issued`` is true only when the toggle was actually issued (the
+    handler never re-toggles an already-stopped vehicle).
     """
     if stopped.op != "finish" or stopped.status != "PHASE_STOPPED" or stopped.cost != 0:
         raise ValueError("finish result mismatch")
@@ -1296,6 +1328,8 @@ def verify_freight_finish(stopped: FreightReadback, *, vehicle: int) -> dict:
         raise ValueError("finish readback echo mismatch")
     if stopped.stop_issued is not True:
         raise ValueError("the finish exchange must report its stop command issued")
+    if stopped.state not in ("STOPPED", "IN_DEPOT") or stopped.speed is None or stopped.speed != 0:
+        raise ValueError("the finished vehicle must be proven stopped at zero speed")
     return dict(
         schema="company-freight-finish-receipt-v1",
         request_id=stopped.request_id,
@@ -1540,7 +1574,9 @@ def freight_phase_outcome(
     verification: earlier receipts are preserved, later exchanges are
     pending, and no retry or compensating mutation is represented or
     implied. Inconclusive window halts keep the world state honest
-    (inconclusive, never a success); admission refusals halt before any
+    (inconclusive, never a success); refusals that can only fire after an
+    op's mutation command are labelled UNCERTAIN_AFTER_FAILED_COMMAND, never
+    as leaving the world unchanged; other admission refusals halt before any
     mutation; a successful status that fails verification leaves the world
     explicitly uncertain. This verifies evidence; it never issues requests.
     """
@@ -1563,6 +1599,10 @@ def freight_phase_outcome(
             if status in _FREIGHT_INCONCLUSIVE_STATUS:
                 world = "INCONCLUSIVE_WINDOW"
             elif status in _FREIGHT_SUCCESS_STATUS.values():
+                world = "UNCERTAIN_AFTER_FAILED_COMMAND"
+            elif status in _FREIGHT_POST_MUTATION_STATUS.get(
+                getattr(request, "op", None), frozenset()
+            ):
                 world = "UNCERTAIN_AFTER_FAILED_COMMAND"
             else:
                 world = "HALTED_BEFORE_MUTATION"

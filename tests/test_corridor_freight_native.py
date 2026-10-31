@@ -15,8 +15,11 @@ tests substitute no synthetic identity anywhere.
 """
 
 import asyncio
+import contextlib
 import hashlib
 import json
+import shutil
+import sys
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -33,6 +36,8 @@ from app.simulation.openttd.corridor_freight import (
     MAX_FREIGHT_REQUEST_BYTES,
     MAX_FREIGHT_RESPONSE_BYTES,
     MAX_FREIGHT_SEND_BYTES,
+    OF_FULL_LOAD,
+    OF_NO_LOAD,
     PLANNED_FREIGHT_EXCHANGES,
     WATCH_MAX_TICKS,
     FreightReadback,
@@ -393,6 +398,26 @@ def test_preflight_rejects_resealed_execution_pin_drift(tmp_path):
         prepared.spec.workspace.close()
 
 
+def test_preflight_rejects_a_staged_world_that_is_not_the_pinned_after_save(tmp_path):
+    """M1: a re-sealed world digest must equal the independent prerequisite binding."""
+    prepared = d5.prepare_candidate(tmp_path / "candidate")
+    directory = prepared.directory
+    try:
+        prelaunch = directory / "PRELAUNCH.json"
+        original = prelaunch.read_bytes()
+        metadata = json.loads(original)
+        metadata["world"]["save_sha256"] = "0" * 64
+        prelaunch.write_text(json.dumps(metadata, sort_keys=True, indent=2) + "\n")
+        _restamp_prelaunch(directory)
+        with pytest.raises(ValueError, match="pinned prerequisite after-save"):
+            d5.preflight(prepared)
+        prelaunch.write_bytes(original)
+        _restamp_prelaunch(directory)
+        assert d5.preflight(prepared)["attempt"] == d5.FREIGHT_ATTEMPT
+    finally:
+        prepared.spec.workspace.close()
+
+
 # --- sealed freight facts, schedule, budgets and route scope -----------------
 
 
@@ -531,6 +556,7 @@ def test_budgets_match_the_staged_contract():
         "reconnects": 0,
         "readiness_seconds": 45,
         "request_seconds": 10,
+        "watch_seconds": 60,
         "total_seconds": 900,
         "watch_ticks": 2048,
         "watch_days": 30,
@@ -850,11 +876,865 @@ def test_unconsumed_candidate_verifies_fail_closed(staged):
 
 
 def test_exit_status_zero_only_for_the_verified_receipt():
-    assert d5.exit_status(dict(verified=True, status="NATIVE_FREIGHT_VERIFIED")) == 0
+    assert (
+        d5.exit_status(
+            dict(
+                verified=True,
+                status="NATIVE_FREIGHT_VERIFIED",
+                cleanup_complete=True,
+            )
+        )
+        == 0
+    )
     for status in (
         "FAILED",
         "FAILED_CLEANUP",
         "PHASE_HALTED_PREFIX_PRESERVED",
         "NOT_DISPATCHED",
     ):
-        assert d5.exit_status(dict(verified=False, status=status)) == 1
+        assert d5.exit_status(dict(verified=False, status=status, cleanup_complete=True)) == 1
+    # A stale success flag, an uncertified cleanup, or a mismatched terminal
+    # status can never make the runner exit zero.
+    assert (
+        d5.exit_status(
+            dict(
+                verified=True,
+                status="NATIVE_FREIGHT_VERIFIED",
+                cleanup_complete=False,
+            )
+        )
+        == 1
+    )
+    assert d5.exit_status(dict(verified=True, status="FAILED_CLEANUP", cleanup_complete=True)) == 1
+    assert d5.exit_status(dict(verified=True, status="NATIVE_FREIGHT_VERIFIED")) == 1
+
+
+def test_cleanup_failure_after_success_denies_the_verified_result():
+    result = dict(verified=True, status="NATIVE_FREIGHT_VERIFIED", cleanup_complete=True)
+    d5.apply_cleanup_outcome(result, complete=False)
+    assert result["verified"] is False
+    assert result["status"] == "FAILED_CLEANUP"
+    assert result["prior_status"] == "NATIVE_FREIGHT_VERIFIED"
+    assert result["cleanup_complete"] is False
+    assert result["cleanup_failure"] is True
+    assert "no verified receipt is possible" in result["error"]
+    assert d5.exit_status(result) == 1
+    # Repeating the terminal transition is idempotent.
+    d5.apply_cleanup_outcome(result, complete=False)
+    assert result["status"] == "FAILED_CLEANUP"
+    assert result["prior_status"] == "NATIVE_FREIGHT_VERIFIED"
+
+
+def test_cleanup_failure_after_an_unsuccessful_attempt_preserves_its_status():
+    result = dict(
+        verified=False,
+        status="PHASE_HALTED_PREFIX_PRESERVED",
+        cleanup_complete=True,
+        error="ValueError: halted exchange",
+    )
+    d5.apply_cleanup_outcome(result, complete=False)
+    assert result["verified"] is False
+    assert result["status"] == "PHASE_HALTED_PREFIX_PRESERVED"
+    assert result["cleanup_complete"] is False
+    assert result["cleanup_failure"] is True
+    assert result["error"] == "ValueError: halted exchange"
+    assert d5.exit_status(result) == 1
+    # A clean cleanup never resurrects an unsuccessful attempt.
+    d5.apply_cleanup_outcome(result, complete=True)
+    assert result["cleanup_failure"] is True  # sticky diagnostic from the earlier call
+    assert d5.exit_status(result) == 1
+
+
+def test_deny_verification_preserves_the_original_error():
+    result = dict(verified=True, status="NATIVE_FREIGHT_VERIFIED")
+    result["error"] = "RuntimeError: original failure"
+    d5.deny_verification(result, status="FAILED", message="post-check denied success")
+    assert result["verified"] is False
+    assert result["status"] == "FAILED"
+    assert result["prior_status"] == "NATIVE_FREIGHT_VERIFIED"
+    assert result["error"] == "RuntimeError: original failure"
+    assert result["denial_errors"] == ["post-check denied success"]
+
+
+# --- H2: exchange timing is derived from the phase and overall budgets -------
+
+
+def _watch_request() -> tuple[FreightRequest, FreightReadback]:
+    entry = d5.freight_schedule()[10]
+    state = dict(site=None, engine=SimpleNamespace(engine=73, quote=785), vehicle=7)
+    request = d5._freight_exchange_request(entry, "a" * 64, d5.freight_plan(), state)
+    readback = FreightReadback(
+        protocol=5,
+        op="load-watch",
+        request_id=request.request_id,
+        plan=request.plan,
+        company=request.company,
+        max_cost=request.max_cost,
+        pickup=request.pickup,
+        delivery=request.delivery,
+        depot=request.depot,
+        route_digest=request.route_digest,
+        engine=request.engine,
+        vehicle=request.vehicle,
+        watch_ticks=request.watch_ticks,
+        watch_days=request.watch_days,
+        status="LOADED",
+        funds=FUNDS_AT_D4_CLOSE,
+        cost=0,
+        load=20,
+        capacity=20,
+        wait=3,
+        tick=100,
+        day=3,
+        paused=False,
+    )
+    return request, readback
+
+
+def _reply_frame(readback: FreightReadback) -> bytes:
+    return encode_admin_frame(d5.SERVER_GAMESCRIPT, _readback_bytes(readback) + b"\0")
+
+
+def test_exchange_timeout_is_derived_from_the_phase_budget():
+    table = d5.budgets()
+    site = _production_site_request()
+    watch, _ = _watch_request()
+    assert d5.exchange_timeout_seconds(site, budget_table=table) == table["request_seconds"]
+    assert d5.exchange_timeout_seconds(watch, budget_table=table) == (
+        table["watch_seconds"] + d5.FREIGHT_EXCHANGE_MARGIN_SECONDS
+    )
+    assert d5.exchange_timeout_seconds(watch, budget_table=table) > 10
+
+
+class _RecordingTimeout:
+    def __init__(self) -> None:
+        self.seen: list[float] = []
+
+    def __call__(self, seconds: float):
+        self.seen.append(seconds)
+        return contextlib.nullcontext()
+
+
+class _Clock:
+    def __init__(self, now: float = 1000.0) -> None:
+        self.now = now
+
+    def __call__(self) -> float:
+        return self.now
+
+
+def test_watch_exchange_inside_its_budget_is_not_killed_at_ten_seconds(tmp_path):
+    """A valid watch exchange gets its full window budget, not the old 10 s."""
+    request, readback = _watch_request()
+    session = _FakeFreightSession(_reply_frame(readback))
+    timeout = _RecordingTimeout()
+    clock = _Clock()
+    # The logical exchange consumes 11 s, still inside the permitted window.
+    clock.now += 11
+    parsed = asyncio.run(
+        d5.exchange(
+            session,
+            request,
+            tmp_path,
+            budget_table=d5.budgets(),
+            overall_deadline=clock.now + 100,
+            clock=clock,
+            timeout_factory=timeout,
+        )
+    )
+    assert parsed.request_id == "load-00" and parsed.status == "LOADED"
+    assert timeout.seen == [d5.budgets()["watch_seconds"] + d5.FREIGHT_EXCHANGE_MARGIN_SECONDS]
+
+
+class _ExpiringTimeout:
+    def __call__(self, seconds: float):
+        outer = self
+
+        class _Expire:
+            async def __aenter__(self):
+                raise TimeoutError("simulated expiry")
+
+            async def __aexit__(self, *exc):
+                return False
+
+        assert seconds > 0 and outer is not None
+        return _Expire()
+
+
+def test_exchange_exceeding_its_permitted_budget_fails_closed(tmp_path):
+    request, _ = _watch_request()
+    session = _FakeFreightSession(b"")
+    with pytest.raises(TimeoutError, match="exceeded its"):
+        asyncio.run(
+            d5.exchange(
+                session,
+                request,
+                tmp_path,
+                budget_table=d5.budgets(),
+                timeout_factory=_ExpiringTimeout(),
+            )
+        )
+    assert (tmp_path / "load-00-request.json").is_file()
+    assert not (tmp_path / "load-00-response.json").exists()
+
+
+def test_exchange_is_clamped_to_the_remaining_overall_budget(tmp_path):
+    request, readback = _watch_request()
+    clock = _Clock()
+    timeout = _RecordingTimeout()
+    session = _FakeFreightSession(_reply_frame(readback))
+    asyncio.run(
+        d5.exchange(
+            session,
+            request,
+            tmp_path,
+            budget_table=d5.budgets(),
+            overall_deadline=clock.now + 3,
+            clock=clock,
+            timeout_factory=timeout,
+        )
+    )
+    assert timeout.seen == [3.0]
+
+
+def test_exhausted_overall_watch_window_refuses_before_sending(tmp_path):
+    request, _ = _watch_request()
+    clock = _Clock()
+    session = _FakeFreightSession(b"")
+    with pytest.raises(TimeoutError, match="overall watch window exhausted"):
+        asyncio.run(
+            d5.exchange(
+                session,
+                request,
+                tmp_path,
+                budget_table=d5.budgets(),
+                overall_deadline=clock.now - 1,
+                clock=clock,
+            )
+        )
+    assert session.sent == []
+
+
+class _CancellingSession:
+    async def send(self, frame: bytes) -> None:
+        return None
+
+    async def receive(self) -> bytes:
+        raise asyncio.CancelledError
+
+
+def test_exchange_cancellation_propagates_without_a_success(tmp_path):
+    request, _ = _watch_request()
+    with pytest.raises(asyncio.CancelledError):
+        asyncio.run(d5.exchange(_CancellingSession(), request, tmp_path))
+    assert not (tmp_path / "load-00-response.json").exists()
+
+
+class _LateResponseSession:
+    def __init__(self, reply: bytes) -> None:
+        self._reply = reply
+
+    async def send(self, frame: bytes) -> None:
+        return None
+
+    async def receive(self) -> bytes:
+        return self._reply
+
+
+def test_exchange_refuses_a_stale_late_response_for_another_request(tmp_path):
+    request, _ = _watch_request()
+    stale = _production_site_request()
+    stale_readback = _site_readback(stale)
+    with pytest.raises(ValueError, match="correlation mismatch"):
+        asyncio.run(
+            d5.exchange(_LateResponseSession(_reply_frame(stale_readback)), request, tmp_path)
+        )
+
+
+class _DuplicateFrameSession:
+    def __init__(self, reply: bytes) -> None:
+        self._reply = reply
+
+    async def send(self, frame: bytes) -> None:
+        return None
+
+    async def receive(self) -> bytes:
+        return self._reply + self._reply
+
+
+def test_exchange_refuses_duplicate_response_frames(tmp_path):
+    request, readback = _watch_request()
+    with pytest.raises(ValueError, match="duplicate freight-proof response frame"):
+        asyncio.run(d5.exchange(_DuplicateFrameSession(_reply_frame(readback)), request, tmp_path))
+
+
+class _PartialThenExpiredSession:
+    def __init__(self) -> None:
+        self._calls = 0
+
+    async def send(self, frame: bytes) -> None:
+        return None
+
+    async def receive(self) -> bytes:
+        self._calls += 1
+        if self._calls == 1:
+            return b"\x01\x02"
+        raise TimeoutError("expired after partial read")
+
+
+def test_exchange_refuses_partial_reads_and_late_timeouts(tmp_path):
+    request, _ = _watch_request()
+    with pytest.raises(TimeoutError, match="exceeded its"):
+        asyncio.run(d5.exchange(_PartialThenExpiredSession(), request, tmp_path))
+    assert not (tmp_path / "load-00-response.json").exists()
+
+
+# --- C1/H1/H3 + consumed-frame replay: synthetic packed attempt fixtures ----
+#
+# These fixtures are explicitly synthetic. They copy a freshly staged candidate
+# (whose prerequisite is the real pinned D4 attempt) and fabricate only the
+# missing post-launch artifacts: fifteen correlated protocol-5 frames, the
+# runtime welcome, cleanup certification and a receipt. No native process,
+# AdminPort session, candidate claim, signature or Gate C authorization is
+# created. Because no authorized D5 attempt exists in the repository, the
+# operator-authorization gate is the one seam monkeypatched in the success
+# tests; every prerequisite, identity, digest, phase, frame and cleanup fact is
+# otherwise verified by the production replay path.
+
+
+def _synthetic_readback(
+    request: FreightRequest,
+    status: str,
+    funds: int,
+    *,
+    cost: int = 0,
+    engine: int | None = None,
+    vehicle: int | None = None,
+    **observations,
+) -> FreightReadback:
+    return FreightReadback(
+        protocol=5,
+        op=request.op,
+        request_id=request.request_id,
+        plan=request.plan,
+        company=request.company,
+        max_cost=request.max_cost,
+        pickup=request.pickup,
+        delivery=request.delivery,
+        depot=request.depot,
+        route_digest=request.route_digest,
+        engine=request.engine if engine is None else engine,
+        vehicle=request.vehicle if vehicle is None else vehicle,
+        expected_cost=request.expected_cost,
+        order_index=request.order_index,
+        watch_ticks=request.watch_ticks,
+        watch_days=request.watch_days,
+        status=status,
+        funds=funds,
+        cost=cost,
+        **observations,
+    )
+
+
+def _consumed_freight_exchanges(
+    seal: str,
+) -> tuple[list[tuple[FreightRequest, FreightReadback]], dict]:
+    plan = d5.freight_plan()
+    schedule = d5.freight_schedule()
+    state = dict(site=None, engine=SimpleNamespace(engine=73, quote=785), vehicle=7)
+    requests = [d5._freight_exchange_request(entry, seal, plan, state) for entry in schedule]
+    funds = FUNDS_AT_D4_CLOSE
+    after_purchase = funds - 785
+    exchanges = []
+    for request in requests:
+        op = request.op
+        if op == "site":
+            readback = _synthetic_readback(
+                request,
+                "READY",
+                funds,
+                paused=False,
+                truck0=True,
+                sid0=100,
+                truck1=True,
+                sid1=101,
+                depot_ok=True,
+                owner=0,
+                pairs_ok=23,
+                pair_total=23,
+                accept=8,
+                prod=100,
+                wait=5,
+                vehicles=0,
+            )
+        elif op == "engine":
+            readback = _synthetic_readback(
+                request,
+                "READY",
+                funds,
+                cost=785,
+                engine=73,
+                available=True,
+                compatible=True,
+                capacity=20,
+                cargo=1,
+            )
+        elif op == "purchase":
+            readback = _synthetic_readback(
+                request, "BUILT", after_purchase, cost=785, engine=73, vehicle=7
+            )
+        elif op == "vread" and request.request_id == "vread-00":
+            readback = _synthetic_readback(
+                request,
+                "READ",
+                after_purchase,
+                owner=0,
+                location=d5.DEPOT_TILE,
+                capacity=20,
+                cargo=1,
+                state="IN_DEPOT",
+                in_depot=True,
+                speed=0,
+            )
+        elif op == "vread" and request.request_id == "vread-01":
+            readback = _synthetic_readback(
+                request,
+                "READ",
+                after_purchase,
+                owner=0,
+                location=d5.PICKUP_STOP_TILE,
+                capacity=20,
+                cargo=1,
+                state="RUNNING",
+                in_depot=False,
+                speed=80,
+            )
+        elif op == "order":
+            index = request.order_index
+            readback = _synthetic_readback(
+                request,
+                "ORDERED",
+                after_purchase,
+                dest=100 if index == 0 else 101,
+                flags=OF_FULL_LOAD if index == 0 else OF_NO_LOAD,
+                goto=True,
+            )
+        elif op == "order-read":
+            readback = _synthetic_readback(
+                request,
+                "ORDER_SET_VERIFIED",
+                after_purchase,
+                order_len=2,
+                dest0=100,
+                flags0=OF_FULL_LOAD,
+                goto0=True,
+                dest1=101,
+                flags1=OF_NO_LOAD,
+                goto1=True,
+            )
+        elif op == "monitor":
+            readback = _synthetic_readback(
+                request,
+                "ARMED",
+                after_purchase,
+                pickup_amount=0,
+                delivery_amount=0,
+                income=5000,
+                delivered=10,
+            )
+        elif op == "start":
+            readback = _synthetic_readback(
+                request, "STARTED", after_purchase, state="RUNNING", speed=40
+            )
+        elif op == "load-watch":
+            readback = _synthetic_readback(
+                request,
+                "LOADED",
+                after_purchase,
+                load=20,
+                capacity=20,
+                wait=3,
+                tick=100,
+                day=3,
+                paused=False,
+            )
+        elif op == "transit-watch":
+            readback = _synthetic_readback(
+                request,
+                "AT_DELIVERY",
+                after_purchase,
+                position=plan.delivery,
+                progress=len(plan.witness) - 1,
+                load=20,
+                tick=200,
+                day=4,
+                paused=False,
+            )
+        elif op == "deliver-watch":
+            readback = _synthetic_readback(
+                request,
+                "DELIVERED",
+                after_purchase,
+                load=0,
+                pickup_amount=20,
+                delivery_amount=20,
+                tick=300,
+                day=5,
+                paused=False,
+            )
+        elif op == "finance":
+            readback = _synthetic_readback(
+                request,
+                "FINANCE_VERIFIED",
+                after_purchase,
+                income=6000,
+                delivered=20,
+                last_accepted=5,
+            )
+        elif op == "finish":
+            readback = _synthetic_readback(
+                request,
+                "PHASE_STOPPED",
+                after_purchase,
+                state="STOPPED",
+                speed=0,
+                in_depot=False,
+                stop_issued=True,
+            )
+        else:  # pragma: no cover - the fixed schedule exhausts the ops
+            raise AssertionError(op)
+        exchanges.append((request, readback))
+    return exchanges, plan
+
+
+def _write_manifest(directory: Path) -> None:
+    (directory / "artifact-manifest.sha256").write_text(d5.manifest(directory))
+
+
+def _reseal(directory: Path) -> None:
+    (directory / "PRELAUNCH.sha256").write_text(sha256(directory / "PRELAUNCH.json") + "\n")
+    claim_path = directory / "CLAIM.json"
+    if claim_path.is_file():
+        claim = json.loads(claim_path.read_text())
+        claim["prelaunch_digest"] = sha256(directory / "PRELAUNCH.json")
+        claim_path.write_text(json.dumps(claim, sort_keys=True, indent=2) + "\n")
+
+
+@pytest.fixture(scope="module")
+def consumed_attempt(tmp_path_factory):
+    prepared = d5.prepare_candidate(tmp_path_factory.mktemp("d5-consumed") / "candidate")
+    directory = prepared.directory
+    seal = sha256(directory / "PRELAUNCH.json")
+    exchanges, plan = _consumed_freight_exchanges(seal)
+    frames = []
+    for request, readback in exchanges:
+        response = _readback_bytes(readback)
+        (directory / (request.request_id + "-request.json")).write_bytes(request.to_bytes())
+        (directory / (request.request_id + "-response.json")).write_bytes(response)
+        frames.append(["outbound", d5.encode_freight_request(request.to_bytes()).hex()])
+        frames.append(["inbound", _reply_frame(readback).hex()])
+    (directory / "frames.json").write_text(json.dumps(frames))
+    (directory / "session-before.sav").write_bytes(b"synthetic session-before fixture")
+    (directory / "after.sav").write_bytes(b"synthetic after fixture")
+    phase = d5.freight_phase_outcome(exchanges, prelaunch_digest=seal, plan=plan)
+    cycle = d5.verify_freight_cycle(exchanges, prelaunch_digest=seal, plan=plan)
+    (directory / "receipt.json").write_text(
+        json.dumps(
+            dict(
+                phase,
+                cycle=cycle,
+                before_save_sha256=sha256(directory / "session-before.sav"),
+                after_save_sha256=sha256(directory / "after.sav"),
+            ),
+            sort_keys=True,
+            indent=2,
+        )
+        + "\n"
+    )
+    (directory / "runtime-identity.json").write_text(
+        json.dumps(
+            dict(
+                auth="X25519_AuthorizedKey",
+                encrypted=True,
+                welcome=dict(d5.retained_welcome(), dedicated=True),
+                pid=4242,
+            ),
+            sort_keys=True,
+            indent=2,
+        )
+        + "\n"
+    )
+    (directory / "cleanup.json").write_text(
+        json.dumps(
+            dict(
+                reaped=True,
+                sockets_closed=True,
+                workspace_disposed=True,
+                credential_removed=True,
+                returncode=0,
+            ),
+            sort_keys=True,
+            indent=2,
+        )
+        + "\n"
+    )
+    (directory / "CLAIM.json").write_text(
+        json.dumps(
+            dict(
+                prelaunch_digest=seal,
+                consumed=True,
+                launches_allowed=1,
+                retries=0,
+                authorization_schema=d5.CLAIM_AUTHORIZATION_EVIDENCE_SCHEMA,
+                authorization_sha256="f" * 64,
+                operator_key_identity="synthetic-test-fixture",
+            ),
+            sort_keys=True,
+            indent=2,
+        )
+        + "\n"
+    )
+    (directory / "result.json").write_text(
+        json.dumps(
+            dict(
+                preflight="PASS",
+                native_launches=1,
+                connections=1,
+                requests=15,
+                exchanges=[request.request_id for request, _ in exchanges],
+                last_status="PHASE_STOPPED",
+                command_accepted=True,
+                state_changed=True,
+                verified=True,
+                status="NATIVE_FREIGHT_VERIFIED",
+                halt=None,
+                returncode=0,
+                cleanup_complete=True,
+            ),
+            sort_keys=True,
+            indent=2,
+        )
+        + "\n"
+    )
+    _write_manifest(directory)
+    yield directory, exchanges, seal, plan
+    prepared.spec.workspace.close()
+
+
+def _copy_attempt(source: Path, destination: Path) -> Path:
+    shutil.copytree(
+        source,
+        destination,
+        ignore=shutil.ignore_patterns("isolated", "freeze-probe"),
+    )
+    return destination
+
+
+def _authorization_passthrough(monkeypatch):
+    monkeypatch.setattr(d5, "replay_authorization_state", lambda *args, **kwargs: None)
+
+
+def test_replay_verifies_a_fully_consumed_valid_frame_sequence(consumed_attempt, monkeypatch):
+    directory, exchanges, seal, _ = consumed_attempt
+    _authorization_passthrough(monkeypatch)
+    verdict = d5.verify_freight_attempt(directory)
+    assert verdict["verification"] == "RECEIPT_VERIFIED"
+    assert verdict["receipt"]["cycle"]["verification"] == "FREIGHT_CYCLE_VERIFIED"
+    assert len(verdict["receipt"]["cycle"]["receipts"]) == PLANNED_FREIGHT_EXCHANGES
+    assert d5.verdict_exit_status(verdict) == 0
+    outbound, requests, replies, _, _ = d5._parse_phase_frames(directory)
+    assert len(outbound) == len(requests) == len(replies) == PLANNED_FREIGHT_EXCHANGES
+    assert [request.request_id for request in requests] == list(FREIGHT_EXCHANGE_IDS)
+    assert outbound == [d5.encode_freight_request(request.to_bytes()) for request, _ in exchanges]
+
+
+def test_replay_refuses_missing_duplicated_out_of_order_and_altered_frames(
+    consumed_attempt, tmp_path, monkeypatch
+):
+    source, _, _, _ = consumed_attempt
+    _authorization_passthrough(monkeypatch)
+
+    missing = _copy_attempt(source, tmp_path / "missing")
+    (missing / "deliver-00-response.json").unlink()
+    _write_manifest(missing)
+    with pytest.raises(ValueError):
+        d5.verify_freight_attempt(missing)
+
+    duplicated = _copy_attempt(source, tmp_path / "duplicated")
+    frames = json.loads((duplicated / "frames.json").read_text())
+    frames.insert(1, list(frames[0]))
+    (duplicated / "frames.json").write_text(json.dumps(frames))
+    _write_manifest(duplicated)
+    with pytest.raises(ValueError):
+        d5.verify_freight_attempt(duplicated)
+
+    out_of_order = _copy_attempt(source, tmp_path / "out-of-order")
+    frames = json.loads((out_of_order / "frames.json").read_text())
+    frames[0], frames[2] = frames[2], frames[0]
+    (out_of_order / "frames.json").write_text(json.dumps(frames))
+    _write_manifest(out_of_order)
+    with pytest.raises(ValueError, match="precedes its own request"):
+        d5.verify_freight_attempt(out_of_order)
+
+    altered = _copy_attempt(source, tmp_path / "altered")
+    response_path = altered / "load-00-response.json"
+    readback = json.loads(response_path.read_text())
+    readback["load"] = 19
+    response_path.write_text(json.dumps(readback, sort_keys=True, separators=(",", ":")))
+    _write_manifest(altered)
+    with pytest.raises(ValueError):
+        d5.verify_freight_attempt(altered)
+
+
+def test_replay_fails_closed_on_wrong_source_save_digest(consumed_attempt, tmp_path, monkeypatch):
+    source, _, _, _ = consumed_attempt
+    _authorization_passthrough(monkeypatch)
+    attempt = _copy_attempt(source, tmp_path / "wrong-source")
+    metadata = json.loads((attempt / "PRELAUNCH.json").read_text())
+    metadata["world"]["save_sha256"] = "0" * 64
+    (attempt / "PRELAUNCH.json").write_text(json.dumps(metadata, sort_keys=True, indent=2) + "\n")
+    _reseal(attempt)
+    _write_manifest(attempt)
+    with pytest.raises(ValueError, match="pinned prerequisite|after-save"):
+        d5.verify_freight_attempt(attempt)
+
+
+def test_replay_fails_closed_on_wrong_pinned_d4_digest(consumed_attempt, monkeypatch):
+    directory, _, _, _ = consumed_attempt
+    _authorization_passthrough(monkeypatch)
+    monkeypatch.setattr(d5, "PINNED_PREREQUISITE_AFTER_SAVE", "0" * 64)
+    with pytest.raises(ValueError, match="pinned|authoritative"):
+        d5.verify_freight_attempt(directory)
+
+
+def test_replay_fails_closed_on_incomplete_world_welcome(consumed_attempt, tmp_path, monkeypatch):
+    source, _, _, _ = consumed_attempt
+    _authorization_passthrough(monkeypatch)
+    attempt = _copy_attempt(source, tmp_path / "welcome")
+    runtime = json.loads((attempt / "runtime-identity.json").read_text())
+    del runtime["welcome"]["width"]
+    (attempt / "runtime-identity.json").write_text(json.dumps(runtime, sort_keys=True, indent=2))
+    _write_manifest(attempt)
+    with pytest.raises(ValueError, match="welcome"):
+        d5.verify_freight_attempt(attempt)
+
+
+def test_replay_fails_closed_on_candidate_receipt_identity_mismatch(
+    consumed_attempt, tmp_path, monkeypatch
+):
+    source, _, _, _ = consumed_attempt
+    _authorization_passthrough(monkeypatch)
+    attempt = _copy_attempt(source, tmp_path / "identity")
+    metadata = json.loads((attempt / "PRELAUNCH.json").read_text())
+    metadata["attempt"] = "D5-FREIGHT-9"
+    (attempt / "PRELAUNCH.json").write_text(json.dumps(metadata, sort_keys=True, indent=2) + "\n")
+    _reseal(attempt)
+    _write_manifest(attempt)
+    with pytest.raises(ValueError, match="attempt identity"):
+        d5.verify_freight_attempt(attempt)
+
+    tampered_receipt = _copy_attempt(source, tmp_path / "receipt")
+    receipt = json.loads((tampered_receipt / "receipt.json").read_text())
+    receipt["after_save_sha256"] = "0" * 64
+    (tampered_receipt / "receipt.json").write_text(json.dumps(receipt, sort_keys=True, indent=2))
+    _write_manifest(tampered_receipt)
+    with pytest.raises(ValueError, match="receipt replay mismatch"):
+        d5.verify_freight_attempt(tampered_receipt)
+
+
+def test_verify_cli_exits_nonzero_for_unverified_verdicts(staged, monkeypatch, capsys):
+    monkeypatch.setattr(sys, "argv", ["prog", "verify", str(staged.directory)])
+    with pytest.raises(SystemExit) as exit_info:
+        d5.main()
+    assert exit_info.value.code == 1
+    printed = json.loads(capsys.readouterr().out)
+    assert printed["verification"] == "AUTHORIZATION_UNVERIFIED"
+
+
+def test_verify_cli_exits_zero_only_for_a_verified_receipt(consumed_attempt, monkeypatch, capsys):
+    directory, _, _, _ = consumed_attempt
+    _authorization_passthrough(monkeypatch)
+    monkeypatch.setattr(sys, "argv", ["prog", "verify", str(directory)])
+    with pytest.raises(SystemExit) as exit_info:
+        d5.main()
+    assert exit_info.value.code == 0
+    printed = json.loads(capsys.readouterr().out)
+    assert printed["verification"] == "RECEIPT_VERIFIED"
+
+
+def test_verify_cli_cannot_turn_errors_or_malformed_input_into_success(tmp_path, monkeypatch):
+    monkeypatch.setattr(sys, "argv", ["prog", "verify", str(tmp_path / "missing")])
+    with pytest.raises(Exception) as error:
+        d5.main()
+    assert not isinstance(error.value, SystemExit)
+
+    monkeypatch.setattr(sys, "argv", ["prog", "not-a-command", str(tmp_path)])
+    with pytest.raises(SystemExit) as exit_info:
+        d5.main()
+    assert exit_info.value.code == 2
+
+
+def test_replay_preserves_a_failed_cleanup_as_failed_evidence(
+    consumed_attempt, tmp_path, monkeypatch
+):
+    source, _, _, _ = consumed_attempt
+    _authorization_passthrough(monkeypatch)
+    attempt = _copy_attempt(source, tmp_path / "failed-cleanup")
+    result = json.loads((attempt / "result.json").read_text())
+    result["status"] = "FAILED_CLEANUP"
+    result["verified"] = False
+    result["cleanup_complete"] = False
+    result["cleanup_failure"] = True
+    result["error"] = "ValueError: cleanup was not certified; no verified receipt is possible"
+    (attempt / "result.json").write_text(json.dumps(result, sort_keys=True, indent=2) + "\n")
+    cleanup = json.loads((attempt / "cleanup.json").read_text())
+    cleanup["workspace_disposed"] = False
+    cleanup["verification_error"] = "cleanup incomplete"
+    (attempt / "cleanup.json").write_text(json.dumps(cleanup, sort_keys=True, indent=2))
+    _write_manifest(attempt)
+    verdict = d5.verify_freight_attempt(attempt)
+    assert verdict["verification"] == "ATTEMPT_FAILED_EVIDENCE_PRESERVED"
+    assert verdict["result_status"] == "FAILED_CLEANUP"
+    assert verdict["cleanup_complete"] is False
+    assert d5.verdict_exit_status(verdict) == 1
+
+
+def test_replay_refuses_a_manifest_that_omits_a_retained_file(
+    consumed_attempt, tmp_path, monkeypatch
+):
+    """L4: a rewritten manifest that silently drops a file is refused."""
+    source, _, _, _ = consumed_attempt
+    _authorization_passthrough(monkeypatch)
+    attempt = _copy_attempt(source, tmp_path / "non-exhaustive-manifest")
+    lines = (attempt / "artifact-manifest.sha256").read_text().splitlines()
+    kept = [line for line in lines if not line.endswith("  cleanup.json")]
+    assert len(kept) == len(lines) - 1
+    (attempt / "artifact-manifest.sha256").write_text("\n".join(kept) + "\n")
+    with pytest.raises(ValueError, match="not exhaustive"):
+        d5.verify_freight_attempt(attempt)
+
+
+def test_replay_refuses_a_malformed_orphan_response_file(consumed_attempt, tmp_path, monkeypatch):
+    """L8: an unparsable response file with no matching request fails closed."""
+    source, _, _, _ = consumed_attempt
+    _authorization_passthrough(monkeypatch)
+    attempt = _copy_attempt(source, tmp_path / "orphan-response")
+    (attempt / "orphan-99-response.json").write_text("{not json")
+    _write_manifest(attempt)
+    with pytest.raises(ValueError, match="not a parseable readback"):
+        d5.verify_freight_attempt(attempt)
+
+
+def test_replay_fails_closed_on_optimizer_plan_digest_drift(
+    consumed_attempt, tmp_path, monkeypatch
+):
+    source, _, _, _ = consumed_attempt
+    _authorization_passthrough(monkeypatch)
+    attempt = _copy_attempt(source, tmp_path / "optimizer-drift")
+    metadata = json.loads((attempt / "PRELAUNCH.json").read_text())
+    metadata["plan_policy"]["optimizer"]["scenario_digest"] = "0" * 64
+    (attempt / "PRELAUNCH.json").write_text(json.dumps(metadata, sort_keys=True, indent=2) + "\n")
+    _reseal(attempt)
+    _write_manifest(attempt)
+    with pytest.raises(ValueError, match="optimizer pin scenario_digest"):
+        d5.verify_freight_attempt(attempt)
